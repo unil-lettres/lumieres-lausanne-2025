@@ -5,6 +5,7 @@
 
 .DEFAULT_GOAL := all
 
+
 ifeq ($(OS), Windows_NT)
 	WEB_BROWSER = powershell -Command Start-Process
 	RM			= rm -Force -Path
@@ -15,7 +16,14 @@ else
 	CP			= cp -r
 endif
 
+MAKE_SUB		= ./make
 
-.PHONY: init
-init:  ## Initialize the development environment
-	$(CP) .env.template .env
+# Dev part
+include $(MAKE_SUB)/dev.mk
+
+# Docker Compose part
+SERVICES ?=
+include $(MAKE_SUB)/docker-compose.mk
+
+# Cleaning part
+include $(MAKE_SUB)/clean.mk

@@ -32,9 +32,9 @@
 		// "phpmyadmin"
 	],
 	// Use 'initialization' to run commands before the container is created.
-	"initializeCommand": "make init",
+	"initializeCommand": "make dev/init",
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "pip install -e .[dev,tools]",
+	"postCreateCommand": "pip install -e .[dev,tools]",
 	// Use 'postAttachCommand' to run commands after the container is attached.
 	// "postAttachCommand": "make runserver",	
 	// Configure tool-specific properties.
