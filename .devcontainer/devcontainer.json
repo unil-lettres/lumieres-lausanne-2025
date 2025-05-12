@@ -5,7 +5,8 @@
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	// "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bullseye",
 	"dockerComposeFile": [
-		"./docker-compose.yml"
+		"./docker-compose.yml",
+		"../docker-compose.yml"
 	],
 	// The 'service' property is the name of the service for the container that VS Code should
 	// use. Update this value and .devcontainer/docker-compose.yml to the real service name.
@@ -27,9 +28,9 @@
 	"runServices": [
 		"dev",
 		// "app",
-		// "db"
+		"db",
 		// "search",
-		// "phpmyadmin"
+		"phpmyadmin"
 	],
 	// Use 'initialization' to run commands before the container is created.
 	"initializeCommand": "make dev/init",
@@ -60,7 +61,7 @@
 				],
 				"workbench.colorCustomizations": {
 					"editorRuler.foreground": "#ff4081"
-				},
+				}
 				// "python.analysis.extraPaths": [
 				// ]
 			},
@@ -77,10 +78,10 @@
 				"ms-python.mypy-type-checker",
 				"ms-python.vscode-pylance",
 				"nwgh.bandit",
-				"tamasfe.even-better-toml",
+				"tamasfe.even-better-toml"
 			]
 		}
-	},
+	}
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
 }
