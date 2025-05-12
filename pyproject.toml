@@ -6,8 +6,8 @@ about writings from the Enlightenment period in Lausanne and the canton
 of Vaud.
 """
 authors = [
-    { name = "Xavier Beheydt", email = "xavier.beheydt@gmail.com" },
     { name = "Julien Ganivet", email = "julien.ganivet@unil.ch" },
+    { name = "Xavier Beheydt", email = "xavier.beheydt@gmail.com" },
 ]
 dependencies = [
     "Pillow>=9.0,<10.0",
