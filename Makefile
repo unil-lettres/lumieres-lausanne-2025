@@ -35,3 +35,7 @@ include $(MAKE_SUB)/clean.mk
 
 # Docs part
 include $(MAKE_SUB)/docs.mk
+
+# Migration part
+# XXX: temp section
+include $(MAKE_SUB)/migration.mk

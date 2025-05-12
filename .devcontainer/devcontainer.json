@@ -22,15 +22,15 @@
 	},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [
-		// "phpmyadmin:80"
+		"phpmyadmin:80"
 	],
 	// Uncomment the next line if you want start specific services in your Docker Compose config.
 	"runServices": [
 		"dev",
 		// "app",
-		"db",
+		// "db",
 		// "search",
-		"phpmyadmin"
+		// "phpmyadmin"
 	],
 	// Use 'initialization' to run commands before the container is created.
 	"initializeCommand": "make dev/init",
