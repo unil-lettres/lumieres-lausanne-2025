@@ -3,20 +3,25 @@
 # Authors:
 #   - Xavier Beheydt <xavier.beheydt@gmail.com>
 
-.DEFAULT_GOAL := all
+.DEFAULT_GOAL 	:= all
 
 
 ifeq ($(OS), Windows_NT)
 	WEB_BROWSER = powershell -Command Start-Process
 	RM			= rm -Force -Path
 	CP			= copy
+	TOUCH		= New-Item -type file
+	MKDIR		= New-Item -type directory
 else
 	WEB_BROWSER = open
 	RM			= rm -rf
 	CP			= cp -r
+	TOUCH		= touch
+	MKDIR		= mkdir -p
 endif
 
 MAKE_SUB		= ./make
+APP_PATH		= ./app
 
 # Dev part
 include $(MAKE_SUB)/dev.mk
