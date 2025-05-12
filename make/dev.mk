@@ -47,3 +47,7 @@ dev/restart: phpmyadmin docker/compose/restart
 dev/logs:  ## Show logs of the development environment
 dev/logs: SERVICES=db phpmyadmin
 dev/logs: docker/compose/logs
+
+.PHONY: dev/runserver
+dev/runserver:  ## Run the django dev server
+	cd $(APP_PATH) && python manage.py runserver
