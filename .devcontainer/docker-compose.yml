@@ -1,10 +1,5 @@
 # Dev container service
 
-networks:
-  frontend:
-  backend:
-
-
 services:
   dev:
     image: mcr.microsoft.com/devcontainers/python:1-3.12-bullseye
