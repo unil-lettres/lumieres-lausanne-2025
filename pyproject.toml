@@ -38,6 +38,7 @@ dev = [
     "pytest-cov",
     "pytest-django",
 ]
+docs = ["mkdocs"]
 
 [tool.setuptools]
 packages = ["app"]

@@ -9,4 +9,11 @@ dev/init:  ## Initialize the development environment
 
 .PHONY: dev/install
 dev/install:  ## Install dependencies
-	pip install -e .[dev,tools]
+dev/install: app
+	pip install -e .[dev,tools,docs]
+
+$(APP_PATH):  ## Create a app basics
+	$(MKDIR) $(APP_PATH)
+
+$(APP_PATH)/__init__.py: app
+	$(TOUCH) $(APP_PATH)/__init__.py

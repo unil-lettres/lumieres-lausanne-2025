@@ -5,7 +5,7 @@
 
 .PHONY: clean
 clean:  ## clean the project
-clean: clean/build clean/pyc clean/tests clean/caches
+clean: clean/build clean/pyc clean/tests clean/caches docs/clean
 
 clean/pyc: ## remove Python file artifacts
 	@echo "Cleaning up Python artifacts..."

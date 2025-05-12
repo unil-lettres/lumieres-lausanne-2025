@@ -32,3 +32,6 @@ include $(MAKE_SUB)/docker-compose.mk
 
 # Cleaning part
 include $(MAKE_SUB)/clean.mk
+
+# Docs part
+include $(MAKE_SUB)/docs.mk
