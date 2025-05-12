@@ -19,7 +19,7 @@ services:
   app:
     image: python:3.12-bullseye
     env_file:
-      - .env
+      - ${PWD}/.env
     depends_on:
       - db
     links:
@@ -49,7 +49,7 @@ services:
   db:
     image: mysql:9.3
     env_file:
-      - .env
+      - ${PWD}/.env
     volumes:
       - db-data:/var/lib/mysql
       - ./settings/db/mysql-custom.cnf:/etc/mysql/conf.d/mysql-custom.cnf:ro
@@ -65,6 +65,8 @@ services:
   phpmyadmin:
     image: phpmyadmin:latest
     links:
+      - db
+    depends_on:
       - db
     networks:
       - backend
