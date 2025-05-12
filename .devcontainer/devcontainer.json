@@ -34,7 +34,7 @@
 	// Use 'initialization' to run commands before the container is created.
 	"initializeCommand": "make dev/init",
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "pip install -e .[dev,tools]",
+	"postCreateCommand": "make dev/install",
 	// Use 'postAttachCommand' to run commands after the container is attached.
 	// "postAttachCommand": "make runserver",	
 	// Configure tool-specific properties.
