@@ -17,3 +17,33 @@ $(APP_PATH):  ## Create a app basics
 
 $(APP_PATH)/__init__.py: app
 	$(TOUCH) $(APP_PATH)/__init__.py
+
+.PHONY: dev/up
+dev/up:  ## Prepare and Start the development environment
+dev/up: SERVICES=db phpmyadmin
+dev/up: docker/compose/up
+
+.PHONY: dev/down
+dev/down:  ## Stop and Delete the development environment
+dev/down: SERVICES=db phpmyadmin
+dev/down: docker/compose/up
+
+.PHONY: dev/start
+dev/start:  ## Start the development environment
+dev/start: SERVICES=db phpmyadmin
+dev/start: docker/compose/start
+
+.PHONY: dev/stop
+dev/stop:  ## Stop the development environment
+dev/stop: SERVICES=db phpmyadmin
+dev/stop: docker/compose/stop
+
+.PHONY: dev/restart
+dev/restart:  ## Restart the development environment
+dev/restart: SERVICES=db
+dev/restart: phpmyadmin docker/compose/restart
+
+.PHONY: dev/logs
+dev/logs:  ## Show logs of the development environment
+dev/logs: SERVICES=db phpmyadmin
+dev/logs: docker/compose/logs
