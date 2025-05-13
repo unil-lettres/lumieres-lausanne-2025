@@ -7,7 +7,7 @@
 clean:  ## clean the project
 clean: clean/build clean/pyc clean/tests clean/caches docs/clean
 
-clean/pyc: ## remove Python file artifacts
+clean/pyc:  ## remove Python file artifacts
 	@echo "Cleaning up Python artifacts..."
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '*.pyo' -exec rm -f {} +
@@ -24,7 +24,7 @@ clean/tests:  ## remove tests and coverage artifacts
 	find . -name '.pytest_cache' -exec rm -fr {} +
 	
 .PHONY: clean/build
-clean/build: ## remove build artifacts
+clean/build:  ## remove build artifacts
 	@echo "Cleaning up build artifacts..."
 	$(RM) build/
 	$(RM) dist/
@@ -33,7 +33,7 @@ clean/build: ## remove build artifacts
 	find . -name '*.egg' -exec rm -f {} +
 	
 .PHONY: clean/caches
-clean/caches: ## remove caches
+clean/caches:  ## remove caches
 	@echo "Cleaning up caches..."
 	$(RM) .cache/
 	$(RM) .mypy_cache/

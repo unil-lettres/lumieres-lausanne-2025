@@ -23,6 +23,9 @@ endif
 MAKE_SUB		= ./make
 APP_PATH		= ./app
 
+# Helper functions
+include $(MAKE_SUB)/helpers.mk
+
 # Dev part
 include $(MAKE_SUB)/dev.mk
 
@@ -39,3 +42,9 @@ include $(MAKE_SUB)/docs.mk
 # Migration part
 # XXX: temp section
 include $(MAKE_SUB)/migration.mk
+
+
+# Recipes =====================================================================
+
+help:  ## Print the help
+	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
