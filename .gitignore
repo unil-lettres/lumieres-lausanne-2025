@@ -176,3 +176,4 @@ cython_debug/
 temp/
 backup/
 app/media/
+logging/

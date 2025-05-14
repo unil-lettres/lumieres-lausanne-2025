@@ -229,6 +229,10 @@ CACHES = {
 # Logging configurations
 # -----------------------------
 
+logfile = Path(BASE_DIR).parent.parent
+logfile = logfile / "logging" / "debug.log"
+logfile.parent.mkdir(parents=True, exist_ok=True)  # Ensure the directory exists
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -237,15 +241,20 @@ LOGGING = {
             "level": "DEBUG",  # Change from DEBUG to INFO
             "class": "logging.StreamHandler",
         },
+        "file": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "filename": str(logfile),  # Specify the file where logs will be written
+        },
     },
     "loggers": {
         "django": {
-            "handlers": ["console"],
+            "handlers": ["console", "file"],
             "level": "DEBUG",  # XXX: Change from INFO to DEBUT
             "propagate": True,
         },
         "lumieres_project": {
-            "handlers": ["console"],
+            "handlers": ["console", "file"],
             "level": "DEBUG",  # XXX: Change from INFO to DEBUT
             "propagate": False,
         },
