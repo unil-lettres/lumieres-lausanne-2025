@@ -46,5 +46,6 @@ include $(MAKE_SUB)/migration.mk
 
 # Recipes =====================================================================
 
+# TODO: Improve help messages -issue #10
 help:  ## Print the help
 	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
