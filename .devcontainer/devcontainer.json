@@ -62,8 +62,6 @@
 				"workbench.colorCustomizations": {
 					"editorRuler.foreground": "#ff4081"
 				}
-				// "python.analysis.extraPaths": [
-				// ]
 			},
 			"extensions": [
 				"batisteo.vscode-django",
@@ -78,7 +76,8 @@
 				"ms-python.mypy-type-checker",
 				"ms-python.vscode-pylance",
 				"nwgh.bandit",
-				"tamasfe.even-better-toml"
+				"tamasfe.even-better-toml",
+				"Gruntfuggly.todo-tree"
 			]
 		}
 	}
