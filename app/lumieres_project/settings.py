@@ -22,15 +22,15 @@ print("DEBUG: BASE_DIR =", BASE_DIR)
 # ------------------------------
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#+_qt^k0$c5sw@ry!r$*^dyw6$zvf(s8jb6_6jtcryb=cnmozb'
+SECRET_KEY = "django-insecure-#+_qt^k0$c5sw@ry!r$*^dyw6$zvf(s8jb6_6jtcryb=cnmozb"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 # X-Frame-Options
-X_FRAME_OPTIONS = 'SAMEORIGIN'
+X_FRAME_OPTIONS = "SAMEORIGIN"
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ["*"]
 
 # ------------------------------
 # Application definition
@@ -38,59 +38,56 @@ ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     # Django default apps
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django.contrib.sites',
-
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "django.contrib.sites",
     # Third-party apps
-    'ckeditor',
-    'ckeditor_uploader',
-    'sorl.thumbnail',  # Image thumbnailing
-
+    "ckeditor",
+    "ckeditor_uploader",
+    "sorl.thumbnail",  # Image thumbnailing
     # Your custom apps
-    'fiches',
-    'pagination',
+    "fiches",
+    "pagination",
 ]
 
 SITE_ID = 1
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'lumieres_project.urls'
-WSGI_APPLICATION = 'lumieres_project.wsgi.application'
-ASGI_APPLICATION = 'lumieres_project.asgi.application'
+ROOT_URLCONF = "lumieres_project.urls"
+WSGI_APPLICATION = "lumieres_project.wsgi.application"
+ASGI_APPLICATION = "lumieres_project.asgi.application"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            BASE_DIR / 'templates',  # This corresponds to /app/lumieres/templates/
-            BASE_DIR / 'fiches' / 'templates',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [
+            BASE_DIR / "templates",  # This corresponds to /app/lumieres/templates/
+            BASE_DIR / "fiches" / "templates",
         ],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
-
 
 
 # ------------------------------
@@ -101,15 +98,17 @@ TEMPLATES = [
 import os
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('MYSQL_DATABASE', 'lumieres_lausanne'),  # Use environment variable or default to 'django_db'
-        'USER': os.getenv('MYSQL_USER', 'lluser-dev'),  # Use environment variable or default to 'django_user'
-        'PASSWORD': os.getenv('MYSQL_PASSWORD', 'lluser-password'),  # Use environment variable or default to 'django_password'
-        'HOST': 'db',          # Ensure this matches your Docker service name
-        'PORT': '3306',
-        'OPTIONS': {
-            'charset': 'utf8mb4',  # Ensure proper character encoding
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.getenv("MYSQL_DATABASE", "lumieres_lausanne"),  # Use environment variable or default to 'django_db'
+        "USER": os.getenv("MYSQL_USER", "lluser-dev"),  # Use environment variable or default to 'django_user'
+        "PASSWORD": os.getenv(
+            "MYSQL_PASSWORD", "lluser-password"
+        ),  # Use environment variable or default to 'django_password'
+        "HOST": "db",  # Ensure this matches your Docker service name
+        "PORT": "3306",
+        "OPTIONS": {
+            "charset": "utf8mb4",  # Ensure proper character encoding
         },
     }
 }
@@ -121,16 +120,16 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -139,15 +138,15 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 # ------------------------------
 
-LANGUAGE_CODE = 'fr-ch'
+LANGUAGE_CODE = "fr-ch"
 
-TIME_ZONE = 'Europe/Zurich'
+TIME_ZONE = "Europe/Zurich"
 
 USE_I18N = True
 
 USE_TZ = True
 
-DEFAULT_CHARSET = 'UTF-8'
+DEFAULT_CHARSET = "UTF-8"
 
 # ------------------------------
 # Static files (CSS, JavaScript, Images)
@@ -157,29 +156,29 @@ DEFAULT_CHARSET = 'UTF-8'
 print("DEBUG: BASE_DIR =", BASE_DIR)
 
 
-STATIC_URL = '/static/'
+STATIC_URL = "/static/"
 
 # Directory where static files are collected via `collectstatic`:
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Additional directories to search for static files (in dev)
 STATICFILES_DIRS = [
-    BASE_DIR.parent / 'static',   # /app/lumieres/static
-    BASE_DIR.parent / 'ckeditor/static',
+    BASE_DIR.parent / "static",  # /app/lumieres/static
+    BASE_DIR.parent / "ckeditor/static",
 ]
 
 # ------------------------------
 # Media files (Uploaded content)
 # ------------------------------
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR.parent / 'media'
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR.parent / "media"
 
 # ------------------------------
 # CKEditor Configuration
 # ------------------------------
 
-CKEDITOR_UPLOAD_PATH = BASE_DIR.parent / 'uploads'
+CKEDITOR_UPLOAD_PATH = BASE_DIR.parent / "uploads"
 
 from .settings_ckeditor_configs import CKEDITOR_CONFIGS
 
@@ -188,7 +187,7 @@ from .settings_ckeditor_configs import CKEDITOR_CONFIGS
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 # ------------------------------
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # ------------------------------
 # Additional Settings
@@ -202,27 +201,27 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Health check endpoint can be added here if implemented
 
 HAYSTACK_CONNECTIONS = {
-    'default': {
-        'ENGINE': 'haystack.backends.solr_backend.SolrEngine',
-        'URL': 'http://solr:8983/solr/mycore',
-        'INCLUDE_SPELLING': True,
+    "default": {
+        "ENGINE": "haystack.backends.solr_backend.SolrEngine",
+        "URL": "http://solr:8983/solr/mycore",
+        "INCLUDE_SPELLING": True,
     },
 }
 
 HAYSTACK_SEARCH_RESULTS_PER_PAGE = 30
-HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
+HAYSTACK_SIGNAL_PROCESSOR = "haystack.signals.RealtimeSignalProcessor"
 
 # Redirect to homepage after login
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = "/"
 
 # ------------------------------
 # Caching Configuration
 # ------------------------------
 
 CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',  # A unique name for the cache
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "unique-snowflake",  # A unique name for the cache
     }
 }
 
@@ -231,25 +230,24 @@ CACHES = {
 # -----------------------------
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'level': 'INFO',  # Change from DEBUG to INFO
-            'class': 'logging.StreamHandler',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "level": "DEBUG",  # Change from DEBUG to INFO
+            "class": "logging.StreamHandler",
         },
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',  # Change from DEBUG to INFO
-            'propagate': True,
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "DEBUG",  # XXX: Change from INFO to DEBUT
+            "propagate": True,
         },
-        'lumieres_project': {
-            'handlers': ['console'],
-            'level': 'INFO',  # Change from DEBUG to INFO
-            'propagate': False,
+        "lumieres_project": {
+            "handlers": ["console"],
+            "level": "DEBUG",  # XXX: Change from INFO to DEBUT
+            "propagate": False,
         },
     },
 }
-
