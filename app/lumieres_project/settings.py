@@ -232,7 +232,7 @@ CACHES = {
 from datetime import datetime
 
 logfile = Path(BASE_DIR).parent.parent
-logfile = logfile / "logging" / f"debug_{datetime.now().strftime('%Y-%m-%d')}.log"
+logfile = logfile / "logging" / f"debug_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
 logfile.parent.mkdir(parents=True, exist_ok=True)  # Ensure the directory exists
 
 LOGGING = {
