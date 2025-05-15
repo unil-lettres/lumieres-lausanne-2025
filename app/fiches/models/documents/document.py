@@ -186,6 +186,13 @@ class Biblio(models.Model):
     def get_default_language():
         return DocumentLanguage.objects.get_or_create(name="Français")[0].id
 
+    # fixing issue XavierBeheydt/lumieres-lausanne#9
+    def get_authors_contributions(self):
+        """
+        Returns a list of authors and their contributions for this bibliography entry.
+        """
+        return ContributionDoc.objects.filter(document=self)
+
     language = models.ForeignKey(
         "DocumentLanguage",
         verbose_name=_("Langue"),
