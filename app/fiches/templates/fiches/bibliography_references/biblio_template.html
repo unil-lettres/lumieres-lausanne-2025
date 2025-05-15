@@ -21,6 +21,7 @@
    This copyright notice MUST APPEAR in all copies of the file.
 -->
 {% endcomment %}
+{% comment %} FIXME: get_contributors method not exists in Bibio {% endcomment %}
 {% with ref.get_contributors as contributors %}
     <div class="biblioref-item doctype_{{ ref.document_type.id }}{% if add_doctype_class %} inline_doctype inline_doctype_{{ ref.document_type.id }}{% endif %}">
     {% spaceless %}
@@ -35,7 +36,9 @@
                         <span> et {% if authors.1.in_brackets %}[{% endif %}{{ authors.1.person.name }}{% if authors.1.in_brackets %}]{% endif %}</span>
                     {% endif %}
                 {% else %}
+                    {% comment %} FIXME: contributors can exists {% endcomment %}
                     {% if ref.document_type.id != 1 or contributors.directors|length == 0 %}
+                        {% comment %} XXX: issue #9 Error placeholders {% endcomment %}
                         <span>[nom de l'auteur]</span>
                     {% endif %}
                 {% endif %}
