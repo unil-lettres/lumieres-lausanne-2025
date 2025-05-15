@@ -1,46 +1,43 @@
 # fiches/urls.py
 
 from django.urls import path, re_path
+from fiches.views import ajax_search
+from fiches.views import collections as views_collections
 from fiches.views import (
-    main_index,
-    ajax_search,
-    last_activities,
-    serve_documentfile,
-    documentfile_frame_list,
     documentfile_frame_create,
     documentfile_frame_edit,
-    workspace_collections,
-    transcription as views_transcription,
-    collections as views_collections,
+    documentfile_frame_list,
+    last_activities,
+    main_index,
+    serve_documentfile,
 )
+from fiches.views import transcription as views_transcription
+from fiches.views import workspace_collections
+from fiches.views.bibliography import create as bibliography_create
+from fiches.views.bibliography import delete as bibliography_delete
+from fiches.views.bibliography import display as bibliography_display
+from fiches.views.bibliography import display_man as bibliography_display_man
+from fiches.views.bibliography import documentfile_add as bibliography_documentfile_add
+from fiches.views.bibliography import documentfile_change_list as bibliography_documentfile_change_list
+from fiches.views.bibliography import documentfile_remove as bibliography_documentfile_remove
+from fiches.views.bibliography import edit as bibliography_edit
+from fiches.views.bibliography import endnote as bibliography_endnote
+from fiches.views.bibliography import get_person_publications as bibliography_get_person_publications
+from fiches.views.biography import create as biography_create
+from fiches.views.biography import delete as biography_delete
+from fiches.views.biography import display as biography_display
+from fiches.views.biography import edit as biography_edit
+from fiches.views.biography import person_without_bio as biography_person_without_bio
+from fiches.views.biography import relations_list as biography_relations_list
+from fiches.views.biography import to_be_validated as biography_to_be_validated
+from fiches.views.biography import validate as biography_validate
 from fiches.views.search import biblio_extended_search, filter_builder
-from fiches.views.biography import (
-    display as biography_display,
-    delete as biography_delete,
-    edit as biography_edit,
-    create as biography_create,
-    to_be_validated as biography_to_be_validated,
-    validate as biography_validate,
-    relations_list as biography_relations_list,
-    person_without_bio as biography_person_without_bio,
-)
-from fiches.views.bibliography import (
-    display as bibliography_display,
-    edit as bibliography_edit,
-    delete as bibliography_delete,
-    create as bibliography_create,
-    endnote as bibliography_endnote,
-    documentfile_change_list as bibliography_documentfile_change_list,
-    documentfile_add as bibliography_documentfile_add,
-    documentfile_remove as bibliography_documentfile_remove,
-    get_person_publications as bibliography_get_person_publications,
-    display_man as bibliography_display_man,
-)
 
 #app_name = 'fiches'
 
 urlpatterns = [
     # Home Page (relative to 'fiches/' prefix)
+    # XXX: issue #9 Error placeholders
     path('', main_index, name="home"),
     
     # AJAX Search
