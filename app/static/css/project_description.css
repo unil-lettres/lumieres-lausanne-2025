@@ -77,7 +77,7 @@ html, body {
 	text-decoration: none;	
 }
 
-#project-description-content-id a
+#project-description-content-id a {
 	color: #f0750b;
 	padding: 1px 2px;
 	border-radius: 2px;
