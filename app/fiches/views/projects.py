@@ -129,7 +129,7 @@ def get_project_description(request, proj_id=None):
         "lit_sec": lit_sec,
         "transcriptions": transcriptions,
     }   
-    logger.debug(context)
+    logger.debug(f"{__file__}.get_project_description() : {context}")
     return render(request, "fiches/ajax/project_description.html", context)
 
 

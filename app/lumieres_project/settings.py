@@ -258,7 +258,7 @@ LOGGING = {
         "lumieres_project": {
             "handlers": ["console", "file"],
             "level": "DEBUG",  # XXX: Change from INFO to DEBUT
-            "propagate": False,
+            "propagate": True,
         },
     },
 }
