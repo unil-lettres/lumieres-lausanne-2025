@@ -1,19 +1,18 @@
 # lumieres/urls.py
 
-from django.contrib import admin
-from django.urls import path, re_path, include
-from django.views.generic import TemplateView
-from django.views.static import serve
+import os  # Required for os.path.join
+
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
 from django.contrib.auth import views as auth_views
-
-from fiches.admin import fiches_admin
-from fiches import views as fiches_views
-
 from django.contrib.auth.forms import PasswordChangeForm
+from django.urls import include, path, re_path
+from django.views.generic import TemplateView
+from django.views.static import serve
+from fiches import views as fiches_views
+from fiches.admin import fiches_admin
 
-import os  # Required for os.path.join
 
 # Custom Password Change Form with autocomplete disabled
 class MyPasswordChangeForm(PasswordChangeForm):
@@ -86,6 +85,7 @@ urlpatterns = [
     ),
 
     # Home Page
+    # XXX: issue #9 Error placeholders
     path('', fiches_views.main_index, name="lumieres-home"),
 
     # Static About Page
