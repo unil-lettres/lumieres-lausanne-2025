@@ -193,6 +193,10 @@ class Biblio(models.Model):
         """
         return ContributionDoc.objects.filter(document=self)
 
+    # FIXME: XavierBeheydt/lumieres-lausanne#9 - too easy :)
+    def get_contributors(self):
+        return self.get_authors_contributions()
+
     language = models.ForeignKey(
         "DocumentLanguage",
         verbose_name=_("Langue"),

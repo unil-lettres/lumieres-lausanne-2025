@@ -36,7 +36,7 @@
                         <span> et {% if authors.1.in_brackets %}[{% endif %}{{ authors.1.person.name }}{% if authors.1.in_brackets %}]{% endif %}</span>
                     {% endif %}
                 {% else %}
-                    {% comment %} FIXME: contributors can exists {% endcomment %}
+                    {% comment %} FIXME: contributors can exists XavierBeheydt/lumieres-lausanne#9 {% endcomment %}
                     {% if ref.document_type.id != 1 or contributors.directors|length == 0 %}
                         {% comment %} XXX: issue #9 Error placeholders {% endcomment %}
                         <span>[nom de l'auteur]</span>
@@ -126,6 +126,7 @@
         {% else %}
             {#<!-- ##### Autre ##### -->#}
             {#<!-- Directeur -->#}
+            {% comment %} FIXME: contributors can exists XavierBeheydt/lumieres-lausanne#9 {% endcomment %}
             {% if contributors.directors and ref.document_type.id == 1 %}
                 {% if contributors.directors|length > 2 %}
                     <span class="contributor contrib-director">{{ contributors.directors.0.name }}</span> <em> et alii</em> (dir.)
@@ -153,6 +154,7 @@
             {#<!-- Titre du livre -->#}
             {% if ref.book_title %}
                 <span>, in 
+                    {% comment %} FIXME: contributors can exists XavierBeheydt/lumieres-lausanne#9 {% endcomment %}
                     {% if contributors.directors and ref.document_type.id != 1 %}
                         <span>
                             <span class="contributor contrib-director">{{ contributors.directors.0.name }} 
@@ -171,6 +173,7 @@
                 </span>
             {% elif ref.dictionary_title %}
                 <span>, in
+                    {% comment %} FIXME: contributors can exists XavierBeheydt/lumieres-lausanne#9 {% endcomment %}
                     {% if contributors.directors and ref.document_type.id != 1 %}
                         <span>
                             <span class="contributor contrib-director">{{ contributors.directors.0.name }} 
@@ -190,6 +193,7 @@
             {% endif %}
 
             {#<!-- Editeurs -->#}
+            {% comment %} FIXME: contributors can exists XavierBeheydt/lumieres-lausanne#9 {% endcomment %}
             {% if contributors.publishers %}
                 {% if contributors.publishers|length > 2 %}
                     <span>, <span class="contributor contrib-publisher">{{ contributors.publishers.0.name }}</span> <em> et alii</em> (éd.)</span>
@@ -204,6 +208,7 @@
             {% endif %}
 
             {#<!-- Traducteurs -->#}
+            {% comment %} FIXME: contributors can exists XavierBeheydt/lumieres-lausanne#9 {% endcomment %}
             {% if contributors.translators %}
                 <span>
                     {% for trans in contributors.translators %}
