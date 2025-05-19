@@ -5,7 +5,7 @@
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	// "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bullseye",
 	"dockerComposeFile": [
-		"./docker-compose.yml",
+		"docker-compose.yml",
 		"../docker-compose.yml"
 	],
 	// The 'service' property is the name of the service for the container that VS Code should
@@ -13,7 +13,7 @@
 	"service": "dev",
 	// The optional 'workspaceFolder' property is the path VS Code should open by default when
 	// connected. This is typically a file mount in .devcontainer/docker-compose.yml
-	"workspaceFolder": "/workspaces",
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 	// Use this environment variable if you need to bind mount your local source code into a new container.
 	// "remoteEnv": {
 	// },
@@ -28,7 +28,7 @@
 	"runServices": [
 		"dev",
 		// "app",
-		// "db",
+		"db",
 		// "search",
 		// "phpmyadmin"
 	],
