@@ -38,7 +38,7 @@ services:
       - solr-precreate
       - gettingstarted
     volumes:
-      - ./tmp/search/data:/var/solr
+      - ${PWD}/tmp/search/data:/var/solr
     profiles: [ prod, test, dev ]
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8983/solr/admin/info/system" ]
@@ -49,10 +49,10 @@ services:
   db:
     image: mysql:9.3
     env_file:
-      - ${PWD}/.env
+      - ./.env
     volumes:
       - db-data:/var/lib/mysql
-      - ./settings/db/mysql-custom.cnf:/etc/mysql/conf.d/mysql-custom.cnf:ro
+      - ${PWD}/settings/db/mysql-custom.cnf:/etc/mysql/conf.d/mysql-custom.cnf:ro
     networks:
       - backend
     profiles: [ prod, test, dev ]

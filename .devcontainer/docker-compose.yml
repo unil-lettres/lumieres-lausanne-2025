@@ -1,5 +1,14 @@
 # Dev container service
 
+name: LumieresLausanne
+
+networks:
+  frontend:
+  backend:
+
+
+volumes:
+  db-data:
 services:
   dev:
     image: mcr.microsoft.com/devcontainers/python:1-3.12-bullseye
@@ -33,4 +42,29 @@ services:
       - backend
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    profiles: [ dev, test ]
+
+  db:
+    image: mysql:9.3
+    env_file:
+      - ../.env
+    volumes:
+      - db-data:/var/lib/mysql
+      - ../settings/db/mysql-custom.cnf:/etc/mysql/conf.d/mysql-custom.cnf:ro
+    networks:
+      - backend
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    links:
+      - db
+    depends_on:
+      - db
+    networks:
+      - backend
+    environment:
+      PMA_HOST: db
