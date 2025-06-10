@@ -55,3 +55,7 @@ dev/runserver:  ## Run the django dev server
 .PHONY: dev/shell
 dev/shell:  ## Open a shell with Djangop
 	cd $(APP_PATH) && python manage.py shell
+
+.PHONY: dev/createsuperuser
+dev/createsuperuser:  ## Create a superuser for Django
+	cd $(APP_PATH) && python manage.py createsuperuser
