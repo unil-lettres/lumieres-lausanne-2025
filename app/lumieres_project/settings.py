@@ -246,7 +246,7 @@ LOGGING = {
         "file": {
             "level": "DEBUG",
             "class": "logging.FileHandler",
-            "filename": BASE_DIR.parent / "logging" / "debug.log",  # Specify the file where logs will be written
+            "filename": str(logfile),  # Specify the file where logs will be written
         },
     },
     "loggers": {
