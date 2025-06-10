@@ -40,8 +40,7 @@ include $(MAKE_SUB)/clean.mk
 include $(MAKE_SUB)/docs.mk
 
 # Migration part
-# XXX: temp section
-include $(MAKE_SUB)/migration.mk
+include $(MAKE_SUB)/db.mk
 
 
 # Recipes =====================================================================
