@@ -54,6 +54,8 @@ line-length = 119 # Django recommendation
 profile = "black"
 line_length = 119                          # Django recommendation
 known_third_party = ["django", "requests"]
+reorder = true
+clean = true
 
 [tool.mypy]
 files = ["app"]
