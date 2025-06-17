@@ -351,11 +351,11 @@ class NoteBiblio(NoteBase):
     )
 
     # Ensure `rte_type` exists and is compatible with note_formset.html
-    rte_type = models.CharField(
-        max_length=10,
-        choices=[("CKE", "CKEditor"), ("TXT", "Plain Text")],  # Example choices
-        default="CKE",  # Matches the condition in `note_formset.html`
-    )
+    # rte_type = models.CharField(
+    #     max_length=10,
+    #     choices=[("CKE", "CKEditor"), ("TXT", "Plain Text")],  # Example choices
+    #     default="CKE",  # Matches the condition in `note_formset.html`
+    # )
 
     class Meta(NoteBase.Meta):
         app_label = "fiches"

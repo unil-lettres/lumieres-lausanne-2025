@@ -19,36 +19,39 @@
 #
 #    This copyright notice MUST APPEAR in all copies of the file.
 #
-from itertools import chain
+import json
 from base64 import b64decode
-from django.http import HttpResponse, Http404, HttpResponseRedirect, HttpResponseForbidden, HttpResponseServerError
-from django.shortcuts import render, get_object_or_404 # render_to_response,
-from django.template import RequestContext
+from functools import reduce
+from itertools import chain
+
+from django.db import models
 from django.forms.models import inlineformset_factory
+from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect, HttpResponseServerError
+from django.shortcuts import get_object_or_404, render  # render_to_response,
+from django.template import RequestContext
+from django.template.context_processors import csrf
+
 #from django.core.urlresolvers import reverse
 from django.urls import reverse
-from django.template.context_processors import csrf
-from django.db import models
-import json
 from django.utils.dateformat import format
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
-
-from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.cache import never_cache
-
+from django.views.decorators.csrf import csrf_protect
+from fiches.forms import BiblioForm, ContributionDocForm, NoteFormBiblio
 from fiches.models import *
-from fiches.models.documents.document import NoteBiblio, Depot
-from fiches.forms import NoteFormBiblio, BiblioForm, ContributionDocForm
-
-from fiches.utils import log_model_activity, supprime_accent, get_last_model_activity, query_fiche, update_object_index, remove_object_index
-
-from utils.coins import OpenURL
-from utils.aggregates import Concatenate
+from fiches.models.documents.document import Depot, NoteBiblio
+from fiches.utils import (
+    get_last_model_activity,
+    log_model_activity,
+    query_fiche,
+    remove_object_index,
+    supprime_accent,
+    update_object_index,
+)
 from utils import dbg_logger
-
-from functools import reduce
-
+from utils.aggregates import Concatenate
+from utils.coins import OpenURL
 
 #===============================================================================
 # BIBLIOGRAPHY
@@ -330,15 +333,17 @@ def create(request, doctype=1):
     return edit(request, None, new_doc=True, new_doctype=doctype)
 
 
-from django.shortcuts import get_object_or_404, redirect, render
-from django.http import HttpResponseForbidden, Http404, HttpResponseRedirect
-from django.views.decorators.cache import never_cache
-from django.db import models, connection
+import json
+from functools import reduce
+
+from django.db import connection, models
 from django.db.models import Q
+from django.http import Http404, HttpResponseForbidden, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from functools import reduce
-import json
+from django.views.decorators.cache import never_cache
+
 
 @never_cache
 def edit(request, doc_id=None, new_doc=False, new_doctype=1):
@@ -376,8 +381,8 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     # -------------------------------
     primary_kw = secondary_kw = None
     if doc and doc.id:
-        primary_kw = PrimaryKeyword.objects.filter(biblio=doc).exclude(secondarykeyword__biblio=doc)
-        secondary_kw = SecondaryKeyword.objects.filter(biblio=doc).order_by('parent__word')
+        primary_kw = PrimaryKeyword.objects.filter(biblio=doc).exclude(secondary_keywords__biblio=doc)
+        secondary_kw = SecondaryKeyword.objects.filter(biblio=doc).order_by('primary_keyword__word')
 
     # -------------------------------
     # Exclusive Fields Setup

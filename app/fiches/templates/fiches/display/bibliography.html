@@ -116,41 +116,42 @@
 </div>
 
 <div class="tb_sep"></div>
-{% load static %}
+
+	{% comment %} {% if perms.fiches.add_biblio %}
+	   {% url bibliography_create as add_url %}
+	{% endif %} {% endcomment %}
 <!-- Creating new Biblio (only if user has permission) -->
 {% if perms.fiches.add_biblio %}
     {% url "bibliography-create" as add_url %}
-    <div class="tb_but" style="display: inline-block;">
+    {% comment %} TODO: clean ??? <div class="tb_but" style="display: inline-block;">
         <a href="{{ add_url }}" title="Créer une nouvelle bibliographie">
             <img src="{% static 'css/images/add.png' %}" 
                  width="16" height="16" alt="Nouveau" />
         </a>
-    </div>
+    </div> {% endcomment %}
 {% endif %}
 
 <!-- Editing this Biblio (only if user can edit) -->
 {% if perms.fiches.change_any_biblio or doc.creator == user and perms.fiches.change_biblio %}
     {% url "bibliography-edit" doc.id as edit_url %}
-    <div class="tb_but" style="display: inline-block;">
+    {% comment %} TODO: clean ??? <div class="tb_but" style="display: inline-block;">
         <a href="{{ edit_url }}" title="Modifier cette bibliographie">
             <img src="{% static 'css/images/edit.png' %}" 
                  width="16" height="16" alt="Modifier" />
         </a>
-    </div>
+    </div> {% endcomment %}
 {% endif %}
 
 <!-- Deleting this Biblio (only if user can delete) -->
 {% if perms.fiches.delete_any_biblio or doc.creator == user and perms.fiches.delete_biblio %}
     {% url "bibliography-delete" doc.id as delete_url %}
-    <div class="tb_but" style="display: inline-block;">
+    {% comment %} TODO: clean ??? <div class="tb_but" style="display: inline-block;">
         <a href="{{ delete_url }}" title="Supprimer cette bibliographie">
             <img src="{% static 'css/images/delete.png' %}" 
                  width="16" height="16" alt="Supprimer" />
         </a>
-    </div>
+    </div> {% endcomment %}
 {% endif %}
-
-
 
     {{ block.super }}
 {% endblock %}
@@ -347,7 +348,7 @@
 	   {#<!--  Date  -->#} {#<!-- ##### Pour tous les type ##### -->#}
 	   <div class="field_wrap">
             <div class="field_label">Date</div>
-            <div class="field_value">{{ doc.date|default:"[s.d.]" }}</div>
+            <div class="field_value">{{ doc.date.year|default:"[s.d.]" }}</div>
             <div class="fixclear"></div>
        </div>
        {#<!-- Date 1ère Edition  -->#}
