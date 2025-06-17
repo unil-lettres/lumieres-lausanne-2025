@@ -566,7 +566,7 @@
 	
 	{#<!--  Notes  -->#}
     <div class="field_group">
-        {% for note in doc.notebiblio_set.all %}
+        {% for note in doc.notes.all %}
         {% if note|access_lazy:user %}
         <div class="field_wrap">
             <div class="field_label">
@@ -598,9 +598,9 @@
         </div>
     </div>  
     
-    {% if doc.coins %}<!-- COinS for Zotero -->
+    {% comment %} {% if doc.coins %}<!-- COinS for Zotero -->
         {{ doc.coins }}
-    {% endif %}
+    {% endif %} {% endcomment %}
 	
 	
 	

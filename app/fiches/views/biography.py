@@ -1,5 +1,3 @@
-# -*- coding: iso-8859-1 -*-
-#
 #    Copyright (C) 2010-2012 Universit� de Lausanne, RISET
 #    < http://www.unil.ch/riset/ >
 #
@@ -48,8 +46,9 @@ from fiches.utils import (
     remove_object_index,
 )
 from django.conf import settings
-from fiches.models.person.biography import NoteBiography
+from fiches.models.person.biography import BiographyForm, NoteBiography, NoteFormBiography, Profession, ProfessionForm, RelationForm, SocietyMembership, SocietyMembershipForm
 
+from django.db.models import Q
 
 # ===============================================================================
 # BIOGRAPHY
@@ -310,7 +309,7 @@ def create(request, person_id):
 @never_cache
 def edit(request, person_id, version=0, create_bio=False):
     if not request.user.has_perm("fiches.change_biography"):
-        return HttpResponseForbidden("Acc�s non autoris�")
+        return HttpResponseForbidden("Accès non autorisé")
 
     person = get_object_or_404(Person, pk=person_id)
 
@@ -333,11 +332,11 @@ def edit(request, person_id, version=0, create_bio=False):
         note_qs = NoteBiography.objects.filter(owner=bio)
         if not request.user.is_staff:
             note_qs = note_qs.filter(
-                models.Q(access_owner=request.user)
-                | (models.Q(access_groups__isnull=True) | models.Q(access_groups__in=request.user.usergroup_set.all()))
+                Q(access_owner=request.user)
+                | (Q(access_groups__isnull=True) | Q(access_groups__in=request.user.usergroup_set.all()))
             ).distinct()
         if not request.user.has_perm("fiches.can_publish_note"):
-            note_qs = note_qs.filter(~models.Q(access_public=True)).distinct()
+            note_qs = note_qs.filter(~Q(access_public=True)).distinct()
         return note_qs
 
     RelationFormset = inlineformset_factory(Biography, Relation, form=RelationForm, extra=1, fields="__all__")

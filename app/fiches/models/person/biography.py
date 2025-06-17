@@ -1,5 +1,3 @@
-# -*- coding: iso-8859-1 -*-
-#
 #    Copyright (C) 2010-2012 Université de Lausanne, RISET
 #    < http://www.unil.ch/riset/ >
 #
@@ -48,15 +46,15 @@ from fiches.widgets import PersonWidget
 # Nationality
 #===============================================================================
 class Nationality(models.Model):
-    name = models.CharField(_(u"Nationalité"), max_length=512)
+    name = models.CharField(_("Nationalité"), max_length=512)
 
     def __str__(self):
         return self.name
 
     class Meta:
         ordering = ['name']
-        verbose_name = _(u"Nationalité")
-        verbose_name_plural = _(u"Nationalités")
+        verbose_name = _("Nationalité")
+        verbose_name_plural = _("Nationalités")
         app_label = "fiches"
 
 
@@ -79,8 +77,8 @@ class Religion(models.Model):
 # BIOGRAPHIES
 #===============================================================================
 class Biography(models.Model):
-    FICHE_TYPE_NAME = _(u"Fiche biographique")
-    FICHE_TYPE_NAME_plural = _(u"Fiches biographiques")
+    FICHE_TYPE_NAME = _("Fiche biographique")
+    FICHE_TYPE_NAME_plural = _("Fiches biographiques")
 
     person = models.ForeignKey(
         "fiches.Person",
@@ -91,42 +89,42 @@ class Biography(models.Model):
     version = models.IntegerField(editable=False, default=0)
     valid = models.BooleanField(default=False)
 
-    birth_place = models.CharField(max_length=256, verbose_name=_(u"Lieu de naissance"), blank=True)
-    birth_date = models.DateField(verbose_name=_(u"Date de naissance"), blank=True, null=True)
+    birth_place = models.CharField(max_length=256, verbose_name=_("Lieu de naissance"), blank=True)
+    birth_date = models.DateField(verbose_name=_("Date de naissance"), blank=True, null=True)
     birth_date_f = models.CharField(max_length=15, blank=True)
-    birth_date_approx = models.BooleanField(_(u"Date de naissance approximative"), default=False)
+    birth_date_approx = models.BooleanField(_("Date de naissance approximative"), default=False)
 
-    death_place = models.CharField(max_length=256, verbose_name=_(u"Lieu de décès"), blank=True)
-    death_date = models.DateField(verbose_name=_(u"Date de décès"), blank=True, null=True)
+    death_place = models.CharField(max_length=256, verbose_name=_("Lieu de décès"), blank=True)
+    death_date = models.DateField(verbose_name=_("Date de décès"), blank=True, null=True)
     death_date_f = models.CharField(max_length=15, blank=True)
-    death_date_approx = models.BooleanField(_(u"Date de décès approximative"), default=False)
+    death_date_approx = models.BooleanField(_("Date de décès approximative"), default=False)
 
     religion = models.ForeignKey(
         Religion,
-        verbose_name=_(u"Confession"),
+        verbose_name=_("Confession"),
         blank=True,
         null=True,
         on_delete=models.SET_NULL
     )
-    origin = models.CharField(_(u"Lieu d'origine"), max_length=512, blank=True)
+    origin = models.CharField(_("Lieu d'origine"), max_length=512, blank=True)
     nationality = models.ForeignKey(
         Nationality,
-        verbose_name=_(u"Nationalité"),
+        verbose_name=_("Nationalité"),
         blank=True,
         null=True,
         on_delete=models.SET_NULL
     )
 
-    education = models.TextField(_(u"Formation"), help_text=_(u"NE PAS REMPLIR CE CHAMP!"), blank=True, null=True)
-    public_functions = RichTextField(verbose_name=_(u"Biographie"), config_name='note_ckeditor', blank=True, null=True)
-    comments_on_work = RichTextField(verbose_name=_(u"Commentaires sur son oeuvre/ses écrits"), config_name='note_ckeditor', blank=True, null=True)
+    education = models.TextField(_("Formation"), help_text=_("NE PAS REMPLIR CE CHAMP!"), blank=True, null=True)
+    public_functions = RichTextField(verbose_name=_("Biographie"), config_name='note_ckeditor', blank=True, null=True)
+    comments_on_work = RichTextField(verbose_name=_("Commentaires sur son oeuvre/ses écrits"), config_name='note_ckeditor', blank=True, null=True)
 
-    activity_places = models.TextField(_(u"Etat civil"), blank=True, null=True)
-    abroad_stays = models.TextField(_(u"Séjours à l'étranger"), help_text=_(u"NE PAS REMPLIR CE CHAMP!"), blank=True, null=True)
+    activity_places = models.TextField(_("Etat civil"), blank=True, null=True)
+    abroad_stays = models.TextField(_("Séjours à l'étranger"), help_text=_("NE PAS REMPLIR CE CHAMP!"), blank=True, null=True)
 
-    archive = RichTextField(verbose_name=_(u"Fonds d'archives"), config_name='note_ckeditor', max_length=512, blank=True)
+    archive = RichTextField(verbose_name=_("Fonds d'archives"), config_name='note_ckeditor', max_length=512, blank=True)
 
-    modification_date = models.DateTimeField(_(u"Dernière modification"), auto_now=True)
+    modification_date = models.DateTimeField(_("Dernière modification"), auto_now=True)
 
     def person_name(self):
         person_name = str(self.person)
@@ -158,8 +156,8 @@ class Biography(models.Model):
 
     class Meta:
         app_label = "fiches"
-        verbose_name = _(u"Fiche biographique")
-        verbose_name_plural = _(u"Fiches biographiques")
+        verbose_name = _("Fiche biographique")
+        verbose_name_plural = _("Fiches biographiques")
         permissions = (
             ("validate_biography", "Can validate"),
             ("browse_biography_versions", "Can browse versions"),
@@ -284,14 +282,14 @@ class Profession(models.Model):
         on_delete=models.CASCADE
     )
 
-    begin_date = models.DateField(verbose_name=_(u"Début"), blank=True, null=True)
+    begin_date = models.DateField(verbose_name=_("Début"), blank=True, null=True)
     begin_date_f = models.CharField(max_length=15, blank=True, null=True)
-    begin_date_approx = models.BooleanField(_(u"Date de début approximative"), default=False)
-    end_date = models.DateField(verbose_name=_(u"Fin"), blank=True, null=True)
+    begin_date_approx = models.BooleanField(_("Date de début approximative"), default=False)
+    end_date = models.DateField(verbose_name=_("Fin"), blank=True, null=True)
     end_date_f = models.CharField(max_length=15, blank=True, null=True)
-    end_date_approx = models.BooleanField(_(u"Date de fin approximative"), default=False)
-    position = models.CharField(_(u"Poste"), max_length=256)
-    place = models.CharField(_(u"Lieu"), max_length=256, blank=True)
+    end_date_approx = models.BooleanField(_("Date de fin approximative"), default=False)
+    position = models.CharField(_("Poste"), max_length=256)
+    place = models.CharField(_("Lieu"), max_length=256, blank=True)
 
     def get_formatted_dates(self):
         if self.begin_date:

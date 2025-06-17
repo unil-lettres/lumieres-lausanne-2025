@@ -129,9 +129,15 @@
             {% comment %} FIXME: contributors can exists XavierBeheydt/lumieres-lausanne#9 {% endcomment %}
             {% if contributors.directors and ref.document_type.id == 1 %}
                 {% if contributors.directors|length > 2 %}
-                    <span class="contributor contrib-director">{{ contributors.directors.0.name }}</span> <em> et alii</em> (dir.)
-                {% else %}
+                    {% comment %} <span class="contributor contrib-director">{{ contributors.directors.0.name }}</span> <em> et alii</em> (dir.) {% endcomment %}
+                {% if contributors.directors.0 %}
                     <span class="contributor contrib-director">{{ contributors.directors.0.name }}</span>
+                {% endif %}
+                {% else %}
+                    {% comment %} <span class="contributor contrib-director">{{ contributors.directors.0.name }}</span> {% endcomment %}
+                {% if contributors.directors.0 %}
+                    <span class="contributor contrib-director">{{ contributors.directors.0.name }}</span>
+                {% endif %}
                     {% if contributors.directors|length == 2 %}
                         <span class="contributor contrib-director"> et {{ contributors.directors.1.name }}</span>
                     {% endif %} 
