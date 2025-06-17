@@ -47,3 +47,12 @@ v2024/down:  ## Down the original version
 
 v2024/createsuperuser:  ## Create a superuser for the original version
 	$(V2024_DOCKER) exec -it app python manage.py createsuperuser
+
+V2024_DB_DUMP_FILE_TMP ?= $(CURDIR)/backup/sqldump/v2024/backup.sql
+v2024/db/backup:  ## Backup the database for the original version
+	$(V2024_DOCKER) exec -T db \
+		mysqldump -uroot -p${V2024_DB_PASSWORD} ${V2024_DB_NAME} > ${V2024_DB_DUMP_FILE_TMP}
+
+v2024/db/restore:  ## Restore the database for the original version
+	$(V2024_DOCKER) exec -T db \
+		mysql -uroot -p${V2024_DB_PASSWORD} ${V2024_DB_NAME} < ${V2024_DB_DUMP_FILE_TMP}
