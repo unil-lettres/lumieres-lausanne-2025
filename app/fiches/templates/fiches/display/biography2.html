@@ -20,6 +20,7 @@
    This copyright notice MUST APPEAR in all copies of the file.
 -->{% endcomment %}
 {% load i18n fiches_extras %}
+{% load static %}
 
 {% block page_title %}
     {{ bio.person_name|truncatewords:6|slice:"65" }}{{ block.super }}
@@ -78,8 +79,8 @@
     {% if user.is_authenticated and display_collector %}
     <div class="tb_but collection-add-obj">
         <a href="#" title="{% trans "Ajouter à la collection" %}">
-            <img src="{{ STATIC_URL }}css/images/tag_yellow.png"
-                 width="16" height="16" alt="{% trans "Ajouter à la collection" %}" />
+            <img src="{% static 'css/images/tag_yellow.png' %}" 
+                width="16" height="16" alt="Ajouter à la collection" />
         </a>
     </div>
     <div class="tb_sep"></div>
