@@ -42,6 +42,9 @@ include $(MAKE_SUB)/docs.mk
 # Migration part
 include $(MAKE_SUB)/db.mk
 
+# Previous Version Testing
+include $(MAKE_SUB)/v2024.mk
+
 
 # Recipes =====================================================================
 
