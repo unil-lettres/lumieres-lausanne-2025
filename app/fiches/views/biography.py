@@ -493,7 +493,7 @@ def validate(request, person_id, version=0):
     Validate the version of a biography
     """
     if not request.user.has_perm("fiches.validate_biography"):
-        return HttpResponseForbidden("Acc�s non autoris�")
+        return HttpResponseForbidden("Accès non autorisé")
 
     person = get_object_or_404(Person, pk=person_id)
     bio = person.get_biography(version=version)
