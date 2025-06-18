@@ -1,7 +1,8 @@
 {% extends "fiches/display/display_base2.html" %}
-{% comment %}<!--
+
+{% comment %}
    Copyright (C) 2010-2012 Université de Lausanne, RISET
-   < http://www.unil.ch/riset/ >
+   <http://www.unil.ch/riset/>
 
    This file is part of Lumières.Lausanne.
    Lumières.Lausanne is free software: you can redistribute it and/or modify
@@ -18,7 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
    This copyright notice MUST APPEAR in all copies of the file.
--->{% endcomment %}
+{% endcomment %}
+
 {% load i18n fiches_extras %}
 {% load static %}
 
@@ -31,7 +33,7 @@
         {% url 'biography-delete' bio.person.id bio.version as delete_url %}
     {% endif %}
     {{ block.super }}
-    <script type="text/javascript" src="{{ STATIC_URL }}js/highlighter.js"></script>
+    <script type="text/javascript" src="{% static 'js/highlighter.js' %}"></script>
     <script type="text/javascript">
     //{% if perms.fiches.validate_biography %}
         var validation_confirmation_msg = "{% blocktrans %}Vous allez valider cette version de la fiche. \nToutes les autres versions vont être supprimées.\n\nContinuer ?{% endblocktrans %}";
@@ -50,7 +52,6 @@
 {% endblock head_js %}
 
 {% block main_header_title %}Fiche biographique{% endblock main_header_title %}
-
 
 {% block status-message %}
     {% if user.is_authenticated %}
@@ -74,12 +75,11 @@
     {% endif %}
 {% endblock status-message %}
 
-
 {% block main_header_toolbar_buttons %}
     {% if user.is_authenticated and display_collector %}
     <div class="tb_but collection-add-obj">
         <a href="#" title="{% trans "Ajouter à la collection" %}">
-            <img src="{% static 'css/images/tag_yellow.png' %}" 
+            <img src="{% static 'css/images/tag_yellow.png' %}"
                 width="16" height="16" alt="Ajouter à la collection" />
         </a>
     </div>
@@ -92,12 +92,12 @@
             {% if not version_info.last_version %}
                 <a href="{% url 'biography-display' bio.person.id version_info.nb_versions|substract:"1" %}"
                    title="{% trans "Première version" %}">
-                    <img src="{{ STATIC_URL }}css/images/resultset_first.png" width="16" height="16"
+                    <img src="{% static 'css/images/resultset_first.png' %}" width="16" height="16"
                          alt="{% trans "Première version" %}" />
                 </a>
             {% else %}
                 <span class="disabled-but">
-                    <img src="{{ STATIC_URL }}css/images/resultset_first.png" width="16" height="16"
+                    <img src="{% static 'css/images/resultset_first.png' %}" width="16" height="16"
                          alt="{% trans "Première version" %}" />
                 </span>
             {% endif %}
@@ -107,12 +107,12 @@
             {% if not version_info.last_version %}
                 <a href="{% url 'biography-display' bio.person.id bio.version|add:"1" %}"
                    title="{% trans "Version précédente" %}">
-                    <img src="{{ STATIC_URL }}css/images/resultset_previous.png" width="16" height="16"
+                    <img src="{% static 'css/images/resultset_previous.png' %}" width="16" height="16"
                          alt="{% trans "Version précédente" %}" />
                 </a>
             {% else %}
                 <span class="disabled-but">
-                    <img src="{{ STATIC_URL }}css/images/resultset_previous.png" width="16" height="16"
+                    <img src="{% static 'css/images/resultset_previous.png' %}" width="16" height="16"
                          alt="{% trans "Pas de version précédente" %}" />
                 </span>
             {% endif %}
@@ -123,12 +123,12 @@
             {% if bio.version != 0 %}
                 <a href="{% url 'biography-display' bio.person.id bio.version|add:"-1" %}"
                    title="{% trans "Version suivante" %}">
-                    <img src="{{ STATIC_URL }}css/images/resultset_next.png" width="16" height="16"
+                    <img src="{% static 'css/images/resultset_next.png' %}" width="16" height="16"
                          alt="{% trans "Version suivante" %}" />
                 </a>
             {% else %}
                 <span class="disabled-but">
-                    <img src="{{ STATIC_URL }}css/images/resultset_next.png" width="16" height="16"
+                    <img src="{% static 'css/images/resultset_next.png' %}" width="16" height="16"
                          alt="{% trans "Pas de Version suivante" %}" />
                 </span>
             {% endif %}
@@ -138,12 +138,12 @@
             {% if bio.version != 0 %}
                 <a href="{% url 'biography-display' bio.person.id "0" %}"
                    title="{% trans "Dernière Version" %}">
-                    <img src="{{ STATIC_URL }}css/images/resultset_last.png" width="16" height="16"
+                    <img src="{% static 'css/images/resultset_last.png' %}" width="16" height="16"
                          alt="{% trans "Dernière version" %}" />
                 </a>
             {% else %}
                 <span class="disabled-but">
-                    <img src="{{ STATIC_URL }}css/images/resultset_last.png" width="16" height="16"
+                    <img src="{% static 'css/images/resultset_last.png' %}" width="16" height="16"
                          alt="{% trans "Dernière version" %}" />
                 </span>
             {% endif %}
@@ -154,7 +154,7 @@
                 <a href="{% url 'biography-validate' bio.person.id bio.version %}"
                    title="{% trans "Valider la fiche" %}"
                    onclick="return confirm(validation_confirmation_msg)">
-                    <img src="{{ STATIC_URL }}css/images/tick.png" width="16" height="16"
+                    <img src="{% static 'css/images/tick.png' %}" width="16" height="16"
                          alt="{% trans "Valider la fiche" %}" />
                 </a>
             </div>
@@ -172,7 +172,6 @@
 
     {{ block.super }}
 {% endblock main_header_toolbar_buttons %}
-
 
 {% block main_content %}
     {{ block.super }}
