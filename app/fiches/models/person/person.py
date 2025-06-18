@@ -1,6 +1,7 @@
 # models/person.py
 
 import re
+from django.conf import LazySettings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.urls import reverse
@@ -10,19 +11,42 @@ from collections import OrderedDict
 
 from fiches.models.person.relation import Relation
 
+settings = LazySettings()
+
+
 class ModernPeople(models.Manager):
     def get_queryset(self):
         return super().get_queryset().filter(modern=True)
 
+
 class PastPeople(models.Manager):
     def get_queryset(self):
         return super().get_queryset().filter(modern=False)
+
 
 class Person(models.Model):
     name = models.CharField(_("Nom"), max_length=215)
     # Replace NullBooleanField with BooleanField(null=True, blank=True)
     modern = models.BooleanField(_("Personne littérature secondaire"), null=True, blank=True)
     may_have_biography = models.BooleanField(_("Peut avoir une biographie"), default=True)
+
+    def renum_bio(self, dry_run=False, verbose=False):
+        """
+        Renumerotation of all biography versions for this person.
+        The numeratation is done in reverse order of the id. The lower id gets the highest version number.
+        The higher id value ( the last biography version created ) has a version number of '0'
+        """
+        nb_bio = self.biography_set.all().count()
+        i = 0
+        for b in self.biography_set.all().order_by("pk"):
+            i += 1
+            if settings.DEBUG:
+                old_vers = b.version
+            b.version = nb_bio - i
+            # if settings.DEBUG:
+            #     dbg_logger.debug("bio.id <%s>: old<%s> -> <new>%s" % (b.id, old_vers, b.version))
+            if not dry_run:
+                b.save()
 
     # Managers
     people = models.Manager()
@@ -33,7 +57,7 @@ class Person(models.Model):
     class Meta:
         verbose_name = _("Personne")
         verbose_name_plural = _("Personnes")
-        ordering = ['name']
+        ordering = ["name"]
         app_label = "fiches"
 
     def __str__(self):
@@ -49,35 +73,36 @@ class Person(models.Model):
             out += "-"
             if bio.death_date:
                 out += str(bio.death_date.year)
-            out += ']'
+            out += "]"
         out += f"|{self.pk}"
         return out
 
     def get_absolute_url(self):
-        return reverse('biography-display', args=[str(self.id)])
+        return reverse("biography-display", args=[str(self.id)])
 
     def has_biography(self):
         # Use the related manager instead of importing Biography
         return self.biography_set.exists()
+
     has_biography.short_description = _("Biographie ?")
     has_biography.boolean = True
 
-    def _get_name_parts(self, part='first'):
-        name_parts = re.compile(r',\s*').split(self.name)
+    def _get_name_parts(self, part="first"):
+        name_parts = re.compile(r",\s*").split(self.name)
         if len(name_parts) < 2:
             name_parts.append("")
-        if part == 'first':
+        if part == "first":
             return name_parts[0]
-        elif part == 'last':
+        elif part == "last":
             return name_parts[1]
         else:
             raise ValueError("Unattended part value in Person._get_name_parts")
 
     def get_first_name(self):
-        return self._get_name_parts('first')
+        return self._get_name_parts("first")
 
     def get_last_name(self):
-        return self._get_name_parts('last')
+        return self._get_name_parts("last")
 
     def get_biography(self, version=0):
         """
@@ -100,7 +125,7 @@ class Person(models.Model):
             return self.biography_set.get(version=version)
         except models.ObjectDoesNotExist:
             # If no biography with the given version, return the last created
-            latest_bio = self.biography_set.all().order_by('-id').first()
+            latest_bio = self.biography_set.all().order_by("-id").first()
             return latest_bio
 
     def get_valid_biography(self, version=0):
@@ -109,12 +134,10 @@ class Person(models.Model):
         Return None if no valid biography found, but no errors
         """
         try:
-            bio = list(self.biography_set.filter(valid=True).order_by('id')).pop()
+            bio = list(self.biography_set.filter(valid=True).order_by("id")).pop()
         except:
             bio = None
         return bio
-
-
 
     def get_relations(self, only_people=None, exclude_people=None, only_relations=None):
         """
@@ -133,11 +156,10 @@ class Person(models.Model):
 
         # 1) Base queryset filtering by person, valid or version=0
         qs = (
-            Relation.objects
-            .filter(bio__person=self)
+            Relation.objects.filter(bio__person=self)
             .filter(Q(bio__valid=True) | Q(bio__version=0))
-            .select_related('relation_type', 'related_person')
-            .order_by('relation_type__sorting', 'related_person_id', 'id')
+            .select_related("relation_type", "related_person")
+            .order_by("relation_type__sorting", "related_person_id", "id")
         )
 
         # 2) Filter if needed
@@ -158,7 +180,6 @@ class Person(models.Model):
                 results.append(r)
 
         return results
-
 
     def get_reverse_relations(self, only_people=None, exclude_people=None, only_relations=None):
         """
@@ -188,8 +209,8 @@ class Person(models.Model):
         # - Order by relation_type.sorting (then by ids if needed)
         qs = (
             Relation.objects.filter(filters)
-            .select_related('bio', 'bio__person', 'relation_type')
-            .order_by('relation_type__sorting', 'bio_id', 'related_person_id', 'id')
+            .select_related("bio", "bio__person", "relation_type")
+            .order_by("relation_type__sorting", "bio_id", "related_person_id", "id")
         )
 
         # Now deduplicate in Python by (bio_id, related_person_id, relation_type_id)
@@ -202,7 +223,3 @@ class Person(models.Model):
                 results.append(rel)
 
         return results
-
-
-
-
