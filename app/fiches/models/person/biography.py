@@ -25,7 +25,8 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.dateformat import format
 from django.apps import apps
 from fiches.models.misc.notes import NoteBase
-#from fiches.fields import PersonField, PersonWidget
+
+# from fiches.fields import PersonField, PersonWidget
 from fiches.widgets import PersonWidget
 
 from fiches.constants import DATE_INPUT_FORMATS, DATE_DISPLAY_FORMAT
@@ -38,13 +39,14 @@ from fiches.models.person.relation import Relation, RelationType
 from fiches.models.person import Person
 
 # Import Relation & RelationType from the new file:
-#from fiches.models.person.relation import Relation, RelationType
+# from fiches.models.person.relation import Relation, RelationType
 
 from fiches.widgets import PersonWidget
 
-#===============================================================================
+
+# ===============================================================================
 # Nationality
-#===============================================================================
+# ===============================================================================
 class Nationality(models.Model):
     name = models.CharField(_("Nationalité"), max_length=512)
 
@@ -52,15 +54,15 @@ class Nationality(models.Model):
         return self.name
 
     class Meta:
-        ordering = ['name']
+        ordering = ["name"]
         verbose_name = _("Nationalité")
         verbose_name_plural = _("Nationalités")
         app_label = "fiches"
 
 
-#===============================================================================
+# ===============================================================================
 # Religion
-#===============================================================================
+# ===============================================================================
 class Religion(models.Model):
     name = models.CharField(_("Confession"), max_length=256)
     sorting = models.IntegerField(default=0)
@@ -69,23 +71,18 @@ class Religion(models.Model):
         return self.name
 
     class Meta:
-        ordering = ['sorting']
+        ordering = ["sorting"]
         app_label = "fiches"
 
 
-#===============================================================================
+# ===============================================================================
 # BIOGRAPHIES
-#===============================================================================
+# ===============================================================================
 class Biography(models.Model):
     FICHE_TYPE_NAME = _("Fiche biographique")
     FICHE_TYPE_NAME_plural = _("Fiches biographiques")
 
-    person = models.ForeignKey(
-        "fiches.Person",
-        verbose_name=_("Personne"),
-        editable=False,
-        on_delete=models.CASCADE
-    )
+    person = models.ForeignKey("fiches.Person", verbose_name=_("Personne"), editable=False, on_delete=models.CASCADE)
     version = models.IntegerField(editable=False, default=0)
     valid = models.BooleanField(default=False)
 
@@ -100,29 +97,27 @@ class Biography(models.Model):
     death_date_approx = models.BooleanField(_("Date de décès approximative"), default=False)
 
     religion = models.ForeignKey(
-        Religion,
-        verbose_name=_("Confession"),
-        blank=True,
-        null=True,
-        on_delete=models.SET_NULL
+        Religion, verbose_name=_("Confession"), blank=True, null=True, on_delete=models.SET_NULL
     )
     origin = models.CharField(_("Lieu d'origine"), max_length=512, blank=True)
     nationality = models.ForeignKey(
-        Nationality,
-        verbose_name=_("Nationalité"),
-        blank=True,
-        null=True,
-        on_delete=models.SET_NULL
+        Nationality, verbose_name=_("Nationalité"), blank=True, null=True, on_delete=models.SET_NULL
     )
 
     education = models.TextField(_("Formation"), help_text=_("NE PAS REMPLIR CE CHAMP!"), blank=True, null=True)
-    public_functions = RichTextField(verbose_name=_("Biographie"), config_name='note_ckeditor', blank=True, null=True)
-    comments_on_work = RichTextField(verbose_name=_("Commentaires sur son oeuvre/ses écrits"), config_name='note_ckeditor', blank=True, null=True)
+    public_functions = RichTextField(verbose_name=_("Biographie"), config_name="note_ckeditor", blank=True, null=True)
+    comments_on_work = RichTextField(
+        verbose_name=_("Commentaires sur son oeuvre/ses écrits"), config_name="note_ckeditor", blank=True, null=True
+    )
 
     activity_places = models.TextField(_("Etat civil"), blank=True, null=True)
-    abroad_stays = models.TextField(_("Séjours à l'étranger"), help_text=_("NE PAS REMPLIR CE CHAMP!"), blank=True, null=True)
+    abroad_stays = models.TextField(
+        _("Séjours à l'étranger"), help_text=_("NE PAS REMPLIR CE CHAMP!"), blank=True, null=True
+    )
 
-    archive = RichTextField(verbose_name=_("Fonds d'archives"), config_name='note_ckeditor', max_length=512, blank=True)
+    archive = RichTextField(
+        verbose_name=_("Fonds d'archives"), config_name="note_ckeditor", max_length=512, blank=True
+    )
 
     modification_date = models.DateTimeField(_("Dernière modification"), auto_now=True)
 
@@ -152,7 +147,7 @@ class Biography(models.Model):
     from django.urls import reverse
 
     def get_absolute_url(self):
-        return reverse('biography-display', args=[str(self.person_id)])
+        return reverse("biography-display", args=[str(self.person_id)])
 
     class Meta:
         app_label = "fiches"
@@ -161,43 +156,51 @@ class Biography(models.Model):
         permissions = (
             ("validate_biography", "Can validate"),
             ("browse_biography_versions", "Can browse versions"),
-            ("access_unvalidated_biography", "Can see not validated Biography")
+            ("access_unvalidated_biography", "Can see not validated Biography"),
         )
 
 
 class BiographyForm(ModelForm):
-    birth_place = forms.CharField(label=_(u"Lieu"), required=False)
-    birth_date = forms.DateField(widget=forms.DateInput(format=DATE_DISPLAY_FORMAT), input_formats=DATE_INPUT_FORMATS, label=_(u"Date"), required=False)
-    birth_date_f = forms.CharField(widget=forms.HiddenInput(attrs={'class': 'vardateformat'}), required=False)
+    birth_place = forms.CharField(label=_("Lieu"), required=False)
+    birth_date = forms.DateField(
+        widget=forms.DateInput(format=DATE_DISPLAY_FORMAT),
+        input_formats=DATE_INPUT_FORMATS,
+        label=_("Date"),
+        required=False,
+    )
+    birth_date_f = forms.CharField(widget=forms.HiddenInput(attrs={"class": "vardateformat"}), required=False)
 
-    death_place = forms.CharField(label=_(u"Lieu"), required=False)
-    death_date = forms.DateField(widget=forms.DateInput(format=DATE_DISPLAY_FORMAT), input_formats=DATE_INPUT_FORMATS, label=_(u"Date"), required=False)
-    death_date_f = forms.CharField(widget=forms.HiddenInput(attrs={'class': 'vardateformat'}), required=False)
+    death_place = forms.CharField(label=_("Lieu"), required=False)
+    death_date = forms.DateField(
+        widget=forms.DateInput(format=DATE_DISPLAY_FORMAT),
+        input_formats=DATE_INPUT_FORMATS,
+        label=_("Date"),
+        required=False,
+    )
+    death_date_f = forms.CharField(widget=forms.HiddenInput(attrs={"class": "vardateformat"}), required=False)
 
     def person_name(self):
         return self.instance.person_name()
 
     class Meta:
         model = Biography
-        fields = '__all__'
-        widgets = {
-            'archive': forms.Textarea()
-        }
+        fields = "__all__"
+        widgets = {"archive": forms.Textarea()}
 
     class Media:
         css = {
-            'all': ('css/jquery.autocomplete.css',),
+            "all": ("css/jquery.autocomplete.css",),
         }
         js = (
-            'js/lib/jquery/jquery.bgiframe.min.js',
-            'js/lib/jquery/jquery.ajaxQueue.js',
-            'js/lib/jquery/jquery.autocomplete.min.js'
+            "js/lib/jquery/jquery.bgiframe.min.js",
+            "js/lib/jquery/jquery.ajaxQueue.js",
+            "js/lib/jquery/jquery.autocomplete.min.js",
         )
 
 
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 #    Note Biographie
-#------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 class NoteBiography(NoteBase):
     owner = models.ForeignKey("fiches.Biography", on_delete=models.CASCADE)
 
@@ -208,10 +211,7 @@ class NoteBiography(NoteBase):
 class NoteFormBiography(NoteFormBase):
     class Meta:
         model = NoteBiography
-        fields = '__all__'
-
-
-
+        fields = "__all__"
 
 
 class ReverseRelation(Relation):
@@ -221,6 +221,7 @@ class ReverseRelation(Relation):
 
     Voir aussi Biography.reverse_relations.__doc__
     """
+
     class Meta:
         app_label = "fiches"
         proxy = True
@@ -235,29 +236,19 @@ class ReverseRelation(Relation):
             return str(e)
 
 
-
-
 class RelationForm(ModelForm):
-    related_person = forms.ModelChoiceField(
-        queryset=Person.objects.all(),
-        label='',  # or "Personne"
-        required=False
-    )
-    relation_type = forms.ModelChoiceField(
-        queryset=RelationType.objects.all(),
-        required=False
-    )
+    related_person = forms.ModelChoiceField(queryset=Person.objects.all(), label="", required=False)  # or "Personne"
+    relation_type = forms.ModelChoiceField(queryset=RelationType.objects.all(), required=False)
 
     class Meta:
         model = Relation
-        fields = '__all__'
+        fields = "__all__"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Attach PersonWidget to the 'related_person' field so it uses autocomplete
-        self.fields['related_person'].widget = PersonWidget(
-            fk_field=Relation._meta.get_field('related_person'),
-            attrs={'placeholder': 'nom, prénom'}
+        self.fields["related_person"].widget = PersonWidget(
+            fk_field=Relation._meta.get_field("related_person"), attrs={"placeholder": "nom, prénom"}
         )
 
     def clean(self):
@@ -272,15 +263,11 @@ class RelationForm(ModelForm):
         return cleaned_data
 
 
-
-#===============================================================================
+# ===============================================================================
 # PROFESSION
-#===============================================================================
+# ===============================================================================
 class Profession(models.Model):
-    bio = models.ForeignKey(
-        "fiches.Biography",
-        on_delete=models.CASCADE
-    )
+    bio = models.ForeignKey("fiches.Biography", on_delete=models.CASCADE)
 
     begin_date = models.DateField(verbose_name=_("Début"), blank=True, null=True)
     begin_date_f = models.CharField(max_length=15, blank=True, null=True)
@@ -293,14 +280,14 @@ class Profession(models.Model):
 
     def get_formatted_dates(self):
         if self.begin_date:
-            begin_date = format(self.begin_date, self.begin_date_f.replace('%', '').replace('-', '.'))
+            begin_date = format(self.begin_date, self.begin_date_f.replace("%", "").replace("-", "."))
         else:
             begin_date = "?"
         if self.begin_date_approx:
             begin_date = "v. %s" % begin_date
 
         if self.end_date:
-            end_date = format(self.end_date, self.end_date_f.replace('%', '').replace('-', '.'))
+            end_date = format(self.end_date, self.end_date_f.replace("%", "").replace("-", "."))
         else:
             end_date = "?"
         if self.end_date_approx:
@@ -313,53 +300,58 @@ class Profession(models.Model):
 
     class Meta:
         app_label = "fiches"
-        ordering = ('begin_date', 'end_date')
+        ordering = ("begin_date", "end_date")
 
 
 class ProfessionForm(ModelForm):
-    begin_date = forms.DateField(widget=forms.DateInput(format=DATE_DISPLAY_FORMAT), input_formats=DATE_INPUT_FORMATS, label=_(u"Début"), required=False)
-    begin_date_f = forms.CharField(widget=forms.HiddenInput(attrs={'class': 'vardateformat'}), required=False)
+    begin_date = forms.DateField(
+        widget=forms.DateInput(format=DATE_DISPLAY_FORMAT),
+        input_formats=DATE_INPUT_FORMATS,
+        label=_("Début"),
+        required=False,
+    )
+    begin_date_f = forms.CharField(widget=forms.HiddenInput(attrs={"class": "vardateformat"}), required=False)
     begin_date_approx = forms.BooleanField(required=False)
-    end_date = forms.DateField(widget=forms.DateInput(format=DATE_DISPLAY_FORMAT), input_formats=DATE_INPUT_FORMATS, label=_(u"Fin"), required=False)
-    end_date_f = forms.CharField(widget=forms.HiddenInput(attrs={'class': 'vardateformat'}), required=False)
+    end_date = forms.DateField(
+        widget=forms.DateInput(format=DATE_DISPLAY_FORMAT),
+        input_formats=DATE_INPUT_FORMATS,
+        label=_("Fin"),
+        required=False,
+    )
+    end_date_f = forms.CharField(widget=forms.HiddenInput(attrs={"class": "vardateformat"}), required=False)
     end_date_approx = forms.BooleanField(required=False)
-    position = forms.CharField(label=_(u"Poste"))
-    place = forms.CharField(widget=forms.TextInput(attrs={'class': 'profession-place'}), label=_(u"Lieu"), required=False)
+    position = forms.CharField(label=_("Poste"))
+    place = forms.CharField(
+        widget=forms.TextInput(attrs={"class": "profession-place"}), label=_("Lieu"), required=False
+    )
 
 
-#===============================================================================
+# ===============================================================================
 # SocietyMembership
-#===============================================================================
+# ===============================================================================
 class SocietyMembership(models.Model):
-    bio = models.ForeignKey(
-        "fiches.Biography",
-        on_delete=models.CASCADE
-    )
-    society = models.ForeignKey(
-        "fiches.Society",
-        verbose_name=_(u"Société"),
-        on_delete=models.CASCADE
-    )
-    begin_date = models.DateField(verbose_name=_(u"Début"), blank=True, null=True)
+    bio = models.ForeignKey("fiches.Biography", on_delete=models.CASCADE)
+    society = models.ForeignKey("fiches.Society", verbose_name=_("Société"), on_delete=models.CASCADE)
+    begin_date = models.DateField(verbose_name=_("Début"), blank=True, null=True)
     begin_date_f = models.CharField(max_length=15, blank=True, null=True)
-    begin_date_approx = models.BooleanField(_(u"Date de début approximative"), default=False)
-    end_date = models.DateField(verbose_name=_(u"Fin"), blank=True, null=True)
+    begin_date_approx = models.BooleanField(_("Date de début approximative"), default=False)
+    end_date = models.DateField(verbose_name=_("Fin"), blank=True, null=True)
     end_date_f = models.CharField(max_length=15, blank=True, null=True)
-    end_date_approx = models.BooleanField(_(u"Date de fin approximative"), default=False)
+    end_date_approx = models.BooleanField(_("Date de fin approximative"), default=False)
 
     def get_formatted_dates(self):
         if self.begin_date:
-            begin_date = format(self.begin_date, self.begin_date_f.replace('%', '').replace('-', '.'))
+            begin_date = format(self.begin_date, self.begin_date_f.replace("%", "").replace("-", "."))
         else:
             begin_date = None
         if self.begin_date_approx and begin_date is not None:
             begin_date = "v. %s" % begin_date
 
         if self.end_date:
-            end_date = format(self.end_date, self.end_date_f.replace('%', '').replace('-', '.'))
+            end_date = format(self.end_date, self.end_date_f.replace("%", "").replace("-", "."))
         else:
-            end_date = '?'
-        if self.end_date_approx and end_date != '?':
+            end_date = "?"
+        if self.end_date_approx and end_date != "?":
             end_date = "v. %s" % end_date
 
         if begin_date and end_date:
@@ -380,21 +372,31 @@ class SocietyMembership(models.Model):
 
 from fiches.models.misc.society import Society
 
+
 class SocietyMembershipForm(ModelForm):
     society = forms.ModelChoiceField(
-        queryset=Society.objects.all(),
-        empty_label=_("------ Sélectionner une société/académie -----")
+        queryset=Society.objects.all(), empty_label=_("------ Sélectionner une société/académie -----")
     )
-    begin_date = forms.DateField(widget=forms.DateInput(format=DATE_DISPLAY_FORMAT), input_formats=DATE_INPUT_FORMATS, label=_("du"), required=False)
-    begin_date_f = forms.CharField(widget=forms.HiddenInput(attrs={'class': 'vardateformat'}), required=False)
+    begin_date = forms.DateField(
+        widget=forms.DateInput(format=DATE_DISPLAY_FORMAT),
+        input_formats=DATE_INPUT_FORMATS,
+        label=_("du"),
+        required=False,
+    )
+    begin_date_f = forms.CharField(widget=forms.HiddenInput(attrs={"class": "vardateformat"}), required=False)
     begin_date_approx = forms.BooleanField(required=False)
-    end_date = forms.DateField(widget=forms.DateInput(format=DATE_DISPLAY_FORMAT), input_formats=DATE_INPUT_FORMATS, label=_("au"), required=False)
-    end_date_f = forms.CharField(widget=forms.HiddenInput(attrs={'class': 'vardateformat'}), required=False)
+    end_date = forms.DateField(
+        widget=forms.DateInput(format=DATE_DISPLAY_FORMAT),
+        input_formats=DATE_INPUT_FORMATS,
+        label=_("au"),
+        required=False,
+    )
+    end_date_f = forms.CharField(widget=forms.HiddenInput(attrs={"class": "vardateformat"}), required=False)
     end_date_approx = forms.BooleanField(required=False)
 
     def clean(self):
         cleaned_data = super().clean()
         if cleaned_data.get("society") is None:
-            for k in ('begin_date', 'begin_date_f', 'begin_date_approx', 'end_date', 'end_date_f', 'end_date_approx'):
+            for k in ("begin_date", "begin_date_f", "begin_date_approx", "end_date", "end_date_f", "end_date_approx"):
                 cleaned_data.pop(k, None)
         return cleaned_data
