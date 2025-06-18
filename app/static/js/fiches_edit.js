@@ -25,7 +25,7 @@
  */
 
 var DATE_FORMAT = DATE_FORMAT || 'dmy',
-	DATE_SEPARATOR = DATE_SEPARATOR || '-';
+	DATE_SEPARATOR = DATE_SEPARATOR || '/';
 
 var fiches_edit = $.extend({}, fiches_edit, {
 	has_changed: false
@@ -177,7 +177,7 @@ var fiches_edit = $.extend({}, fiches_edit, {
         format_node = $(format_node);
 		if (format_node.data('vardateformat') == 'inited') { return; }
 		
-                // Normalized format
+		// Normalized format
         var format = String(format_node.val()).toLowerCase().replace(/[^ymd]+/ig,''),
             date_node = $("input[name='" + format_node.attr("name").slice(0,-2) + "']"),
             output_val = [],
@@ -193,6 +193,7 @@ var fiches_edit = $.extend({}, fiches_edit, {
             d,c;
         
         // Apply initial formatting to the date
+		console.log("DATE_FORMAT : " + DATE_FORMAT);
         for (d in DATE_FORMAT) {
             c = DATE_FORMAT[d];
             if (format.indexOf(c) !== -1 ) {
