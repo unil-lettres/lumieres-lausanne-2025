@@ -32,7 +32,7 @@
 		    collection_edit_url_base = '{% url 'collection-edit' "#" %}',
 		    collection_delete_url_base = '{% url 'collection-delete' "#" %}';
 	</script>
-	<script type="text/javascript" src="{{ STATIC_URL }}js/collection.js"></script>
+	<script type="text/javascript" src="{% static 'js/collection.js' %}"></script>
 	<script type="text/javascript">
 		// Init collection.urls
 		try{

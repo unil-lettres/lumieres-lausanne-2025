@@ -18,13 +18,13 @@
 
    This copyright notice MUST APPEAR in all copies of the file.
 -->{% endcomment %}
-{% load i18n %}
+{% load i18n static %}
 
 {% if user.is_authenticated and display_collector %}
 {% comment %}<!-- 
  <style type="text/css">
-	.collector-list-add-button { background: url({{ STATIC_URL }}css/images/add_light.png) no-repeat 0 0; width: 16px; height: 16px; float:left; margin-right: 5px; cursor: pointer; }
-	.collector-list-add-button:hover { background-image: url({{ STATIC_URL }}css/images/add.png); }
+	.collector-list-add-button { background: url({% static 'css/images/add_light.png' %}) no-repeat 0 0; width: 16px; height: 16px; float:left; margin-right: 5px; cursor: pointer; }
+	.collector-list-add-button:hover { background-image: url({% static 'css/images/add.png' %}); }
 </style>
 -->{% endcomment %}
 <script type="text/javascript">

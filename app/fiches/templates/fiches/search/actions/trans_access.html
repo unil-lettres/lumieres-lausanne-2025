@@ -20,6 +20,7 @@
    This copyright notice MUST APPEAR in all copies of the file.
 -->{% endcomment %}
 {% load fiches_extras i18n %}
+{% load static %}
 
 {% block page_title %}Changer les accès aux transcriptions{% endblock page_title %}
 
@@ -39,8 +40,8 @@
 {% endblock head_css %}
 
 {% block main_header_toolbar_buttons %}
-<div class="tb_but tb_but_text save-continue"><a href="#" onclick="return $('form.transcription').submit();" title="Assigner"><img src="{{ STATIC_URL }}css/images/disk.png" width="16" height="16" /><span>Assigner</span></a></div>
-<div class="tb_but tb_but_text cancel"><a href="{% url 'search-biblio' %}?{{ qswoaction }}" title="Annuler" ><img src="{{ STATIC_URL }}css/images/bullet_cross_black.png" width="16" height="16" /><span>Annuler</span></a></div>
+<div class="tb_but tb_but_text save-continue"><a href="#" onclick="return $('form.transcription').submit();" title="Assigner"><img src="{% static 'css/images/disk.png' %}" width="16" height="16" /><span >Assigner</span ></a ></div >
+<div class="tb_but tb_but_text cancel"><a href="{% url 'search-biblio' %}?{{ qswoaction }}" title="Annuler" ><img src="{% static 'css/images/bullet_cross_black.png' %}" width="16" height="16" /><span >Annuler</span ></a ></div >
 {% endblock main_header_toolbar_buttons %}
 
 {% block main_content %}

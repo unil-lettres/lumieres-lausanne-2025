@@ -40,7 +40,7 @@
 </div>
 {% if perms.fiches.change_any_transcription %}
 <div class="toolbar">
-	<div class="tb_but tb_but_text trans-access-change"><a href="?search_action=trans_access&{{ qs }}" title="Changer les accès aux transcriptions"><img src="{{ STATIC_URL }}css/images/world_edit.png" width="16" height="16" /><span>Changer accès trans.</span></a></div>
+	<div class="tb_but tb_but_text trans-access-change"><a href="?search_action=trans_access&{{ qs }}" title="Changer les accès aux transcriptions"><img src="{% static 'css/images/world_edit.png' %}" width="16" height="16" /><span >Changer accès trans.</span ></a ></div >
 	<div class="tb_right_cap"></div>
 </div>
 {% endif %}

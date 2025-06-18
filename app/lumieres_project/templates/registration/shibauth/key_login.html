@@ -19,9 +19,11 @@
 
    This copyright notice MUST APPEAR in all copies of the file.
 -->{% endcomment %}
+{% load static %}
+
 {% block head_css %}
     {{ block.super }}
-    <link type="text/css" rel="stylesheet" href="{{ STATIC_URL }}css/switchaai.css">
+    <link type="text/css" rel="stylesheet" href="{% static 'css/switchaai.css' %}">
 {% endblock %}
 
 {% block main_header_title %}Login AAI - Clé d'inscription{% endblock %}

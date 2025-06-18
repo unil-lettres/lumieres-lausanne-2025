@@ -63,7 +63,6 @@
 		        </script>-->
 		        <p class="aai">Service de connexion pour les utilisateurs des hautes écoles qui sont <a class="aai" href="javascript:showParticipants()">membres de la fédération SWITCHaai</a>.</p>
 		        <div class="aai_login_button">
-		            {% comment %} <a class="aai" href="{% url 'shib-login' %}"><img src="{{ STATIC_URL }}aai_images/buttonflat.gif" alt="login" border="0"></a> {% endcomment %}
 					<a class="aai" href="{{ request.path }}"><img src="{% static 'aai_images/buttonflat.gif' %}" alt="login" border="0"></a>
 		        </div>
 		    </div>
@@ -135,7 +134,7 @@
 		            </tbody></table>
 		        </div>
 		        <div class="aai_login_button">
-		            <a class="aai" href="http://www.switch.ch/aai/"><img src="{{ STATIC_URL }}aai_images/login.png" alt="login" border="0"></a>
+					<a class="aai" href="http://www.switch.ch/aai/"><img src="{% static 'aai_images/login.png' %}" alt="login" border="0"></a >
 		        </div-->
 				
 		    </div>

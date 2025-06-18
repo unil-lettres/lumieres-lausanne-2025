@@ -19,9 +19,11 @@
 
    This copyright notice MUST APPEAR in all copies of the file.
 -->{% endcomment %}
+{% load static %}
+
 {% block head_css %}
     {{ block.super }}
-	<link type="text/css" rel="stylesheet" href="{{ STATIC_URL }}css/switchaai.css">
+	<link type="text/css" rel="stylesheet" href="{% static 'css/switchaai.css' %}">
 {% endblock %}
 
 {% block main_header_title %}Login{% endblock %}
@@ -99,7 +101,7 @@
 		            </tbody></table>
 		        </div>
 		        <div class="aai_login_button">
-		            <a class="aai" href="http://www.switch.ch/aai/"><img src="{{ STATIC_URL }}aai_images/login.png" alt="login" border="0"></a>
+		            <a class="aai" href="http://www.switch.ch/aai/"><img src="{% static 'aai_images/login.png' %}" alt="login" border="0"></a>
 		        </div-->
 				
 		    </div>

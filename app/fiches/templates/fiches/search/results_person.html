@@ -21,6 +21,7 @@
 -->{% endcomment %}
 {% load fiches_extras pagination_tags %}
 {% block results_content %}
+{% load static %}
 
 {% autopaginate object_list %}
 <style>
@@ -38,7 +39,7 @@
 			journal_title  = $("#search-filter-applied .filter-journal_articles :selected").val() || "";
 		
 		$(obj).hide().parent().append($('<img>', {
-			src: "{{ STATIC_URL }}css/indicator.gif",
+			src: "{% static 'css/indicator.gif' %}",
 			width: 16, height: 16
 		}))
 		.load(url.replace('#',person_id)+'?j='+Base64.encode(journal_title));
