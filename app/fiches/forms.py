@@ -105,6 +105,22 @@ class BiblioForm(forms.ModelForm):
         ]
         self.fields['litterature_type'].choices = choices_without_blank
 
+        # Force date format for initial value
+        date_val = self.initial.get('date') or self.data.get('date')
+        if date_val:
+            import datetime
+            if isinstance(date_val, datetime.date):
+                self.initial['date'] = date_val.strftime('%d/%m/%Y')
+            else:
+                # Try to parse string with known formats
+                for fmt in ['%Y-%m-%d', '%d-%m-%Y', '%d/%m/%Y', '%d.%m.%Y']:
+                    try:
+                        d = datetime.datetime.strptime(date_val, fmt)
+                        self.initial['date'] = d.strftime('%d/%m/%Y')
+                        break
+                    except Exception:
+                        continue
+
     def clean(self):
         cleaned_data = super().clean()
         doctype = cleaned_data.get("document_type")

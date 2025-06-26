@@ -1,23 +1,4 @@
-{% comment %}<!--
-   Copyright (C) 2010-2012 Université de Lausanne, RISET
-   < http://www.unil.ch/riset/ >
-
-   This file is part of Lumières.Lausanne.
-   Lumières.Lausanne is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   Lumières.Lausanne is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-   This copyright notice MUST APPEAR in all copies of the file.
--->{% endcomment %}
+{# Copyright: see docs/copyright.md #}
 {% load i18n %}
 {% comment %}<!--
 ===========================================================
@@ -28,12 +9,12 @@
     <div class="form-header">
         <div class="field contribution-person">Auteurs <span class="required_marker" title="Champ obligatoire">*</span></div>
         <div class="field contribution-type">
-        	Type de contribution
-        	<span class="tooltiplink"><a href="#ctxt-help-biblio-contribution-type" class="tooltiplink">?</a></span>
+            Type de contribution
+            <span class="tooltiplink"><a href="#ctxt-help-biblio-contribution-type" class="tooltiplink">?</a></span>
         </div>
         <div class="field contribution-brackets">
-        	Entre crochets
-        	<span class="tooltiplink"><a href="#ctxt-help-biblio-contribution-brackets" class="tooltiplink">?</a></span>
+            Entre crochets
+            <span class="tooltiplink"><a href="#ctxt-help-biblio-contribution-brackets" class="tooltiplink">?</a></span>
         </div>
         {% if contributionFormset.can_delete %}<div class="field delete-field">Supprimer</div>{% endif %}
     </div>
@@ -42,7 +23,12 @@
     <div class="form-instance contribution-form">
         {{ form.id }}
         <div class="field contribution-person">{{ form.person.errors }}
-            {{ form.person }}
+            {% if form.instance.person %}
+                <span class="name">{{ form.instance.person }}</span>
+                <input type="hidden" name="{{ form.person.html_name }}" value="{{ form.instance.person.id }}">
+            {% else %}
+                {{ form.person }}
+            {% endif %}
         </div>
         <div class="field contribution-type">{{ form.contribution_type.errors }}
             {{ form.contribution_type }}
