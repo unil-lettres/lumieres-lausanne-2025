@@ -45,6 +45,9 @@ include $(MAKE_SUB)/db.mk
 # Previous Version Testing
 include $(MAKE_SUB)/v2024.mk
 
+# Django part
+include $(MAKE_SUB)/django.mk
+
 
 # Recipes =====================================================================
 
