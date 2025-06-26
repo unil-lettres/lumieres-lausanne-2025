@@ -388,7 +388,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     primary_kw = secondary_kw = None
     if doc and doc.id:
         primary_kw = PrimaryKeyword.objects.filter(biblio=doc).exclude(secondary_keywords__biblio=doc)
-        secondary_kw = SecondaryKeyword.objects.filter(biblio=doc).order_by("primary_keyword__word")
+        secondary_kw = SecondaryKeyword.objects.select_related("primary_keyword").filter(biblio=doc).order_by("primary_keyword__word")
 
     # -------------------------------
     # Exclusive Fields Setup

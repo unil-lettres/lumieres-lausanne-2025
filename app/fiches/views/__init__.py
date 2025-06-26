@@ -153,6 +153,9 @@ def ajax_search(request):
                 return "%s__iendswith" % field_name[1:]
             elif field_name.startswith("_null_"):
                 return "%s__isnull" % field_name[6:]
+            # If the field is a ForeignKey (endswith _id), use exact
+            elif field_name.endswith('_id'):
+                return "%s__exact" % field_name
             else:
                 return "%s__icontains" % field_name
 
