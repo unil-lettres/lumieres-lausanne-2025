@@ -12,6 +12,9 @@ applyTo: '**'
 3. Verifye the view
    - Check if the view is a class-based view or a function-based view
 5. Verify the template
+   - Check if the template is using the correct context variables
+   - Check if the template is rendering the model data correctly
+   - Check if the template is using the correct static files (CSS, JS, images)
 6. Try to write unit-tests for the model and the view
    - Use Django test framework
    - Test model methods, properties, and relations
