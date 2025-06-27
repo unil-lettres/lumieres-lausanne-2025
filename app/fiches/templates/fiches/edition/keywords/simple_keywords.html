@@ -171,9 +171,6 @@
 		{% for skw in secondary_kw %}
 			{% with skw.primary_keyword as pkw %}
 			<div class="staticlist_value_entry">
-				<script type="text/javascript">
-					console.log("Adding skw: {{ skw|pprint }} with pkw: {{ pkw }}");
-				</script>
 				<span class="staticlist_value_label"><span class="pkw-label">{{ pkw.word }}</span><span class="kw-sep">&nbsp;&raquo;&nbsp;</span><span class="skw-label">{{ skw.word }}</span></span>
 				<input type="hidden" name="subj_primary_kw" value="{{ pkw.id }}" />
 				<input type="hidden" name="subj_secondary_kw" value="{{ skw.id }}" />
