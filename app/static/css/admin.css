@@ -46,3 +46,21 @@ div.breadcrumbs { border-bottom-color: #C6BDA8; }
 .x-cke_label_button .cke_label { display: inline !important; padding-left: 0 !important; }
 .x-cke_label_button .cke_icon { display: none !important; }
 .x-trans-suppressed_button .cke_label { text-decoration: line-through; }
+
+body, html {
+    color-scheme: light !important;
+}
+body.theme-dark, html.theme-dark {
+    background: #fff !important;
+    color: #000 !important;
+}
+body.theme-dark, html.theme-dark {
+    /* Remove dark mode class if present */
+    background-color: #fff !important;
+    color: #000 !important;
+}
+
+.theme-toggle {
+    display: none !important;
+}
+
