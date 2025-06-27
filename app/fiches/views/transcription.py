@@ -38,6 +38,7 @@ from django.http import (
 )
 from django.shortcuts import get_object_or_404, render
 from django.template import RequestContext
+from django.urls import reverse
 from django.views.decorators.cache import never_cache
 from fiches.forms import NoteFormTranscription, TranscriptionForm
 from fiches.models import *
