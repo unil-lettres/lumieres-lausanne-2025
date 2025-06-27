@@ -205,6 +205,26 @@ class NoteFormBiblio(NoteFormBase):
 
 
 # ===============================
+# NoteFormTranscription Definition
+# ===============================
+class NoteFormTranscription(NoteFormBase):
+    """
+    Form for editing the NoteTranscription model (notes referencing a Transcription).
+    """
+
+    class Meta(NoteFormBase.Meta):
+        model = NoteTranscription
+        fields = '__all__'  # Or just ['text', 'owner'] if that's all you need
+
+    # If your NoteTranscription model has its own fields, define them or custom widgets here.
+    # e.g.
+    # text = forms.CharField(widget=forms.Textarea, label="Contenu de la note", required=True)
+    #
+    # def clean_text(self):
+    #     # do any special validation
+    #     return super().clean_text()
+
+# ===============================
 # Other Form Definitions
 # ===============================
 class ManuscriptForm(forms.ModelForm):

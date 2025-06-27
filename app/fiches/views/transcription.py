@@ -39,6 +39,7 @@ from django.http import (
 from django.shortcuts import get_object_or_404, render
 from django.template import RequestContext
 from django.views.decorators.cache import never_cache
+from fiches.forms import NoteFormTranscription, TranscriptionForm
 from fiches.models import *
 from fiches.models.documents import NoteTranscription
 from fiches.utils import get_last_model_activity, log_model_activity, query_fiche, supprime_accent, update_object_index
