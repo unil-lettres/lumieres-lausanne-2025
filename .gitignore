@@ -179,3 +179,4 @@ app/media/
 logging/
 
 !app/static/js/lib
+migrations/
