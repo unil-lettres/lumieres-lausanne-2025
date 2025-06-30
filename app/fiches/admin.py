@@ -16,6 +16,8 @@ from django.contrib import messages
 import os
 
 from django.contrib.contenttypes.admin import GenericStackedInline
+from django.contrib.sites.models import Site
+from django.contrib.sites.admin import SiteAdmin
 
 from fiches.models.content.free_content import FreeContent
 from fiches.models.content.news import News
@@ -498,6 +500,9 @@ fiches_admin.register(Finding, FindingAdmin)
 fiches_admin.register(DocumentType, DocumentTypeAdmin)
 fiches_admin.register(RelationType, RelationTypeAdmin)
 fiches_admin.register(ManuscriptType, ManuscriptTypeAdmin)
+fiches_admin.register(User, UserAdmin)
+fiches_admin.register(Group, GroupAdmin)
+fiches_admin.register(Site, SiteAdmin)
 
 # fiches_admin.register(ContributionType, ContributionTypeAdmin)
 # fiches_admin.register(UserProfile, UserProfileAdmin)
@@ -526,3 +531,22 @@ fiches_admin.register(ManuscriptType, ManuscriptTypeAdmin)
 # -----------------------------------------------------------------------------
 # End of `fiches/admin.py`
 # -----------------------------------------------------------------------------
+
+class CustomUserAdmin(UserAdmin):
+    """Custom UserAdmin with activity log link column."""
+
+    def get_list_display(self, request):
+        """Return list_display with activity log link column appended."""
+        base = list(super().get_list_display(request))
+        base.append('activity_log_link')
+        return tuple(base)
+
+    @admin.display(description='Activity Log')
+    def activity_log_link(self, obj):
+        """Return a link to the user's activity log in admin."""
+        url = reverse_url('fiches_admin:fiches_activitylog_changelist') + f'?user__id__exact={obj.id}'
+        return format_html('<a href="{}">Activity Log</a>', url)
+
+
+fiches_admin.unregister(User)
+fiches_admin.register(User, CustomUserAdmin)
