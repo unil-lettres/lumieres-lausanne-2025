@@ -138,18 +138,17 @@ class PersonAdmin(admin.ModelAdmin):
         return "-"
 
 
+@admin.register(PrimaryKeyword)
 class PrimaryKeywordAdmin(admin.ModelAdmin):
-    """Admin interface for PrimaryKeyword model."""
+    """Admin configuration for PrimaryKeyword model."""
 
-    list_display = ("word", "secondary_keywords_count")
-    list_display_links = ("word",)
+    list_display = ("id", "word", "secondary_keywords_count")
     search_fields = ("word",)
-    ordering = ("word",)
 
-    @admin.display(description="Mots clés secondaires")
-    def secondary_keywords_count(self, obj):
-        """Return the count of secondary keywords."""
-        return obj.secondarykeyword_set.count()
+    @admin.display(description="Number of secondary keywords")
+    def secondary_keywords_count(self, obj: PrimaryKeyword) -> int:
+        """Return the number of secondary keywords related to this primary keyword."""
+        return obj.secondary_keywords.count()  # type: ignore[attr-defined]
 
 
 class SecondaryKeywordAdmin(admin.ModelAdmin):
