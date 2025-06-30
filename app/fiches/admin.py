@@ -210,10 +210,22 @@ class BiblioAdmin(admin.ModelAdmin):
 
 
 class DocumentTypeAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "code")
-    list_display_links = ("name",)
-    ordering = ("id",)
-    search_fields = ("name",)
+    """Admin interface for DocumentType model."""
+
+    list_display = ("id", "name", "exclusive_fields_display", "code")
+    search_fields = ("name", "code")
+    ordering = ("name",)
+
+    @admin.display(description="Exclusive fields")
+    def exclusive_fields_display(self, obj):
+        """Return a string representation of exclusive fields for the document type."""
+        # Adjust the attribute name if the model uses a different field name
+        value = getattr(obj, "exclusive_fields", None)
+        if value is None:
+            return ""
+        if isinstance(value, (list, tuple, set)):
+            return ", ".join(str(v) for v in value)
+        return str(value)
 
 
 class DocumentLanguageAdmin(admin.ModelAdmin):
@@ -478,6 +490,7 @@ fiches_admin.register(Project, ProjectAdmin)
 fiches_admin.register(Religion, ReligionAdmin)
 fiches_admin.register(Society, SocietyAdmin)
 fiches_admin.register(Finding, FindingAdmin)
+fiches_admin.register(DocumentType, DocumentTypeAdmin)
 
 # fiches_admin.register(ContributionType, ContributionTypeAdmin)
 # fiches_admin.register(UserProfile, UserProfileAdmin)
