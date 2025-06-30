@@ -24,6 +24,10 @@ django/makemigrations:  ## Make migrations for Django
 django/migrate:  ## Apply migrations for Django
 	python ${APP_PATH}/manage.py migrate fiches --settings=lumieres_project.settings
 
+.PHONY: django/collectstatic
+django/collectstatic:  ## Collect static files for Django
+	python ${APP_PATH}/manage.py collectstatic --noinput --settings=lumieres_project.settings
+
 .PHONY: django/test
 django/test:  ## Run all Django unit tests
 	DJANGO_DEVELOPMENT=1 python ${APP_PATH}/manage.py test fiches --settings=lumieres_project.settings
