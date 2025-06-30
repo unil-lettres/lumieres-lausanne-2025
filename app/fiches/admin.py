@@ -1,3 +1,5 @@
+# Copyright: see docs/copyright.md
+
 # fiches/admin.py
 
 from django.contrib import admin
@@ -250,11 +252,23 @@ class DocumentFileAdmin(admin.ModelAdmin):
 
 
 class FindingAdmin(admin.ModelAdmin):
-    list_display = ("description",)
-    search_fields = ("description",)
+    """Admin interface for Finding model with vignette preview in change form only."""
+    list_display = ("title", "created_on", "modified_on", "published")
+    search_fields = ("title",)
+    readonly_fields = ("vignette_preview",)
+    ordering = ("-created_on",)
 
-    def save_model(self, request, obj, form, change):
-        obj.save()
+    @admin.display(description="Vignette")
+    def vignette_preview(self, obj) -> str:
+        """Return an HTML preview of the vignette (thumbnail) if available."""
+        if hasattr(obj, "thumbnail") and obj.thumbnail and hasattr(obj.thumbnail, 'url'):
+            return format_html('<img src="{}" style="max-height: 100px; max-width: 200px;" />', obj.thumbnail.url)
+        return format_html("<em>No vignette available</em>")
+
+    @admin.display(boolean=True, description="Publié")
+    def published(self, obj) -> bool:
+        """Return the published status of the finding (from 'publish' field)."""
+        return getattr(obj, "publish", False)
 
 
 class FreeContentAdmin(admin.ModelAdmin):
@@ -292,6 +306,7 @@ class ProjectAdmin(admin.ModelAdmin):
         """Return an HTML preview of the vignette image if available."""
         if obj.image and hasattr(obj.image, 'url'):
             return format_html('<img src="{}" style="max-height: 150px; max-width: 300px;" />', obj.image.url)
+        # FIXME: add format_html
         return "<em>No vignette available</em>"
 
     @admin.display(boolean=True, description="Publié")
@@ -462,6 +477,7 @@ fiches_admin.register(Biography, BiographyAdmin)
 fiches_admin.register(Project, ProjectAdmin)
 fiches_admin.register(Religion, ReligionAdmin)
 fiches_admin.register(Society, SocietyAdmin)
+fiches_admin.register(Finding, FindingAdmin)
 
 # fiches_admin.register(ContributionType, ContributionTypeAdmin)
 # fiches_admin.register(UserProfile, UserProfileAdmin)
