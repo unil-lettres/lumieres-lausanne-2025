@@ -374,7 +374,11 @@ class NationalityAdmin(admin.ModelAdmin):
 
 
 class RelationTypeAdmin(admin.ModelAdmin):
+    """Admin interface for RelationType model."""
+
     list_display = ("name", "reverse_name", "sorting")
+    search_fields = ("name", "reverse_name")
+    ordering = ("sorting",)
 
 
 class ReligionAdmin(admin.ModelAdmin):
@@ -386,10 +390,10 @@ class ReligionAdmin(admin.ModelAdmin):
 
 
 class ManuscriptTypeAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "sorting")
+    """Admin interface for ManuscriptType model."""
+    list_display = ("name", "sorting")
     search_fields = ("name",)
-    list_editable = ("sorting",)
-    ordering = ("sorting", "id")
+    ordering = ("sorting",)
 
 
 class ManuscriptAdmin(admin.ModelAdmin):
@@ -416,7 +420,8 @@ class BiographyAdmin(admin.ModelAdmin):
 
 
 class TranscriptionAdmin(admin.ModelAdmin):
-    list_display = ("id",)
+    """Admin interface for Transcription model."""
+    list_display = ("id", "sorting")
     list_filter = ("status",)
 
 
@@ -491,6 +496,8 @@ fiches_admin.register(Religion, ReligionAdmin)
 fiches_admin.register(Society, SocietyAdmin)
 fiches_admin.register(Finding, FindingAdmin)
 fiches_admin.register(DocumentType, DocumentTypeAdmin)
+fiches_admin.register(RelationType, RelationTypeAdmin)
+fiches_admin.register(ManuscriptType, ManuscriptTypeAdmin)
 
 # fiches_admin.register(ContributionType, ContributionTypeAdmin)
 # fiches_admin.register(UserProfile, UserProfileAdmin)
