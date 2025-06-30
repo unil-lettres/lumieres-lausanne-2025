@@ -143,12 +143,33 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 
 class PersonAdmin(admin.ModelAdmin):
-    """Admin interface for Person model (reverted to basic version)."""
-    list_display = ("name", "modern", "may_have_biography")
+    """Admin interface for Person model with custom columns and inline editing."""
+    list_display = ("id", "name", "modern", "may_have_biography", "biography_link", "modern_display")
     list_display_links = ("name",)
+    list_editable = ("modern", "may_have_biography")
     list_filter = ("modern", "may_have_biography")
     search_fields = ("name",)
     ordering = ("name",)
+    inlines = [BiographyInline]
+
+    @admin.display(description=_("Personne littérature secondaire (display)"), ordering="modern")
+    def modern_display(self, obj):
+        """Display the value of 'modern' as Yes/No/Unknown for readability."""
+        if obj.modern is True:
+            return _("Yes")
+        elif obj.modern is False:
+            return _("No")
+        return _("Unknown")
+
+    @admin.display(description=_("Biographie"))
+    def biography_link(self, obj):
+        """Display a link to the biography or a link to add one if missing."""
+        bio = obj.biography_set.first()
+        if bio:
+            url = reverse_url("fiches_admin:fiches_biography_change", args=[bio.id])
+            return format_html('<a href="{}">{}</a>', url, _( "View/Edit"))
+        add_url = reverse_url("fiches_admin:fiches_biography_add") + f"?person={obj.id}"
+        return format_html('<a href="{}">{}</a>', add_url, _( "Add"))
 
 
 class PrimaryKeywordAdmin(admin.ModelAdmin):
@@ -412,6 +433,7 @@ fiches_admin.register(PrimaryKeyword, PrimaryKeywordAdmin)
 fiches_admin.register(SecondaryKeyword, SecondaryKeywordAdmin)
 fiches_admin.register(Nationality, NationalityAdmin)
 fiches_admin.register(Person, PersonAdmin)
+fiches_admin.register(Biography, BiographyAdmin)
 
 # fiches_admin.register(ContributionType, ContributionTypeAdmin)
 # fiches_admin.register(UserProfile, UserProfileAdmin)
