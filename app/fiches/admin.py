@@ -278,7 +278,7 @@ class ObjectCollectionAdmin(admin.ModelAdmin):
 class ProjectAdmin(admin.ModelAdmin):
     """Admin interface for Project model."""
 
-    list_display = ("name", "published", "members_list", "groups_list")
+    list_display = ("name", "publish", "members_list", "groups_list")
     search_fields = ("name",)
     ordering = ("id",)
     readonly_fields = ("vignette_preview",)
@@ -301,20 +301,15 @@ class ProjectAdmin(admin.ModelAdmin):
             return format_html('<img src="{}" style="max-width: 200px;" />', obj.vignette.url)
         return "-"
 
-    @admin.display(boolean=True, description="Publié")
-    def published(self, obj):
-        """Return True if the project is published."""
-        return getattr(obj, "published", False)
-
     @admin.display(description="Members")
     def members_list(self, obj):
-        """Return a comma-separated list of members."""
-        return ", ".join([str(m) for m in getattr(obj, "members", [])])
+        """Return a comma-separated list of member full names."""
+        return ", ".join(f"{m.first_name} {m.last_name}".strip() for m in obj.members.all())
 
     @admin.display(description="Groups")
     def groups_list(self, obj):
         """Return a comma-separated list of groups."""
-        return ", ".join([str(g) for g in getattr(obj, "access_groups", [])])
+        return ", ".join(str(g) for g in obj.access_groups.all())
 
 
 @admin.register(PlaceView)
