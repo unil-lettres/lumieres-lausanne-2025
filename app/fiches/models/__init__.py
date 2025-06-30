@@ -23,6 +23,7 @@ from .documents.document import (
     ContributionMan,
     ManuscriptType,
     ContributionType,
+    Depot,
 )
 from .documents.document_file import DocumentFile
 
@@ -62,5 +63,6 @@ __all__ = [
     'NoteBase',
     'Person', 'Biography', 'RelationType', 'Relation', 'Nationality', 'Religion',
     'PlaceView', 'JournaltitleView',
+    'Depot',
     # Add any additional models here
 ]
