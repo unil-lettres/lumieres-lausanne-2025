@@ -351,10 +351,11 @@ class RelationTypeAdmin(admin.ModelAdmin):
 
 
 class ReligionAdmin(admin.ModelAdmin):
+    """Admin interface for Religion model."""
+
     list_display = ("name", "sorting")
     search_fields = ("name",)
-    list_editable = ("sorting",)
-    ordering = ("sorting", "id")
+    ordering = ("sorting", "name")
 
 
 class ManuscriptTypeAdmin(admin.ModelAdmin):
@@ -459,6 +460,7 @@ fiches_admin.register(Nationality, NationalityAdmin)
 fiches_admin.register(Person, PersonAdmin)
 fiches_admin.register(Biography, BiographyAdmin)
 fiches_admin.register(Project, ProjectAdmin)
+fiches_admin.register(Religion, ReligionAdmin)
 
 # fiches_admin.register(ContributionType, ContributionTypeAdmin)
 # fiches_admin.register(UserProfile, UserProfileAdmin)
