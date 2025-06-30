@@ -260,10 +260,11 @@ class FreeContentAdmin(admin.ModelAdmin):
 
 
 class NewsAdmin(admin.ModelAdmin):
-    """Admin interface for News model."""
+    """Admin interface for News model with image and document inlines."""
 
     list_display = ("title", "created_on", "modified_on", "published")
     search_fields = ("title", "content")
+    inlines = [ImageInline, DocumentInline]
 
 
 class ObjectCollectionAdmin(admin.ModelAdmin):
