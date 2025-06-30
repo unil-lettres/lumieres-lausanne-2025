@@ -149,7 +149,7 @@ class PrimaryKeywordAdmin(admin.ModelAdmin):
     @admin.display(description="Mots clés secondaires")
     def secondary_keywords_count(self, obj):
         """Return the count of secondary keywords."""
-        return obj.secondarykeyword_set.count()
+        return obj.secondary_keywords.count()
 
 
 class SecondaryKeywordAdmin(admin.ModelAdmin):
