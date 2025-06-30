@@ -246,13 +246,14 @@ class FindingAdmin(admin.ModelAdmin):
 
 
 class FreeContentAdmin(admin.ModelAdmin):
-    """Admin interface for FreeContent model."""
+    """Admin interface for FreeContent model with image and document inlines."""
 
     list_display = ("id", "title", "created_on", "modified_on")
     list_display_links = ("title",)
     search_fields = ("title", "author__username")
     list_filter = ("created_on", "modified_on", "author")
     ordering = ("id",)
+    inlines = [ImageInline, DocumentInline]
 
     def has_add_permission(self, request):
         """Disable add permission for FreeContent."""
