@@ -284,6 +284,15 @@ class ProjectAdmin(admin.ModelAdmin):
     list_display = ("name", "published", "members_list", "groups_list")
     search_fields = ("name",)
     ordering = ("id",)
+    readonly_fields = ("vignette_preview",)
+    fields = ("name", "image", "vignette_preview", "publish", "owner", "members", "access_groups", "description", "short_desc")
+
+    @admin.display(description="Vignette")
+    def vignette_preview(self, obj) -> str:
+        """Return an HTML preview of the vignette image if available."""
+        if obj.image and hasattr(obj.image, 'url'):
+            return format_html('<img src="{}" style="max-height: 150px; max-width: 300px;" />', obj.image.url)
+        return "<em>No vignette available</em>"
 
     @admin.display(boolean=True, description="Publié")
     def published(self, obj) -> bool:
@@ -300,10 +309,10 @@ class ProjectAdmin(admin.ModelAdmin):
 
     @admin.display(description="Groups")
     def groups_list(self, obj) -> str:
-        """Return a comma-separated list of project groups."""
-        groups = getattr(obj, "groups", None)
-        if groups is not None:
-            return ", ".join(str(g) for g in groups.all())
+        """Return a comma-separated list of project groups (from access_groups)."""
+        access_groups = getattr(obj, "access_groups", None)
+        if access_groups is not None:
+            return ", ".join(str(g) for g in access_groups.all())
         return ""
 
 
