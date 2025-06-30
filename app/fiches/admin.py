@@ -152,7 +152,7 @@ class PersonAdmin(admin.ModelAdmin):
     ordering = ("name",)
     inlines = [BiographyInline]
 
-    @admin.display(description=_("Personne littérature secondaire (display)"), ordering="modern")
+    @admin.display(description=_("Personne littérature secondaire"), ordering="modern")
     def modern_display(self, obj):
         """Display the value of 'modern' as Yes/No/Unknown for readability."""
         if obj.modern is True:
