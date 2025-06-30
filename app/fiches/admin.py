@@ -461,6 +461,7 @@ fiches_admin.register(Person, PersonAdmin)
 fiches_admin.register(Biography, BiographyAdmin)
 fiches_admin.register(Project, ProjectAdmin)
 fiches_admin.register(Religion, ReligionAdmin)
+fiches_admin.register(Society, SocietyAdmin)
 
 # fiches_admin.register(ContributionType, ContributionTypeAdmin)
 # fiches_admin.register(UserProfile, UserProfileAdmin)
