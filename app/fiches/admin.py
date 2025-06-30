@@ -279,8 +279,32 @@ class ObjectCollectionAdmin(admin.ModelAdmin):
 
 
 class ProjectAdmin(admin.ModelAdmin):
-    list_display = ("name",)
+    """Admin interface for Project model."""
+
+    list_display = ("name", "published", "members_list", "groups_list")
     search_fields = ("name",)
+    ordering = ("id",)
+
+    @admin.display(boolean=True, description="Publié")
+    def published(self, obj) -> bool:
+        """Return the published status of the project (from 'publish' field)."""
+        return getattr(obj, "publish", False)
+
+    @admin.display(description="Members")
+    def members_list(self, obj) -> str:
+        """Return a comma-separated list of project members (full name)."""
+        members = getattr(obj, "members", None)
+        if members is not None:
+            return ", ".join(f"{m.first_name} {m.last_name}".strip() or m.username for m in members.all())
+        return ""
+
+    @admin.display(description="Groups")
+    def groups_list(self, obj) -> str:
+        """Return a comma-separated list of project groups."""
+        groups = getattr(obj, "groups", None)
+        if groups is not None:
+            return ", ".join(str(g) for g in groups.all())
+        return ""
 
 
 @admin.register(PlaceView)
@@ -425,6 +449,7 @@ fiches_admin.register(SecondaryKeyword, SecondaryKeywordAdmin)
 fiches_admin.register(Nationality, NationalityAdmin)
 fiches_admin.register(Person, PersonAdmin)
 fiches_admin.register(Biography, BiographyAdmin)
+fiches_admin.register(Project, ProjectAdmin)
 
 # fiches_admin.register(ContributionType, ContributionTypeAdmin)
 # fiches_admin.register(UserProfile, UserProfileAdmin)
