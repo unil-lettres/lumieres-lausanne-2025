@@ -144,22 +144,13 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 class PersonAdmin(admin.ModelAdmin):
     """Admin interface for Person model with custom columns and inline editing."""
-    list_display = ("id", "name", "modern", "may_have_biography", "biography_link", "modern_display")
+    list_display = ("id", "name", "modern", "may_have_biography", "biography_link")
     list_display_links = ("name",)
     list_editable = ("modern", "may_have_biography")
     list_filter = ("modern", "may_have_biography")
     search_fields = ("name",)
     ordering = ("name",)
     inlines = [BiographyInline]
-
-    @admin.display(description=_("Personne littérature secondaire"), ordering="modern")
-    def modern_display(self, obj):
-        """Display the value of 'modern' as Yes/No/Unknown for readability."""
-        if obj.modern is True:
-            return _("Yes")
-        elif obj.modern is False:
-            return _("No")
-        return _("Unknown")
 
     @admin.display(description=_("Biographie"))
     def biography_link(self, obj):
