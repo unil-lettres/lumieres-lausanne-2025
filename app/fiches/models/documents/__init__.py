@@ -12,6 +12,7 @@ from .document import (
     NoteBiblio,
     NoteTranscription,
     DocumentLanguage,
+    Depot,
 )
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "NoteBiblio",
     "NoteTranscription",
     "DocumentLanguage",
+    "Depot",
 ]
