@@ -1,0 +1,40 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'fiches/css/admin.css' %}">
+{% endblock %}
+
+{% block branding %}
+<div id="site-branding">
+    <div class="branding-header">
+        <div class="university-logo">
+            <img src="{% static 'css/images/lo_unil_lettres06_gris50.png' %}" alt="UNIL" class="logo-image">
+            <div class="logo-text">
+                <span class="unil-text">UNIL</span>
+                <span class="university-full">Université de Lausanne</span>
+            </div>
+        </div>
+        <h1 id="site-name">
+            <a href="{% url 'admin:index' %}">Administration Lumières.Lausanne</a>
+        </h1>
+        <div class="user-info">
+            {% if user.is_authenticated %}
+                <span class="welcome-text">Bienvenue, {{ user.first_name|default:user.username }}</span>
+                <span class="user-actions">
+                    <a href="{% url 'admin:password_change' %}">Modifier votre mot de passe</a> / 
+                    <a href="{% url 'admin:logout' %}">Déconnexion</a>
+                </span>
+                <div class="return-link">
+                    <a href="/">Retour vers les fiches</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}

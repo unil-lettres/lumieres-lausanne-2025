@@ -1,0 +1,71 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static admin_urls %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <div class="admin-header">
+        <h1>Administration du site</h1>
+    </div>
+    
+    <div class="admin-sections">
+        <!-- Auth Section -->
+        <div class="admin-section">
+            <h2 class="section-header auth-header">Auth</h2>
+            <div class="model-list">
+                <div class="model-item">
+                    <span class="model-name">Groups</span>
+                    <div class="model-actions">
+                        <a href="{% url 'admin:auth_group_add' %}" class="addlink">Ajouter</a>
+                        <a href="{% url 'admin:auth_group_changelist' %}" class="changelink">Modifier</a>
+                    </div>
+                </div>
+                <div class="model-item">
+                    <span class="model-name">Users</span>
+                    <div class="model-actions">
+                        <a href="{% url 'admin:auth_user_add' %}" class="addlink">Ajouter</a>
+                        <a href="{% url 'admin:auth_user_changelist' %}" class="changelink">Modifier</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fiches Section -->
+        <div class="admin-section">
+            <h2 class="section-header fiches-header">Fiches</h2>
+            <div class="model-list">
+                {% for model in available_apps.0.models %}
+                <div class="model-item">
+                    <span class="model-name">{{ model.name }}</span>
+                    <div class="model-actions">
+                        {% if model.add_url %}
+                            <a href="{{ model.add_url }}" class="addlink">Ajouter</a>
+                        {% endif %}
+                        {% if model.admin_url %}
+                            <a href="{{ model.admin_url }}" class="changelink">Modifier</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Sites Section -->
+        <div class="admin-section">
+            <h2 class="section-header sites-header">Sites</h2>
+            <div class="model-list">
+                <div class="model-item">
+                    <span class="model-name">Sites</span>
+                    <div class="model-actions">
+                        <a href="#" class="addlink">Ajouter</a>
+                        <a href="#" class="changelink">Modifier</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

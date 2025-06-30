@@ -1,0 +1,629 @@
+/**
+ * Custom Admin CSS for Lumières.Lausanne
+ * University of Lausanne styling
+ */
+
+/* ==#branding h1, #site-name {
+    margin: 10px 0 0 160px;
+    color: #5D5D5A;
+    flex: 1;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 500;
+}
+
+#branding h1 a, #site-name a {
+    color: #5D5D5A;
+    text-decoration: none;
+}
+
+#branding h1 a:hover, #site-name a:hover {
+    color: #827554;
+}===========================================================
+   Variables and Base Styles
+   ============================================================================= */
+
+:root {
+    --unil-beige: #E3DFD4;
+    --unil-dark-beige: #C6BDA8;
+    --unil-light-beige: #e4d5b9;
+    --unil-brown: #8b7355;
+    --unil-dark-brown: #5D5D5A;
+    --text-dark: #5D5D5A;
+    --text-medium: #827554;
+    --text-light: #999999;
+    --border-color: #cccccc;
+    --white: #ffffff;
+    --link-blue: #990000;
+    --success-green: #4caf50;
+    
+    /* Redéfinition des variables Django admin pour le thème UNIL */
+    --primary: var(--unil-brown); /* Remplace le bleu clair #79aec8 par brun UNIL */
+    --secondary: var(--unil-dark-beige); /* Remplace le bleu #417690 par beige UNIL */
+    --accent: var(--unil-light-beige); /* Remplace le jaune #f5dd5d par beige clair UNIL */
+}
+
+/* =============================================================================
+   Header and Branding
+   ============================================================================= */
+
+/* Django admin default header override */
+#header {
+    background: #E3DFD4 url('../../images/logo_unil_banner.png') no-repeat scroll 5px 50%;
+    color: #5D5D5A;
+    border-bottom: 1px solid #C6BDA8;
+    height: 65px;
+    background-size: auto 55px;
+}
+
+#site-branding {
+    background: #E3DFD4 url('../../images/logo_unil_banner.png') no-repeat scroll 5px 50%;
+    border-bottom: 3px solid #C6BDA8;
+    padding: 0;
+    height: 65px;
+    display: flex;
+    align-items: center;
+    background-size: auto 55px;
+}
+
+.branding-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    height: 100%;
+}
+
+.university-logo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.logo-image {
+    height: 50px;
+    width: auto;
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.unil-text {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--text-dark);
+    line-height: 1;
+    letter-spacing: 1.5px;
+}
+
+.university-full {
+    font-size: 11px;
+    color: var(--text-medium);
+    margin-top: 2px;
+    letter-spacing: 0.3px;
+}
+
+#site-name {
+    flex: 1;
+    text-align: center;
+    margin: 0;
+}
+
+#site-name a {
+    color: var(--text-dark);
+    text-decoration: none;
+    font-size: 22px;
+    font-weight: 500;
+}
+
+#site-name a:hover {
+    color: #423A28;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-size: 12px;
+    color: var(--text-medium);
+}
+
+.welcome-text {
+    font-weight: bold;
+    margin-bottom: 3px;
+}
+
+.user-actions a {
+    color: var(--link-blue);
+    text-decoration: none;
+}
+
+.user-actions a:hover {
+    color: #423A28;
+    text-decoration: underline;
+}
+
+.return-link {
+    margin-top: 5px;
+}
+
+.return-link a {
+    color: var(--link-blue);
+    text-decoration: none;
+    font-size: 11px;
+}
+
+.return-link a:hover {
+    color: #423A28;
+    text-decoration: underline;
+}
+
+/* =============================================================================
+   Navigation Override
+   ============================================================================= */
+
+#nav-global {
+    display: none;
+}
+
+/* =============================================================================
+   Main Content Area
+   ============================================================================= */
+
+#content-main {
+    padding: 20px;
+    background: var(--white);
+    min-height: calc(100vh - 120px);
+}
+
+.admin-header h1 {
+    color: var(--text-dark);
+    font-size: 24px;
+    margin-bottom: 30px;
+    font-weight: 500;
+    border-bottom: 2px solid var(--unil-light-beige);
+    padding-bottom: 10px;
+}
+
+/* =============================================================================
+   Admin Sections
+   ============================================================================= */
+
+.admin-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.admin-section {
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.section-header {
+    padding: 12px 15px;
+    margin: 0;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--white);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.auth-header {
+    background: var(--unil-brown);
+}
+
+.fiches-header {
+    background: var(--unil-dark-beige);
+}
+
+.sites-header {
+    background: var(--unil-dark-brown);
+}
+
+/* =============================================================================
+   Model Lists
+   ============================================================================= */
+
+.model-list {
+    background: var(--white);
+}
+
+.model-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s ease;
+}
+
+.model-item:last-child {
+    border-bottom: none;
+}
+
+.model-item:hover {
+    background: #f8f8f8;
+}
+
+.model-name {
+    font-size: 14px;
+    color: var(--text-dark);
+    font-weight: 500;
+}
+
+.model-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.model-actions a {
+    text-decoration: none;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.addlink {
+    color: var(--success-green);
+    border: 1px solid var(--success-green);
+}
+
+.addlink:hover {
+    background: var(--success-green);
+    color: var(--white);
+}
+
+.changelink {
+    color: var(--link-blue);
+    border: 1px solid var(--link-blue);
+}
+
+.changelink:hover {
+    background: var(--link-blue);
+    color: var(--white);
+}
+
+/* =============================================================================
+   Responsive Design
+   ============================================================================= */
+
+@media (max-width: 768px) {
+    .branding-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .user-info {
+        align-items: center;
+    }
+    
+    #content-main {
+        padding: 15px;
+    }
+    
+    .model-item {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .model-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+/* =============================================================================
+   Django Admin Overrides
+   ============================================================================= */
+
+/* Override default Django admin styles */
+#header {
+    background: var(--unil-beige);
+    height: auto;
+}
+
+#branding h1 {
+    margin: 0;
+}
+
+.breadcrumbs {
+    background: var(--unil-light-beige);
+    color: var(--text-dark);
+}
+
+.breadcrumbs a {
+    color: var(--link-blue);
+}
+
+/* Form styling */
+.form-row {
+    border-bottom: 1px solid var(--unil-light-beige);
+}
+
+.submit-row {
+    background: var(--unil-light-beige);
+}
+
+.default {
+    background: var(--unil-brown);
+    border-color: var(--unil-dark-brown);
+}
+
+.default:hover {
+    background: var(--unil-dark-brown);
+}
+
+/* =============================================================================
+   Change List Specific Styling
+   ============================================================================= */
+
+/* Override changelist page styling */
+.changelist-search {
+    background: var(--unil-light-beige);
+    border-bottom: 2px solid var(--unil-beige);
+    padding: 15px 20px;
+}
+
+.changelist-search input {
+    border: 1px solid var(--unil-dark-beige);
+    border-radius: 4px;
+    padding: 8px 12px;
+}
+
+/* Filters sidebar */
+#changelist-filter {
+    background: var(--white);
+    border-left: 2px solid var(--unil-beige);
+}
+
+#changelist-filter h2 {
+    background: var(--unil-dark-beige);
+    color: var(--white);
+    font-weight: 500;
+}
+
+#changelist-filter h3 {
+    color: var(--unil-dark-brown);
+    font-weight: 500;
+}
+
+#changelist-filter a {
+    color: var(--link-blue);
+}
+
+#changelist-filter a:hover {
+    color: var(--unil-dark-brown);
+}
+
+/* Table styling */
+#result_list {
+    border: 1px solid var(--unil-light-beige);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+#result_list thead th {
+    background: var(--unil-beige);
+    color: var(--text-dark);
+    font-weight: 600;
+    padding: 12px 15px;
+    border-bottom: 2px solid var(--unil-dark-beige);
+}
+
+#result_list thead th a {
+    color: var(--text-dark);
+    text-decoration: none;
+}
+
+#result_list thead th a:hover {
+    color: var(--unil-dark-brown);
+}
+
+#result_list tbody tr {
+    border-bottom: 1px solid var(--unil-light-beige);
+}
+
+#result_list tbody tr:hover {
+    background: #f8f6f2;
+}
+
+#result_list tbody td {
+    padding: 10px 15px;
+    color: var(--text-dark);
+}
+
+#result_list tbody td a {
+    color: var(--link-blue);
+    text-decoration: none;
+}
+
+#result_list tbody td a:hover {
+    color: var(--unil-dark-brown);
+    text-decoration: underline;
+}
+
+/* Pagination */
+.paginator {
+    background: #E3DFD4;
+    padding: 12px 20px;
+    border-top: 1px solid #C6BDA8;
+    border-bottom: 1px solid #C6BDA8;
+    text-align: center;
+    color: #5D5D5A;
+}
+
+.paginator a {
+    color: #827554;
+    text-decoration: none;
+    padding: 6px 12px;
+    margin: 0 2px;
+    border: 1px solid #C6BDA8;
+    border-radius: 4px;
+    background: #fff;
+    transition: all 0.2s ease;
+}
+
+.paginator a:hover {
+    background: #d3c5b6;
+    color: #5D5D5A;
+    border-color: #a88f74;
+}
+
+.paginator .this-page {
+    font-weight: bold;
+    color: #5D5D5A;
+    padding: 6px 12px;
+    margin: 0 2px;
+    background: #d3c5b6;
+    border: 1px solid #a88f74;
+    border-radius: 4px;
+}
+
+.paginator .end {
+    color: #999;
+    padding: 6px 12px;
+    margin: 0 2px;
+}
+
+/* Actions */
+.actions {
+    background: var(--unil-light-beige);
+    border-bottom: 1px solid var(--unil-beige);
+    padding: 10px 20px;
+}
+
+.actions select {
+    border: 1px solid var(--unil-dark-beige);
+    border-radius: 4px;
+    padding: 5px 10px;
+}
+
+.actions button {
+    background: var(--unil-brown);
+    color: var(--white);
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.actions button:hover {
+    background: var(--unil-dark-brown);
+}
+
+/* Breadcrumbs */
+.breadcrumbs {
+    background: var(--unil-light-beige);
+    color: var(--text-dark);
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--unil-beige);
+}
+
+.breadcrumbs a {
+    color: var(--link-blue);
+    text-decoration: none;
+}
+
+.breadcrumbs a:hover {
+    color: var(--unil-dark-brown);
+    text-decoration: underline;
+}
+
+/* Page header */
+#content h1 {
+    color: var(--text-dark);
+    font-size: 24px;
+    margin-bottom: 20px;
+    font-weight: 500;
+    border-bottom: 2px solid var(--unil-light-beige);
+    padding-bottom: 10px;
+}
+
+/* Object tools */
+.object-tools {
+    margin-bottom: 15px;
+}
+
+.object-tools a {
+    background: var(--unil-brown);
+    color: var(--white);
+    text-decoration: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.object-tools a:hover {
+    background: var(--unil-dark-brown);
+}
+
+/* Sidebar styling */
+.module {
+    background: var(--white);
+    border: 1px solid var(--unil-light-beige);
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.module h2 {
+    background: var(--unil-dark-beige);
+    color: var(--white);
+    margin: 0;
+    padding: 10px 15px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.module caption {
+    background: var(--unil-dark-beige);
+    color: var(--white);
+}
+
+/* =============================================================================
+   CKEditor Overrides for UNIL Theme
+   ============================================================================= */
+
+/* Override CKEditor button styles to use UNIL colors */
+.cke_button_on,
+.cke_button_off:hover,
+.cke_button_off:focus,
+.cke_button_off:active,
+input[type="submit"].default {
+    background: var(--unil-dark-beige) !important;
+    border-color: var(--unil-brown) !important;
+}
+
+/* Override any blue primary colors in CKEditor */
+.cke_toolbar_start,
+.cke_toolbar_end,
+input[type="submit"]:hover {
+    background: var(--unil-brown) !important;
+}
+
+input[type="submit"].default:active,
+input[type="submit"].default:focus,
+input[type="submit"].default:hover {
+    background: var(--unil-brown) !important;
+    color: var(--white) !important;
+}
+
+/* Override any remaining blue backgrounds in CKEditor */
+.cke_toolbar {
+    background: var(--unil-beige) !important;
+    border-color: var(--unil-dark-beige) !important;
+}
