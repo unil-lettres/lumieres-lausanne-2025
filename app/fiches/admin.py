@@ -138,17 +138,18 @@ class PersonAdmin(admin.ModelAdmin):
         return "-"
 
 
-@admin.register(PrimaryKeyword)
 class PrimaryKeywordAdmin(admin.ModelAdmin):
-    """Admin configuration for PrimaryKeyword model."""
+    """Admin interface for PrimaryKeyword model."""
 
-    list_display = ("id", "word", "secondary_keywords_count")
+    list_display = ("word", "secondary_keywords_count")
+    list_display_links = ("word",)
     search_fields = ("word",)
+    ordering = ("word",)
 
-    @admin.display(description="Number of secondary keywords")
-    def secondary_keywords_count(self, obj: PrimaryKeyword) -> int:
-        """Return the number of secondary keywords related to this primary keyword."""
-        return obj.secondary_keywords.count()  # type: ignore[attr-defined]
+    @admin.display(description="Mots clés secondaires")
+    def secondary_keywords_count(self, obj):
+        """Return the count of secondary keywords."""
+        return obj.secondarykeyword_set.count()
 
 
 class SecondaryKeywordAdmin(admin.ModelAdmin):
@@ -275,7 +276,7 @@ class ObjectCollectionAdmin(admin.ModelAdmin):
 class ProjectAdmin(admin.ModelAdmin):
     """Admin interface for Project model."""
 
-    list_display = ("id", "name", "publish", "members_list", "groups_list")
+    list_display = ("name", "published", "members_list", "groups_list")
     search_fields = ("name",)
     ordering = ("id",)
     readonly_fields = ("vignette_preview",)
@@ -305,15 +306,13 @@ class ProjectAdmin(admin.ModelAdmin):
 
     @admin.display(description="Members")
     def members_list(self, obj):
-        """Return a comma-separated list of members as 'last_name first_name'."""
-        return ", ".join([
-            f"{m.last_name} {m.first_name}".strip() or m.username for m in obj.members.all()
-        ])
+        """Return a comma-separated list of members."""
+        return ", ".join([str(m) for m in getattr(obj, "members", [])])
 
     @admin.display(description="Groups")
     def groups_list(self, obj):
         """Return a comma-separated list of groups."""
-        return ", ".join([str(g) for g in obj.access_groups.all()])
+        return ", ".join([str(g) for g in getattr(obj, "access_groups", [])])
 
 
 @admin.register(PlaceView)
@@ -382,10 +381,47 @@ class ManuscriptAdmin(admin.ModelAdmin):
 class ActivityLogAdmin(admin.ModelAdmin):
     """Admin interface for ActivityLog model."""
 
-    list_display = ("date", "user", "model_name")
+    list_display = ("date", "user", "record_type", "record_title_link")
+    list_display_links = ("record_title_link",)
     list_filter = ("model_name", "date")
     search_fields = ("user__username", "user__first_name", "user__last_name")
     ordering = ("-date",)
+
+    @admin.display(description="Type de fiche")
+    def record_type(self, obj):
+        """Return the verbose name of the related model (type de fiche)."""
+        info = obj.object_info
+        if info and "model_name" in info:
+            return info["model_name"]
+        return obj.model_name
+
+    @admin.display(description="Titre")
+    def record_title_link(self, obj):
+        """Return the title as a clickable link to the associated record (public/detail view if possible)."""
+        info = obj.object_info
+        if info and "object" in info:
+            record = info["object"]
+            title = getattr(record, "title", None) or getattr(record, "name", None) or str(record)
+            # Prefer get_absolute_url if available
+            get_url = getattr(record, "get_absolute_url", None)
+            if callable(get_url):
+                try:
+                    url = get_url()
+                    return format_html('<a href="{}">{}</a>', url, title)
+                except Exception:
+                    pass
+            # Fallback to admin change url
+            app_label = record._meta.app_label
+            model_name = record._meta.model_name
+            try:
+                url = reverse_url(f"admin:{app_label}_{model_name}_change", args=[record.pk])
+            except Exception:
+                try:
+                    url = reverse_url(f"admin:{model_name}_change", args=[record.pk])
+                except Exception:
+                    return title
+            return format_html('<a href="{}">{}</a>', url, title)
+        return "-"
 
 
 class BiographyAdmin(admin.ModelAdmin):
