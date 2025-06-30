@@ -17,6 +17,8 @@ class DocumentFile(models.Model):
 
     class Meta:
         db_table = "fiches_documentfile"
+        verbose_name = "Fichier"
+        verbose_name_plural = "Fichiers"
         # managed = False  # If your DB table is not managed by Django migrations
 
     def __str__(self):
