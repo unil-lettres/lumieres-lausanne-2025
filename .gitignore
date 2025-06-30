@@ -180,3 +180,6 @@ logging/
 
 !app/static/js/lib
 migrations/
+
+# Ignore Django collected static files
+staticfiles/
