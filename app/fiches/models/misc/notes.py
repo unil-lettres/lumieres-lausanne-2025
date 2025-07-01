@@ -24,25 +24,3 @@ class NoteBase(ACModel):
 
     def __str__(self):
         return strip_tags(self.text[:30])
-
-
-# Concrete implementation of NoteBase
-class Note(NoteBase):
-    """
-    Concrete implementation of the NoteBase model.
-    """
-    pass
-
-
-# Commented out NoteForm for now to prevent issues
-# class NoteForm(ModelForm):
-#     """
-#     Form for the concrete Note model.
-#     """
-#     class Meta:
-#         model = Note
-#         fields = '__all__'
-
-#     def clean_text(self):
-#         data = self.cleaned_data['text']
-#         return data

@@ -241,8 +241,10 @@ class DepotAdmin(admin.ModelAdmin):
 class DocumentFileAdmin(admin.ModelAdmin):
     """Admin interface for DocumentFile model."""
 
-    list_display = ("file", "file_link")
+    list_display = ("file", "file_link", "access_owner", "access_public", "access_groups_list")
     search_fields = ("file__name",)
+    filter_horizontal = ("access_groups",)
+    fields = ("file", "title", "slug", "url", "access_owner", "access_public", "access_groups")
 
     @admin.display(description="File Link")
     def file_link(self, obj):
@@ -250,6 +252,11 @@ class DocumentFileAdmin(admin.ModelAdmin):
         if obj.file:
             return format_html('<a href="{}">Download</a>', obj.file.url)
         return "-"
+
+    @admin.display(description="Access Groups")
+    def access_groups_list(self, obj):
+        """Return a comma-separated list of access groups."""
+        return ", ".join(str(g) for g in obj.access_groups.all())
 
 
 class FindingAdmin(admin.ModelAdmin):
@@ -504,6 +511,12 @@ class FichesUserAdmin(UserAdmin):
     inlines = (UserProfileInline,)
 
 
+class CustomUserAdmin(UserAdmin):
+    """Custom admin for User model with UserProfile inline."""
+
+    inlines = (UserProfileInline,)
+
+
 class FichesGroupAdmin(GroupAdmin):
     """Admin interface for Group model."""
 
@@ -515,14 +528,13 @@ fiches_admin.register(News, NewsAdmin)
 fiches_admin.register(FreeContent, FreeContentAdmin)
 fiches_admin.register(DocumentFile, DocumentFileAdmin)
 fiches_admin.register(UserGroup, UserGroupAdmin)
-fiches_admin.register(UserProfile, UserProfileAdmin)
 fiches_admin.register(DocumentLanguage, DocumentLanguageAdmin)
 fiches_admin.register(Depot, DepotAdmin)
 fiches_admin.register(PrimaryKeyword, PrimaryKeywordAdmin)
 fiches_admin.register(SecondaryKeyword, SecondaryKeywordAdmin)
 fiches_admin.register(Nationality, NationalityAdmin)
 fiches_admin.register(Person, PersonAdmin)
-fiches_admin.register(Biography, BiographyAdmin)
+# fiches_admin.register(Biography, BiographyAdmin)
 fiches_admin.register(Project, ProjectAdmin)
 fiches_admin.register(Religion, ReligionAdmin)
 fiches_admin.register(Society, SocietyAdmin)
@@ -534,12 +546,6 @@ fiches_admin.register(User, UserAdmin)
 fiches_admin.register(Group, GroupAdmin)
 fiches_admin.register(Site, SiteAdmin)
 
-
-class CustomUserAdmin(UserAdmin):
-    """Custom admin for User model."""
-
-    pass
-
-
+# Unregister and re-register User with the custom admin
 fiches_admin.unregister(User)
 fiches_admin.register(User, CustomUserAdmin)

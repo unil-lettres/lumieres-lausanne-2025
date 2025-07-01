@@ -1,3 +1,9 @@
+# Copyright (C) 2025 Lumières.Lausanne
+# See docs/copyright.md
+#
+# This file is part of the Lumières.Lausanne project and is licensed under the terms
+# described in the LICENSE file found at the root of this source tree.
+
 # fiches/models/documents/document.py
 
 from ckeditor.fields import RichTextField
@@ -343,11 +349,20 @@ class ManuscriptB(Biblio):
 #    Note Bibliographie
 # ------------------------------------------------------------------------------
 class NoteBiblio(NoteBase):
+    """
+    Note attached to a Bibliography entry, with access control by user group.
+    """
     owner = models.ForeignKey(
         Biblio,
         on_delete=models.SET_NULL,  # Prevent deletion of associated notes if Biblio is deleted
         null=True,
         related_name="notes",  # Allows accessing notes via `biblio.notes.all()`
+    )
+    access_groups = models.ManyToManyField(
+        'fiches.UserGroup',
+        verbose_name=_('Groupes d\'accès'),
+        blank=True,
+        help_text=_('Contrôle d\'accès par groupe utilisateur'),
     )
 
     # Ensure `rte_type` exists and is compatible with note_formset.html
@@ -485,6 +500,12 @@ class Manuscript(models.Model):
 #    Note Manuscrit
 # ------------------------------------------------------------------------------
 class NoteManuscript(NoteBase):
+    access_groups = models.ManyToManyField(
+        'fiches.UserGroup',
+        verbose_name=_('Groupes d\'accès'),
+        blank=True,
+        help_text=_('Contrôle d\'accès par groupe utilisateur'),
+    )
     owner = models.ForeignKey(Manuscript, on_delete=models.SET_NULL, null=True)
 
     class Meta(NoteBase.Meta):
@@ -692,6 +713,12 @@ class TranscriptionReviewer(models.Model):
 #    Note Transcription
 # ------------------------------------------------------------------------------
 class NoteTranscription(NoteBase):
+    access_groups = models.ManyToManyField(
+        'fiches.UserGroup',
+        verbose_name=_('Groupes d\'accès'),
+        blank=True,
+        help_text=_('Contrôle d\'accès par groupe utilisateur'),
+    )
     owner = models.ForeignKey(Transcription, on_delete=models.SET_NULL, null=True)
 
     class Meta(NoteBase.Meta):
