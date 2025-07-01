@@ -131,13 +131,17 @@ class PersonAdmin(admin.ModelAdmin):
 
     @admin.display(description=_("Biographie"))
     def biography_link(self, obj):
-        """Display a link to the biography or a link to add one if missing."""
+        """Display a link to the biography or a button to add one if missing."""
         bio = obj.biography_set.first()
         if bio:
-            url = reverse_url("fiches_admin:fiches_biography_change", args=[bio.id])
-            return format_html('<a href="{}">{}</a>', url, _( "View/Edit"))
-        add_url = reverse_url("fiches_admin:fiches_biography_add") + f"?person={obj.id}"
-        return format_html('<a href="{}">{}</a>', add_url, _( "Add"))
+            url = f"/fiches/bio/{obj.id}/"
+            return format_html('<a href="{}" target="_blank">{}</a>', url, _(u"Afficher"))
+        # Show button to add biography
+        return format_html(
+            '<button type="button" onclick="fiches_admin.add_person_biography({})">{}</button>',
+            obj.id, _(u"Ajouter une biographie")
+        )
+
 
 class PrimaryKeywordAdmin(admin.ModelAdmin):
     """Admin interface for PrimaryKeyword model."""
