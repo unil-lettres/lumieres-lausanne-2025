@@ -406,11 +406,28 @@ class ManuscriptAdmin(admin.ModelAdmin):
 class ActivityLogAdmin(admin.ModelAdmin):
     """Admin interface for ActivityLog model."""
 
-    list_display = ("date", "user", "record_type", "record_title_link")
+    list_display = ("date", "user_link", "record_type", "record_title_link")
     list_display_links = ("record_title_link",)
     list_filter = ("model_name", "date")
     search_fields = ("user__username", "user__first_name", "user__last_name")
     ordering = ("-date",)
+
+    @admin.display(description="Utilisateur")
+    def user_link(self, obj):
+        """Return the user's full name (or username) as a clickable link to the user admin page."""
+        if not obj.user:
+            return "-"
+        
+        # Get user's full name or fallback to username
+        full_name = obj.user.get_full_name()
+        display_name = full_name if full_name.strip() else obj.user.username
+        
+        # Create link to user admin page
+        try:
+            url = reverse_url("admin:auth_user_change", args=[obj.user.pk])
+            return format_html('<a href="{}">{}</a>', url, display_name)
+        except (AttributeError, ValueError):
+            return display_name
 
     @admin.display(description="Type de fiche")
     def record_type(self, obj):
@@ -420,7 +437,7 @@ class ActivityLogAdmin(admin.ModelAdmin):
             return info["model_name"]
         return obj.model_name
 
-    @admin.display(description="Titre")
+    @admin.display(description="Fiche")
     def record_title_link(self, obj):
         """Return the title as a clickable link to the associated record (public/detail view if possible)."""
         info = obj.object_info
