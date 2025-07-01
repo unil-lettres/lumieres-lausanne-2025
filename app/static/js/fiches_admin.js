@@ -29,8 +29,8 @@ if (django && django.jQuery) {
         window.fiches_admin = window.fiches_admin || {
             add_person_biography: function(pk) {
                 $("input[name=_selected_action][value="+pk+"]").attr("checked","checked");
-                $("select[name=action]").val("add_biography");
-                $("form").submit();
+                $("select[name=action]").val("add_biography_action").trigger("change");
+                $("#changelist-form").submit();
             }
         }
 

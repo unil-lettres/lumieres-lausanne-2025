@@ -11,6 +11,7 @@ from django.contrib.sites.models import Site
 from django.contrib.sites.admin import SiteAdmin
 from django.forms import ModelForm, TextInput, CharField
 from django.contrib import admin
+from django.contrib import messages
 
 from fiches.models.content.free_content import FreeContent
 from fiches.models.content.news import News
@@ -128,6 +129,7 @@ class PersonAdmin(admin.ModelAdmin):
     search_fields = ("name",)
     ordering = ("name",)
     inlines = [BiographyInline]
+    actions = ["add_biography_action"]
 
     @admin.display(description=_("Biographie"))
     def biography_link(self, obj):
@@ -141,6 +143,27 @@ class PersonAdmin(admin.ModelAdmin):
             '<button type="button" onclick="fiches_admin.add_person_biography({})">{}</button>',
             obj.id, _(u"Ajouter une biographie")
         )
+
+    @admin.action(description=_("Ajouter une biographie"))
+    def add_biography_action(self, request, queryset):
+        """Admin action: create a Biography object for each selected person who does not have one."""
+        created = 0
+        for person in queryset:
+            if not person.has_biography():
+                Biography.objects.create(person=person)
+                created += 1
+        if created:
+            self.message_user(
+                request,
+                _("%d biography(ies) created." % created),
+                messages.SUCCESS
+            )
+        else:
+            self.message_user(
+                request,
+                _("No biography was created. All selected persons already have a biography."),
+                messages.INFO
+            )
 
 
 class PrimaryKeywordAdmin(admin.ModelAdmin):

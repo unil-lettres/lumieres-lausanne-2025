@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block extrahead %}
-<script src="{% static 'js/fiches_admin.js' %}"></script>
+{# script déplacé en bas de page #}
 {% endblock %}
 
 {% block title %}{{ title }} | {% trans 'Administration Lumières.Lausanne' %}{% endblock %}
@@ -20,4 +20,9 @@
 <ul id="navigation">
 	<li><a href="{% url 'home' %}">{% trans 'Retour vers les fiches' %}</a></li>
 </ul>
+{% endblock %}
+
+{% block footer %}
+{{ block.super }}
+<script src="{% static 'js/fiches_admin.js' %}"></script>
 {% endblock %}
