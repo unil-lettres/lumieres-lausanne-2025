@@ -241,8 +241,10 @@ class DepotAdmin(admin.ModelAdmin):
 class DocumentFileAdmin(admin.ModelAdmin):
     """Admin interface for DocumentFile model."""
 
+    # Only include valid text fields for searching. Do not include FileField or ImageField.
+    search_fields = ("title", "slug", "url")
+
     list_display = ("file", "file_link", "access_owner", "access_public", "access_groups_list")
-    search_fields = ("file__name",)
     filter_horizontal = ("access_groups",)
     fields = ("file", "title", "slug", "url", "access_owner", "access_public", "access_groups")
 
