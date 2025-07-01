@@ -313,11 +313,17 @@ class ObjectCollectionAdmin(admin.ModelAdmin):
 
 
 class ProjectAdmin(admin.ModelAdmin):
-    """Admin interface for Project model."""
+    """Admin interface for Project model with URL column and clickable link."""
 
-    list_display = ("name", "publish", "members_list", "groups_list")
+    list_display = (
+        "name",
+        "project_url_link",
+        "publish",
+        "members_list",
+        "groups_list",
+    )
     search_fields = ("name",)
-    ordering = ("id",)
+    ordering = ("name",)
     readonly_fields = ("vignette_preview",)
     fields = (
         "name",
@@ -347,6 +353,17 @@ class ProjectAdmin(admin.ModelAdmin):
     def groups_list(self, obj):
         """Return a comma-separated list of groups."""
         return ", ".join(str(g) for g in obj.access_groups.all())
+
+    @admin.display(description="Project URL")
+    def project_url_link(self, obj):
+        """Return the project's URL path as a clickable link (without host)."""
+        if hasattr(obj, "get_absolute_url"):
+            url = obj.get_absolute_url()
+        elif hasattr(obj, "url"):
+            url = f"/projets/{obj.url}"
+        else:
+            return "-"
+        return format_html('<a href="{}" target="_blank">{}</a>', url, url)
 
 
 @admin.register(PlaceView)
