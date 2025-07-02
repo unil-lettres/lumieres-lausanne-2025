@@ -111,7 +111,7 @@
                 <input type="hidden" name="doc_id" value="{{ doc.id }}" />
                 <input type="hidden" name="docfile_id" value="{{ docfile.id }}" />
 
-                {% if nb_ref = 1 and perms.fiches.delete_any_documentfile %}
+                {% if nb_ref == 1 and perms.fiches.delete_any_documentfile %}
                     <p>Le document n'étant lié a aucune autre fiche,
                     il est possible de le supprimer complétement.</p>
                     {% if docfile.file %}

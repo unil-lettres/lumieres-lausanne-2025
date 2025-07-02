@@ -18,8 +18,8 @@
  
 	This copyright notice MUST APPEAR in all copies of the file.
  -->{% endcomment %}
- {% load i18n %}
- {% load fiches_extras %}
+{% load i18n %}
+{% load fiches_extras %}
 
 {% if not doc.id %}
     <p>{% trans "La fiche doit être créée avant de pouvoir ajouter des documents" %}</p>
@@ -92,6 +92,8 @@
 				 documentfiles.dfid = $(obj).parents('li').attr('id').split('__')[1];
 			 } catch(e) {}
 			 if (!documentfiles.dfid) { alert("Error occurred"); return false; }
+			 var url = documentfiles.properties_form_url.replace('__DOCFILE_ID__', documentfiles.dfid);
+			 documentfiles.dialog_content.attr("src", url);
 			 documentfiles.properties_dialog.dialog('open');
 		 },
  
@@ -110,7 +112,7 @@
 				 _dfid = $(obj).parents('li').attr('id').split('__')[1];
 			 } catch(e) {}
 			 if (!_dfid) { alert("Error occurred"); return false; }
-			 var url = documentfiles.remove_doc_url.replace('#', _dfid);
+			 var url = documentfiles.remove_doc_url.replace('__DOCFILE_ID__', _dfid);
 			 $.post(url, function() { documentfiles.reload(); });
 		 },
 		 
@@ -159,7 +161,8 @@
 				 'Cancel': function(){ $(this).dialog('close'); }
 			 },
 			 open: function() {
-				 var url = documentfiles.properties_form_url.replace('#', documentfiles.dfid);
+				 // FIX: Use the real documentfiles.dfid in the edit URL
+				 var url = documentfiles.properties_form_url.replace('__DOCFILE_ID__', documentfiles.dfid);
 				 documentfiles.dialog_content.attr("src", url);
 				 if (! this.btn_inited) {
 					 $(this).dialog("widget").find(".ui-dialog-buttonpane button").each(function(i, n){
@@ -218,7 +221,7 @@
 				 'Non': function(){ $(this).dialog('close'); }
 			 },
 			 open: function() {
-				 var url = documentfiles.remove_doc_url.replace('#', documentfiles.dfid);
+				 var url = documentfiles.remove_doc_url.replace('__DOCFILE_ID__', documentfiles.dfid);
 				 documentfiles.remove_dialog_content.attr("src", url);
 			 },
 			 close: function() {
