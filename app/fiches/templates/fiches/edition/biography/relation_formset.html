@@ -125,22 +125,32 @@
     function add_relation_field() {
         var emptyFormHtml = $("#relation-empty_form").html(),
             newIdx = parseInt($("#id_relation_set-TOTAL_FORMS").val()),
-            newForm = $(emptyFormHtml.replace(/__prefix__/g, newIdx));
+            newFormHtml = emptyFormHtml.replace(/__prefix__/g, newIdx),
+            newForm = $(newFormHtml);
         $("#id_relation_set-TOTAL_FORMS").val(newIdx + 1);
+
+        // Fix field names for text and hidden inputs
+        newForm.find('input[type="text"]').each(function() {
+            var name = $(this).attr('name');
+            if (!name.startsWith('lookup_relation_set-')) {
+                // Try to fix the name if needed
+                var base = name.replace(/^lookup_/, '');
+                $(this).attr('name', 'lookup_' + base);
+            }
+        });
+        newForm.find('input[type="hidden"]').each(function() {
+            var name = $(this).attr('name');
+            if (!name.startsWith('relation_set-')) {
+                // Try to fix the name if needed
+                var base = name.replace(/^lookup_/, '');
+                $(this).attr('name', base);
+            }
+        });
 
         $(".relation-form").not("#relation-empty_form .relation-form").last().after(newForm);
         $(".Relation_related_person:visible", newForm).each(function(){ bindRelatedPersonAutocomplete(this) });
 
         fiches_edit.addRemoveFormBut(newForm, "Supprimer la relation", updateNewFieldBarWidth);
-
-		/*
-        if ($.fn.placeHolder) {
-            $("input[placeholder]", newForm).each(function(){ var $t = $(this);
-                $t.placeHolder({'text': $t.attr("placeholder")});
-            });
-        }
-        */
-
     }
 
     function updateNewFieldBarWidth() {
@@ -169,47 +179,30 @@
    	        })
 
 			.result(function(event, data, formatted) {
-                $(this).change();
-                return;
+                var $t = $(this);
+                var n = $t.attr('name');
+                var target = $("[name='" + n.substr("lookup_".length) + "']");
+                if (data) {
+                    // data[1] = id, data[0] = label
+                    target.val(data[1]); // Only the ID goes into the hidden field
+                } else {
+                    // Si pas de sélection, on refuse la saisie libre
+                    target.val("");
+                    $t.val("");
+                }
             })
 
-/*
-				var $t = $(this),
-			    	v = $t.val()
-			    	n = $t.attr('name')
-			    	target = $("[name='"+n.substr("lookup_".length)+"']");
-
-                if (data) {
-					target.val(data[1] + "|" + data[0]);
-                } else {
-					if (!v || ($t.attr("placeholder") && v == $t.attr("placeholder")) ) {
-						target.val("");
-					} else {
-						target.val(target.val().split("|")[0] + "|" + v);
-			        }
-			    }
-*/
-
-
-            //.blur(function(){ $(this).search(); })
+            .blur(function(){ $(this).search(); })
 
             .change(function(){
                 var $t = $(this),
-		            v = $t.val(),
-		            n = $t.attr('name'),
-		            target = $("[name='"+n.substr("lookup_".length)+"']");
-	            if (!v) {
-	              target.val("");
-	            } else {
-	                target.val(target.val().split("|")[0] + "|" + v);
-	            }
-/*
-                if (!v || ($t.attr("placeholder") && v == $t.attr("placeholder")) ) {
-                    target.val("");
-                } else {
-                    target.val(target.val().split("|")[0] + "|" + v);
+                    v = $t.val(),
+                    n = $t.attr('name'),
+                    target = $("[name='"+n.substr("lookup_".length)+"']");
+                // If the value is empty or has been changed manually, clear the hidden field
+                if (!v) {
+                  target.val("");
                 }
-*/
             })
 
             .change();
