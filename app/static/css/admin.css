@@ -90,10 +90,6 @@ body.theme-dark, html.theme-dark {
     color: #000 !important;
 }
 
-.theme-toggle {
-    display: none !important;
-}
-
 /* ===== Pagination ===== */
 .paginator {
     background: #E3DFD4;
