@@ -484,3 +484,19 @@ class ContributionDocForm(forms.ModelForm):
         return cleaned_data
 
 
+class DocumentFileForm(forms.ModelForm):
+    """Form for creating and editing DocumentFile instances."""
+
+    class Meta:
+        """Meta options for DocumentFileForm."""
+
+        model = DocumentFile
+        fields = ['title', 'slug', 'file', 'url', 'access_public', 'access_groups']
+        widgets = {
+            'title': forms.TextInput(attrs={'maxlength': 255, 'placeholder': _('Title')}),
+            'slug': forms.TextInput(attrs={'maxlength': 255, 'placeholder': _('Slug')}),
+            'file': forms.ClearableFileInput(),
+            'url': forms.URLInput(attrs={'placeholder': _('URL')}),
+        }
+
+

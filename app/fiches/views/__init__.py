@@ -51,6 +51,7 @@ from django.views.decorators.vary import vary_on_headers
 # from lumieres_project.urls import MyPasswordChangeForm
 from fiches.models import ACModel, ActivityLog, Finding, FreeContent, News, Transcription
 from utils import dbg_logger
+from fiches.forms import DocumentFileForm
 
 logger = logging.getLogger(__name__)  # XXX: delete it
 
@@ -346,14 +347,22 @@ def documentfile_frame_create(request, doc_id=None, docfile_id=None, create_done
     Ajout de nouveau document depuis la dialogue "Ajouter un nouveau document"
     """
     if request.method == "POST":
-        # Assuming form is submitted and we need to create a new DocumentFile
-        docfile = DocumentFile.objects.create(title="Default Title")
-        return HttpResponseRedirect(
-            reverse("docfile-frame-create", kwargs={"create_done": True, "docfile_id": docfile.id})
-        )
+        form = DocumentFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            docfile = form.save(commit=False)
+            # Correction : définir le propriétaire du document
+            if request.user.is_authenticated:
+                docfile.access_owner = request.user
+            docfile.save()
+            form.save_m2m()
+            return HttpResponseRedirect(
+                reverse("docfile-frame-create-done", kwargs={"docfile_id": docfile.id})
+            )
+    else:
+        form = DocumentFileForm()
 
-    # For GET requests or any other request type, prepare the initial form or context
     context = {
+        "form": form,
         "create_done": create_done,
         "docfile_saved": create_done,
         "docfile_id": docfile_id,
