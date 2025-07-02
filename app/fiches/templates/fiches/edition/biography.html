@@ -23,6 +23,14 @@
 {% block head %}
 	{{ block.super }}
 	{{ form.media }}
+	<style>
+	.unused,
+	.unused textarea,
+	.fieldWrapper.education,
+	.fieldWrapper.abroad_stays {
+		display: none !important;
+	}
+	</style>
 {% endblock head %}
 
 {% block page_title %}{{ form.instance.person_name|truncatewords:6|slice:"65"}}{{ block.super }}{% endblock page_title %}
