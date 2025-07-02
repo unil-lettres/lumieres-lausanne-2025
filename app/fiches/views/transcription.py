@@ -114,12 +114,16 @@ def delete(request, trans_id):
 @never_cache
 @permission_required(perm='fiches.change_transcription')
 def edit(request, trans_id=None, man_id=None, doc_id=None, new_trans=False, del_trans=False):
-    
+    """
+    Edit or create a Transcription object. Ensures the object is saved before
+    being used in formsets or related fields. Handles both GET and POST requests.
+    """
     if new_trans:
         man   = get_object_or_404(Manuscript, pk=man_id) if man_id else None
         doc   = get_object_or_404(Biblio, pk=doc_id) if doc_id else None
         trans = Transcription(manuscript_b=doc, author=request.user, access_owner=request.user, access_public=False)
         trans.access_owner = request.user
+        trans.save()  # Ensure the instance is saved before using in formsets
     else:
         trans = get_object_or_404(Transcription, pk=trans_id)
         doc       = trans.manuscript_b
