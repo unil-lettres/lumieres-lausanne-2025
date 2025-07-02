@@ -125,11 +125,18 @@
 		 },
 		 
 		 create_done: function(docfile_id) {
-			 documentfiles.add_newdoc(docfile_id);
+			 // Instead of calling add_newdoc directly, reload the iframe to the 'done' URL to ensure JS is executed
+			 var iframe = document.getElementById('documentfiles-newdoc-frame');
+			 if (iframe) {
+				 iframe.src = '/fiches/document/f_create/' + docfile_id + '/done/';
+			 } else {
+				 // fallback: call add_newdoc as before
+				 documentfiles.add_newdoc(docfile_id);
+			 }
 		 },
 		 
 		 add_newdoc: function(docfile_id) {
-			 var url = documentfiles.add_doc_url.replace('#', docfile_id);
+			 var url = documentfiles.add_doc_url.replace('__DOCFILE_ID__', docfile_id);
 			 $.post(url, function() { documentfiles.add_dialog.dialog('close'); documentfiles.reload(); });
 		 }
 	 };
@@ -226,6 +233,31 @@
 	 });
  </script>
  
+ <script type="text/javascript">
+// CSRF token setup for AJAX
+function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        var cookies = document.cookie.split(';');
+        for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!(/^GET|HEAD|OPTIONS|TRACE$/i.test(settings.type)) && !this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+        }
+    }
+});
+</script>
+ 
  <div id="documentfiles-properties-dialog" title="Propriétés du document" style="display:none;">
 	 <iframe id="documentfiles-properties-content" width="610" height="400" frameborder="no" src=""></iframe>
  </div>
@@ -258,4 +290,3 @@
  {% if perms.fiches.add_documentfile %}
 	 <button type="button" id="documentfiles-add-but"><span>{% trans "Ajouter un nouveau document" %}</span></button>
  {% endif %}
- 

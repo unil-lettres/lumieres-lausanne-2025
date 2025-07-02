@@ -88,7 +88,15 @@
 {% if docfile_saved %}
     {% if create_done %}
         <script type="text/javascript">
-            window.parent.documentfiles.create_done("{{ docfile_id }}");
+            if (window.parent && window.parent.documentfiles) {
+                window.parent.documentfiles.add_newdoc("{{ docfile_id }}");
+                setTimeout(function() {
+                    if (window.parent.documentfiles.add_dialog) {
+                        window.parent.documentfiles.add_dialog.dialog('close');
+                    }
+                    window.location.replace('about:blank');
+                }, 100);
+            }
         </script>
         <p>Document file (<code>{{ docfile_id }}</code>) created sucessfully</p>
     {% else %}
