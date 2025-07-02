@@ -94,7 +94,12 @@
                     if (window.parent.documentfiles.add_dialog) {
                         window.parent.documentfiles.add_dialog.dialog('close');
                     }
-                    window.location.replace('about:blank');
+                    // Reset the iframe to the upload form for next use
+                    var iframe = window.parent.document.getElementById('documentfiles-newdoc-frame');
+                    if (iframe) {
+                        var baseUrl = iframe.src.split('/f_create/')[0] + '/f_create/';
+                        iframe.src = baseUrl;
+                    }
                 }, 100);
             }
         </script>
