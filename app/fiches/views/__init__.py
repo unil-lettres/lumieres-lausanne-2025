@@ -328,6 +328,17 @@ def documentfile_frame_list(request):
         "docfiles": docfiles,
         "field_id": field_id,
         "q": q,
+        # Add pagination context for custom paginator tag
+        "paginator": docfiles.paginator,
+        "page_obj": docfiles,
+        "page": docfiles.number,
+        "pages": docfiles.paginator.num_pages,
+        "has_next": docfiles.has_next(),
+        "has_previous": docfiles.has_previous(),
+        "next": docfiles.next_page_number() if docfiles.has_next() else None,
+        "previous": docfiles.previous_page_number() if docfiles.has_previous() else None,
+        "hits": docfiles.paginator.count,
+        "results_per_page": docfiles.paginator.per_page,
     }
 
     return render(request, "fiches/edition/document/documentfile_frame_list.html", context)

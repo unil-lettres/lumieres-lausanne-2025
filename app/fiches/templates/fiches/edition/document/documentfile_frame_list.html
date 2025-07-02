@@ -70,13 +70,13 @@
 	  		</tr>
 	  	</thead>
 		<tbody>
-			{% if not docfile_list|length %}
+			{% if not docfiles|length %}
 			<tr>
 				<td colspan="2" class="empty-resultset">{% trans "Pas de documents à afficher" %}
 				{% if q %}{% trans " pour la requête" %}&nbsp;&laquo;<em>{{ q }}</em>&raquo;{% endif %}
 				</td>
 			{% else %}
-		  	{% for docfile in docfile_list %}
+		  	{% for docfile in docfiles %}
 			{% with docfile.get_absolute_url as absolute_url %}
 			<tr class="docfile-row {% cycle 'row1' 'row2' %}" >
 				<td class="docfile-title">
@@ -90,6 +90,9 @@
 		</tbody>
 	  </table>
   </div>
-  {% if is_paginated %}{% load paginator %}{% paginator 3 "q" %}{% endif %}
+  {% if docfiles.has_other_pages %}
+    {% load paginator %}
+    {% paginator 3 "q" %}
+  {% endif %}
 </div>
 {% endblock %}
