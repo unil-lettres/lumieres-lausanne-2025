@@ -377,23 +377,29 @@ def documentfile_frame_edit(request, docfile_id, edit_done=False):
     """
     Modification d'un document dans la dialogue "Editer un document"
     """
+    from fiches.models.documents.document_file import DocumentFile
+
+    docfile = get_object_or_404(DocumentFile, pk=docfile_id)
     if request.method == "POST":
-        pass
-        # Juste pour tester temps réponse lent
-        # import time
-        # time.sleep(2)
-    if docfile_id == "#":
-        return Http404()
+        form = DocumentFileForm(request.POST, request.FILES, instance=docfile)
+        if form.is_valid():
+            form.save()
+            # Redirige vers l'URL de succès (iframe JS s'en occupe)
+            return HttpResponseRedirect(reverse("docfile-frame-edit-done", args=[docfile_id]))
     else:
-        return create_update.update_object(
-            request,
-            DocumentFile,
-            object_id=docfile_id,
-            template_name="fiches/edition/document/documentfile_frame_form.html",
-            template_object_name="docfile",
-            post_save_redirect=reverse("docfile-frame-edit-done", args=[docfile_id]),
-            extra_context={"editing": True, "docfile_saved": edit_done},
-        )
+        form = DocumentFileForm(instance=docfile)
+
+    context = {
+        "form": form,
+        "editing": True,
+        "docfile_saved": edit_done,
+        "docfile_id": docfile_id,
+        "docfile": docfile,
+    }
+
+    response = render(request, "fiches/edition/document/documentfile_frame_form.html", context)
+    response["Cache-Control"] = "no-cache"
+    return response
 
 
 def server_error(request, template_name="500.html"):
