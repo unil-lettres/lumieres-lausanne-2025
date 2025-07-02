@@ -60,7 +60,8 @@ class Person(models.Model):
         ordering = ["name"]
         app_label = "fiches"
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Return a readable representation: 'FirstName LastName'."""
         return self.name
 
     def format_for_ajax_search(self):

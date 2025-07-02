@@ -70,8 +70,57 @@ class PersonWidget(forms.TextInput):
             except AttributeError as e:
                 print(f"Error setting lookup_class: {e}")
 
-        attrs = attrs or {}
+        if attrs is None:
+            attrs = {}
+        existing_class = attrs.get("class", "")
+        if "Relation_related_person" not in existing_class.split():
+            attrs["class"] = (existing_class + " Relation_related_person").strip()
         super().__init__(attrs)
+
+    def format_value(self, value):
+        """
+        Return the display value for the widget: show the person's name if value is an ID.
+        """
+        if value is None or value == '':
+            return ''
+        try:
+            from fiches.models.person import Person
+            # If value is a Person instance, return its string representation
+            if isinstance(value, Person):
+                return str(value)
+            # If value is an integer or string ID, fetch the Person
+            person = Person.objects.filter(pk=value).first()
+            if person:
+                return str(person)
+        except Exception:
+            pass
+        return str(value)
+
+    def render(self, name, value, attrs=None, renderer=None):
+        """
+        Render the widget as HTML, with a visible text input for autocompletion
+        and a hidden input for the actual value.
+        """
+        if value:
+            try:
+                label = self.format_value(value)
+            except Exception:
+                label = str(value).strip('|')
+        else:
+            label = ""
+            value = ""
+
+        # Always add the Relation_related_person class
+        base_class = "Relation_related_person"
+        extra_class = ""
+        if attrs and "class" in attrs:
+            extra_class = attrs["class"]
+        class_attr = f"{base_class} {extra_class}".strip()
+
+        text_input_name = f"lookup_{name}"
+        text_input = f'<input type="text" name="{text_input_name}" value="{label}" class="{class_attr}" placeholder="nom, prénom" />'
+        hidden_input = f'<input type="hidden" name="{name}" value="{value}" />'
+        return mark_safe(text_input + hidden_input)
 
 class StaticList(forms.SelectMultiple):
     def __init__(self, attrs=None, choices=(), add_title="Add", empty_label=None):
