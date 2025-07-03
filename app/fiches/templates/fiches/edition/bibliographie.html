@@ -78,7 +78,7 @@
                 if (data) {
                     // Ensure the first element of 'data' is the ID
                     if (isNaN(parseInt(data[0]))) data.reverse();
-                    $this.siblings('.helper_input_value').val(data.join("|"));
+                    $this.siblings('.helper_input_value').val(data[0]);
                 }
                 {% if perms.fiches.can_add_listitem %}
                 else {
