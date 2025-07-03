@@ -256,31 +256,58 @@
 
     {# --- Existing Biblio Fieldsets --- #}
     {% for fs in biblio_formdef.fieldsets %}
-    <fieldset {% if fs.class %}class="{{ fs.class }}"{% endif %}>
+    <fieldset{% if fs.class %} class="{{ fs.class }}"{% endif %}>
         {% if fs.collapsible %}<span class="ui-state-default collapse_btn"></span>{% endif %}
         {% if fs.title %}<div class="legend">{{ fs.title }}</div>{% endif %}
 
         {% for f in fs.fields %}
             {% with f.field as field %}
-                {% if f.template %}
-                    {# ✅ Ensure templates (like the note formset) are included #}
+                {% if f.name == "subj_person" %}
+                    <div class="fieldWrapper subj_person">
+                        <label for="id_subj_person" class="single-line">Personne</label>
+                        {# Affiche les erreurs du champ subj_person #}
+                        {% if field.errors %}
+                            <div class="field-errors">
+                                {{ field.errors }}
+                            </div>
+                        {% endif %}
+                        <div class="dynamiclist_container">
+                            <div class="dynamiclist_values">
+                                {# Affiche les personnes déjà sélectionnées #}
+                                {% for person in form.initial.subj_person %}
+                                    <div class="dynamiclist_value_entry">
+                                        <span class="dynamiclist_value_label">{{ person }}</span>
+                                        <input type="hidden" name="subj_person" value="{{ person.pk }}">
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <span class="dynamiclist_addbox">
+                                <input class="dynamiclist_helper_input ac_input" placeholder="nom, prénom" autocomplete="off"><input
+                                    class="helper_input_value" type="hidden">
+                                <button type="button"
+                                    class="dynamiclist_helper_addbut helper_addbut ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-primary"
+                                    onclick="dynamiclist_widget.addToList(this, 'subj_person'); return false;" role="button"
+                                    aria-disabled="false"><span class="ui-button-icon-primary ui-icon ui-icon-plusthick"></span><span
+                                        class="ui-button-text"><span>Ajouter une personne</span></span></button>
+                            </span>
+                            <span class="dynamiclist_add_info">Validez votre sélection avec le bouton <strong>"Ajouter une personne"</strong></span>
+                        </div>
+                        <script type="text/javascript">var dynamiclist_widget = dynamiclist_widget || {}; dynamiclist_widget.templates = dynamiclist_widget.templates || {}; dynamiclist_widget.templates["subj_person"] = '<div class="dynamiclist_value_entry"><span class="dynamiclist_value_label">%(label)s</span><input type="hidden" name="%(name)s" value="%(value)s" /></div>';</script>
+                        <div class="fixclear"></div>
+                    </div>
+                {% elif f.template %}
                     {% include f.template %}
                 {% elif f.name %}
-                    {# ✅ Keep fields with valid names #}
                     {% if field.is_hidden %}
                         {{ field }}
                     {% elif field.label %}
                         <div class="fieldWrapper 
                             {% if f.map_to %}{{ f.name }}{% else %}{{ field.html_name }}{% endif %}
-                            {% if f.required %} required{% endif %}
-                            {% if f.recommanded %} recommanded{% endif %}
-                            {% if field.errors %} errors{% endif %}
                             {% if f.column_one or f.column_two %} two-columns{% endif %}
                         ">
                             {{ field.errors }}
                             {% if f.hide_label == false %}
-                                <label for="{{ field.auto_id }}"
-                                    {% if f.class %}class="{{ f.class }}"{% endif %}>
+                                <label for="{{ field.auto_id }}"{% if f.class %} class="{{ f.class }}"{% endif %}>
                                     {{ field.label }}
                                     {% if f.tooltip_id %}
                                         {% with f.tooltip_id as tooltip_id %}
@@ -296,14 +323,11 @@
                                 </label>
                             {% endif %}
                             {{ field }}
-
-                            {# Special case for date fields #}
                             {% if f.name == "date" %}
                                 <input type="hidden" name="date_f" class="vardateformat" value="%d-%m-%y" />
                             {% elif f.name == "date2" %}
                                 <input type="hidden" name="date2_f" class="vardateformat" value="%d-%m-%y" />
                             {% endif %}
-
                             {{ field.help_text }}
                             <div class="fixclear"></div>
                         </div>
