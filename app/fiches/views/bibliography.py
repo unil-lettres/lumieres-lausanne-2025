@@ -38,7 +38,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
-from fiches.forms import BiblioForm, ContributionDocForm, NoteFormBiblio
+from fiches.forms import BiblioForm, ContributionDocForm, NoteFormBiblio, ContributionDocSecForm
 from fiches.models import *
 from fiches.models.documents.document import Depot, NoteBiblio
 from fiches.utils import (
@@ -433,13 +433,10 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
 
         if biblioForm.is_valid():
             doc = biblioForm.save(commit=False)
-
-            # Ensure creator remains unchanged unless permission is granted
-            if not request.user.has_perm("fiches.change_manuscript_ownership"):
-                doc.creator = request.user
-
+            # Save subj_person M2M
             doc.save()
             biblioForm.save_m2m()
+            doc.subj_person.set(biblioForm.cleaned_data.get("subj_person", []))
 
             # Set a default depot for newly created documents
             if new_doc:
@@ -459,9 +456,9 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
                     Biblio, ContributionDoc, form=ContributionDocSecForm, extra=1
                 )
 
-            contributionFormset = ContributionFormset(request.POST, instance=doc)
-            if contributionFormset.is_valid():
-                contributionFormset.save()
+            contributionFormSet = ContributionFormset(request.POST, instance=doc)
+            if contributionFormSet.is_valid():
+                contributionFormSet.save()
 
             # Update first author cache & re-index the document
             doc.updateFirstAuthor()
@@ -470,7 +467,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
             # Redirect after successful form submission
             if request.POST.get("__continue", "") == "on":
                 return HttpResponseRedirect(reverse("bibliography-edit", args=[doc.id]))
-            return HttpResponseRedirect(reverse("display-bibliography", doc.id))
+            return HttpResponseRedirect(reverse("display-bibliography", args=[doc.id]))
         else:
             noteFormset = NoteFormset(request.POST, instance=doc, queryset=note_qs)
             contributionFormset = ContributionFormset(request.POST, instance=doc)
@@ -480,6 +477,21 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
         biblioForm = BiblioForm(instance=doc) if doc else BiblioForm()
         noteFormset = NoteFormset(instance=doc, queryset=note_qs)
         contributionFormset = ContributionFormset(instance=doc)
+
+        # DEBUG: Log the initial value of subj_person (safe for new/unsaved instance)
+        import logging
+
+        logger = logging.getLogger("django")
+        subj_person_initial = getattr(biblioForm.instance, "subj_person", None)
+        if subj_person_initial and getattr(biblioForm.instance, "id", None):
+            subj_person_list = list(subj_person_initial.all())
+        elif subj_person_initial:
+            subj_person_list = "NO_ID"
+        else:
+            subj_person_list = None
+        logger.debug("[BIBLIO-DEBUG] subj_person initial: %s", subj_person_list)
+        logger.debug("[BIBLIO-DEBUG] biblioForm.initial: %s", biblioForm.initial)
+        logger.debug("[BIBLIO-DEBUG] biblioForm.cleaned_data (should be empty on GET): %s", getattr(biblioForm, "cleaned_data", None))
 
     # -------------------------------
     # Public Notes (Read-only display)

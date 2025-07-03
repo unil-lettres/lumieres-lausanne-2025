@@ -228,9 +228,9 @@ class Biblio(models.Model):
         verbose_name="Lieu de dépôt",
     )
 
-    legacy_depot = models.CharField(
-        max_length=128, blank=True, null=True, db_column="depot", verbose_name=_("Lieu de dépôt (texte)")
-    )
+    # legacy_depot = models.CharField(
+    #     max_length=128, blank=True, null=True, verbose_name=_("Lieu de dépôt (texte)")
+    # )
 
     cote = models.CharField(_("Cote"), max_length=150, blank=True)
 
@@ -268,6 +268,29 @@ class Biblio(models.Model):
             self.depot_id = 66  # Default depot
         super().save(*args, **kwargs)
         cache.delete(f"lumieres__biblioref__{self.id}")
+
+    def updateFirstAuthor(self):
+        """
+        Update the cached first author and first author name fields.
+        This method should be called after saving contributions.
+        It sets the first_author and first_author_name fields based on the first
+        ContributionDoc with contribution_type.code == 0 (author).
+        """
+        # Find the first ContributionDoc with contribution_type.code == 0 (author)
+        first_contrib = (
+            self.get_authors_contributions()
+            .filter(contribution_type__code=0)
+            .order_by("pk")
+            .select_related("person")
+            .first()
+        )
+        if first_contrib and first_contrib.person:
+            self.first_author = first_contrib.person
+            self.first_author_name = first_contrib.person.name
+        else:
+            self.first_author = None
+            self.first_author_name = ""
+        self.save(update_fields=["first_author", "first_author_name"])
 
     class Meta:
         app_label = "fiches"

@@ -149,34 +149,27 @@ class BiblioForm(forms.ModelForm):
     
     def clean_subj_person(self):
         """
-        Convert each '336|Name' string to a real Person object.
-        This ensures we return a list of Person instances for the M2M field.
+        Accepts a list of person PKs (as strings or ints) or legacy 'pk|label' strings.
+        Returns a list of Person instances for the M2M field.
         """
-        # We'll override the default cleaned_data list by re-parsing the raw POST data:
-        raw_list = self.data.getlist('subj_person')  
-        # e.g. ["336|Seigneux, Jean-Daniel (1725-1795)", "999|Another Name", ...]
-
+        raw_list = self.data.getlist('subj_person')
         persons = []
         for item in raw_list:
             item = item.strip()
             if not item:
                 continue
             if '|' in item:
-                pk_str, label = item.split('|', 1)
-                try:
-                    pk = int(pk_str)
-                    p = Person.objects.get(pk=pk)
-                    persons.append(p)
-                except (ValueError, Person.DoesNotExist):
-                    # Raise a validation error or just skip it
-                    raise forms.ValidationError(
-                        f"La personne «{item}» n'existe pas dans la base."
-                    )
+                pk_str, _ = item.split('|', 1)
             else:
-                # If there's no "|" in the string, it means user typed a new name
-                # that didn't match any Person in the DB. You can skip or raise an error.
-                continue
-
+                pk_str = item
+            try:
+                pk = int(pk_str)
+                p = Person.objects.get(pk=pk)
+                persons.append(p)
+            except (ValueError, Person.DoesNotExist):
+                raise forms.ValidationError(
+                    f"La personne «{item}» n'existe pas dans la base."
+                )
         return persons
 
 
@@ -498,5 +491,17 @@ class DocumentFileForm(forms.ModelForm):
             'file': forms.ClearableFileInput(),
             'url': forms.URLInput(attrs={'placeholder': _('URL')}),
         }
+
+
+class ContributionDocSecForm(ContributionDocForm):
+    """Form for secondary literature contributions (modern persons only)."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the form and filter for modern persons if possible."""
+        super().__init__(*args, **kwargs)
+        # If the Person model has a 'modern' field, filter the queryset for modern persons
+        if hasattr(Person, 'modern'):
+            self.fields['person'].widget.attrs['data-modern'] = 'true'
+        # Optionally, you could add logic here to filter choices if using a ModelChoiceField
 
 
