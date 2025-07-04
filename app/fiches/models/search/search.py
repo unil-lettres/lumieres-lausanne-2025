@@ -31,14 +31,10 @@ class SearchFilters(models.Model):
         return self.title
 
 class PlaceView(models.Model):
-    biblio = models.ForeignKey(
-        Biblio,  # Changed from 'document.Biblio' to Biblio
-        verbose_name=_("Biblio"),
-        null=True,          # Added null=True
-        blank=True,         # Allows the field to be optional in forms
-        on_delete=models.SET_NULL,
-        related_name='place_views'  # Prevents reverse accessor clashes
-    )
+    """
+    Read-only mapping to the SQL view fiches_placeview. Do not use ForeignKey fields here.
+    """
+    biblio_id = models.IntegerField(null=True, blank=True, verbose_name=_("Biblio ID"))
     place_name = models.CharField(
         max_length=255,
         verbose_name=_("Place Name")
@@ -46,13 +42,14 @@ class PlaceView(models.Model):
     # Add other relevant fields here
 
     def __str__(self):
-        return f"PlaceView for {self.place_name} ({self.biblio.title if self.biblio else 'No Biblio'})"
+        return f"PlaceView for {self.place_name} (Biblio ID: {self.biblio_id})"
 
     class Meta:
         app_label = "fiches"
         verbose_name = _("Place View")
         verbose_name_plural = _("Place Views")
         ordering = ['place_name']
+        managed = False  # Prevent Django from trying to update/delete rows
 
 #from django.db import models
 #from django.utils.translation import gettext_lazy as _

@@ -102,11 +102,18 @@ def create(request, man_id=None, doc_id=None):
 
 @permission_required(perm='fiches.delete_transcription')
 def delete(request, trans_id):
+    """
+    Delete a Transcription and redirect to the related bibliography if possible.
+    If the related Biblio does not exist, show a clear error message.
+    """
+    # XXX: maybe not mandatory for biblio delete.
     trans = get_object_or_404(Transcription, pk=trans_id)
-    if trans.manuscript_b:
-        response = HttpResponseRedirect(reverse('display-bibliography', args=[trans.manuscript_b.id]))
+    biblio = trans.manuscript_b
+    if biblio and getattr(biblio, 'id', None):
+        response = HttpResponseRedirect(reverse('display-bibliography', args=[biblio.id]))
     else:
-        response = HttpResponseServerError("no manuscript for this transcription")
+        # Show a user-friendly error if the related bibliography is missing
+        return HttpResponseServerError("No related bibliography for this transcription or it has been deleted.")
     trans.delete()
     return response
 
