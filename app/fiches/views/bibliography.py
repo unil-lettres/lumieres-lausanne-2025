@@ -39,8 +39,15 @@ from django.utils.translation import gettext as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from fiches.forms import BiblioForm, ContributionDocForm, NoteFormBiblio, ContributionDocSecForm
-from fiches.models import *
-from fiches.models.documents.document import Depot, NoteBiblio
+from fiches.models import (
+    Biblio,
+    DocumentType,
+    PrimaryKeyword,
+    SecondaryKeyword,
+    ContributionDoc,
+    Depot,  # Ajout pour le dépôt par défaut
+)
+from fiches.models.documents import NoteBiblio
 from fiches.utils import (
     get_last_model_activity,
     log_model_activity,
@@ -376,11 +383,16 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
         if not request.user.has_perm("fiches.add_biblio"):
             return HttpResponseForbidden(_("Accès non autorisé"))
 
-        doc = Biblio(creator=request.user, legacy_depot="n/a")
-
-        # Assign document type if provided
+        document_type = None
         if new_doctype and request.method == "GET":
-            doc.document_type = get_object_or_404(DocumentType, pk=new_doctype)
+            document_type = get_object_or_404(DocumentType, pk=new_doctype)
+        default_depot = Depot.objects.first()
+        doc = Biblio(
+            creator=request.user,
+            document_type=document_type,
+            depot=default_depot,
+        )
+        doc.save()  # Save immediately to get an ID for M2M relations
 
     # -------------------------------
     # Keywords Query

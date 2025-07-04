@@ -264,8 +264,14 @@ class Biblio(models.Model):
         return reverse("display-bibliography", args=[str(self.id)])
 
     def save(self, *args, **kwargs):
+        """
+        Save the Biblio instance, ensuring a valid Depot is assigned if none is set.
+        If no depot is set, assign the first available Depot as default.
+        """
         if not self.depot_id:
-            self.depot_id = 66  # Default depot
+            default_depot = Depot.objects.order_by('id').first()
+            if default_depot:
+                self.depot = default_depot
         super().save(*args, **kwargs)
         cache.delete(f"lumieres__biblioref__{self.id}")
 
