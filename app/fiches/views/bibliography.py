@@ -541,7 +541,9 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
 
 def delete(request, doc_id):
     """
-    Delete the Bibliography entry
+    Delete the Bibliography entry.
+    Handles errors gracefully if the redirect URL cannot be resolved.
+    Redirects to the main index page after deletion.
     """
 
     if not request.user.has_perm("fiches.delete_biblio"):
@@ -558,7 +560,14 @@ def delete(request, doc_id):
     if from_url:
         return HttpResponseRedirect(from_url)
     else:
-        return HttpResponseRedirect(reverse("search-biblio"))
+        try:
+            return HttpResponseRedirect(reverse("home"))
+        except Exception as exc:
+            # Return a user-friendly error page if reverse fails
+            return HttpResponseServerError(
+                f"Could not resolve redirect after deletion: {exc}. "
+                "Please contact the administrator."
+            )
 
 
 def documentfile_change_list(request, doc_id):
