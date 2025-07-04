@@ -383,9 +383,12 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
         if not request.user.has_perm("fiches.add_biblio"):
             return HttpResponseForbidden(_("Accès non autorisé"))
 
-        document_type = None
-        if new_doctype and request.method == "GET":
-            document_type = get_object_or_404(DocumentType, pk=new_doctype)
+        # Always get document_type from POST (if present) or from new_doctype
+        if request.method == "POST":
+            document_type_id = request.POST.get("document_type") or new_doctype
+        else:
+            document_type_id = new_doctype
+        document_type = get_object_or_404(DocumentType, pk=document_type_id) if document_type_id else None
         default_depot = Depot.objects.first()
         doc = Biblio(
             creator=request.user,
@@ -442,6 +445,13 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     # -------------------------------
     if request.method == "POST":
         biblioForm = BiblioForm(request.POST, instance=doc)
+
+        # Ensure document_type is set for new documents (fix IntegrityError)
+        if new_doc and getattr(doc, "document_type", None) is None:
+            # Try to get from POST or fallback to new_doctype
+            document_type_id = request.POST.get("document_type") or new_doctype
+            if document_type_id:
+                doc.document_type = get_object_or_404(DocumentType, pk=document_type_id)
 
         if biblioForm.is_valid():
             doc = biblioForm.save(commit=False)
