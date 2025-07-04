@@ -147,8 +147,8 @@ function add_contribution_field() {
     // 3) Insert the newly-cloned row after the last visible .contribution-form
     $(".contribution-form").not("#contribution-empty_form .contribution-form").last().after(newForm);
 
-    // 4) Attach autocomplete to each newly inserted .dynamiclist_helper_input
-    newForm.find(".dynamiclist_helper_input").each(function() {
+    // 4) Attach autocomplete to each newly inserted person field
+    newForm.find(".ContributionDoc_person").each(function() {
         bindContribPersonAutocomplete(this);
     });
 

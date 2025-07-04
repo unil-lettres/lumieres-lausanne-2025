@@ -72,9 +72,10 @@ class PersonWidget(forms.TextInput):
 
         if attrs is None:
             attrs = {}
+        # Use the proper class name for contribution documents
         existing_class = attrs.get("class", "")
-        if "Relation_related_person" not in existing_class.split():
-            attrs["class"] = (existing_class + " Relation_related_person").strip()
+        if "ContributionDoc_person" not in existing_class.split():
+            attrs["class"] = (existing_class + " ContributionDoc_person").strip()
         super().__init__(attrs)
 
     def format_value(self, value):
@@ -110,15 +111,18 @@ class PersonWidget(forms.TextInput):
             label = ""
             value = ""
 
-        # Always add the Relation_related_person class
-        base_class = "Relation_related_person"
+        # Always add the ContributionDoc_person class for contributions
+        base_class = "ContributionDoc_person"
         extra_class = ""
         if attrs and "class" in attrs:
             extra_class = attrs["class"]
         class_attr = f"{base_class} {extra_class}".strip()
 
         text_input_name = f"lookup_{name}"
-        text_input = f'<input type="text" name="{text_input_name}" value="{label}" class="{class_attr}" placeholder="nom, prénom" />'
+        text_input = (
+            f'<input type="text" name="{text_input_name}" value="{label}" '
+            f'class="{class_attr}" placeholder="nom, prénom" />'
+        )
         hidden_input = f'<input type="hidden" name="{name}" value="{value}" />'
         return mark_safe(text_input + hidden_input)
 

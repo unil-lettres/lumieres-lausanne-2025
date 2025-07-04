@@ -427,7 +427,7 @@ class ContributionDocForm(forms.ModelForm):
     person = forms.CharField(
         widget=PersonWidget(
             fk_field=ContributionDoc._meta.get_field("person"),
-            attrs={'class': 'dynamiclist_helper_input', 'placeholder': 'nom, prénom'}
+            attrs={'class': 'ContributionDoc_person', 'placeholder': 'nom, prénom'}
         ),
         required=False
     )

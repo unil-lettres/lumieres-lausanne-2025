@@ -269,7 +269,8 @@ class Biblio(models.Model):
         If no depot is set, assign the first available Depot as default.
         """
         if not self.depot_id:
-            default_depot = Depot.objects.order_by('id').first()
+            from fiches.models import Depot
+            default_depot = Depot.objects.first()
             if default_depot:
                 self.depot = default_depot
         super().save(*args, **kwargs)
