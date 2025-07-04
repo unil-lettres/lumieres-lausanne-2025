@@ -1,0 +1,135 @@
+/* Variables CSS pour le thème UNIL */
+:root {
+    --primary: #8b7355; /* Couleur UNIL brun au lieu du bleu clair Django par défaut #79aec8 */
+    --secondary: #C6BDA8; /* Couleur UNIL beige au lieu du bleu Django par défaut #417690 */
+    --accent: #e4d5b9; /* Couleur UNIL beige clair au lieu du jaune Django par défaut #f5dd5d */
+}
+
+#header { 
+    height: 65px; 
+    background: #E3DFD4 url(../fiches/images/logo_unil_banner.png) no-repeat scroll 5px 50%; 
+    color: #5D5D5A; 
+    border-bottom: 1px solid #C6BDA8;
+    background-size: auto 55px;
+}
+#branding h1 { margin: 10px 0 0 160px; color: #5D5D5A; }
+
+#navigation { float: right; padding-right: 10px; }
+#navigation li { list-style: none; }
+
+a:link, a:visited { color: #827554; }
+a:hover { color: #423A28; }
+
+#header a:link, #header a:visited { color: #990000; }
+
+div.breadcrumbs { 
+    border-bottom-color: #C6BDA8; 
+    background: #d3c5b6 url(images/admin/default-bg.gif) 0 0 repeat-x;
+    color: #5D5D5A;
+    padding: 8px 15px;
+    font-weight: 500;
+}
+
+div.breadcrumbs a:link, 
+div.breadcrumbs a:visited { 
+    color: #827554; 
+    text-decoration: none;
+}
+
+div.breadcrumbs a:hover { 
+    color: #423A28; 
+    text-decoration: underline;
+}
+
+.row1 { background-color: #F0EDE7; }
+
+.module h2, .module caption, .inline-group h2 { background: #d3c5b6 url(images/admin/default-bg.gif) 0 0 repeat-x; }
+
+.button.default, input.default[type="submit"], .submit-row input.default { border-color: #a88f74; background: #d3c5b6 url(images/admin/default-bg.gif) 0 0 repeat-x; }
+
+
+/**
+ * Redefine standard widget
+ */
+
+ /* ===== Permissions Selector ===== increase width */
+.permissions .selector { width: 840px; }							/* w*2 + 40 */
+.permissions .selector .selector-available input { width: 360px; }	/* w - 40   */
+.permissions .selector select,
+.permissions .selector-available, .permissions  .selector-chosen { width: 400px; }
+
+.fiches-project .stacked { width: 800px; }
+.fiches-project .stacked .selector-available input { width: 742px; }
+.fiches-project .stacked select,
+.fiches-project .stacked .selector-available, 
+.fiches-project .stacked .selector-chosen { width: 780px; height: auto; }
+
+.icon-btn { padding-left: 0; }
+.icon-btn .icon { background-position: 0 0; background-repeat: no-repeat; line-height: 14px; padding: 0 10px; }
+
+.check-btn .icon { background-image: url(images/tick.png); }
+.generate-btn .icon { background-image: url(images/lightbulb.png); }
+
+
+/* ===== CKEditor ===== */
+.cke_skin_v2 table.cke_editor .cke_top { border-color: #696969 !important; }
+.x-cke_label_button .cke_label { display: inline !important; padding-left: 0 !important; }
+.x-cke_label_button .cke_icon { display: none !important; }
+.x-trans-suppressed_button .cke_label { text-decoration: line-through; }
+
+body, html {
+    color-scheme: light !important;
+}
+body.theme-dark, html.theme-dark {
+    background: #fff !important;
+    color: #000 !important;
+}
+body.theme-dark, html.theme-dark {
+    /* Remove dark mode class if present */
+    background-color: #fff !important;
+    color: #000 !important;
+}
+
+/* ===== Pagination ===== */
+.paginator {
+    background: #E3DFD4;
+    padding: 12px 20px;
+    border-top: 1px solid #C6BDA8;
+    border-bottom: 1px solid #C6BDA8;
+    text-align: center;
+    color: #5D5D5A;
+}
+
+.paginator a {
+    color: #827554;
+    text-decoration: none;
+    padding: 6px 12px;
+    margin: 0 2px;
+    border: 1px solid #C6BDA8;
+    border-radius: 4px;
+    background: #fff;
+    transition: all 0.2s ease;
+}
+
+.paginator a:hover {
+    background: #d3c5b6;
+    color: #5D5D5A;
+    border-color: #a88f74;
+}
+
+.paginator .this-page {
+    font-weight: bold;
+    color: #5D5D5A;
+    padding: 6px 12px;
+    margin: 0 2px;
+    background: #d3c5b6;
+    border: 1px solid #a88f74;
+    border-radius: 4px;
+}
+
+.paginator .end {
+    color: #999;
+    padding: 6px 12px;
+    margin: 0 2px;
+}
+

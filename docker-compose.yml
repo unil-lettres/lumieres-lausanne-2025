@@ -1,50 +1,75 @@
+# Project: LLv2025
+
+# Contributors:
+#  - Julien Ganivet <julien.ganivet@unil.ch>
+#  - Xavier Beheydt <xavier.beheydt@gmail.com>
+
+name: LumieresLausanne
+
+networks:
+  frontend:
+  backend:
+
+
+volumes:
+  db-data:
+
+
 services:
+  app:
+    image: python:3.12-bullseye
+    env_file:
+      - ${PWD}/.env
+    depends_on:
+      - db
+    links:
+      - db
+    profiles: [ test, prod ]
+
+  search:
+    # XXX: switch to EleasticSearch ?
+    image: solr:9.8.1-slim
+    # build: docker/solr
+    # user: ${UID}:${GID}
+    # TODO check https://hub.docker.com/_/solr
+    networks:
+      - backend
+    command:
+      - solr-precreate
+      - gettingstarted
+    volumes:
+      - ${PWD}/tmp/search/data:/var/solr
+    profiles: [ prod, test, dev ]
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8983/solr/admin/info/system" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   db:
-    container_name: db
-    image: mysql:9.2.0
+    image: mysql:9.3
+    env_file:
+      - ./.env
     volumes:
-      - mysql_data:/var/lib/mysql
-      - ./sql:/home/sql-dumps
-      - ./mysql-custom.cnf:/etc/mysql/conf.d/mysql-custom.cnf
-    environment:
-      MYSQL_DATABASE: django_db
-      MYSQL_USER: django_user
-      MYSQL_PASSWORD: django_password
-      MYSQL_ROOT_PASSWORD: root_password
-    ports:
-      - "3306:3306"
+      - db-data:/var/lib/mysql
+      - ${PWD}/settings/db/mysql-custom.cnf:/etc/mysql/conf.d/mysql-custom.cnf:ro
     networks:
-      - LL2025
+      - backend
+    profiles: [ prod, test, dev ]
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  django:
-    container_name: django
-    build:
-      context: ./django
-    volumes:
-      - ./django:/app
-      - ./django/lumieres/media:/app/lumieres/media
-    working_dir: /app/lumieres
-    command: python manage.py runserver 0.0.0.0:8000
-    ports:
-      - "8000:8000"
-    environment:
-      POSTGRES_NAME: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+  phpmyadmin:
+    image: phpmyadmin:latest
+    links:
+      - db
     depends_on:
       - db
     networks:
-      - LL2025
-
-networks:
-  LL2025:
-    driver: bridge
-
-volumes:
-  mysql_data:
+      - backend
+    environment:
+      PMA_HOST: db
+    profiles: [ dev, test ]

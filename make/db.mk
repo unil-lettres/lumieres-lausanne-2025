@@ -1,0 +1,26 @@
+# db.mk is a sub makefile about database recipes
+#
+# Authors:
+#   - Xavier Beheydt <xavier.beheydt@gmail.com>
+
+include $(CURDIR)/.env
+DB_DUMP_FILE ?= $(CURDIR)/backup/sqldump/v2025/2025_LL_django-v5.2.sql
+
+.PHONY: db/prepare
+db/prepare:  ## Restore the database from a dump file
+db/prepare: dev/up
+	docker compose exec -T db \
+		mysql -uroot -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < ${DB_DUMP_FILE}
+	
+DB_DUMP_BACKUP ?= $(CURDIR)/backup/sqldump/v2025/backup.sql
+.PHONY: db/backup
+db/backup:  ## Backup the database in a dumpfile
+db/backup:
+	docker compose exec -T db \
+		mysqldump -uroot -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} > ${DB_DUMP_BACKUP}
+
+.PHONY: db/restore
+db/restore:  ## Restore the database from a dump file
+db/restore:
+	docker compose exec -T db \
+		mysql -uroot -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < ${DB_DUMP_BACKUP}

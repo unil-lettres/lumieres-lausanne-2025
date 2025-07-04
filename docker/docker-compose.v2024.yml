@@ -1,0 +1,41 @@
+# Project: LL2024
+# Reworked by: Copyright Xavier Beheydt. All rights reserved.
+
+name: LLv2024-testing
+
+volumes:
+  mysql_data:
+
+
+services:
+  app:
+    build: ./app
+    ports:
+      - 8090:8000
+    depends_on:
+      - db
+
+  search:
+    build: ./search
+
+  db:
+    build: ./db
+    environment:
+      MYSQL_DATABASE: lumie_django_v3
+      MYSQL_ROOT_PASSWORD: password
+
+# Dev services
+  phpmyadmin:
+    image: phpmyadmin
+    pull_policy: always
+    depends_on:
+      - db
+    links:
+      - db
+    ports:
+      - 8091:80
+    environment:
+      # PMA_ARBITRARY: 1
+      PMA_HOST: db
+      MYSQL_DATABASE: lumie_django_v3
+      MYSQL_ROOT_PASSWORD: password

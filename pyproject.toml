@@ -1,0 +1,78 @@
+[project]
+name = "lumieres-lausanne"
+description = """
+A Django web project allowing researchers to publish their discoveries 
+about writings from the Enlightenment period in Lausanne and the canton 
+of Vaud.
+"""
+authors = [
+    { name = "Julien Ganivet", email = "julien.ganivet@unil.ch" },
+    { name = "Xavier Beheydt", email = "xavier.beheydt@gmail.com" },
+]
+dependencies = [
+    "Pillow>=9.0,<10.0",
+    "django-ckeditor>=6.7.2",
+    "django-haystack>=3.0",
+    "django-js-asset>=2.2.0",
+    "django==5.2",
+    "mysqlclient>=2.2.7",
+    "pysolr>=3.9.0",
+    "sorl-thumbnail>=12.7.0",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+tools = ["scrapy", "flask"]
+dev = [
+    "black",
+    "flake8",
+    "flake8-bugbear",
+    "flake8-comprehensions",
+    "flake8-django",
+    "flake8-docstrings",
+    "flake8-pyproject",
+    "isort",
+    "mypy",
+    "pep8-naming",
+    "pytest",
+    "pytest-cov",
+    "pytest-django",
+]
+docs = ["mkdocs"]
+
+[tool.setuptools]
+packages = ["app"]
+
+[build-system]
+requires = ["setuptools", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 119 # Django recommendation
+
+[tool.isort]
+profile = "black"
+line_length = 119                          # Django recommendation
+known_third_party = ["django", "requests"]
+reorder = true
+clean = true
+
+[tool.mypy]
+files = ["app"]
+ignore_missing_imports = true
+strict_optional = true
+
+[tool.flake8]
+max-line-length = 119 # Django recommendation
+ignore = [
+    # E203: Whitespace before ':' (conflicts with black)
+    "E203",
+    # W503: Line break before binary operator (conflicts with black)
+    "W503",
+]
+
+# pyproject.toml
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = ["tests"]

@@ -1,0 +1,18 @@
+{
+	"Issues Notes": {
+		"scope": "python,html",
+		"prefix": "issue",
+		"body": [
+			"XXX: issue #$1 $2"
+		],
+		"description": "Add an issue XXX note point"
+	},
+	"Issues 9": {
+		"scope": "python,html",
+		"prefix": "issue9",
+		"body": [
+			"XXX: issue #9 Error placeholders"
+		],
+		"description": "Add an issue xxx note point for 9th."
+	}
+}
