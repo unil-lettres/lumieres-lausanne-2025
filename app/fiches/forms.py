@@ -121,6 +121,22 @@ class BiblioForm(forms.ModelForm):
                     except Exception:
                         continue
 
+        # Same logic for date2 (date de fin)
+        date2_val = self.initial.get('date2') or self.data.get('date2')
+        if date2_val:
+            import datetime
+            if isinstance(date2_val, datetime.date):
+                self.initial['date2'] = date2_val.strftime('%d/%m/%Y')
+            else:
+                # Try to parse string with known formats
+                for fmt in ['%Y-%m-%d', '%d-%m-%Y', '%d/%m/%Y', '%d.%m.%Y']:
+                    try:
+                        d = datetime.datetime.strptime(date2_val, fmt)
+                        self.initial['date2'] = d.strftime('%d/%m/%Y')
+                        break
+                    except Exception:
+                        continue
+
     def clean(self):
         cleaned_data = super().clean()
         doctype = cleaned_data.get("document_type")
