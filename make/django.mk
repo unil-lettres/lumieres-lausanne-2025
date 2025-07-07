@@ -30,7 +30,7 @@ django/collectstatic:  ## Collect static files for Django
 
 .PHONY: django/test
 django/test:  ## Run all Django unit tests
-	DJANGO_DEVELOPMENT=1 python ${APP_PATH}/manage.py test fiches --settings=lumieres_project.settings
+	DJANGO_DEVELOPMENT=1 python ${APP_PATH}/manage.py test --settings=lumieres_project.settings
 
 ARGS ?=
 .PHONY: django/import
@@ -41,3 +41,7 @@ django/import:  ## Import data into Django
 django/cov:  ## Run Django tests with coverage and show report
 	DJANGO_DEVELOPMENT=1 PYTHONPATH=${APP_PATH} coverage run --source=${APP_PATH}/fiches -m django test fiches --settings=lumieres_project.settings
 	coverage report -m
+
+.PHONY: django/showmigrations
+django/showmigrations:  ## Show Django migrations
+	python ${APP_PATH}/manage.py showmigrations fiches --settings=lumieres_project.settings
