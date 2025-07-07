@@ -463,7 +463,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
             # Set a default depot for newly created documents
             if new_doc:
                 with connection.cursor() as cursor:
-                    cursor.execute("UPDATE fiches_biblio SET depot = %s WHERE id = %s", ["n/a", doc.id])
+                    cursor.execute("UPDATE fiches_biblio SET depot_id = %s WHERE id = %s", [None, doc.id])
 
             log_model_activity(doc, request.user)
 
