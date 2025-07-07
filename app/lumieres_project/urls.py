@@ -1,6 +1,25 @@
-# lumieres/urls.py
+# Copyright (C) 2010-2025 Université de Lausanne, RISET
+# <https://www.unil.ch/riset/>
+#
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# This copyright notice MUST APPEAR in all copies of the file.
 
-import os  # Required for os.path.join
+"""URL configuration for lumieres_project."""
+
+import os
 
 from django.conf import settings
 from django.conf.urls.static import static
@@ -10,15 +29,18 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.urls import include, path, re_path
 from django.views.generic import TemplateView
 from django.views.static import serve
+
 from fiches import views as fiches_views
 from fiches.admin import fiches_admin
 
 
-# Custom Password Change Form with autocomplete disabled
 class MyPasswordChangeForm(PasswordChangeForm):
+    """Custom Password Change Form with autocomplete disabled."""
+
     pass
 
 
+# Configure form fields to disable autocomplete
 MyPasswordChangeForm.base_fields["old_password"].widget.attrs["autocomplete"] = "off"
 MyPasswordChangeForm.base_fields["new_password1"].widget.attrs["autocomplete"] = "off"
 MyPasswordChangeForm.base_fields["new_password2"].widget.attrs["autocomplete"] = "off"
@@ -71,7 +93,7 @@ urlpatterns = [
     path(
         "accounts/reset_password_confirm/<uidb64>/<token>/",
         auth_views.PasswordResetConfirmView.as_view(
-            template_name="registration/password_reset_confirm.html", success_url="/accounts/reset_password_complete/"
+            template_name="registration/password_reset_confirm.html", success_url="/accounts/reset_password_complete/",
         ),
         name="password_reset_confirm",
     ),
