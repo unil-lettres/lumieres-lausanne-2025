@@ -182,36 +182,47 @@ function add_contribution_field() {
 			{% endif %}
         })
         .result(function(event, data, formatted) {
-            {% if perms.fiches.can_add_listitem %}
+            // MODIFICATION: store the selected person ID for use in .change() (Auteurs field in biblio form)
+            if (data && data[1]) {
+                $(this).data('person-id', data[1]);
+            } else {
+                $(this).removeData('person-id');
+            }
             $(this).change();
             return;
-            {% else %}
-            var $t = $(this),
-                v = $t.val(),
-                n = $t.attr('name'),
-                target = $("[name='"+n.substr("lookup_".length)+"']");
-            if (data && data[0]) {
-                target.val(data[1] + "|" + data[0]);
-            }
-            else if (!v) {
-                target.val("");
-            }
-            {% endif %}
+            /*
+            // OLD CODE: direct assignment (did not persist ID for .change())
+            // if (data && data[0]) {
+            //     target.val(data[1] + "|" + data[0]);
+            // }
+            // else if (!v) {
+            //     target.val("");
+            // }
+            */
         })
 
         .change(function(){
-            {% if perms.fiches.can_add_listitem %}
+            // MODIFICATION: use stored person ID if available (Auteurs field in biblio form)
             var $t = $(this),
                 v = $t.val(),
                 n = $t.attr('name'),
-                target = $("[name='"+n.substr("lookup_".length)+"']");
-
+                target = $("[name='"+n.substr("lookup_".length)+"']"),
+                person_id = $t.data('person-id');
             if (!v) {
-              target.val("");
+                target.val("");
+            } else if (person_id) {
+                target.val(person_id + "|" + v);
             } else {
-                target.val(target.val().split("|")[0] + "|" + v);
+                target.val(v);
             }
-            {% endif %}
+            /*
+            // OLD CODE: only used value, not ID
+            // if (!v) {
+            //   target.val("");
+            // } else {
+            //     target.val(target.val().split("|")[0] + "|" + v);
+            // }
+            */
         })
         .change();
    }
