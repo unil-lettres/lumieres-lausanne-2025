@@ -78,7 +78,6 @@ urlpatterns = [
         name="password_reset_complete",
     ),
     # Home Page
-    # XXX: issue #9 Error placeholders
     path("", fiches_views.main_index, name="lumieres-home"),
     # Static About Page
     path("a_propos/", TemplateView.as_view(template_name="fiches/about.html"), name="about"),
