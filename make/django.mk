@@ -17,11 +17,23 @@ django/createsuperuser:  ## Create a superuser for Django
 	python ${APP_PATH}/manage.py createsuperuser
 
 .PHONY: django/makemigrations
-django/makemigrations:  ## Make migrations for Django
+# Make migrations for all apps
+django/makemigrations:  ## Make migrations for all Django apps
+	python ${APP_PATH}/manage.py makemigrations --settings=lumieres_project.settings
+
+.PHONY: django/makemigrations/fiches
+# Make migrations for fiches app only
+django/makemigrations/fiches:  ## Make migrations for fiches app only
 	python ${APP_PATH}/manage.py makemigrations fiches --settings=lumieres_project.settings
 
 .PHONY: django/migrate
-django/migrate:  ## Apply migrations for Django
+# Apply migrations for all apps
+django/migrate:  ## Apply migrations for all Django apps
+	python ${APP_PATH}/manage.py migrate --settings=lumieres_project.settings
+
+.PHONY: django/migrate/fiches
+# Apply migrations for fiches app only
+django/migrate/fiches:  ## Apply migrations for fiches app only
 	python ${APP_PATH}/manage.py migrate fiches --settings=lumieres_project.settings
 
 .PHONY: django/collectstatic
@@ -43,5 +55,11 @@ django/cov:  ## Run Django tests with coverage and show report
 	coverage report -m
 
 .PHONY: django/showmigrations
+# Show migrations for all apps
 django/showmigrations:  ## Show Django migrations
+	python ${APP_PATH}/manage.py showmigrations --settings=lumieres_project.settings
+
+.PHONY: django/showmigrations/fiches
+# Show migrations for fiches app only
+django/showmigrations/fiches:  ## Show Django migrations for fiches app only
 	python ${APP_PATH}/manage.py showmigrations fiches --settings=lumieres_project.settings
