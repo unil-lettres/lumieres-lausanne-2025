@@ -301,4 +301,28 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 	</fieldset>
 	
 </form>
+<script type="text/javascript">
+(function($){
+    $(document).ready(function(){
+        // Validation blocking popup for required fields
+        $("form.edit-form.transcription").on('submit', function(e) {
+            var requiredFields = [
+                '#id_text' // Ajoutez d'autres champs requis si nécessaire
+            ];
+            var missing = [];
+            requiredFields.forEach(function(sel) {
+                var $f = $(sel);
+                if ($f.length && !$f.val().trim()) {
+                    var label = $("label[for='"+$f.attr('id')+"']").text() || sel;
+                    missing.push(label);
+                }
+            });
+            if (missing.length > 0) {
+                alert('Please fill in the following required fields before saving:\n' + missing.join('\n'));
+                e.preventDefault();
+            }
+        });
+    });
+})(jQuery);
+</script>
 {% endblock main_content %}
