@@ -25,12 +25,20 @@ print("DEBUG: BASE_DIR =", BASE_DIR)
 SECRET_KEY = "django-insecure-#+_qt^k0$c5sw@ry!r$*^dyw6$zvf(s8jb6_6jtcryb=cnmozb"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() in ("true", "1", "yes")
 
 # X-Frame-Options
 X_FRAME_OPTIONS = "SAMEORIGIN"
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [
+    "*",
+    "f17b-2a01-e0a-cbd-3000-f435-85a1-6e56-b1ab.ngrok-free.app",
+    "*.ngrok-free.app",
+]
+CSRF_TRUSTED_ORIGINS = [
+    "https://f17b-2a01-e0a-cbd-3000-f435-85a1-6e56-b1ab.ngrok-free.app/",
+    "https://*.ngrok-free.app/"
+]
 
 # ------------------------------
 # Application definition

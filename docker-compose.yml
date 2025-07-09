@@ -17,13 +17,21 @@ volumes:
 
 services:
   app:
-    image: python:3.12-bullseye
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.app
+    image: unil/lumieres-lausanne:latest
     env_file:
       - ${PWD}/.env
     depends_on:
       - db
-    links:
-      - db
+    volumes:
+      - ${PWD}/app/media:/app/media
+    expose:
+      - 8000:8000
+    networks:
+      - frontend
+      - backend
     profiles: [ test, prod ]
 
   search:
@@ -49,7 +57,7 @@ services:
   db:
     image: mysql:9.3
     env_file:
-      - ./.env
+      - ${PWD}/.env
     volumes:
       - db-data:/var/lib/mysql
       - ${PWD}/settings/db/mysql-custom.cnf:/etc/mysql/conf.d/mysql-custom.cnf:ro
@@ -73,3 +81,18 @@ services:
     environment:
       PMA_HOST: db
     profiles: [ dev, test ]
+
+  nginx:
+    image: nginx:1.25
+    depends_on:
+      - app
+    ports:
+      - "8080:80"
+    volumes:
+      - ./settings/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./app/static:/app/static:ro
+      - ./app/media:/app/media:ro
+    networks:
+      - frontend
+      - backend
+    profiles: [ prod, test ]
