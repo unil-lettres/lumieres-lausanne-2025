@@ -77,7 +77,7 @@ def startswith(string, needle):
 
 @register.filter
 def decodeHtmlEntities(string):
-    entity_re = re.compile("&(#?)(\d{1,5}|\w{1,8});")
+    entity_re = re.compile(r"&(#?)(\d{1,5}|\w{1,8});")
 
     def substitute_entity(match):
         # from htmlentitydefs import name2codepoint as n2cp

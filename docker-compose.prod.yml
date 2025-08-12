@@ -1,0 +1,13 @@
+# docker-compose.prod.yml
+services:
+  app:
+    environment:
+      DJANGO_DEBUG: "0"                # prod: gunicorn (from Dockerfile CMD)
+      COLLECTSTATIC: "1"               # run collectstatic at container start
+      DJANGO_SETTINGS_MODULE: lumieres_project.settings
+    volumes: []                        # disable dev bind mounts
+    ports:
+      - "8000:8000"                    # or expose via your reverse proxy
+    depends_on:
+      db:
+        condition: service_healthy

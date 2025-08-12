@@ -2,32 +2,36 @@ services:
   db:
     image: mysql:9.3
     restart: unless-stopped
-    env_file: .env               # put MYSQL_* vars here
-    # custom config is optional – uncomment if you really need it
-    # volumes:
-    #   - ./settings/db/mysql-custom.cnf:/etc/mysql/conf.d/mysql-custom.cnf:ro
+    env_file: .env                 # MYSQL_* live here
+    volumes:
+      - dbdata:/var/lib/mysql
+      # - ./settings/db/mysql-custom.cnf:/etc/mysql/conf.d/mysql-custom.cnf:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      # use shell so $MYSQL_ROOT_PASSWORD is available
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
       interval: 30s
       timeout: 10s
-      retries: 3
+      retries: 5
 
   app:
     build:
       context: .
       dockerfile: docker/Dockerfile.app
-    # in dev we always rebuild from source, no published image needed
+    env_file: .env
     environment:
+      DJANGO_DEBUG: "1"            # dev: runserver (handled by Dockerfile CMD)
+      COLLECTSTATIC: "0"           # skip collectstatic in dev
       DJANGO_SETTINGS_MODULE: lumieres_project.settings
-    env_file: .env               # same file – contains SECRET_KEY, DEBUG=True …
     depends_on:
-      - db
-    # 🚀  bind‑mount the full source tree so code changes reload instantly
+      db:
+        condition: service_healthy
     volumes:
-      - ./app:/app/app
-      - ./app/media:/app/app/media            # uploads for thumbnails, etc.
-      - ./logging:/app/logging                # keep dev logs on the host
+      - ./app:/app/app             # live code reload
+      - ./app/media:/app/app/media # keep uploads
+      - ./logging:/app/logging     # dev logs on host
     ports:
       - "8000:8000"
-    command: ["python", "app/manage.py", "runserver", "--insecure", "0.0.0.0:8000"]
+    # no command override; Dockerfile CMD handles dev vs prod
 
+volumes:
+  dbdata:
