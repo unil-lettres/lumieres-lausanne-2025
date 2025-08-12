@@ -12,9 +12,9 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 from pathlib import Path
+from datetime import datetime
 
 BASE_DIR = Path(__file__).resolve().parent  # /app/lumieres/lumieres_project
-print("DEBUG: BASE_DIR =", BASE_DIR)
 
 # ------------------------------
 # Quick-start development settings - unsuitable for production
@@ -161,9 +161,6 @@ DEFAULT_CHARSET = "utf-8"
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 # ------------------------------
 
-print("DEBUG: BASE_DIR =", BASE_DIR)
-
-
 STATIC_URL = "/static/"
 
 # Directory where static files are collected via `collectstatic`:
@@ -246,26 +243,53 @@ logfile.parent.mkdir(parents=True, exist_ok=True)  # Ensure the directory exists
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+
+    "formatters": {
+        "simple": {"format": "%(levelname)s %(name)s: %(message)s"},
+    },
+
     "handlers": {
         "console": {
-            "level": "DEBUG",  # Change from DEBUG to INFO
             "class": "logging.StreamHandler",
+            "level": "INFO",          # ↓ show info+ on console (no DEBUG spam)
+            "formatter": "simple",
         },
         "file": {
-            "level": "DEBUG",
             "class": "logging.FileHandler",
-            "filename": str(logfile),  # Specify the file where logs will be written
+            "level": "DEBUG",         # keep full detail in file
+            "filename": str(logfile),
         },
     },
+
+    # Default/root logger
+    "root": {
+        "handlers": ["console", "file"],
+        "level": "INFO",
+    },
+
     "loggers": {
-        "django": {
+        # Silence the autoreload “first seen with mtime …” chatter
+        "django.utils.autoreload": {
             "handlers": ["console", "file"],
-            "level": "DEBUG",  # XXX: Change from INFO to DEBUT
-            "propagate": True,
+            "level": "WARNING",
+            "propagate": False,
         },
+        # Mute SQL debug output like “(0.001) SELECT …”
+        "django.db.backends": {
+            "handlers": ["console", "file"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        # Optional: keep server request logs reasonable
+        "django.server": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # Your app logger (adjust as you like)
         "lumieres_project": {
             "handlers": ["console", "file"],
-            "level": "DEBUG",  # XXX: Change from INFO to DEBUT
+            "level": "INFO",
             "propagate": True,
         },
     },

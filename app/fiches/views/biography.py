@@ -551,7 +551,7 @@ def relations_list(request, person_id=None):
     try:
         person = get_object_or_404(Person, pk=person_id)
 
-        re_digit_list = re.compile("^\d+$|^(\d+,)+\d+$")
+        re_digit_list = re.compile(r"^\d+$|^(\d+,)+\d+$")
         only_relations = request.GET.get("r", "")
         only_relations = only_relations.split(",") if re_digit_list.match(only_relations) else ""
 
