@@ -53,11 +53,14 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
+
     # Third-party apps
+    "haystack",
     "ckeditor",
     "ckeditor_uploader",
-    "sorl.thumbnail",  # Image thumbnailing
-    # Your custom apps
+    "sorl.thumbnail",
+
+    # Custom apps
     "fiches",
     "pagination",
 ]
@@ -208,11 +211,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 HAYSTACK_CONNECTIONS = {
     "default": {
         "ENGINE": "haystack.backends.solr_backend.SolrEngine",
-        "URL": "http://solr:8983/solr/mycore",
+        "URL": os.getenv("HAYSTACK_URL", "http://solr:8983/solr/lumieres"),
         "INCLUDE_SPELLING": True,
     },
 }
-
 HAYSTACK_SEARCH_RESULTS_PER_PAGE = 30
 HAYSTACK_SIGNAL_PROCESSOR = "haystack.signals.RealtimeSignalProcessor"
 

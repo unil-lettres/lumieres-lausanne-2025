@@ -179,7 +179,21 @@ app/media/
 logging/
 
 !app/static/js/lib
-migrations/
 
 # Ignore Django collected static files
 staticfiles/
+# Solr
+solr/data/
+
+# SQL
+*.sql
+
+# Docker
+Docker.raw
+
+# MacOS cruft
+.DS_Store
+**/.DS_Store
+
+# Backups
+*.bak
