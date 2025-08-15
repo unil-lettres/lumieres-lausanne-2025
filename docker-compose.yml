@@ -1,10 +1,12 @@
+name: LumieresLausanne
+
 services:
   db:
     image: mysql:9.3
     restart: unless-stopped
     env_file: .env                 # MYSQL_* live here
     volumes:
-      - dbdata:/var/lib/mysql
+      - db-data:/var/lib/mysql
       # - ./settings/db/mysql-custom.cnf:/etc/mysql/conf.d/mysql-custom.cnf:ro
     healthcheck:
       # use shell so $MYSQL_ROOT_PASSWORD is available
@@ -34,4 +36,4 @@ services:
     # no command override; Dockerfile CMD handles dev vs prod
 
 volumes:
-  dbdata:
+  db-data:
