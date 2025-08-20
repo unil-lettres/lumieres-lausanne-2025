@@ -13,6 +13,26 @@
                 "runserver"
             ],
             "django": true
+        },
+        {
+            "name": "Containers: Python - Django",
+            "type": "docker",
+            "request": "launch",
+            "preLaunchTask": "docker-run: debug",
+            "python": {
+                "pathMappings": [
+                    {
+                        "localRoot": "${workspaceFolder}/app",
+                        "remoteRoot": "/app/app"
+                    }
+                ],
+                "projectType": "django"
+            },
+            "dockerServerReadyAction": {
+                "action": "openExternally",
+                "pattern": "Starting development server at (https?://\\S+|[0-9]+)",
+                "uriFormat": "%s://localhost:%s/about.html"
+            }
         }
     ]
 }
