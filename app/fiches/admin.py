@@ -339,6 +339,7 @@ class ProjectAdmin(admin.ModelAdmin):
         "description",
         "short_desc",
     )
+    inlines = [ImageInline, DocumentInline]
 
     @admin.display(description="Vignette Prévisualisation")
     def vignette_preview(self, obj):
