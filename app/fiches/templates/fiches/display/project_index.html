@@ -20,6 +20,7 @@
 
 {% block head_css %}
     {{ block.super }}
+    <link rel="stylesheet" href="{% static 'css/lightbox.css' %}">
     <style>
         .panel_header { margin-top: 15px; }
         li.list_item {
@@ -274,4 +275,5 @@
     });
 })(jQuery);
 </script>
+<script type="text/javascript" src="{% static 'js/lib/lightbox.js' %}"></script>
 {% endblock %}
