@@ -337,11 +337,11 @@ class ProjectAdmin(admin.ModelAdmin):
         "short_desc",
     )
 
-    @admin.display(description="Vignette")
+    @admin.display(description="Vignette Prévisualisation")
     def vignette_preview(self, obj):
         """Return a preview of the vignette image if available."""
-        if hasattr(obj, "vignette") and obj.vignette:
-            return format_html('<img src="{}" style="max-width: 200px;" />', obj.vignette.url)
+        if hasattr(obj, "image") and obj.image:
+            return format_html('<img src="{}" style="max-width: 200px;" />', obj.image.url)
         return "-"
 
     @admin.display(description="Members")
