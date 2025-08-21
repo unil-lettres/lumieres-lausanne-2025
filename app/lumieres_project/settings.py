@@ -24,21 +24,41 @@ BASE_DIR = Path(__file__).resolve().parent  # /app/lumieres/lumieres_project
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-#+_qt^k0$c5sw@ry!r$*^dyw6$zvf(s8jb6_6jtcryb=cnmozb"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() in ("true", "1", "yes")
-
 # X-Frame-Options
 X_FRAME_OPTIONS = "SAMEORIGIN"
 
-ALLOWED_HOSTS = [
-    "*",
-    "f17b-2a01-e0a-cbd-3000-f435-85a1-6e56-b1ab.ngrok-free.app",
-    "*.ngrok-free.app",
-]
-CSRF_TRUSTED_ORIGINS = [
-    "https://f17b-2a01-e0a-cbd-3000-f435-85a1-6e56-b1ab.ngrok-free.app/",
-    "https://*.ngrok-free.app/"
-]
+# ---------------------------------
+# Environment & host/origin settings
+# ---------------------------------
+
+# 'development' | 'staging' | 'production'
+ENV = os.getenv("DJANGO_ENV", "development").lower()
+
+# DEBUG:
+# - default True in development, False otherwise (can be overridden via DJANGO_DEBUG)
+DEBUG_DEFAULT = "1" if ENV == "development" else "0"
+DEBUG = os.getenv("DJANGO_DEBUG", DEBUG_DEFAULT).lower() in ("1", "true", "yes")
+
+# Allowed hosts & CSRF trusted origins per environment
+if ENV == "production":
+    ALLOWED_HOSTS = ["lumieres.unil.ch"]
+    CSRF_TRUSTED_ORIGINS = ["https://lumieres.unil.ch"]
+elif ENV == "staging":
+    ALLOWED_HOSTS = ["plt-tst-2.unil.ch"]
+    CSRF_TRUSTED_ORIGINS = ["https://plt-tst-2.unil.ch"]
+else:  # development
+    ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]", "0.0.0.0"]
+    CSRF_TRUSTED_ORIGINS = []
+
+# Reverse proxy/TLS termination (Apache on staging/prod)
+# Ensure Apache sets: RequestHeader set X-Forwarded-Proto "https"
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+# Enforce HTTPS & secure cookies outside dev
+SECURE_SSL_REDIRECT = ENV != "development"
+SESSION_COOKIE_SECURE = ENV != "development"
+CSRF_COOKIE_SECURE = ENV != "development"
 
 # ------------------------------
 # Application definition
@@ -157,7 +177,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-DEFAULT_CHARSET = "utf-8"
+#DEFAULT_CHARSET = "utf-8"
 
 # ------------------------------
 # Static files (CSS, JavaScript, Images)
@@ -213,6 +233,7 @@ HAYSTACK_CONNECTIONS = {
         "ENGINE": "haystack.backends.solr_backend.SolrEngine",
         "URL": os.getenv("HAYSTACK_URL", "http://solr:8983/solr/lumieres"),
         "INCLUDE_SPELLING": True,
+        "TIMEOUT": 5,
     },
 }
 HAYSTACK_SEARCH_RESULTS_PER_PAGE = 30
@@ -235,8 +256,6 @@ CACHES = {
 # -----------------------------
 # Logging configurations
 # -----------------------------
-
-from datetime import datetime
 
 logfile = Path(BASE_DIR).parent.parent
 logfile = logfile / "logging" / f"debug_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"

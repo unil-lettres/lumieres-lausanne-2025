@@ -18,16 +18,16 @@ services:
       context: .
       dockerfile: docker/Dockerfile.app
     env_file: .env
-    environment:
-      DJANGO_DEBUG: "1"            # dev: runserver (handled by Dockerfile CMD)
-      COLLECTSTATIC: "0"           # skip collectstatic in dev
-      DJANGO_SETTINGS_MODULE: lumieres_project.settings
-      HAYSTACK_URL: "http://solr:8983/solr/lumieres"
+    #environment:
+    #  DJANGO_DEBUG: "1"            # dev: runserver (handled by Dockerfile CMD)
+    #  COLLECTSTATIC: "0"           # skip collectstatic in dev
+    #  DJANGO_SETTINGS_MODULE: lumieres_project.settings
+    #  HAYSTACK_URL: "http://solr:8983/solr/lumieres"
     depends_on:
       db:
         condition: service_healthy
       solr:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - ./app:/app/app             # live code reload
       - ./app/media:/app/app/media # keep uploads

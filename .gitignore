@@ -187,6 +187,7 @@ solr/data/
 
 # SQL
 *.sql
+*.sql.zip
 
 # Docker
 Docker.raw
@@ -197,3 +198,22 @@ Docker.raw
 
 # Backups
 *.bak
+
+# Editor temp files
+*.swp
+*.swo
+*~
+
+# IDEs
+.vscode/
+#.idea/  # uncomment if you use JetBrains
+
+# Local compose override
+docker-compose.override.yml
+
+# CKEditor uploads (CKEDITOR_UPLOAD_PATH)
+app/uploads/
+
+# Env variants (keep the template tracked)
+.env.*
+!.env.template
