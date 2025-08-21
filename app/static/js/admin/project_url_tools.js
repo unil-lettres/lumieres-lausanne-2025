@@ -6,7 +6,6 @@
 // Copyright (C) 2010-2025 Université de Lausanne, RISET
 // See docs/copyright.md
 
-
 (function($){
     $(document).ready(function(){
         var $url = $("#id_url");
