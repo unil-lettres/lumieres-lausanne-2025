@@ -5,7 +5,6 @@
 
 // Copyright (C) 2010-2025 Université de Lausanne, RISET
 // See docs/copyright.md
-// JS pour boutons "générer" et "vérifier" le slug dans l'admin Project (version sans création de boutons)
 
 
 (function($){
