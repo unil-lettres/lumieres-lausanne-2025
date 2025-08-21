@@ -82,8 +82,30 @@
 		<div class="global-search-form-container">
 	        <p class="myui-important">{{ form.q }}<button type="submit" id="search-but"><strong>Chercher</strong></button> &nbsp;&nbsp;&nbsp;<a href="{% url 'search-biblio' %}">Recherche avancée</a></p>
 	        <div class="cb-list-container">
-	        	<div class="label">Chercher parmi :</div>
-	        	{{ form.models }}
+				<div class="label">Chercher parmi :</div>
+				<ul class="cb-list">
+					<li>
+						<label for="id_models_0">
+							<input type="checkbox" name="t" id="id_models_0" value="biblio"
+								{% if not selected_types or 'biblio' in selected_types %}checked{% endif %}>
+							Fiches bibliographiques ({{ counts.biblio }})
+						</label>
+					</li>
+					<li>
+						<label for="id_models_1">
+							<input type="checkbox" name="t" id="id_models_1" value="transcription"
+								{% if not selected_types or 'transcription' in selected_types %}checked{% endif %}>
+							Fiches de transcription ({{ counts.transcription }})
+						</label>
+					</li>
+					<li>
+						<label for="id_models_2">
+							<input type="checkbox" name="t" id="id_models_2" value="person"
+								{% if not selected_types or 'person' in selected_types %}checked{% endif %}>
+							Personnes ({{ counts.person }})
+						</label>
+					</li>
+				</ul>
 			</div>
 		</div>
 	</form>
