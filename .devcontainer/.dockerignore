@@ -1,0 +1,38 @@
+# VCS / local env
+.git
+.gitignore
+.vscode
+.DS_Store
+.env
+.env.*
+
+# Python noise
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.whl
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Project: heavy or generated stuff
+app/media/                 # ⟵ uploaded files (the big one)
+app/staticfiles/           # collectstatic output (if any)
+logging/
+solr/data/                 # Solr core runtime data
+*.sql
+*.sqlite3
+*.csv
+*.tsv
+*.parquet
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# Node / frontend (if any)
+node_modules/
+dist/
+build/
