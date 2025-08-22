@@ -105,7 +105,7 @@ TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [
-            BASE_DIR / "templates",  # This corresponds to /app/lumieres/templates/
+            BASE_DIR / "templates",
             BASE_DIR / "fiches" / "templates",
         ],
         "APP_DIRS": True,
@@ -136,10 +136,10 @@ DATABASES = {
         "PASSWORD": os.getenv(
             "MYSQL_PASSWORD", "lluser-password"
         ),  # Use environment variable or default to 'django_password'
-        "HOST": "db",  # Ensure this matches your Docker service name
+        "HOST": "db",
         "PORT": "3306",
         "OPTIONS": {
-            "charset": "utf8mb4",  # Ensure proper character encoding
+            "charset": "utf8mb4",
         },
     }
 }
@@ -177,7 +177,7 @@ USE_I18N = True
 
 USE_TZ = True
 
-#DEFAULT_CHARSET = "utf-8"
+DEFAULT_CHARSET = "utf-8"
 
 # ------------------------------
 # Static files (CSS, JavaScript, Images)
@@ -259,7 +259,7 @@ CACHES = {
 
 logfile = Path(BASE_DIR).parent.parent
 logfile = logfile / "logging" / f"debug_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
-logfile.parent.mkdir(parents=True, exist_ok=True)  # Ensure the directory exists
+logfile.parent.mkdir(parents=True, exist_ok=True)
 
 LOGGING = {
     "version": 1,
@@ -307,7 +307,7 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
-        # Your app logger (adjust as you like)
+        # App logger
         "lumieres_project": {
             "handlers": ["console", "file"],
             "level": "INFO",

@@ -2,12 +2,10 @@ services:
   db:
     image: mysql:9.3
     restart: unless-stopped
-    env_file: .env                 # MYSQL_* live here
+    env_file: .env
     volumes:
       - dbdata:/var/lib/mysql
-      # - ./settings/db/mysql-custom.cnf:/etc/mysql/conf.d/mysql-custom.cnf:ro
     healthcheck:
-      # use shell so $MYSQL_ROOT_PASSWORD is available
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
       interval: 30s
       timeout: 10s
@@ -18,23 +16,17 @@ services:
       context: .
       dockerfile: docker/Dockerfile.app
     env_file: .env
-    #environment:
-    #  DJANGO_DEBUG: "1"            # dev: runserver (handled by Dockerfile CMD)
-    #  COLLECTSTATIC: "0"           # skip collectstatic in dev
-    #  DJANGO_SETTINGS_MODULE: lumieres_project.settings
-    #  HAYSTACK_URL: "http://solr:8983/solr/lumieres"
     depends_on:
       db:
         condition: service_healthy
       solr:
         condition: service_healthy
     volumes:
-      - ./app:/app/app             # live code reload
-      - ./app/media:/app/app/media # keep uploads
-      - ./logging:/app/logging     # dev logs on host
+      - ./app:/app/app
+      - ./app/media:/app/app/media
+      - ./logging:/app/logging
     ports:
       - "8000:8000"
-    # no command override; Dockerfile CMD handles dev vs prod
 
   solr:
     image: solr:8
