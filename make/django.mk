@@ -63,3 +63,8 @@ django/showmigrations:  ## Show Django migrations
 # Show migrations for fiches app only
 django/showmigrations/fiches:  ## Show Django migrations for fiches app only
 	python ${APP_PATH}/manage.py showmigrations fiches --settings=lumieres_project.settings
+
+# Thumbnail cache management
+.PHONY: django/thumbnail/cleanup
+django/thumbnail/cleanup:  ## Cleanup thumbnail cache (media cache)
+	python ${APP_PATH}/manage.py thumbnail cleanup

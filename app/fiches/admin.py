@@ -12,6 +12,7 @@ from django.contrib.sites.admin import SiteAdmin
 from django.forms import ModelForm, TextInput, CharField
 from django.contrib import admin
 from django.contrib import messages
+from fiches.forms import ProjectForm
 
 from fiches.models.content.free_content import FreeContent
 from fiches.models.content.news import News
@@ -324,9 +325,11 @@ class ProjectAdmin(admin.ModelAdmin):
     )
     search_fields = ("name",)
     ordering = ("name",)
+    form = ProjectForm
     readonly_fields = ("vignette_preview",)
     fields = (
         "name",
+        "url",
         "image",
         "vignette_preview",
         "publish",
@@ -336,12 +339,13 @@ class ProjectAdmin(admin.ModelAdmin):
         "description",
         "short_desc",
     )
+    inlines = [ImageInline, DocumentInline]
 
-    @admin.display(description="Vignette")
+    @admin.display(description="Vignette Prévisualisation")
     def vignette_preview(self, obj):
         """Return a preview of the vignette image if available."""
-        if hasattr(obj, "vignette") and obj.vignette:
-            return format_html('<img src="{}" style="max-width: 200px;" />', obj.vignette.url)
+        if hasattr(obj, "image") and obj.image:
+            return format_html('<img src="{}" style="max-width: 200px;" />', obj.image.url)
         return "-"
 
     @admin.display(description="Members")

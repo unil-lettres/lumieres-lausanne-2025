@@ -1,5 +1,7 @@
-# fiches/forms.py
+# Copyright (C) 2010-2025 Université de Lausanne, RISET
+# See docs/copyright.md
 
+from fiches.models.misc.project import Project
 from django import forms
 from django.utils.translation import gettext_lazy as _
 from .models.documents import (
@@ -520,4 +522,30 @@ class ContributionDocSecForm(ContributionDocForm):
             self.fields['person'].widget.attrs['data-modern'] = 'true'
         # Optionally, you could add logic here to filter choices if using a ModelChoiceField
 
+
+# ===============================
+# ProjectForm Definition
+# ===============================
+class ProjectForm(forms.ModelForm):
+    url = forms.SlugField(
+        label=_("Url"),
+        help_text=_('ATTENTION, doit être unique. Uniquement caractères non-accentués, tiret et chiffres. Pas d\'espaces ni de ponctuation.'),
+        required=True,
+        widget=forms.TextInput(attrs={
+            'size': 40,
+            'style': 'width: 60%;',
+            'data-slug-source': 'name',
+            'autocomplete': 'off',
+        })
+    )
+
+    class Meta:
+        model = Project
+        fields = '__all__'
+
+    class Media:
+        js = (
+            'js/lib/urlify.js',
+            'js/admin/project_url_tools.js',
+        )
 

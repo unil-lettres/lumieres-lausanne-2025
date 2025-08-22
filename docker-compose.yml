@@ -1,3 +1,5 @@
+name: LumieresLausanne
+
 services:
   db:
     image: mysql:9.3
