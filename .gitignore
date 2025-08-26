@@ -206,10 +206,6 @@ Docker.raw
 
 # IDEs
 .vscode/
-#.idea/  # uncomment if you use JetBrains
-
-# Local compose override
-docker-compose.override.yml
 
 # CKEditor uploads (CKEDITOR_UPLOAD_PATH)
 app/uploads/
