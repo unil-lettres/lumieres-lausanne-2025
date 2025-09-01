@@ -270,12 +270,22 @@ class FindingAdmin(admin.ModelAdmin):
     readonly_fields = ("vignette_preview",)
     ordering = ("-created_on",)
     inlines = [ImageInline, DocumentInline]
+    fields = [
+        "title",
+        "published",
+        "author",
+        "author2",
+        "description",
+        "thumbnail",
+        "vignette_preview",
+        "content",
+    ]
 
-    @admin.display(description="Vignette")
+    @admin.display(description="Vignette Prévisualisation")
     def vignette_preview(self, obj):
         """Return a preview of the vignette image if available."""
-        if hasattr(obj, "vignette") and obj.vignette:
-            return format_html('<img src="{}" style="max-width: 200px;" />', obj.vignette.url)
+        if hasattr(obj, "thumbnail") and obj.thumbnail:
+            return format_html('<img src="{}" style="max-width: 200px;" />', obj.thumbnail.url)
         return "-"
 
     @admin.display(boolean=True, description="Publié")
