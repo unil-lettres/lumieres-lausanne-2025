@@ -449,10 +449,102 @@
 
     if (fiches_edit && typeof fiches_edit.registerRecommandationCallback == 'function') {
         fiches_edit.registerRecommandationCallback(function() {
-            // Your recommended / required fields logic here
-            // ...
+
+            var recommandedSimpleFields = [
+			 {'name': "Lieu", 'id': 'place'},
+			 {'name': "Date", 'id': 'date'},
+			 {'name': "Pages", 'id': 'pages'},
+			 {'name': "Langue", 'id': 'language'},
+			 {'name': "N° de la revue", 'id': 'journal_num', lambda: function() {
+				 // {# recommended only for secondary type #}
+				 return $('#id_litterature_type_1').prop('checked') && $('#id_' + this.id).val() == ''
+			 }},
+			 {'name': "Lieu de dépôt", 'id': 'depot'},
+			 {'name': "Cote", 'id': 'cote'}
+			];
+			var requiredFields = [
+			 { 'name': "Auteurs", id: 'contribution-form', lambda: function() {
+			 	return $.map(
+	                    $(".contribution-formset .form-instance:visible input:hidden[name^=contributiondoc_set]").filter("[name$=person]"),
+                        function(n, i) { return $(n).val() || null; }
+                ).length == 0
+			   }
+			 },
+			 { 'name': "Titre", 'id': "title" },
+			 { 'name': "Mot clé primaire", id: 'subj_primary_kw', lambda: function() { return $("input[name=" + this.id + "]").length == 0; } },
+			 { 'name': "Titre du livre", 'id': 'book_title'},
+			 { 'name': "Titre de la revue", 'id': 'journal_title'},
+			 { 'name': "Type de littérature", 'id': 'litterature_type', lambda: function() { return $("input[name=" + this.id + "]:checked").length == 0; } },
+			 { 'name': "Type de manuscrit", 'id': 'manuscript_type'},
+			 { 'name': "Titre de dictionnaire", 'id': 'dictionary_title'}
+			];
+
+			var missingFieldList = [], requiredFieldList = [];
+            var doctype = $("#id_document_type").val();
+
+			$.each(recommandedSimpleFields, function(i,fldrec) {
+				// if field tested is not an exclusive_field OR
+				//    it's in the exclusive_field list of the current doctype
+				if ( ( $.inArray(fldrec.id, doctype_allexclusive_fields) == -1 ||
+				       $.inArray(fldrec.id, doctype_exclusive_fields[doctype]) > -1
+					  )
+					  && ( fldrec.lambda ?
+						   fldrec.lambda.apply(fldrec) :
+						   $("#id_"+fldrec.id).val() == "" )
+				   ) {
+					missingFieldList.push(fldrec);
+				}
+
+			});
+
+			$.each(requiredFields, function(i,fldrec) {
+				// if field tested is not an exclusive_field OR
+				//    it's in the exclusive_field list of the current doctype
+				if ( ( $.inArray(fldrec.id, doctype_allexclusive_fields) == -1 ||
+				       $.inArray(fldrec.id, doctype_exclusive_fields[doctype]) > -1
+					  )
+					  && ( fldrec.lambda ?
+					       fldrec.lambda.apply(fldrec) :
+					       $("#id_"+fldrec.id).val() == ""
+					  )
+				   ) {
+					requiredFieldList.push(fldrec);
+				}
+
+			});
+
+
+			var msg = "", idx;
+            if (requiredFieldList.length > 0) {
+                msg += "Attention!\n\nLes champs requis suivants ne sont pas remplis:\n";
+                for(idx=0; idx<requiredFieldList.length; idx++) {
+                    msg += "    « " + requiredFieldList[idx].name + " »\n";
+                }
+			}
+            if (missingFieldList.length > 0) {
+				if (msg) { msg += "\n--------------------\n"; }
+				else { msg += "Attention!\n"; }
+                msg += "\nLes champs recommandés suivants ne sont pas remplis:\n";
+                for(idx=0; idx<missingFieldList.length; idx++) {
+                    msg += "    « " + missingFieldList[idx].name + " »\n";
+                }
+			}
+
+			if (msg) {
+				if (requiredFieldList.length > 0) {
+                    msg += "\nRenseignez les champs requis avant de pouvoir enregistrer";
+                    alert(msg);
+					return false;
+				}
+				else {
+	                msg += "\nVoulez-vous continuer à enregistrer ?";
+	                return confirm(msg);
+				}
+            }
+            return true;
         });
     }
+    //}
 
     $(document).ready(function(){
         // Connect the docType dropdown to the update function
@@ -503,10 +595,10 @@
 <script type="text/javascript">
 (function($){
     $(document).ready(function(){
-        // Validation blocking popup for required fields
+        // Validation for required fields (existing logic, can be extended)
         $('#biblio-form-id').on('submit', function(e) {
             var requiredFields = [
-                '#id_title' // Ajoutez d'autres champs requis si nécessaire
+                '#id_title' // Add other required fields if needed
             ];
             var missing = [];
             requiredFields.forEach(function(sel) {
@@ -519,6 +611,28 @@
             if (missing.length > 0) {
                 alert('Please fill in the following required fields before saving:\n' + missing.join('\n'));
                 e.preventDefault();
+                return false;
+            }
+
+            // --- Recommended fields warning (Lieu, Date, Pages) ---
+            var recommendedFields = [
+                {id: '#id_place', name: 'Lieu'},
+                {id: '#id_date', name: 'Date'},
+                {id: '#id_pages', name: 'Pages'}
+            ];
+            var missingRecommended = [];
+            recommendedFields.forEach(function(f) {
+                var $f = $(f.id);
+                if ($f.length && !$f.val().trim()) {
+                    missingRecommended.push('« ' + f.name + ' »');
+                }
+            });
+            if (missingRecommended.length > 0) {
+                var msg = 'Attention!\n\nLes champs recommandés suivants ne sont pas remplis:\n    ' + missingRecommended.join('\n    ') + '\n\nVoulez-vous continuer à enregistrer ?';
+                if (!confirm(msg)) {
+                    e.preventDefault();
+                    return false;
+                }
             }
         });
     });
