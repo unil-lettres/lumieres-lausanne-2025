@@ -283,7 +283,7 @@ class FindingAdmin(admin.ModelAdmin):
 
     @admin.display(description="Vignette Prévisualisation")
     def vignette_preview(self, obj):
-        """Return a preview of the vignette image if available."""
+        """Return a preview of the thumbnail image if available."""
         if hasattr(obj, "thumbnail") and obj.thumbnail:
             return format_html('<img src="{}" style="max-width: 200px;" />', obj.thumbnail.url)
         return "-"
