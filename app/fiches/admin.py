@@ -269,6 +269,7 @@ class FindingAdmin(admin.ModelAdmin):
     search_fields = ("title",)
     readonly_fields = ("vignette_preview",)
     ordering = ("-created_on",)
+    inlines = [ImageInline]
 
     @admin.display(description="Vignette")
     def vignette_preview(self, obj):
