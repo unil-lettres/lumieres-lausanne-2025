@@ -17,6 +17,7 @@ from .models.person import Person
 # from django import forms
 # #from .models import Person  # Assuming Person is the model you want to reference
 
+
 class MultiplePersonField(forms.ModelMultipleChoiceField):
     """
     A custom field for handling multiple person-related data.
@@ -24,17 +25,7 @@ class MultiplePersonField(forms.ModelMultipleChoiceField):
 
     def __init__(self, *args, **kwargs):
         # Ensure you pass the queryset here, assuming you want to use the Person model
-        if 'queryset' not in kwargs:
-            kwargs['queryset'] = Person.objects.all()
-        kwargs.setdefault('widget', forms.CheckboxSelectMultiple)
+        if "queryset" not in kwargs:
+            kwargs["queryset"] = Person.objects.all()
+        kwargs.setdefault("widget", forms.CheckboxSelectMultiple)
         super().__init__(*args, **kwargs)
-
-    def clean(self, value):
-        """
-        Custom cleaning logic for the field.
-        """
-        cleaned_value = super().clean(value)
-        if not cleaned_value:
-            raise forms.ValidationError("You must select at least one person.")
-        return cleaned_value
-
