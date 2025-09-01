@@ -35,3 +35,10 @@ db/create:  ## Create the database
 db/create: db/clean
 	docker compose exec -T db \
 		mysql -uroot -p${MYSQL_ROOT_PASSWORD} -e "CREATE DATABASE ${MYSQL_DATABASE} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+.PHONY: db/create/lluser
+db/create/lluser:  ## Create the lluser database
+	docker compose exec -T db mysql -uroot -p${MYSQL_ROOT_PASSWORD} -e " \
+		CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}'; \
+		GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${MYSQL_USER}'@'%'; \
+		FLUSH PRIVILEGES; "
