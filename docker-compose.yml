@@ -3,6 +3,7 @@ name: LumieresLausanne
 services:
   db:
     image: mysql:9.3
+    env_file: .env
     restart: unless-stopped
     volumes:
       - db_data:/var/lib/mysql
