@@ -2,8 +2,8 @@
 .git
 .gitignore
 .vscode
-.github  <--- AJOUT
-.devcontainer <--- AJOUT
+.github
+.devcontainer
 .DS_Store
 
 # ────────────── Environment & Python Cache ──────────────
