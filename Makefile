@@ -49,6 +49,9 @@ include $(MAKE_SUB)/v2024.mk
 # Django part
 include $(MAKE_SUB)/django.mk
 
+# SOLr port
+include $(MAKE_SUB)/solr.mk
+
 
 # Recipes =====================================================================
 
