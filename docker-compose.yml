@@ -35,7 +35,7 @@ services:
     ports: ["8983:8983"]
     volumes:
       - ./solr/configsets/lumieres:/var/solr/configsets/lumieres:ro
-      - ./solr/data:/var/solr/data
+      - solr_data:/var/solr/data
     command: >
       bash -lc "
         solr-precreate lumieres /var/solr/configsets/lumieres &&
@@ -47,4 +47,4 @@ services:
       retries: 10
 
 volumes:
-  dbdata:
+  solr_data:

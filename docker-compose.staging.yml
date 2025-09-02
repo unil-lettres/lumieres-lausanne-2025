@@ -35,7 +35,7 @@ services:
     ports: ["8983:8983"]
     volumes:
       - ./solr/configsets/lumieres:/var/solr/configsets/lumieres:ro
-      - ./solr/data:/var/solr/data
+      - solrdata-staging:/var/solr/data
     command: >
       bash -lc "solr-precreate lumieres /var/solr/configsets/lumieres && solr-foreground"
     healthcheck:
@@ -46,3 +46,4 @@ services:
 
 volumes:
   db_data_staging: {}
+  solr_data_staging:
