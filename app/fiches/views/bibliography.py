@@ -437,7 +437,11 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     if not request.user.has_perm("fiches.can_publish_note"):
         note_qs = note_qs.exclude(access_public=True)
 
-    ContributionFormset = inlineformset_factory(Biblio, ContributionDoc, form=ContributionDocForm, extra=1)
+    # Use extra=1 only for new fiche creation, extra=0 for editing
+    if new_doc:
+        ContributionFormset = inlineformset_factory(Biblio, ContributionDoc, form=ContributionDocForm, extra=1)
+    else:
+        ContributionFormset = inlineformset_factory(Biblio, ContributionDoc, form=ContributionDocForm, extra=0)
     NoteFormset = inlineformset_factory(Biblio, NoteBiblio, extra=0, form=NoteFormBiblio)
 
     # -------------------------------
