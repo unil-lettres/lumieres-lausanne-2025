@@ -1,0 +1,7 @@
+services:
+  app:
+    command: ["python","manage.py","runserver","0.0.0.0:8000"]
+    environment:
+      - DJANGO_ENV=development
+      - DJANGO_DEBUG=1
+      - DJANGO_SETTINGS_MODULE=lumieres_project.settings

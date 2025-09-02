@@ -5,11 +5,12 @@
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	// "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bullseye",
 	"dockerComposeFile": [
-		"docker-compose.yml"
+		"../docker-compose.dev.yml",
+		"../docker-compose.yml"
 	],
 	// The 'service' property is the name of the service for the container that VS Code should
 	// use. Update this value and .devcontainer/docker-compose.yml to the real service name.
-	"service": "dev",
+	"service": "devcontainer",
 	// The optional 'workspaceFolder' property is the path VS Code should open by default when
 	// connected. This is typically a file mount in .devcontainer/docker-compose.yml
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
@@ -25,11 +26,10 @@
 	],
 	// Uncomment the next line if you want start specific services in your Docker Compose config.
 	"runServices": [
-		"dev",
-		// "app",
-		"db"
-		// "search",
-		// "phpmyadmin"
+		"devcontainer",
+		"db",
+		"solr",
+		"phpmyadmin"
 	],
 	// Use 'initialization' to run commands before the container is created.
 	"initializeCommand": "make dev/init",

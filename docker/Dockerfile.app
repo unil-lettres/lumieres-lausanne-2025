@@ -1,79 +1,53 @@
 # syntax=docker/dockerfile:1
 
-############################
-# 1) Builder – deps + collectstatic (no app packaging)
-############################
+########## Stage 1: build dependency wheels ##########
 FROM python:3.12-slim-bookworm AS builder
-
-# OS-level deps to compile wheels for mysqlclient, Pillow, etc.
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 PYTHONUNBUFFERED=1
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      gcc libc-dev pkg-config \
-      libmariadb-dev libjpeg-dev zlib1g-dev \
-  && rm -rf /var/lib/apt/lists/*
+    build-essential \
+    pkg-config \
+    libmariadb-dev \
+    libjpeg-dev zlib1g-dev \
+ && rm -rf /var/lib/apt/lists/*
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+WORKDIR /src
+COPY pyproject.toml .
 
-WORKDIR /app
-
-# --- Bring in dependency metadata only (cache-friendly)
-COPY pyproject.toml ./
-
-# --- Generate requirements.txt from pyproject [project.dependencies]
+# Create /tmp/requirements.txt from [project.dependencies]
 RUN python - <<'PY'
-import tomllib, sys
-from pathlib import Path
-cfg = tomllib.loads(Path("pyproject.toml").read_text())
-deps = cfg.get("project",{}).get("dependencies", [])
-Path("/tmp/requirements.txt").write_text("\n".join(deps) + "\n")
-print("Written /tmp/requirements.txt with", len(deps), "deps", file=sys.stderr)
+import tomllib, pathlib
+with open("pyproject.toml","rb") as f:
+    data = tomllib.load(f)
+deps = data.get("project",{}).get("dependencies",[])
+pathlib.Path("/tmp/requirements.txt").write_text("\n".join(deps) + "\n")
+print("Wrote", len(deps), "deps to /tmp/requirements.txt")
 PY
 
-# --- Build & install deps wheels (but NOT the app itself)
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
-&& pip wheel --wheel-dir /wheels -r /tmp/requirements.txt
+# Build wheels for all deps (mysqlclient & Pillow compile here)
+RUN pip install --no-cache-dir --upgrade pip wheel \
+ && pip wheel --no-cache-dir --wheel-dir /wheels -r /tmp/requirements.txt
 
-# --- Now copy the project code and collect static
-COPY app/ ./app
-
-############################
-# 2) Runtime – lean image
-############################
+########## Stage 2: slim runtime ##########
 FROM python:3.12-slim-bookworm AS runtime
-
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+# Runtime libs: MySQL client + JPEG/zlib for Pillow
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      default-mysql-client libmariadb3 \
-      libjpeg62-turbo zlib1g \
-  && rm -rf /var/lib/apt/lists/*
+    libmariadb3 \
+    libjpeg62-turbo zlib1g \
+ && rm -rf /var/lib/apt/lists/*
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-
-RUN useradd -ms /bin/bash appuser
-WORKDIR /app
-
-# Install deps wheels
+WORKDIR /app/app
+COPY app/ /app/app/
 COPY --from=builder /wheels /wheels
-RUN pip install --no-cache-dir /wheels/* && rm -rf /wheels
+COPY --from=builder /tmp/requirements.txt /tmp/requirements.txt
 
-# Copy project code
-COPY --from=builder /app /app
+# Install from prebuilt wheels
+RUN pip install --no-cache-dir --no-compile --find-links=/wheels -r /tmp/requirements.txt \
+ && rm -rf /wheels
 
-USER appuser
+# Ensure a writable fallback for logs if no host volume is mounted
+RUN mkdir -p /app/logging && chown -R 10001:10001 /app
+USER 10001
+
 EXPOSE 8000
-
-# Toggle collectstatic & server mode via env vars
-# COLLECTSTATIC=1 (prod), 0 (dev). DJANGO_DEBUG=1 switches to runserver.
-CMD ["bash","-lc", "\
-  if [ \"${COLLECTSTATIC:-0}\" = \"1\" ]; then \
-    DJANGO_SETTINGS_MODULE=lumieres_project.settings \
-    python app/manage.py collectstatic --noinput; \
-  fi; \
-  if [ \"${DJANGO_DEBUG:-0}\" = \"1\" ]; then \
-    DJANGO_SETTINGS_MODULE=lumieres_project.settings \
-    python app/manage.py runserver 0.0.0.0:8000; \
-  else \
-    DJANGO_SETTINGS_MODULE=lumieres_project.settings \
-    gunicorn app.lumieres_project.wsgi:application --bind 0.0.0.0:8000 --workers 3; \
-  fi \
-"]
+CMD ["gunicorn","lumieres_project.wsgi:application","--bind","0.0.0.0:8000","--workers","3","--timeout","120"]

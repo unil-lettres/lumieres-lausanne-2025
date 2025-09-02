@@ -1,0 +1,52 @@
+# ────────────── Version Control & IDE ──────────────
+.git
+.gitignore
+.vscode
+.github
+.devcontainer
+.DS_Store
+
+# ────────────── Environment & Python Cache ──────────────
+.env
+.env.*
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.whl
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+env/
+.tox/
+.ruff_cache/
+*.egg-info
+.eggs/
+
+# ────────────── Project Generated & Heavy Files ──────────────
+app/media/
+app/staticfiles/
+logging/
+backup/
+tmp/
+temp/
+patch/
+docs/
+solr/data/
+solr/**/data/
+*.sql
+*.sqlite3
+*.csv
+*.tsv
+*.parquet
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# ────────────── Node / Frontend ──────────────
+node_modules/
+dist/

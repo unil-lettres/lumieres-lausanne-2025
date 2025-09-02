@@ -7,11 +7,12 @@
 
 
 ifeq ($(OS), Windows_NT)
+	PWSH		= powershell -Command
 	WEB_BROWSER = powershell -Command Start-Process
-	RM			= rm -Force -Path
-	CP			= copy
-	TOUCH		= New-Item -type file
-	MKDIR		= New-Item -type directory
+	RM			= $(PWSH) rm -Force -Path
+	CP			= $(PWSH) Copy-Item -Recurse -Force
+	TOUCH		= $(PWSH) New-Item -type file
+	MKDIR		= $(PWSH) New-Item -type directory
 else
 	WEB_BROWSER = open
 	RM			= rm -rf
@@ -47,6 +48,9 @@ include $(MAKE_SUB)/v2024.mk
 
 # Django part
 include $(MAKE_SUB)/django.mk
+
+# SOLr port
+include $(MAKE_SUB)/solr.mk
 
 
 # Recipes =====================================================================

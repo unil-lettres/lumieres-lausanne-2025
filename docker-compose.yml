@@ -3,10 +3,10 @@ name: LumieresLausanne
 services:
   db:
     image: mysql:9.3
-    restart: unless-stopped
     env_file: .env
+    restart: unless-stopped
     volumes:
-      - dbdata:/var/lib/mysql
+      - db_data:/var/lib/mysql
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
       interval: 30s
@@ -32,10 +32,9 @@ services:
 
   solr:
     image: solr:8
-    ports: ["8983:8983"]
     volumes:
       - ./solr/configsets/lumieres:/var/solr/configsets/lumieres:ro
-      - ./solr/data:/var/solr/data
+      - solr_data:/var/solr/data
     command: >
       bash -lc "
         solr-precreate lumieres /var/solr/configsets/lumieres &&
@@ -47,4 +46,5 @@ services:
       retries: 10
 
 volumes:
-  dbdata:
+  db_data:
+  solr_data:
