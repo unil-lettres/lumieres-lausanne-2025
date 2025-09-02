@@ -1,11 +1,19 @@
+# ────────────── Version Control & IDE ──────────────
 .git
 .gitignore
 .vscode
+.github  <--- AJOUT
+.devcontainer <--- AJOUT
 .DS_Store
+
+# ────────────── Environment & Python Cache ──────────────
 .env
 .env.*
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+*.whl
 .mypy_cache/
 .pytest_cache/
 .coverage
@@ -17,14 +25,18 @@ env/
 .ruff_cache/
 *.egg-info
 .eggs/
-app/media/
-app/staticfiles/
+
+# ────────────── Project Generated & Heavy Files ──────────────
+app/media/                 # Uploaded files (large)
+app/staticfiles/           # collectstatic output
 logging/
-solr/data/
+backup/
+tmp/
+temp/
+patch/
+docs/
+solr/data/                 # Solr core runtime data
 solr/**/data/
-node_modules/
-dist/
-build/
 *.sql
 *.sqlite3
 *.csv
@@ -34,3 +46,7 @@ build/
 *.tar
 *.tar.gz
 *.tgz
+
+# ────────────── Node / Frontend ──────────────
+node_modules/
+dist/
