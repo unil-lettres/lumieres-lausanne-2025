@@ -5,9 +5,8 @@
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
 	// "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bullseye",
 	"dockerComposeFile": [
-		"../docker/docker-compose.devcontainer.yml",
-		"../docker-compose.yml",
-		"../docker/docker-compose.override.yml"
+		"../docker-compose.dev.yml",
+		"../docker-compose.yml"
 	],
 	// The 'service' property is the name of the service for the container that VS Code should
 	// use. Update this value and .devcontainer/docker-compose.yml to the real service name.
