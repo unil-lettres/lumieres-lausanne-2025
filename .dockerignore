@@ -27,15 +27,15 @@ env/
 .eggs/
 
 # ────────────── Project Generated & Heavy Files ──────────────
-app/media/                 # Uploaded files (large)
-app/staticfiles/           # collectstatic output
+app/media/
+app/staticfiles/
 logging/
 backup/
 tmp/
 temp/
 patch/
 docs/
-solr/data/                 # Solr core runtime data
+solr/data/
 solr/**/data/
 *.sql
 *.sqlite3
