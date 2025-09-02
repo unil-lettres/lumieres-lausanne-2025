@@ -1,9 +1,0 @@
-# Dev container service
-
-services:
-  db:
-    env_file: ../.env
-
-  solr:
-    volumes:
-      - ../solr/configsets/lumieres:/var/solr/configsets/lumieres:ro
