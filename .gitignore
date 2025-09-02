@@ -207,7 +207,6 @@ Docker.raw
 *~
 
 # IDEs
-.vscode/
 
 # CKEditor uploads (CKEDITOR_UPLOAD_PATH)
 app/uploads/

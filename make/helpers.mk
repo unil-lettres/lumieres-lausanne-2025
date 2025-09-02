@@ -31,3 +31,7 @@ for sub_makefile in sub_makefiles:
     parse_makefile(sub_makefile)
 endef
 export PRINT_HELP_PYSCRIPT
+
+.PHONY: test/dockerignore
+test/dockerignore:
+	rsync -avn . /tmp --exclude-from .dockerignore

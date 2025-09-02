@@ -1,16 +1,8 @@
 # Dev container service
+name: ll-dev
 
-name: LumieresLausanne
-
-networks:
-  frontend:
-  backend:
-
-
-volumes:
-  db-data:
 services:
-  dev:
+  devcontainer:
     image: mcr.microsoft.com/devcontainers/python:1-3.12-bullseye
     env_file:
       - ../.env
@@ -37,26 +29,8 @@ services:
 
     # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
-    networks:
-      - frontend
-      - backend
     extra_hosts:
       - "host.docker.internal:host-gateway"
-
-  db:
-    image: mysql:9.3
-    env_file:
-      - ../.env
-    volumes:
-      - db-data:/var/lib/mysql
-      - ../settings/db/mysql-custom.cnf:/etc/mysql/conf.d/mysql-custom.cnf:ro
-    networks:
-      - backend
-    healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
 
   phpmyadmin:
     image: phpmyadmin:latest
@@ -64,7 +38,5 @@ services:
       - db
     depends_on:
       - db
-    networks:
-      - backend
     environment:
       PMA_HOST: db
