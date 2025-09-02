@@ -132,7 +132,7 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": os.getenv("MYSQL_DATABASE", "lumieres_lausanne"),  # Use environment variable or default to 'django_db'
-        "USER": os.getenv("MYSQL_USER", "lluser-dev"),  # Use environment variable or default to 'django_user'
+        "USER": os.getenv("MYSQL_USER", "lluser"),  # Use environment variable or default to 'django_user'
         "PASSWORD": os.getenv(
             "MYSQL_PASSWORD", "lluser-password"
         ),  # Use environment variable or default to 'django_password'
