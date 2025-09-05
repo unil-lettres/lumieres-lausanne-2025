@@ -48,6 +48,7 @@ from fiches.models import (
     Depot,  # Ajout pour le dépôt par défaut
 )
 from fiches.models.documents import NoteBiblio
+from fiches.models.documents import DocumentFile
 from fiches.utils import (
     get_last_model_activity,
     log_model_activity,
