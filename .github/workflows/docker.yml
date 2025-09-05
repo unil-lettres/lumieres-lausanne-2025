@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "dev"
+      - "ci/dockerhub-publish"
   workflow_dispatch:
     inputs:
       test_tag:
@@ -107,6 +108,7 @@ jobs:
           tags: |
             type=raw,value=latest-stage,enable=${{ github.ref == 'refs/heads/dev' }}
             type=raw,value=${{ github.event.inputs.test_tag }},enable=${{ github.event.inputs.test_tag != '' }}
+            type=raw,value=ci-test,enable=${{ github.ref == 'refs/heads/ci/dockerhub-publish' }}
 
       - name: Create manifest list and push
         working-directory: ${{ runner.temp }}/digests
