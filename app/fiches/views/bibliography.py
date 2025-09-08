@@ -115,6 +115,7 @@ def get_biblio_formDef(biblioForm):
                     {"name": "series_title"},
                     {"name": "dictionary_title", "required": True},
                     {"name": "place", "tooltip_id": "ctxt-help-biblio-place", "recommanded": True},
+                    {"name": "place2", "tooltip_id": "ctxt-help-biblio-place2", "recommanded": True},
                     {"name": "publisher", "tooltip_id": "ctxt-help-biblio-publisher"},
                     {"name": "publisher2"},
                     {"name": "collection", "tooltip_id": "ctxt-help-biblio-collection"},
