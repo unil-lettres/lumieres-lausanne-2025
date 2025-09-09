@@ -422,7 +422,11 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     # Form Handling (POST Request)
     # -------------------------------
     if request.method == "POST":
-        biblioForm = BiblioForm(request.POST, instance=doc)
+        # This fix #19 can be improved with a deeper fix date fields management.
+        req_post = request.POST.copy()
+        req_post["date_f"] = req_post["date_f"].replace("/", "-")
+        req_post["date2_f"] = req_post["date2_f"].replace("/", "-")
+        biblioForm = BiblioForm(req_post, instance=doc)
 
         # Ensure document_type is set for new documents (fix IntegrityError)
         if new_doc and getattr(doc, "document_type", None) is None:
