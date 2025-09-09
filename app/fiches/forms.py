@@ -1,34 +1,34 @@
 # Copyright (C) 2010-2025 Université de Lausanne, RISET
 # See docs/copyright.md
 
-from fiches.models.misc.project import Project
+from ckeditor.widgets import CKEditorWidget
 from django import forms
+from django.contrib.auth.models import User
+from django.forms.widgets import RadioSelect
 from django.utils.translation import gettext_lazy as _
+from fiches.models.misc.project import Project
+
+from .constants import DATE_DISPLAY_FORMAT, DATE_INPUT_FORMATS
+from .fields import MultiplePersonField
+from .models.contributions import PrimaryKeyword, SecondaryKeyword
+from .models.contributiontype import ContributionType
 from .models.documents import (
+    TRANSCRIPTION_CHOICES,
     Biblio,
+    ContributionDoc,
+    ContributionMan,
+    DocumentFile,
+    DocumentLanguage,
     Manuscript,
     ManuscriptType,
-    Transcription,
-    ContributionMan,
     NoteBiblio,
     NoteTranscription,
-    DocumentLanguage,
-    ContributionDoc,
-    DocumentFile,
+    Transcription,
 )
-from .models.contributions import PrimaryKeyword, SecondaryKeyword
-from .models.misc import Society
+from .models.misc import ObjectCollection, Society
 from .models.person import Person
-from .models.contributiontype import ContributionType
-from .fields import MultiplePersonField
-from .widgets import StaticList, DynamicList, PersonWidget
-from .constants import DATE_DISPLAY_FORMAT, DATE_INPUT_FORMATS
-from django.contrib.auth.models import User
-from .models.misc import ObjectCollection
-from .models.documents import TRANSCRIPTION_CHOICES
-from django.forms.widgets import RadioSelect
+from .widgets import DynamicList, PersonWidget, StaticList
 
-from ckeditor.widgets import CKEditorWidget
 
 # ===============================
 # Base Form for Notes
@@ -380,9 +380,10 @@ class ObjectCollectionForm(forms.ModelForm):
 
 
 
+from fiches.models import Biblio, Person, Transcription
 from haystack.forms import ModelSearchForm
 from haystack.query import RelatedSearchQuerySet
-from fiches.models import Person, Biblio, Transcription
+
 
 class FichesSearchForm(ModelSearchForm):
     def __init__(self, *args, **kwargs):
@@ -463,35 +464,32 @@ class ContributionDocForm(forms.ModelForm):
     # 2) Parse out pk from “123|Name” in clean_person()
     #
     def clean_person(self):
-        raw_value = self.cleaned_data.get("person", "")  # e.g. "1735|Usteri, Paul..."
+        raw_value = self.cleaned_data.get("person", "")
         if not raw_value.strip():
-            # User typed nothing or cleared field
             return None
-
         if "|" in raw_value:
             pk_str, display_name = raw_value.split("|", 1)
             try:
                 pk = int(pk_str)
-                # Retrieve the Person instance
                 return Person.objects.get(pk=pk)
             except (ValueError, Person.DoesNotExist):
-                raise forms.ValidationError(
-                    "Cette personne est introuvable dans la base."
-                )
+                raise forms.ValidationError("Cette personne est introuvable dans la base.")
         else:
-            # No pipe => user typed something but no ID
-            return None
+            name = raw_value.strip()
+            person, _ = Person.objects.get_or_create(name=name)
+            return person
 
     #
     # 3) Optionally skip entire row if no person was set
     #
     def clean(self):
         cleaned_data = super().clean()
-        person = cleaned_data.get("person")  # now a Person instance or None
+        person = cleaned_data.get("person")
+        # On retire la ligne seulement si aucun auteur n'est renseigné
         if not person:
-            # If no person is chosen, treat row as empty => remove keys
             cleaned_data.pop("person", None)
             cleaned_data.pop("contribution_type", None)
+        # Sinon, on conserve le type de contribution tel que saisi
         return cleaned_data
 
 
