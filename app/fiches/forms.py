@@ -475,9 +475,15 @@ class ContributionDocForm(forms.ModelForm):
             except (ValueError, Person.DoesNotExist):
                 raise forms.ValidationError("Cette personne est introuvable dans la base.")
         else:
-            name = raw_value.strip()
-            person, _ = Person.objects.get_or_create(name=name)
-            return person
+                # No pipe => user typed something but no ID
+                # Try to find by name, else create
+                name = raw_value.strip()
+                try:
+                    person, created = Person.objects.get_or_create(pk=int(name))
+                    return None
+                except ValueError:
+                    person, created = Person.objects.get_or_create(name=name)
+                    return person
 
     #
     # 3) Optionally skip entire row if no person was set
