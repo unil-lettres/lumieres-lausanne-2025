@@ -193,7 +193,6 @@ var fiches_edit = $.extend({}, fiches_edit, {
             d,c;
         
         // Apply initial formatting to the date
-		console.log("DATE_FORMAT : " + DATE_FORMAT);
         for (d in DATE_FORMAT) {
             c = DATE_FORMAT[d];
             if (format.indexOf(c) !== -1 ) {
