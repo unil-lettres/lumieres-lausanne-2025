@@ -329,7 +329,10 @@ def edit(request, person_id, version=0, create_bio=False):
     NoteFormset = inlineformset_factory(Biography, NoteBiography, extra=0, form=NoteFormBiography)
 
     def get_notebioformset_qs(bio):
-        note_qs = NoteBiography.objects.filter(owner=bio)
+        if not getattr(bio, "pk", None):
+            return NoteBiography.objects.none()
+        note_qs = NoteBiography.objects.filter(owner_id=bio.pk)
+        
         if not request.user.is_staff:
             note_qs = note_qs.filter(
                 Q(access_owner=request.user)
@@ -459,8 +462,8 @@ def edit(request, person_id, version=0, create_bio=False):
     bio_formdef = get_bio_formDef(bioForm)
 
     public_notes = None
-    if bio is not None and not request.user.has_perm("fiches.can_publish_note"):
-        public_notes = NoteBiography.objects.filter(owner=bio).filter(access_public=True)
+    if getattr(bio, "pk", None) and not request.user.has_perm("fiches.can_publish_note"):
+        public_notes = NoteBiography.objects.filter(owner_id=bio.pk, access_public=True)
 
     # Biblio - publications
     ctx = build_person_biblio_dict(person)
