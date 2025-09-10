@@ -315,11 +315,8 @@ $(document).ready(function(){
 					c_ph = 'aaaa'; 
 					break;
 			}
-			console.log("Processing " + c + " (ph='" + c_ph + "')");
-			console.log(date_format);
 			// Only set value for input if its class is in date_format
 			if (date_format.includes(c)) {
-				console.log("Adding input for " + c + " with value '" + formatted_date_list[d] + "'");
 				output_node.append('<input type="text" class="' + c + '" placeholder="' + c_ph + '" value="'
 								   + formatted_date_list[d] + '" size="' + ((c === 'y') ? '4' : '2') 
 								   + '" maxlength="' + ((c === 'y') ? '4' : '2') + '"/>' );
