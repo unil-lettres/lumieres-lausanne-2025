@@ -24,9 +24,6 @@ db/restore:  ## Restore the database from a dump file
 db/restore:
 	docker compose exec -T db \
 		mysql -uroot -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < ${DB_DUMP_BACKUP}
-	python app/manage.py makemigrations fiches
-	python app/manage.py migrate fiches 0003 --fake
-	python app/manage.py migrate fiches 0004
 
 .PHONY: db/clean
 db/clean:  ## Clean the database by dropping all tables
