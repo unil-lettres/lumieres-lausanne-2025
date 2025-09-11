@@ -18,30 +18,25 @@
 #    This copyright notice MUST APPEAR in all copies of the file.
 #
 
-from django.db import models
+from ckeditor.fields import RichTextField, RichTextFormField
 from django import forms
-from django.forms import ModelForm
-from django.utils.translation import gettext_lazy as _
-from django.utils.dateformat import format
 from django.apps import apps
+from django.db import models
+from django.forms import ModelForm
+from django.utils.dateformat import format
+from django.utils.translation import gettext_lazy as _
+from fiches.base_forms import NoteFormBase
+from fiches.constants import DATE_DISPLAY_FORMAT, DATE_INPUT_FORMATS
 from fiches.models.misc.notes import NoteBase
+from fiches.models.person import Person
+from fiches.models.person.relation import Relation, RelationType
 
 # from fiches.fields import PersonField, PersonWidget
 from fiches.widgets import PersonWidget
 
-from fiches.constants import DATE_INPUT_FORMATS, DATE_DISPLAY_FORMAT
-from fiches.base_forms import NoteFormBase
-from ckeditor.fields import RichTextField, RichTextFormField
-
-from fiches.models.person.relation import Relation, RelationType
-
-
-from fiches.models.person import Person
-
 # Import Relation & RelationType from the new file:
 # from fiches.models.person.relation import Relation, RelationType
 
-from fiches.widgets import PersonWidget
 
 
 # ===============================================================================
@@ -203,12 +198,20 @@ class BiographyForm(ModelForm):
 # ------------------------------------------------------------------------------
 class NoteBiography(NoteBase):
     owner = models.ForeignKey("fiches.Biography", on_delete=models.CASCADE)
+    
+    @property
+    def rte_type(self):
+        """Return CKE to be compatible with note_formset.html template."""
+        return "CKE"
 
     class Meta(NoteBase.Meta):
         app_label = "fiches"
 
 
 class NoteFormBiography(NoteFormBase):
+    # Add virtual rte_type field for template compatibility
+    rte_type = forms.CharField(initial="CKE", widget=forms.HiddenInput(), required=False)
+    
     class Meta:
         model = NoteBiography
         fields = "__all__"
@@ -259,6 +262,11 @@ class RelationForm(ModelForm):
         # If no `related_person` is chosen, remove `relation_type`
         if related_person is None:
             cleaned_data["relation_type"] = None
+        else:
+            # If related_person is set, relation_type must be set
+            if relation_type is None:
+                from django.core.exceptions import ValidationError
+                raise ValidationError({"relation_type": "Type de relation obligatoire si une personne est sélectionnée."})
 
         return cleaned_data
 
@@ -280,14 +288,14 @@ class Profession(models.Model):
 
     def get_formatted_dates(self):
         if self.begin_date:
-            begin_date = format(self.begin_date, self.begin_date_f.replace("%", "").replace("-", "."))
+            begin_date = format(self.begin_date, self.begin_date_f.replace("%", "").replace("-", ".").replace("/", "."))
         else:
             begin_date = "?"
         if self.begin_date_approx:
             begin_date = "v. %s" % begin_date
 
         if self.end_date:
-            end_date = format(self.end_date, self.end_date_f.replace("%", "").replace("-", "."))
+            end_date = format(self.end_date, self.end_date_f.replace("%", "").replace("-", ".").replace("/", "."))
         else:
             end_date = "?"
         if self.end_date_approx:
