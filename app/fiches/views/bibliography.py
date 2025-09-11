@@ -235,11 +235,23 @@ def display(request, doc_id):
 
     # Format the document date(s)
     if doc.date:
-        doc_date = format(doc.date, doc.date_f.replace("%", "").replace("-", " / "))
-        if doc.date2:
-            doc_date += "-" + format(doc.date2, doc.date2_f.replace("%", "").replace("-", " / "))
-    else:
-        doc_date = ""
+        date_format = ""
+        if 'd' in doc.date_f:
+            date_format += "d"
+        if 'm' in doc.date_f:
+            date_format += " F"
+        if 'Y' in doc.date_f:
+            date_format += " Y"
+        doc.date_f = date_format
+    if doc.date2:
+        date2_format = ""
+        if 'd' in doc.date2_f:
+            date2_format += "d"
+        if 'm' in doc.date2_f:
+            date2_format += " F"
+        if 'Y' in doc.date2_f:
+            date2_format += " Y"
+        doc.date2_f = date2_format
     last_activity = get_last_model_activity(doc)
 
     referer = request.META.get("HTTP_REFERER")
@@ -307,7 +319,6 @@ def display(request, doc_id):
         "ext_template": ext_template,
         "doc": doc,
         "model": Biblio,
-        "doc_date": doc_date,
         "contributions": contributions,
         "last_activity": last_activity,
         "display_collector": DISPLAY_COLLECTOR,
