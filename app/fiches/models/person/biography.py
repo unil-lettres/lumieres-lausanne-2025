@@ -288,14 +288,14 @@ class Profession(models.Model):
 
     def get_formatted_dates(self):
         if self.begin_date:
-            begin_date = format(self.begin_date, self.begin_date_f.replace("%", "").replace("-", "."))
+            begin_date = format(self.begin_date, self.begin_date_f.replace("%", "").replace("-", ".").replace("/", "."))
         else:
             begin_date = "?"
         if self.begin_date_approx:
             begin_date = "v. %s" % begin_date
 
         if self.end_date:
-            end_date = format(self.end_date, self.end_date_f.replace("%", "").replace("-", "."))
+            end_date = format(self.end_date, self.end_date_f.replace("%", "").replace("-", ".").replace("/", "."))
         else:
             end_date = "?"
         if self.end_date_approx:
