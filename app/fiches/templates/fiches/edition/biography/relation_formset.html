@@ -85,7 +85,7 @@
     var init_when_doc_ready = false;
 
     function __init__() {
-		$(".Relation_related_person:visible").each(function(){ bindRelatedPersonAutocomplete(this) });
+    $(".Relation_related_person:visible, .ContributionDoc_person:visible").each(function(){ bindRelatedPersonAutocomplete(this) });
 
         var rel_formset = $(".relation-formset");
 		// addRemoveFormBut
@@ -148,7 +148,7 @@
         });
 
         $(".relation-form").not("#relation-empty_form .relation-form").last().after(newForm);
-        $(".Relation_related_person:visible", newForm).each(function(){ bindRelatedPersonAutocomplete(this) });
+    $(".Relation_related_person:visible, .ContributionDoc_person:visible", newForm).each(function(){ bindRelatedPersonAutocomplete(this) });
 
         fiches_edit.addRemoveFormBut(newForm, "Supprimer la relation", updateNewFieldBarWidth);
     }
