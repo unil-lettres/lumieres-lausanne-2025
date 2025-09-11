@@ -348,7 +348,12 @@
 	   {#<!--  Date  -->#} {#<!-- ##### Pour tous les type ##### -->#}
 	   <div class="field_wrap">
             <div class="field_label">Date</div>
-            <div class="field_value">{{ doc.date|default:"[s.d.]" }}</div>
+            <div class="field_value">
+                {{ doc.date|date:doc.date_f|default:"[s.d.]" }}
+                {% if doc.date2 %}
+                    - {{ doc.date2|date:doc.date2_f|default:"[s.d.]" }}
+                {% endif %}
+            </div>
             <div class="fixclear"></div>
        </div>
        {#<!-- Date 1ère Edition  -->#}
