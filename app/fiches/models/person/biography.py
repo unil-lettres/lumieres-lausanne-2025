@@ -198,12 +198,20 @@ class BiographyForm(ModelForm):
 # ------------------------------------------------------------------------------
 class NoteBiography(NoteBase):
     owner = models.ForeignKey("fiches.Biography", on_delete=models.CASCADE)
+    
+    @property
+    def rte_type(self):
+        """Return CKE to be compatible with note_formset.html template."""
+        return "CKE"
 
     class Meta(NoteBase.Meta):
         app_label = "fiches"
 
 
 class NoteFormBiography(NoteFormBase):
+    # Add virtual rte_type field for template compatibility
+    rte_type = forms.CharField(initial="CKE", widget=forms.HiddenInput(), required=False)
+    
     class Meta:
         model = NoteBiography
         fields = "__all__"

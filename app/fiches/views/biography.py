@@ -17,38 +17,48 @@
 #
 #    This copyright notice MUST APPEAR in all copies of the file.
 #
-import pprint, time, re
+import json
+import pprint
+import re
+import time
 from base64 import b64decode
+from itertools import groupby
+
+from django.conf import settings
+from django.contrib.auth.decorators import permission_required
+from django.db.models import Q
+from django.forms.models import inlineformset_factory, modelformset_factory
+from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render
+from django.template import RequestContext
 
 # from django.core.urlresolvers import reverse
 from django.urls import reverse
-from django.http import HttpResponse, Http404, HttpResponseRedirect, HttpResponseForbidden
-from django.shortcuts import render, get_object_or_404
-from django.template import RequestContext
-from django.forms.models import modelformset_factory, inlineformset_factory
-import json
 
 # from django.utils.encoding import smart_str, smart_unicode
 from django.utils.html import escape
-from itertools import groupby
 from django.utils.safestring import mark_safe
-from django.contrib.auth.decorators import permission_required
 from django.views.decorators.cache import never_cache
-
-from utils import dbg_logger
 from fiches.models import *
-from fiches.utils import (
-    log_model_activity,
-    get_grouped_objet_activities,
-    supprime_accent,
-    query_fiche,
-    update_object_index,
-    remove_object_index,
+from fiches.models.person.biography import (
+    BiographyForm,
+    NoteBiography,
+    NoteFormBiography,
+    Profession,
+    ProfessionForm,
+    RelationForm,
+    SocietyMembership,
+    SocietyMembershipForm,
 )
-from django.conf import settings
-from fiches.models.person.biography import BiographyForm, NoteBiography, NoteFormBiography, Profession, ProfessionForm, RelationForm, SocietyMembership, SocietyMembershipForm
-
-from django.db.models import Q
+from fiches.utils import (
+    get_grouped_objet_activities,
+    log_model_activity,
+    query_fiche,
+    remove_object_index,
+    supprime_accent,
+    update_object_index,
+)
+from utils import dbg_logger
 
 # ===============================================================================
 # BIOGRAPHY
