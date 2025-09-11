@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#
 #    Copyright (C) 2010-2012 Université de Lausanne, RISET
 #    < http://www.unil.ch/riset/ >
 #
@@ -425,6 +427,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
         ContributionFormset = inlineformset_factory(Biblio, ContributionDoc, form=ContributionDocForm, extra=1)
     else:
         ContributionFormset = inlineformset_factory(Biblio, ContributionDoc, form=ContributionDocForm, extra=0)
+    NoteFormset = inlineformset_factory(Biblio, NoteBiblio, extra=0, form=NoteFormBiblio)
 
     # -------------------------------
     # Form Handling (POST Request)
