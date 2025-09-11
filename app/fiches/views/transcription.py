@@ -169,7 +169,7 @@ def edit(request, trans_id=None, man_id=None, doc_id=None, new_trans=False, del_
     # user needs the publish_transcription permission to modify a published transcription
     if trans.access_public and not request.user.has_perm("fiches.publish_transcription"):
         return HttpResponseForbidden(
-            "Vous ne disposez pas des permissions n�cessaires pour modifier une transcription publi�e"
+            "Vous ne disposez pas des permissions nécessaires pour modifier une transcription publiée"
         )
 
     # Dynamically set extra: 1 if no notes exist, 0 otherwise
