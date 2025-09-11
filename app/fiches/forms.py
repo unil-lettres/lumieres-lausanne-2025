@@ -200,6 +200,9 @@ class NoteFormBiblio(NoteFormBase):
     Form for editing the NoteBiblio model (notes referencing a Biblio).
     It should NOT contain fields that belong to Biblio, like subj_person, etc.
     """
+    
+    # Add virtual rte_type field for template compatibility
+    rte_type = forms.CharField(initial="CKE", widget=forms.HiddenInput(), required=False)
 
     class Meta(NoteFormBase.Meta):
         model = NoteBiblio
