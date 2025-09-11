@@ -193,7 +193,6 @@ var fiches_edit = $.extend({}, fiches_edit, {
             d,c;
         
         // Apply initial formatting to the date
-		console.log("DATE_FORMAT : " + DATE_FORMAT);
         for (d in DATE_FORMAT) {
             c = DATE_FORMAT[d];
             if (format.indexOf(c) !== -1 ) {
@@ -273,11 +272,15 @@ $(document).ready(function(){
 		var format_node = $(this);
 		if (format_node.data('vardateformat') == 'inited') { return; }
 		
-				// Normalized format
+		// Normalized format
 		var	format = String(format_node.val()).toLowerCase(),
 			date_node = $("input[name='" + format_node.attr("name").slice(0,-2) + "']"),
 			output_val = [];
-		
+
+
+		let date_format = $("input[id='id_" + format_node.attr("name")+ "']").val().replace(/%/g, "").toLowerCase().split("-");
+		$(".fieldWrapper." + format_node.attr("name")).hide();
+
 		// Basic validity checks
 		if ( (typeof(date_node) === 'undefined') || (format==='undefined') ) { return; }
 
@@ -299,9 +302,8 @@ $(document).ready(function(){
 		}
 		
 		// Create date widget
-		var output_node = $('<div class="vardate-multifield-container" rel="' + date_node.attr("name") 
-							+ '" style="display:inline;"/>');
-		for ( d in DATE_FORMAT ) {
+		var output_node = $('<div class="vardate-multifield-container" rel="' + date_node.attr("name") + '" style="display:inline;"/>');
+		for (d in DATE_FORMAT) {
 			c = DATE_FORMAT[d];
 			var c_ph = "jj";
 			switch (c) {
@@ -312,9 +314,15 @@ $(document).ready(function(){
 					c_ph = 'aaaa'; 
 					break;
 			}
-			output_node.append('<input type="text" class="' + c + '" placeholder="' + c_ph + '" value="'
-							   + formatted_date_list[d] + '" size="' + ((c === 'y') ? '4' : '2') 
-							   + '" maxlength="' + ((c === 'y') ? '4' : '2') + '"/>');
+			// Only set value for input if its class is in date_format
+			if (date_format.includes(c)) {
+				output_node.append('<input type="text" class="' + c + '" placeholder="' + c_ph + '" value="'
+								   + formatted_date_list[d] + '" size="' + ((c === 'y') ? '4' : '2') 
+								   + '" maxlength="' + ((c === 'y') ? '4' : '2') + '"/>' );
+			} else {
+				output_node.append('<input type="text" class="' + c + '" placeholder="' + c_ph + '" size="' + ((c === 'y') ? '4' : '2') 
+								   + '" maxlength="' + ((c === 'y') ? '4' : '2') + '"/>' );
+			}
 		}
 		output_node.append('<br/><label>entre crochets</label>');
 		for ( d in DATE_FORMAT ) {

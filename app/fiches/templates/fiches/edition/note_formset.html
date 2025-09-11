@@ -81,7 +81,14 @@
                 {% endif %}
                 
 				<div class="field access-status-field">
-					<div class="wrapper"{% if form.instance.access_public and not perms.fiches.can_publish_note %}style="border-bottom: none;"{% endif %}>						<span class="label">Accès:</span>&nbsp;						{% if form.instance.id %}						   {% with access_public=form.instance.access_public access_groups=form.instance.access_groups.all %}{% include "fiches/edition/access_status.html" %}{% endwith %}						{% else %}						   {% with access_public=0 access_groups=0 %}{% include "fiches/edition/access_status.html" %}{% endwith %}						{% endif %}					</div>
+					<div class="wrapper"{% if form.instance.access_public and not perms.fiches.can_publish_note %}style="border-bottom: none;"{% endif %}>
+						<span class="label">Accès:</span>&nbsp;
+						{% if form.instance.id %}
+						   {% with access_public=form.instance.access_public access_groups=form.instance.access_groups.all %}{% include "fiches/edition/access_status.html" %}{% endwith %}
+						{% else %}
+						   {% with access_public=0 access_groups=0 %}{% include "fiches/edition/access_status.html" %}{% endwith %}
+						{% endif %}
+					</div>
 				</div>
 				
 				{% if not form.instance.access_public or perms.fiches.can_publish_note %}
@@ -127,9 +134,10 @@
 	    <div class="form-instance note-form">
             {{ form.id }}
             <div class="group-field note-text-group">
-                <div class="field note-text">{{ form.text.errors }}
-                    {{ form.text }}
-                </div>
+				<div class="field note-text">{{ form.text.errors }}
+					{{ form.text }}
+				</div>
+				<input type="hidden" name="{{ form.rte_type.html_name }}" value="{{ form.rte_type.value }}" />
             </div>
             <div class="group-field note-access">
                 <div class="field delete-field">
@@ -139,7 +147,10 @@
 				</div>
 
                 <div class="field">
-                	<div class="wrapper">						<span class="label">Accès:</span>&nbsp;	                    {% with access_public=0 access_groups=0 %}{% include "fiches/edition/access_status.html" %}{% endwith %}					</div>
+                	<div class="wrapper">
+						<span class="label">Accès:</span>&nbsp;
+	                    {% with access_public=0 access_groups=0 %}{% include "fiches/edition/access_status.html" %}{% endwith %}
+					</div>
                 </div>
 				
                 <div class="field note-access_users">

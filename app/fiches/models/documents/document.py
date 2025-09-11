@@ -395,12 +395,10 @@ class NoteBiblio(NoteBase):
         help_text=_('Contrôle d\'accès par groupe utilisateur'),
     )
 
-    # Ensure `rte_type` exists and is compatible with note_formset.html
-    # rte_type = models.CharField(
-    #     max_length=10,
-    #     choices=[("CKE", "CKEditor"), ("TXT", "Plain Text")],  # Example choices
-    #     default="CKE",  # Matches the condition in `note_formset.html`
-    # )
+    @property
+    def rte_type(self):
+        """Return CKE to be compatible with note_formset.html template."""
+        return "CKE"
 
     class Meta(NoteBase.Meta):
         app_label = "fiches"

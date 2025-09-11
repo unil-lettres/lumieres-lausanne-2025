@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #    Copyright (C) 2010-2012 Université de Lausanne, RISET
 #    < http://www.unil.ch/riset/ >
 #
@@ -24,41 +22,22 @@ from base64 import b64decode
 from functools import reduce
 from itertools import chain
 
-from django.db import models
+from django.db import connection
+from django.db.models import Q
 from django.forms.models import inlineformset_factory
 from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect, HttpResponseServerError
-from django.shortcuts import get_object_or_404, render  # render_to_response,
-from django.template import RequestContext
+from django.shortcuts import get_object_or_404, render
 from django.template.context_processors import csrf
-
-# from django.core.urlresolvers import reverse
 from django.urls import reverse
 from django.utils.dateformat import format
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
-from fiches.forms import BiblioForm, ContributionDocForm, NoteFormBiblio, ContributionDocSecForm
-from fiches.models import (
-    Biblio,
-    DocumentType,
-    PrimaryKeyword,
-    SecondaryKeyword,
-    ContributionDoc,
-    Depot,  # Ajout pour le dépôt par défaut
-)
-from fiches.models.documents import NoteBiblio
-from fiches.utils import (
-    get_last_model_activity,
-    log_model_activity,
-    query_fiche,
-    remove_object_index,
-    supprime_accent,
-    update_object_index,
-)
-from utils import dbg_logger
-from utils.aggregates import Concatenate
-from utils.coins import OpenURL
+from fiches.forms import BiblioForm, ContributionDocForm, ContributionDocSecForm, NoteFormBiblio
+from fiches.models import Biblio, ContributionDoc, Depot, DocumentType, PrimaryKeyword, SecondaryKeyword
+from fiches.models.documents import DocumentFile, NoteBiblio
+from fiches.utils import get_last_model_activity, log_model_activity, remove_object_index, update_object_index
 
 # ===============================================================================
 # BIBLIOGRAPHY
@@ -114,13 +93,14 @@ def get_biblio_formDef(biblioForm):
                     {"name": "series_title"},
                     {"name": "dictionary_title", "required": True},
                     {"name": "place", "tooltip_id": "ctxt-help-biblio-place", "recommanded": True},
+                    {"name": "place2", "tooltip_id": "ctxt-help-biblio-place2", "recommanded": True},
                     {"name": "publisher", "tooltip_id": "ctxt-help-biblio-publisher"},
                     {"name": "publisher2"},
                     {"name": "collection", "tooltip_id": "ctxt-help-biblio-collection"},
                     {"name": "date", "recommanded": True, "column_one": True},
-                    {"name": "date_f", "hidden": True},
+                    {"name": "date_f", "hidden": False},
                     {"name": "date2", "column_two": True},
-                    {"name": "date2_f", "hidden": True},
+                    {"name": "date2_f", "hidden": False},
                     {"name": "edition", "tooltip_id": "ctxt-help-biblio-edition"},
                 ),
             },
@@ -346,18 +326,6 @@ def create(request, doctype=1):
     return edit(request, None, new_doc=True, new_doctype=doctype)
 
 
-import json
-from functools import reduce
-
-from django.db import connection, models
-from django.db.models import Q
-from django.http import Http404, HttpResponseForbidden, HttpResponseRedirect
-from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
-from django.utils.safestring import mark_safe
-from django.views.decorators.cache import never_cache
-
-
 @never_cache
 def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     """Handles creation and modification of bibliography records (fiches bibliographiques)."""
@@ -403,7 +371,11 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     primary_kw = secondary_kw = None
     if doc and doc.id:
         primary_kw = PrimaryKeyword.objects.filter(biblio=doc).exclude(secondary_keywords__biblio=doc)
-        secondary_kw = SecondaryKeyword.objects.select_related("primary_keyword").filter(biblio=doc).order_by("primary_keyword__word")
+        secondary_kw = (
+            SecondaryKeyword.objects.select_related("primary_keyword")
+            .filter(biblio=doc)
+            .order_by("primary_keyword__word")
+        )
 
     # -------------------------------
     # Exclusive Fields Setup
@@ -437,14 +409,25 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     if not request.user.has_perm("fiches.can_publish_note"):
         note_qs = note_qs.exclude(access_public=True)
 
-    ContributionFormset = inlineformset_factory(Biblio, ContributionDoc, form=ContributionDocForm, extra=1)
-    NoteFormset = inlineformset_factory(Biblio, NoteBiblio, extra=0, form=NoteFormBiblio)
+    # Use extra=1 only for new fiche creation, extra=0 for editing
+    if new_doc:
+        ContributionFormset = inlineformset_factory(Biblio, ContributionDoc, form=ContributionDocForm, extra=1)
+    else:
+        ContributionFormset = inlineformset_factory(Biblio, ContributionDoc, form=ContributionDocForm, extra=0)
 
     # -------------------------------
     # Form Handling (POST Request)
     # -------------------------------
     if request.method == "POST":
-        biblioForm = BiblioForm(request.POST, instance=doc)
+        # This fix #19 can be improved with a deeper fix date fields management.
+        req_post = request.POST.copy()
+        date_f_val = req_post.get("date_f")
+        if date_f_val is not None:
+            req_post["date_f"] = date_f_val.replace("/", "-")
+        date2_f_val = req_post.get("date2_f")
+        if date2_f_val is not None:
+            req_post["date2_f"] = date2_f_val.replace("/", "-")
+        biblioForm = BiblioForm(req_post, instance=doc)
 
         # Ensure document_type is set for new documents (fix IntegrityError)
         if new_doc and getattr(doc, "document_type", None) is None:
@@ -513,7 +496,10 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
             subj_person_list = None
         logger.debug("[BIBLIO-DEBUG] subj_person initial: %s", subj_person_list)
         logger.debug("[BIBLIO-DEBUG] biblioForm.initial: %s", biblioForm.initial)
-        logger.debug("[BIBLIO-DEBUG] biblioForm.cleaned_data (should be empty on GET): %s", getattr(biblioForm, "cleaned_data", None))
+        logger.debug(
+            "[BIBLIO-DEBUG] biblioForm.cleaned_data (should be empty on GET): %s",
+            getattr(biblioForm, "cleaned_data", None),
+        )
 
     # -------------------------------
     # Public Notes (Read-only display)
@@ -575,8 +561,7 @@ def delete(request, doc_id):
         except Exception as exc:
             # Return a user-friendly error page if reverse fails
             return HttpResponseServerError(
-                f"Could not resolve redirect after deletion: {exc}. "
-                "Please contact the administrator."
+                f"Could not resolve redirect after deletion: {exc}. " "Please contact the administrator."
             )
 
 
