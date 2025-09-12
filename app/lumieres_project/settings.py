@@ -43,9 +43,17 @@ DEBUG = os.getenv("DJANGO_DEBUG", DEBUG_DEFAULT).lower() in ("1", "true", "yes")
 if ENV == "production":
     ALLOWED_HOSTS = ["lumieres.unil.ch"]
     CSRF_TRUSTED_ORIGINS = ["https://lumieres.unil.ch"]
+
 elif ENV == "staging":
-    ALLOWED_HOSTS = ["plt-tst-2.unil.ch"]
-    CSRF_TRUSTED_ORIGINS = ["https://plt-tst-2.unil.ch"]
+    # Toggle ngrok access in staging via env var (off by default)
+    ALLOW_NGROK = os.getenv("ALLOW_NGROK", "0").lower() in ("1", "true", "yes")
+
+    NGROK_HOSTS = [".ngrok-free.app", ".ngrok.app", ".ngrok.io"]
+    NGROK_ORIGINS = ["https://*.ngrok-free.app", "https://*.ngrok.app", "https://*.ngrok.io"]
+
+    ALLOWED_HOSTS = ["plt-tst-2.unil.ch"] + (NGROK_HOSTS if ALLOW_NGROK else [])
+    CSRF_TRUSTED_ORIGINS = ["https://plt-tst-2.unil.ch"] + (NGROK_ORIGINS if ALLOW_NGROK else [])
+
 else:  # development
     ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]", "0.0.0.0"]
     CSRF_TRUSTED_ORIGINS = []
