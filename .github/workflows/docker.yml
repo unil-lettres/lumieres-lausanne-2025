@@ -3,7 +3,7 @@ name: docker
 on:
   push:
     branches: [ dev ]        # only dev auto-publishes
-  workflow_dispatch:         # manual runs (shows when this file is on default branch)
+  workflow_dispatch:         # manual runs
 
 permissions: read-all
 
@@ -22,17 +22,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Guard: IMAGE must be set
+      - name: "Guard: IMAGE must be set"
         run: |
           if [ -z "${IMAGE}" ]; then
             echo "::error::Set repository variable DOCKERHUB_REPOSITORY (e.g. unillett/lumieres)";
             exit 1;
           fi
-
-      - name: Prepare env
-        run: |
-          platform=${{ matrix.arch }}
-          echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -74,7 +69,7 @@ jobs:
       - name: Upload digest artifact
         uses: actions/upload-artifact@v4
         with:
-          name: digests-${{ env.PLATFORM_PAIR }}
+          name: digests-${{ replace(matrix.arch, '/', '-') }}
           path: ${{ runner.temp }}/digests/*
           if-no-files-found: error
           retention-days: 1
@@ -84,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Guard: IMAGE must be set
+      - name: "Guard: IMAGE must be set"
         run: |
           if [ -z "${IMAGE}" ]; then
             echo "::error::Set repository variable DOCKERHUB_REPOSITORY (e.g. unillett/lumieres)";
@@ -117,12 +112,9 @@ jobs:
             IMAGES="$IMAGES ${IMAGE}@sha256:$(basename "$d")"
           done
 
-          # Tag: latest-stage for dev branch, plus a traceable short SHA
           SHORT_SHA="${GITHUB_SHA::7}"
 
-          # Always create a sha tag; only add latest-stage on dev
           docker buildx imagetools create -t "${IMAGE}:sha-${SHORT_SHA}" $IMAGES
-
           if [ "${GITHUB_REF}" = "refs/heads/dev" ]; then
             docker buildx imagetools create -t "${IMAGE}:latest-stage" $IMAGES
           fi
