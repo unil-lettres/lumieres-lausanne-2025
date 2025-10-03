@@ -224,3 +224,12 @@ class Person(models.Model):
                 results.append(rel)
 
         return results
+
+    def has_relations(self, exclude_people=None):
+        """Return True if the person has at least one relation (forward or reverse)."""
+        exclude_people = exclude_people or []
+        if self.get_relations(exclude_people=exclude_people):
+            return True
+        if self.get_reverse_relations(exclude_people=exclude_people):
+            return True
+        return False

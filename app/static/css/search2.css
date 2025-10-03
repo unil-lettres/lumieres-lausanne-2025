@@ -68,7 +68,76 @@ fieldset.collapsed { height: 15px !important; overflow: hidden; }
 .ext_search .fldset_xfld input { width: 100%; }
 .ext_search .xfld_row { margin-top: 3px;}
 
-.ext_search .float-col li { float: left; padding-right: 10px; }
+.ext_search .ext-checkbox-inline {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+}
+
+.ext_search .ext-checkbox-inline li {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ext_search .ext-checkbox-inline li label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.ext_search .ext-checkbox-inline li input[type="checkbox"] {
+    margin: 0;
+}
+
+#id_dt {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+}
+
+#id_dt li {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex: 0 0 calc(33% - 12px);
+    min-width: calc(33% - 12px);
+}
+
+#id_dt li label {
+    white-space: nowrap;
+}
+
+.ext_checkbox_contiguous.ext-checkbox-inline li {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ext-checkbox-inline-proj {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 18px;
+    row-gap: 6px;
+}
+
+.ext-checkbox-inline-proj li {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    gap: 4px;
+    flex: 0 0 calc(50% - 18px);
+}
 
 .ext_search .height_60 .cadre,
 .ext_search .height_60 fieldset { height: 60px; }
@@ -312,9 +381,6 @@ form.edit-form fieldset .collapse_btn { -webkit-border-radius: 0 10px 0 4px; -mo
 .ui-dialog dl.caption dd { line-height: 1.3em; }
 .ui-dialog dl.caption dt { clear: left; float: left; width: 60px; padding: 0 5px 0 4px; background-color: #EEE; text-align: right; }
 .ui-dialog dl.caption dd { margin-left: 73px; }
-
-
-
 
 
 

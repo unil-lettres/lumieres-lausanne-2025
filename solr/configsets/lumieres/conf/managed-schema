@@ -93,9 +93,9 @@
     
     <field name="doctype" type="text_en" indexed="true" stored="true" multiValued="false" />
     
-    <field name="sort1" type="text_en" indexed="true" stored="true" multiValued="false" />
+    <field name="sort1" type="string" indexed="true" stored="true" multiValued="false" docValues="true" />
     
-    <field name="sort2" type="text_en" indexed="true" stored="true" multiValued="false" />
+    <field name="sort2" type="string" indexed="true" stored="true" multiValued="false" docValues="true" />
     
     <field name="person_name" type="text_en" indexed="true" stored="true" multiValued="false" />
     

@@ -126,7 +126,7 @@ class BiblioExtendedSearchForm(forms.Form):
     dt = forms.ModelMultipleChoiceField(
         required=False,
         queryset=DocumentType.objects.all().order_by("id"),
-        widget=forms.CheckboxSelectMultiple(),
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "ext-checkbox-inline"}),
         label=_("Type de document"),
     )
 
@@ -164,9 +164,12 @@ class BiblioExtendedSearchForm(forms.Form):
                                    widget=forms.Select(attrs={"class": "js-combobox"}))
 
     # Projets
-    proj = forms.ModelMultipleChoiceField(required=False, queryset=Project.objects.none(),
-                                          widget=forms.CheckboxSelectMultiple(),
-                                          label=_("Projets"))
+    proj = forms.ModelMultipleChoiceField(
+        required=False,
+        queryset=Project.objects.none(),
+        widget=forms.CheckboxSelectMultiple(attrs={"class": "ext-checkbox-inline"}),
+        label=_("Projets"),
+    )
     proj_op = forms.ChoiceField(required=False, initial="and",
                                 choices=OP_FIELD_CHOICES, label=_("Projets (op.)"))
 

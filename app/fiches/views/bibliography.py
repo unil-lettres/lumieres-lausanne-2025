@@ -26,6 +26,7 @@ from django.db import connection
 from django.db.models import Q
 from django.forms.models import inlineformset_factory
 from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect, HttpResponseServerError
+from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import get_object_or_404, render
 from django.template.context_processors import csrf
 from django.urls import reverse
@@ -643,16 +644,16 @@ def documentfile_remove(request, doc_id, docfile_id):
 
 
 def get_person_publications(request, person_id):
-    journal_title = request.GET.get("j")
+    journal_title = request.GET.get("j") or ""
     try:
-        journal_title = b64decode(journal_title)
+        if journal_title:
+            journal_title = b64decode(journal_title).decode("utf-8", errors="ignore")
         publications = (
             Biblio.objects.filter(journal_title__icontains=journal_title)
             .filter(contributiondoc__person__id=person_id)
             .order_by("title")
             .distinct()
         )
-        # return render('fiches/bibliography_references/publication_list.html', {'publications': publications} , context_instance=RequestContext(request))
         return render(request, "fiches/bibliography_references/publication_list.html", {"publications": publications})
     except (TypeError, ValueError, ObjectDoesNotExist) as e:
         return HttpResponseServerError("Error: {}".format(e))

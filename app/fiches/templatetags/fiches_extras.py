@@ -22,6 +22,7 @@
 import logging  # XXX: delete it
 import re
 import time
+import datetime
 import urllib.parse as urlparse
 
 from django import template
@@ -201,6 +202,74 @@ def attr(value, token):
         return value
     else:
         return [item.__getattribute__(token) for item in value]
+
+
+@register.filter
+def sort_biblio(results, doc_name):
+    doc_label = (doc_name or "").strip().lower()
+    if doc_label not in {"livre", "contenu de la transcription", "transcription"}:
+        return results
+    try:
+        items = list(results)
+    except TypeError:
+        return results
+
+    def author_key(value):
+        return str(value or "").casefold()
+
+    def normalize_date(value):
+        if isinstance(value, datetime.datetime):
+            value = value.date()
+        if isinstance(value, datetime.date):
+            return value
+        if isinstance(value, str):
+            digits = ''.join(ch for ch in value if ch.isdigit())
+            if len(digits) >= 4:
+                try:
+                    return datetime.date(int(digits[:4]), 1, 1)
+                except ValueError:
+                    return datetime.date.max
+            return datetime.date.max
+        if isinstance(value, (int, float)):
+            try:
+                return datetime.date(int(value), 1, 1)
+            except ValueError:
+                return datetime.date.max
+        return datetime.date.max
+
+    def extract_fields(res):
+        obj = getattr(res, "object", None)
+        author = ""
+        date_value = None
+
+        if obj is not None:
+            if doc_label == "contenu de la transcription" or doc_label == "transcription":
+                source = getattr(obj, "manuscript_b", None)
+                if source is not None:
+                    author = getattr(source, "first_author_name", "") or ""
+                    date_value = getattr(source, "date", None)
+            else:
+                author = getattr(obj, "first_author_name", "") or ""
+                date_value = getattr(obj, "date", None)
+
+        stored = getattr(res, "stored_fields", None) or {}
+        if not author:
+            author = stored.get("sort1", "") or ""
+        if date_value is None:
+            date_value = stored.get("sort2")
+
+        return author, date_value
+
+    decorated = []
+    for res in items:
+        author, date_value = extract_fields(res)
+        author_sort = author_key(author)
+        date_sort = normalize_date(date_value)
+        pk = getattr(res, "pk", None) or getattr(res, "id", None) or 0
+        decorated.append(((author_sort, date_sort, pk), res))
+
+    decorated.sort(key=lambda item: item[0])
+    return [entry for _, entry in decorated]
 
 
 RE_A_TAG = re.compile(r"(<a[^>]+>).*(</a>)")

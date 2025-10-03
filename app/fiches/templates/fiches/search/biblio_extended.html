@@ -131,7 +131,7 @@
 			
 			{#<!-- doc type, journal, lang, lit. type and manuscript type fields -->#}
 			<table class="fields-table fldset_row">
-			<col width="40">
+			<col width="55">
 			<col width="15">
 			<col width="15">
 			<col width="15">
@@ -146,11 +146,13 @@
 				</tr>
 				<tr>
 					<td class="fldset_doctype">
-						<div class="float-col">
-							{{ form.dt }}
-							<ul>
-								<li><label for="id_dt_4bis" title="Uniquement les manuscrits avec transcription"><input type="checkbox" id="id_dt_4bis" value="1" name="dtT" {% if onlyTrans %}checked{% endif %}>Transcription seul.</label></li>
-							</ul>
+					    <div class="float-col">
+						<ul id="id_dt" class="ext-checkbox-inline">
+						{% for checkbox in form.dt %}
+							<li><label>{{ checkbox.tag }} {{ checkbox.choice_label }}</label></li>
+						{% endfor %}
+							<li><label for="id_dt_4bis" title="Uniquement les manuscrits avec transcription"><input type="checkbox" id="id_dt_4bis" value="1" name="dtT" {% if onlyTrans %}checked{% endif %}>Transcription seul.</label></li>
+						</ul>
 						</div>
 					</td>
 					
@@ -285,7 +287,13 @@
 				</tr>
 				<tr>
 					<td class="fldset_proj">
-						<div class="float-col">{{ form.proj }}</div>
+						<div class="float-col">
+							<ul class="ext-checkbox-inline ext-checkbox-inline-proj">
+							{% for checkbox in form.proj %}
+								<li><label>{{ checkbox.tag }} {{ checkbox.choice_label }}</label></li>
+							{% endfor %}
+							</ul>
+						</div>
 					</td>
 				</tr>
 			</tbody>

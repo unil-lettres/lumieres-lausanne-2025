@@ -57,11 +57,17 @@
 		#relations-list li.row2 { background-color: #E7E6E2; }
 	</style>
 
-	<script type="text/javascript" src="{% static 'js/lib/jquery/jquery.min.js' %}"></script>
-	{% if JQUI %}<script type="text/javascript" src="{% static 'js/lib/jquery-ui-1.9/js/jquery-ui-1.9.min.js' %}"></script>{% endif %}
+	<script type="text/javascript" src="{% static 'js/lib/jquery/jquery-3.6.0.min.js' %}"></script>
 	<script type="text/javascript">
-		var UI_BUTTON = false;		// Is jQueryUI.button available
-		var relation_browser = {
+		if (!window.jQuery && window.opener && window.opener.jQuery) {
+			window.jQuery = window.opener.jQuery;
+		}
+	</script>
+	{% if JQUI %}<script type="text/javascript" src="{% static 'js/lib/jquery-ui-1.9/js/jquery-ui-1.9.min.js' %}"></script>{% endif %}
+<script type="text/javascript">
+	var UI_BUTTON = typeof $.fn.button === "function";
+	var $ = window.jQuery || (window.opener && window.opener.jQuery);
+	var relation_browser = {
 
 			load_relation_list: function(url, elem) {
 				var only_relations = [];
@@ -92,7 +98,7 @@
 
 		$(document).ready(function(){
 			// Define globals
-			UI_BUTTON = typeof $(document).button === 'function';
+			UI_BUTTON = typeof $.fn.button === 'function';
 
 			// Cmd buttons
 			$("#toggle-relation-type-id").click(function(){ relation_browser.toggleRelationType(); }).attr("checked","checked")
@@ -128,7 +134,7 @@
 
 
 			// Person link behaviour
-			$("a.relation-more-link").live('click', function(){
+			$(document).on('click', 'a.relation-more-link', function(){
 					var $a = $(this);
 					if ($a.siblings().hasClass("child-rel")) {
 						$a.siblings(".child-rel").toggle();

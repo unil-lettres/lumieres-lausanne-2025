@@ -132,6 +132,10 @@ def quick_search(request):
         if models_to_apply:
             sqs = sqs.models(*models_to_apply)
 
+    # Apply deterministic ordering once filters are set
+    sort_fields = ["modelSort", "sort1", "sort2", "django_id"]
+    sqs = sqs.order_by(*sort_fields)
+
     # --- Fast counts via facet on django_ct (for the current query q) ---
     facet_sqs = SearchQuerySet().all()
     if q:
@@ -563,6 +567,7 @@ def do_search(request):
 
     model = apps.get_model("fiches", query_def["model_name"])
     result_qs = None
+    journal_filter_value = ""
 
     for f_def in query_def["filters"]:
         dbg_logger.debug(f_def)
@@ -579,6 +584,11 @@ def do_search(request):
         if display_columns.get(f_def["cl"]) != "off":
             display_columns[f_def["cl"]] = "on"
 
+        if f_def.get("cl") == "journal_articles":
+            for param in f_def.get("params", []):
+                journal_filter_value = param.get("val", "")
+                break
+
     try:
         result_list = result_qs.order_by(order_by).distinct()
     except Exception:
@@ -592,7 +602,13 @@ def do_search(request):
     return render(
         request,
         "fiches/search/results_%s.html" % model_name.lower(),
-        {"object_list": result_list, "nb_val": nb_val, "display": display_columns, "display_collector": True},
+        {
+            "object_list": result_list,
+            "nb_val": nb_val,
+            "display": display_columns,
+            "display_collector": True,
+            "journal_filter_value": journal_filter_value,
+        },
     )
 
 

@@ -139,23 +139,25 @@
 					{% regroup results.list by doctype as grouped_biblio %}
 		            <ul class="results-subgroup-list results-biblio-doctype">
 					{% for biblio_group in grouped_biblio %}
-					    <li class="doctype doctype_{{ biblio_group.list.0.object.document_type.id }}">
-						    <span class="grouper grouper_2">{{ biblio_group.list.0.object.document_type.name }}</span>
-							<ul class="results-item-list">
-							{% for biblio_result in biblio_group.list %}
+				    {% with doc_name=biblio_group.list.0.object.document_type.name %}
+				    <li class="doctype doctype_{{ biblio_group.list.0.object.document_type.id }}">
+					    <span class="grouper grouper_2">{{ doc_name }}</span>
+						<ul class="results-item-list">
+						{% for biblio_result in biblio_group.list %}
 			                    <li>{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio_result.object q=request.META.QUERY_STRING link_target="search_result" %}</li>
 			                    {% if search_debug %}<span class="text-field-wrapper">[+]</span><pre class="text-field">{{ result.text }}</pre>{% endif %}
-							{% endfor %}
-							</ul>
-						</li>
-					{% endfor %}
-					</ul>
+						{% endfor %}
+						</ul>
+				    </li>
+				    {% endwith %}
+				{% endfor %}
+				</ul>
 		        {% endif %}
 
 		        {% if results.grouper == "person" %}
 				    <span class="results-model grouper_1">{{ results.list.0.verbose_name }}</span>
 					<ul class="results-item-list">
-						{% comment %} to sort by alphabetic order add in the for loop: |dictsort:"object.name" {% endcomment %}
+						{% comment %} ordering handled at Solr level; keep iteration order {% endcomment %}
 		            {% for result in results.list %}{% with result.object as person %}
 					    <li>
 						{% if person.has_biography %}

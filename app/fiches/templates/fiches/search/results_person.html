@@ -35,14 +35,20 @@
 {% if display.journal_articles %}
 <script type="text/javascript">
 	function load_journal_articles(obj, person_id) {
-		var url = '{% url 'get-person-publications' "#" %}',
-			journal_title  = $("#search-filter-applied .filter-journal_articles :selected").val() || "";
+		var urlTemplate = '{% url 'get-person-publications' 0 %}';
+		var journal_title  = "{{ journal_filter_value|default:''|escapejs }}";
+		if (!journal_title) {
+			journal_title = $("#search-filter-applied .filter-journal_articles :selected").val() || "";
+		}
 		
 		$(obj).hide().parent().append($('<img>', {
 			src: "{% static 'css/indicator.gif' %}",
 			width: 16, height: 16
 		}))
-		.load(url.replace('#',person_id)+'?j='+Base64.encode(journal_title));
+		.load(
+			urlTemplate.replace(/0\/$/, person_id + '/') +
+			'?j=' + encodeURIComponent(Base64.encode(journal_title))
+		);
 	}
 </script>
 {% endif %}
