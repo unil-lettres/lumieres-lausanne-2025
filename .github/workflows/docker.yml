@@ -12,11 +12,15 @@ env:
 
 jobs:
   build:
-    name: Build per-arch (by digest)
-    runs-on: ubuntu-latest
+    name: Build
+    runs-on: ${{ matrix.os }}
     strategy:
-      matrix:
-        arch: [ linux/amd64, linux/arm64 ]
+        matrix:
+            include:
+                - os: ubuntu-latest
+                  arch: linux/amd64
+                - os: ubuntu-24.04-arm
+                  arch: linux/arm64
 
     steps:
       - name: Checkout
