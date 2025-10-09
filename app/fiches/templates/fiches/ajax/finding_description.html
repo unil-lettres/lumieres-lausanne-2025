@@ -89,24 +89,37 @@
 	 </div>
  </div>
  
- <script type="text/javascript">
- (function() {
-	 // Wait until DOM is appended
-	 if (typeof jQuery !== 'undefined' && jQuery.fn.jcarousel) {
-		 var $carousel = jQuery('.jcarousel');
-		 $carousel.jcarousel({ wrap: 'both' }).jcarousel('scroll', 0, false);
- 
-		 $carousel.parent().find('.prev').on('click', function(e) {
-			 e.preventDefault();
-			 $carousel.jcarousel('scroll', '-=1');
-		 });
-		 $carousel.parent().find('.next').on('click', function(e) {
-			 e.preventDefault();
-			 $carousel.jcarousel('scroll', '+=1');
-		 });
-	 } else {
-		 console.warn('jCarousel plugin not found or jQuery is undefined.');
-	 }
- })();
- </script>
+<script type="text/javascript">
+(function($) {
+	var $root = $('.ia-content-center.proj-desc').last();
+	var $scope = $root.length ? $root : $(document);
+	if (window.LL && typeof LL.initCarousel === 'function') {
+		LL.initCarousel($scope);
+	} else if ($ && $.fn && $.fn.jcarousel) {
+		$scope.find('.jcarousel').each(function() {
+			var $carousel = $(this);
+			if ($carousel.data('llCarouselInitialized')) {
+				return;
+			}
+			$carousel.jcarousel({ wrap: 'both' }).jcarousel('scroll', 0, false);
+			$carousel.data('llCarouselInitialized', true);
+			var $wrapper = $carousel.parent();
+			$wrapper.find('> .prev').off('.llCarousel').on('click.llCarousel', function(event) {
+				event.preventDefault();
+				$carousel.jcarousel('scroll', '-=1');
+			});
+			$wrapper.find('> .next').off('.llCarousel').on('click.llCarousel', function(event) {
+				event.preventDefault();
+				$carousel.jcarousel('scroll', '+=1');
+			});
+		});
+	} else {
+		console.warn('jCarousel plugin not found or jQuery is undefined.');
+	}
+
+	if (window.LL && typeof LL.initLightbox === 'function') {
+		LL.initLightbox();
+	}
+})(window.jQuery);
+</script>
  

@@ -7,11 +7,15 @@
 # fiches/models/documents/document.py
 
 from ckeditor.fields import RichTextField
+from types import SimpleNamespace
+
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Q
 from django.urls import reverse
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 from fiches.models.contributions.ac_model import ACModel
 from fiches.models.contributions.keyword import PrimaryKeyword, SecondaryKeyword
@@ -167,7 +171,7 @@ class Biblio(models.Model):
     edition = models.CharField(_("Date de 1ère Edition"), max_length=128, blank=True)
     date = models.DateField(_("Date"), blank=True, null=True)
     date_f = models.CharField(max_length=15, blank=True, null=True)
-    date2 = models.DateField(_("Date fin"), blank=True, null=True)
+    date2 = models.DateField(_("Date 2"), blank=True, null=True)
     date2_f = models.CharField(max_length=15, blank=True, null=True)
     volume = models.IntegerField(
         _("Volume"), validators=[MinValueValidator(0), MaxValueValidator(128)], blank=True, null=True, default=None
@@ -195,13 +199,85 @@ class Biblio(models.Model):
     # XXX: fixing issue XavierBeheydt/lumieres-lausanne#9
     def get_authors_contributions(self):
         """
-        Returns a list of authors and their contributions for this bibliography entry.
+        Return only the contributions flagged as "author" (code == 0).
+        Older templates expect this helper to exclude collaborators, editors, etc.
         """
-        return ContributionDoc.objects.filter(document=self)
+        author_filter = Q(contribution_type__code=ContributionType.AUTHOR_CODE) | Q(contribution_type__isnull=True)
+        return (
+            ContributionDoc.objects.filter(document=self)
+            .filter(author_filter)
+            .select_related("person", "contribution_type")
+            .order_by("pk")
+        )
 
     # FIXME: XavierBeheydt/lumieres-lausanne#9 - too easy :)
     def get_contributors(self):
-        return self.get_authors_contributions()
+        """
+        Collect the various contribution roles so the bibliography header can format
+        them the same way as the legacy site.
+
+        The template expects attributes like `directors`, `publishers`, `translators`
+        (all lists of Person instances). Any new role types can be added here.
+        """
+        buckets = {
+            "directors": [],
+            "publishers": [],
+            "translators": [],
+            "collaborators": [],
+            "others": [],
+        }
+
+        contributions = (
+            ContributionDoc.objects.filter(document=self)
+            .select_related("person", "contribution_type")
+            .order_by("pk")
+        )
+
+        for contrib in contributions:
+            person = contrib.person
+            if not person:
+                continue
+            ctype = (contrib.contribution_type.name or "").lower() if contrib.contribution_type else ""
+
+            if contrib.contribution_type is None or contrib.contribution_type.code == ContributionType.AUTHOR_CODE:
+                # Authors are handled separately via get_authors_contributions()
+                continue
+            if "dir" in ctype:  # directeur / directrice
+                buckets["directors"].append(person)
+            elif "édit" in ctype or "editeur" in ctype or "éditeur" in ctype or "editor" in ctype:
+                buckets["publishers"].append(person)
+            elif "trad" in ctype:
+                buckets["translators"].append(person)
+            elif "collab" in ctype:
+                buckets["collaborators"].append(person)
+            else:
+                buckets["others"].append(person)
+
+        def format_names(persons):
+            if not persons:
+                return ""
+            if len(persons) == 1:
+                return format_html("{}", persons[0])
+            if len(persons) == 2:
+                return format_html("{} et {}", persons[0], persons[1])
+            return format_html("{} <em>et alii</em>", persons[0])
+
+        def make_label(persons, css_class, suffix):
+            names = format_names(persons)
+            if not names:
+                return ""
+            return format_html('<span class="contributor {}">{} {}</span>', css_class, names, suffix)
+
+        directors_display = make_label(buckets["directors"], "contrib-director", "(dir.)")
+        publishers_display = make_label(buckets["publishers"], "contrib-publisher", "(éd.)")
+        translators_display = make_label(buckets["translators"], "contrib-translator", "(trad.)")
+
+        return SimpleNamespace(
+            **buckets,
+            directors_display=directors_display,
+            publishers_display=publishers_display,
+            translators_display=translators_display,
+        )
 
     language = models.ForeignKey(
         "DocumentLanguage",

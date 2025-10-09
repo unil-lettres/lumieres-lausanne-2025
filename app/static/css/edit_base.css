@@ -199,7 +199,32 @@ form.edit-form .death_place input[type="text"] { width: 250px; }
 
 /* ==================== Keywords ======================== */
 .fieldWrapper.keywords, .fieldWrapper.subj_person { margin-bottom: 20px; }
-.fieldWrapper.subj_person .dynamiclist_helper_input { width: 415px; }
+.fieldWrapper.subj_person .dynamiclist_addbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+.fieldWrapper.subj_person .dynamiclist_addbox .dynamiclist_helper_input {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+}
+.fieldWrapper.subj_person .dynamiclist_addbox .helper_addbut {
+    flex: 0 0 auto;
+    float: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    white-space: nowrap;
+    background-color: #f5f5f5;
+    border: 1px solid #aaa;
+    border-radius: 3px;
+    color: #333;
+    cursor: pointer;
+}
+.fieldWrapper.subj_person .dynamiclist_addbox .helper_addbut span { display: inline; }
 .fieldWrapper.subj_society .staticlist_helper_select { width: 415px; }
  
  

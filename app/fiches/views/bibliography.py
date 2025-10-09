@@ -433,6 +433,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     if request.method == "POST":
         # This fix #19 can be improved with a deeper fix date fields management.
         req_post = request.POST.copy()
+        post_lit_type = req_post.get("litterature_type")
         date_f_val = req_post.get("date_f")
         if date_f_val is not None:
             req_post["date_f"] = date_f_val.replace("/", "-")
@@ -467,33 +468,43 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
             if noteFormset.is_valid():
                 noteFormset.save()
 
+            current_lit_type = biblioForm.cleaned_data.get("litterature_type") or doc.litterature_type or post_lit_type
+
             # Process contribution formset
             if biblioForm.cleaned_data.get("litterature_type") == "s":
                 ContributionFormset = inlineformset_factory(
                     Biblio, ContributionDoc, form=ContributionDocSecForm, extra=1
                 )
 
-            contributionFormSet = ContributionFormset(request.POST, instance=doc)
+            contributionFormSet = ContributionFormset(
+                request.POST,
+                instance=doc,
+                form_kwargs={"litterature_type": current_lit_type},
+            )
             if contributionFormSet.is_valid():
                 contributionFormSet.save()
 
-            # Update first author cache & re-index the document
-            doc.updateFirstAuthor()
-            update_object_index(doc)
+                # Update first author cache & re-index the document
+                doc.updateFirstAuthor()
+                update_object_index(doc)
 
-            # Redirect after successful form submission
-            if request.POST.get("__continue", "") == "on":
-                return HttpResponseRedirect(reverse("bibliography-edit", args=[doc.id]))
+                # Redirect after successful form submission
+                if request.POST.get("__continue", "") == "on":
+                    return HttpResponseRedirect(reverse("bibliography-edit", args=[doc.id]))
             return HttpResponseRedirect(reverse("display-bibliography", args=[doc.id]))
         else:
             noteFormset = NoteFormset(request.POST, instance=doc, queryset=note_qs)
-            contributionFormset = ContributionFormset(request.POST, instance=doc)
+            current_lit_type = post_lit_type or getattr(doc, "litterature_type", None)
+            contributionFormset = ContributionFormset(
+                request.POST, instance=doc, form_kwargs={"litterature_type": current_lit_type}
+            )
 
     else:
         # Initialize forms for GET requests
         biblioForm = BiblioForm(instance=doc) if doc else BiblioForm()
         noteFormset = NoteFormset(instance=doc, queryset=note_qs)
-        contributionFormset = ContributionFormset(instance=doc)
+        current_lit_type = getattr(doc, "litterature_type", None)
+        contributionFormset = ContributionFormset(instance=doc, form_kwargs={"litterature_type": current_lit_type})
 
         # DEBUG: Log the initial value of subj_person (safe for new/unsaved instance)
         import logging
@@ -525,6 +536,23 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     # -------------------------------
     ext_template = "fiches/edition/edit_base2.html"
 
+    show_biblio_header = False
+    if doc:
+        show_biblio_header = any(
+            [
+                doc.title,
+                getattr(doc, "short_title", ""),
+                getattr(doc, "first_author_name", ""),
+                getattr(doc, "place", ""),
+                getattr(doc, "publisher", ""),
+                getattr(doc, "collection", ""),
+                getattr(doc, "date", None),
+                getattr(doc, "date2", None),
+                doc.subj_person.exists(),
+                doc.contributiondoc_set.exists(),
+            ]
+        )
+
     return render(
         request,
         "fiches/edition/bibliographie.html",
@@ -543,6 +571,8 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
             "primary_kw": primary_kw,
             "secondary_kw": secondary_kw,
             "prev_url": request.META.get("HTTP_REFERER", None),
+            "show_biblio_header": show_biblio_header,
+            "allow_documents": not new_doc,
         },
     )
 

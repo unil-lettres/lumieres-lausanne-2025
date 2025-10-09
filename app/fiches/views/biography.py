@@ -163,7 +163,12 @@ def person_without_bio(request):
     if not request.user.has_perm("fiches.add_biography"):
         return HttpResponse()
     persons = (
-        Person.objects.filter(biography__id__isnull=True, may_have_biography=True, name__isnull=False, modern=False)
+        Person.objects.filter(
+            biography__id__isnull=True,
+            may_have_biography=True,
+            name__isnull=False,
+        )
+        .filter(Q(modern=False) | Q(modern__isnull=True))
         .exclude(name="")
         .order_by("name")
         .distinct()

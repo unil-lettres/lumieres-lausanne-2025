@@ -47,16 +47,28 @@ class BiblioIndex(indexes.SearchIndex, indexes.Indexable):
 
     def _normalize_author(self, obj):
         name = getattr(obj, "first_author_name", "") or ""
+        if not name and hasattr(obj, "get_authors_contributions"):
+            try:
+                for contrib in obj.get_authors_contributions():
+                    person = getattr(contrib, "person", None)
+                    if person and getattr(person, "name", None):
+                        name = person.name
+                        break
+            except Exception:
+                pass
         if not name and hasattr(obj, "get_contributors"):
             try:
-                contributors = obj.get_contributors().select_related("person")
-            except Exception:
                 contributors = obj.get_contributors()
-            for contrib in contributors:
-                person = getattr(contrib, "person", None)
-                if person and getattr(person, "name", None):
-                    name = person.name
-                    break
+            except Exception:
+                contributors = None
+            if contributors:
+                for attr in ("directors", "publishers", "translators", "collaborators", "others"):
+                    persons = getattr(contributors, attr, None)
+                    if persons:
+                        first_person = persons[0]
+                        name = getattr(first_person, "name", str(first_person))
+                        if name:
+                            break
         name = self._strip_accents(str(name or ""))
         return name.casefold()
 

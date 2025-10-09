@@ -126,23 +126,8 @@
         {% else %}
             {#<!-- ##### Autre ##### -->#}
             {#<!-- Directeur -->#}
-            {% comment %} FIXME: contributors can exists XavierBeheydt/lumieres-lausanne#9 {% endcomment %}
-            {% if contributors.directors and ref.document_type.id == 1 %}
-                {% if contributors.directors|length > 2 %}
-                    {% comment %} <span class="contributor contrib-director">{{ contributors.directors.0.name }}</span> <em> et alii</em> (dir.) {% endcomment %}
-                {% if contributors.directors.0 %}
-                    <span class="contributor contrib-director">{{ contributors.directors.0.name }}</span>
-                {% endif %}
-                {% else %}
-                    {% comment %} <span class="contributor contrib-director">{{ contributors.directors.0.name }}</span> {% endcomment %}
-                {% if contributors.directors.0 %}
-                    <span class="contributor contrib-director">{{ contributors.directors.0.name }}</span>
-                {% endif %}
-                    {% if contributors.directors|length == 2 %}
-                        <span class="contributor contrib-director"> et {{ contributors.directors.1.name }}</span>
-                    {% endif %} 
-                    (dir.)
-                {% endif %}
+            {% if contributors.directors_display and ref.document_type.id == 1 %}
+                {{ contributors.directors_display }}
             {% endif %}
 
             {#<!-- Titre -->#}
@@ -160,68 +145,28 @@
             {#<!-- Titre du livre -->#}
             {% if ref.book_title %}
                 <span>, in 
-                    {% comment %} FIXME: contributors can exists XavierBeheydt/lumieres-lausanne#9 {% endcomment %}
-                    {% if contributors.directors and ref.document_type.id != 1 %}
-                        <span>
-                            <span class="contributor contrib-director">{{ contributors.directors.0.name }} 
-                                {% if contributors.directors|length > 2 %}
-                                    <em>et alii</em>
-                                {% else %}
-                                    {% if contributors.directors|length == 2 %}
-                                        et {{ contributors.directors.1.name }}
-                                    {% endif %}
-                                {% endif %} 
-                                (dir.)
-                            </span>, 
-                        </span>
+                    {% if contributors.directors_display and ref.document_type.id != 1 %}
+                        {{ contributors.directors_display }},
                     {% endif %}
                     <span class="book-title">{{ ref.book_title }}</span>
                 </span>
             {% elif ref.dictionary_title %}
-                <span>, in
-                    {% comment %} FIXME: contributors can exists XavierBeheydt/lumieres-lausanne#9 {% endcomment %}
-                    {% if contributors.directors and ref.document_type.id != 1 %}
-                        <span>
-                            <span class="contributor contrib-director">{{ contributors.directors.0.name }} 
-                                {% if contributors.directors|length > 2 %}
-                                    <em>et alii</em>
-                                {% else %}
-                                    {% if contributors.directors|length == 2 %}
-                                        et {{ contributors.directors.1.name }}
-                                    {% endif %}
-                                {% endif %} 
-                                (dir.)
-                            </span>, 
-                        </span>
+                <span>, in 
+                    {% if contributors.directors_display and ref.document_type.id != 1 %}
+                        {{ contributors.directors_display }},
                     {% endif %}
                     <span class="book-title">{{ ref.dictionary_title }}</span>
                 </span>
             {% endif %}
-
-            {#<!-- Editeurs -->#}
-            {% comment %} FIXME: contributors can exists XavierBeheydt/lumieres-lausanne#9 {% endcomment %}
-            {% if contributors.publishers %}
-                {% if contributors.publishers|length > 2 %}
-                    <span>, <span class="contributor contrib-publisher">{{ contributors.publishers.0.name }}</span> <em> et alii</em> (éd.)</span>
-                {% else %}
-                    <span>, <span class="contributor contrib-publisher">{{ contributors.publishers.0.name }}</span>
-                        {% if contributors.publishers|length == 2 %}
-                            <span class="contributor contrib-publisher"> et {{ contributors.publishers.1.name }}</span>
-                        {% endif %} 
-                        (éd.)
-                    </span>
-                {% endif %}
-            {% endif %}
-
             {#<!-- Traducteurs -->#}
             {% comment %} FIXME: contributors can exists XavierBeheydt/lumieres-lausanne#9 {% endcomment %}
-            {% if contributors.translators %}
-                <span>
-                    {% for trans in contributors.translators %}
-                        , <span class="contributor contrib-translator">{{ trans.name }}</span>
-                    {% endfor %} 
-                    (trad.)
-                </span>
+            {% if contributors.translators_display %}
+                <span>, {{ contributors.translators_display|safe }}</span>
+            {% endif %}
+
+            {#<!-- Editeurs scientifiques -->#}
+            {% if contributors.publishers_display %}
+                <span>, {{ contributors.publishers_display|safe }}</span>
             {% endif %}
 
             {#<!-- Lieu -->#}
@@ -248,6 +193,16 @@
             {#<!-- Dates -->#}
             <span class="date">, {{ ref|date_biblio:"date" }}{% if ref.date2 %}-{{ ref|date_biblio:"date2" }}{% endif %}</span>
 
+            {#<!-- Volumes -->#}
+            {% if ref.volume_nb %}
+                <span class="volumes">, 
+                    {% if ref.volume %}
+                        {{ ref.volume }}/
+                    {% endif %}
+                    {{ ref.volume_nb }} vol.
+                </span>
+            {% endif %}
+
             {#<!-- Pages -->#}
             {% if ref.pages %}
                 <span class="pages">, 
@@ -260,15 +215,6 @@
             {% endif %}
         {% endif %}
 
-        {#<!-- Volumes -->#}
-        {% if ref.volume_nb %}
-            <span class="volumes">, 
-                {% if ref.volume %}
-                    {{ ref.volume }}/
-                {% endif %}
-                {{ ref.volume_nb }} vol.
-            </span>
-        {% endif %}
     {% endspaceless %}
     </div>
     {#<!-- {% if display_coins %}{{ ref.coins }}{% endif %} -->#}

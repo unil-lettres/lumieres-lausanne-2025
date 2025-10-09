@@ -210,6 +210,38 @@ form.edit-form .profession-formset .place    input[type="text"] { width: 240px; 
     color: #000;
 }
 
+.fieldWrapper.subj_person .dynamiclist_addbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+
+.fieldWrapper.subj_person .dynamiclist_addbox .dynamiclist_helper_input {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+}
+
+.fieldWrapper.subj_person .dynamiclist_addbox .helper_addbut {
+    flex: 0 0 auto;
+    float: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    white-space: nowrap;
+    background-color: #f5f5f5;
+    border: 1px solid #aaa;
+    border-radius: 3px;
+    color: #333;
+    cursor: pointer;
+}
+
+.fieldWrapper.subj_person .dynamiclist_addbox .helper_addbut span {
+    display: inline;
+}
+
 
 /* ---------- Contribution ----------------- */
 

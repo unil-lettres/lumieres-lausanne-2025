@@ -20,33 +20,40 @@
 {% load i18n thumbnail static %}
 
 {% block head_js %}
-    <script src="{% static 'js/lib/jquery/jquery.jcarousel.min.js' %}"></script>
-
     <script>
-    $(function() {
-        // Check if jCarousel is available
-        if ($.fn.jcarousel) {
-            // Initialize each .jcarousel on the page
-            $('.jcarousel').each(function() {
-                var $carousel = $(this);
-                // Basic initialization
-                $carousel.jcarousel({ wrap: 'both' })
-                         .jcarousel('scroll', 0, false);
+    (function($) {
+        $(function() {
+            var $root = $('.ia-content-center.proj-desc').last();
+            var $scope = $root.length ? $root : $(document);
+            if (window.LL && typeof LL.initCarousel === 'function') {
+                LL.initCarousel($scope);
+            } else if ($.fn && $.fn.jcarousel) {
+                $scope.find('.jcarousel').each(function() {
+                    var $carousel = $(this);
+                    if ($carousel.data('llCarouselInitialized')) {
+                        return;
+                    }
+                    $carousel.jcarousel({ wrap: 'both' }).jcarousel('scroll', 0, false);
+                    $carousel.data('llCarouselInitialized', true);
+                    var $wrapper = $carousel.parent();
+                    $wrapper.find('> .prev').off('.llCarousel').on('click.llCarousel', function(event) {
+                        event.preventDefault();
+                        $carousel.jcarousel('scroll', '-=1');
+                    });
+                    $wrapper.find('> .next').off('.llCarousel').on('click.llCarousel', function(event) {
+                        event.preventDefault();
+                        $carousel.jcarousel('scroll', '+=1');
+                    });
+                });
+            } else {
+                console.warn('jCarousel plugin not found.');
+            }
 
-                // Hook up .prev / .next for navigation
-                $carousel.parent().find('.prev').on('click', function(e) {
-                    e.preventDefault();
-                    $carousel.jcarousel('scroll', '-=1');
-                });
-                $carousel.parent().find('.next').on('click', function(e) {
-                    e.preventDefault();
-                    $carousel.jcarousel('scroll', '+=1');
-                });
-            });
-        } else {
-            console.warn('jCarousel plugin not found.');
-        }
-    });
+            if (window.LL && typeof LL.initLightbox === 'function') {
+                LL.initLightbox();
+            }
+        });
+    })(jQuery);
     </script>
 {% endblock head_js %}
 

@@ -42,17 +42,26 @@ if (django && django.jQuery) {
 			// Personne moderne, replace select by checkbox for NullBoolean Field
 			// ========================
 			$("select[id$=modern]").each(function(i, n){
-				var $n = $(n), 
-				    $cb = $("<input>", {
-					    'type': "checkbox",
-					    'rel': $n.attr('name')
+				var $n = $(n),
+				    currentVal = ($n.val() || "").toString().toLowerCase();
+
+				// Default to "false" when the field is unset/unknown so the value is saved as False.
+				if (!currentVal || currentVal === "unknown" || currentVal === "1") {
+					$n.val("false");
+					currentVal = "false";
+				}
+
+				var $cb = $("<input>", {
+						'type': "checkbox",
+						'rel': $n.attr('name')
 				     }).change(function(){
-					    var $this = $(this), 
-						    $n = $("select[name=" + $this.attr('rel') + "]");
-					    $n.val(($this.is(":checked")) ? "2" : "3");
+					    var $this = $(this),
+						    $select = $("select[name=" + $this.attr('rel') + "]");
+					    $select.val($this.is(":checked") ? "true" : "false");
 				     });
-				if ($n.val() == "2") {
-					$cb.attr("checked", "checked");
+
+				if (currentVal === "true") {
+					$cb.prop("checked", true);
 				}
 				$n.after($cb).hide();
 			});

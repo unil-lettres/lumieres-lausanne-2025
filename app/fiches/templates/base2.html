@@ -63,10 +63,55 @@
     <script src="/static/js/lib/jquery/jquery.cookie.js"></script>
     <script src="/static/js/lib/jquery/jquery.placeholder.js"></script>
 	<script src="/static/js/lib/jquery-ui-1.9/js/jquery-ui-1.9.min.js"></script>
+    <script src="{% static 'js/lib/jquery/jquery.jcarousel.min.js' %}"></script>
+    <script src="{% static 'js/lib/lightbox.js' %}"></script>
 
     <script type="text/javascript">
+    window.LL = window.LL || {};
+
+    window.LL.initCarousel = function(scope) {
+        if (!window.jQuery || !jQuery.fn || !jQuery.fn.jcarousel) {
+            return;
+        }
+        var $scope = scope && scope.jquery ? scope : jQuery(scope || document);
+        $scope.find('.jcarousel').each(function() {
+            var $carousel = jQuery(this);
+            if ($carousel.data('llCarouselInitialized')) {
+                return;
+            }
+            $carousel.jcarousel({ wrap: 'both' }).jcarousel('scroll', 0, false);
+            $carousel.data('llCarouselInitialized', true);
+
+            var $wrapper = $carousel.parent();
+            var $prev = $wrapper.find('> .prev');
+            var $next = $wrapper.find('> .next');
+
+            $prev.off('.llCarousel').on('click.llCarousel', function(event) {
+                event.preventDefault();
+                $carousel.jcarousel('scroll', '-=1');
+            });
+            $next.off('.llCarousel').on('click.llCarousel', function(event) {
+                event.preventDefault();
+                $carousel.jcarousel('scroll', '+=1');
+            });
+        });
+    };
+
+    window.LL.initLightbox = function() {
+        if (window.lightbox && typeof lightbox.option === 'function') {
+            lightbox.option({
+                fadeDuration: 200,
+                resizeDuration: 200,
+                wrapAround: true
+            });
+        }
+    };
+
     // Document ready
     $(function() {
+        window.LL.initLightbox();
+        window.LL.initCarousel($(document));
+
         // Dropdown menu functionality
         $('.ia-submenu').prev('a').on('click', function(event) {
             event.preventDefault(); // Prevent default link behavior

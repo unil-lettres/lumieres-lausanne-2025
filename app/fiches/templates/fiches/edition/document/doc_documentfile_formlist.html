@@ -19,7 +19,9 @@
    This copyright notice MUST APPEAR in all copies of the file.
 -->{% endcomment %}
 {% load i18n %}
-{% if not doc.id %}
+{% if not allow_documents %}
+    <p>{% trans "La fiche doit être créée avant de pouvoir ajouter des documents" %}</p>
+{% elif not doc.id %}
     <p>{% trans "La fiche doit être créée avant de pouvoir ajouter des documents" %}</p>
 {% else %}
 <script type="text/javascript">

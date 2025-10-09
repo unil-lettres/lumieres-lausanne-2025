@@ -366,7 +366,7 @@ class ObjectCollectionForm(forms.ModelForm):
     class Meta:
         model = ObjectCollection
         # Exclude the owner field so it won't be rendered or expected in POST data.
-        exclude = ['owner']
+        exclude = ['owner', 'persons', 'bibliographies', 'transcriptions']
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': _('Enter collection name')}),
             # Add other widgets as needed
@@ -463,6 +463,13 @@ class ContributionDocForm(forms.ModelForm):
         model = ContributionDoc
         fields = "__all__"
 
+    def __init__(self, *args, litterature_type=None, **kwargs):
+        self.litterature_type = litterature_type
+        super().__init__(*args, **kwargs)
+        if not self.litterature_type and getattr(self.instance, "document_id", None):
+            self.litterature_type = getattr(self.instance.document, "litterature_type", None)
+        self._person_was_created = False
+
     #
     # 2) Parse out pk from “123|Name” in clean_person()
     #
@@ -470,20 +477,53 @@ class ContributionDocForm(forms.ModelForm):
         raw_value = self.cleaned_data.get("person", "")
         if not raw_value.strip():
             return None
+
+        raw_value = raw_value.strip()
+        self._person_was_created = False
+
         if "|" in raw_value:
-            pk_str, display_name = raw_value.split("|", 1)
+            pk_str, _ = raw_value.split("|", 1)
             try:
                 pk = int(pk_str)
-                return Person.objects.get(pk=pk)
+                person = Person.objects.get(pk=pk)
+                return person
             except (ValueError, Person.DoesNotExist):
                 raise forms.ValidationError("Cette personne est introuvable dans la base.")
-        else:
-                name = raw_value.strip()
-                try:
-                    person, created = Person.objects.get_or_create(pk=int(name))
-                except ValueError:
-                    person, created = Person.objects.get_or_create(name=name)
+
+        # If user typed an ID directly
+        if raw_value.isdigit():
+            try:
+                person = Person.objects.get(pk=int(raw_value))
                 return person
+            except Person.DoesNotExist:
+                pass
+
+        # Otherwise treat as a name and create if needed
+        person, created = Person.objects.get_or_create(name=raw_value)
+        if created:
+            self._person_was_created = True
+            self._apply_person_defaults(person)
+        return person
+
+    def _apply_person_defaults(self, person):
+        """
+        Ensure a freshly created Person mirrors the bibliography type:
+        - Secondary literature => modern=True
+        - Primary literature (default) => modern=False
+        In both cases, keep them without biography by default.
+        """
+        litterature = (self.litterature_type or "").lower()
+        desired_modern = True if litterature == "s" else False
+
+        fields_to_update = []
+        if person.modern is None or person.modern != desired_modern:
+            person.modern = desired_modern
+            fields_to_update.append("modern")
+        if person.may_have_biography:
+            person.may_have_biography = False
+            fields_to_update.append("may_have_biography")
+        if fields_to_update:
+            person.save(update_fields=fields_to_update)
 
     #
     # 3) Optionally skip entire row if no person was set

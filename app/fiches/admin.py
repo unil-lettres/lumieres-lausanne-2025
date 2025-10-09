@@ -400,6 +400,7 @@ class UserGroupAdmin(admin.ModelAdmin):
 
     list_display = ("name", "sort")
     search_fields = ("name",)
+    filter_horizontal = ("users", "groups")
 
 
 class NationalityAdmin(admin.ModelAdmin):

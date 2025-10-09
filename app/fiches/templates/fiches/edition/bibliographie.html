@@ -248,7 +248,7 @@
 {% endif %}
 
 
-<h2>{% if doc.id %}{% include "fiches/bibliography_references/biblio_template.html" with ref=doc nolink=1 %}{% endif %}</h2>
+    <h2>{% if doc.id and show_biblio_header %}{% include "fiches/bibliography_references/biblio_template.html" with ref=doc nolink=1 %}{% endif %}</h2>
 
 <form method="POST" action="" id="biblio-form-id" class="edit-form">
     {% csrf_token %}
