@@ -221,15 +221,16 @@
 
 {% block but_cancel_onclick %}
 {% spaceless %}
-{% if doc.id %}
-    {# e.g. /fiches/biblio/NNN/ #}
-    return fiches_edit.cancelEdition('{% url 'display-bibliography' doc.id  %}');
-{% else %}
+{% if new_object %}
     {% if prev_url %}
-        return fiches_edit.cancelEdition('{{ prev_url }}');
+        return fiches_edit.cancelEdition('{{ prev_url|escapejs }}');
     {% else %}
         return fiches_edit.cancelEdition('{% url 'bibliography-index' %}');
     {% endif %}
+{% elif doc.id %}
+    return fiches_edit.cancelEdition('{% url 'display-bibliography' doc.id %}');
+{% else %}
+    return fiches_edit.cancelEdition('{% url 'bibliography-index' %}');
 {% endif %}
 {% endspaceless %}
 {% endblock but_cancel_onclick %}
@@ -253,6 +254,10 @@
 <form method="POST" action="" id="biblio-form-id" class="edit-form">
     {% csrf_token %}
     <input type="hidden" name="__continue" value="" />
+    {% if new_object and doc.id %}
+        <input type="hidden" name="__new_doc_id" value="{{ doc.id }}" />
+        <input type="hidden" name="__cancel_endpoint" value="{% url 'bibliography-cancel' doc.id %}" />
+    {% endif %}
 
     {# --- Existing Biblio Fieldsets --- #}
     {% for fs in biblio_formdef.fieldsets %}
@@ -271,29 +276,7 @@
                                 {{ field.errors }}
                             </div>
                         {% endif %}
-                        <div class="dynamiclist_container">
-                            <div class="dynamiclist_values">
-                                {# Affiche les personnes déjà sélectionnées #}
-                                {% for person in form.initial.subj_person %}
-                                    <div class="dynamiclist_value_entry">
-                                        <span class="dynamiclist_value_label">{{ person }}</span>
-                                        <input type="hidden" name="subj_person" value="{{ person.pk }}">
-                                    </div>
-                                {% endfor %}
-                            </div>
-                            <span class="dynamiclist_addbox">
-                                <input class="dynamiclist_helper_input ac_input" placeholder="nom, prénom" autocomplete="off"><input
-                                    class="helper_input_value" type="hidden">
-                                <button type="button"
-                                    class="dynamiclist_helper_addbut helper_addbut ui-button ui-widget ui-state-default ui-corner-all ui-button-text-icon-primary"
-                                    onclick="dynamiclist_widget.addToList(this, 'subj_person'); return false;" role="button"
-                                    aria-disabled="false"><span class="ui-button-icon-primary ui-icon ui-icon-plusthick"></span><span
-                                        class="ui-button-text"><span>Ajouter une personne</span></span></button>
-                            </span>
-                            <span class="dynamiclist_add_info">Validez votre sélection avec le bouton <strong>"Ajouter une personne"</strong></span>
-                        </div>
-                        <script type="text/javascript">var dynamiclist_widget = dynamiclist_widget || {}; dynamiclist_widget.templates = dynamiclist_widget.templates || {}; dynamiclist_widget.templates["subj_person"] = '<div class="dynamiclist_value_entry"><span class="dynamiclist_value_label">%(label)s</span><input type="hidden" name="%(name)s" value="%(value)s" /></div>';</script>
-                        <div class="fixclear"></div>
+                        {{ field }}
                     </div>
                 {% elif f.template %}
                     {% include f.template %}
@@ -592,51 +575,5 @@
 })(jQuery);
 </script>
 
-<script type="text/javascript">
-(function($){
-    $(document).ready(function(){
-        // Validation for required fields (existing logic, can be extended)
-        $('#biblio-form-id').on('submit', function(e) {
-            var requiredFields = [
-                '#id_title' // Add other required fields if needed
-            ];
-            var missing = [];
-            requiredFields.forEach(function(sel) {
-                var $f = $(sel);
-                if ($f.length && !$f.val().trim()) {
-                    var label = $("label[for='"+$f.attr('id')+"']").text() || sel;
-                    missing.push(label);
-                }
-            });
-            if (missing.length > 0) {
-                alert('Please fill in the following required fields before saving:\n' + missing.join('\n'));
-                e.preventDefault();
-                return false;
-            }
-
-            // --- Recommended fields warning (Lieu, Date, Pages) ---
-            var recommendedFields = [
-                {id: '#id_place', name: 'Lieu'},
-                {id: '#id_date', name: 'Date'},
-                {id: '#id_pages', name: 'Pages'}
-            ];
-            var missingRecommended = [];
-            recommendedFields.forEach(function(f) {
-                var $f = $(f.id);
-                if ($f.length && !$f.val().trim()) {
-                    missingRecommended.push('« ' + f.name + ' »');
-                }
-            });
-            if (missingRecommended.length > 0) {
-                var msg = 'Attention!\n\nLes champs recommandés suivants ne sont pas remplis:\n    ' + missingRecommended.join('\n    ') + '\n\nVoulez-vous continuer à enregistrer ?';
-                if (!confirm(msg)) {
-                    e.preventDefault();
-                    return false;
-                }
-            }
-        });
-    });
-})(jQuery);
-</script>
 {% endblock main_content %}
 <!--Lignes provenant-->

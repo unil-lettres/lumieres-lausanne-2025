@@ -13,6 +13,7 @@ from fiches.views import (
 )
 from fiches.views import transcription as views_transcription
 from fiches.views import workspace_collections
+from fiches.views.bibliography import cancel_new_bibliography as bibliography_cancel
 from fiches.views.bibliography import create as bibliography_create
 from fiches.views.bibliography import delete as bibliography_delete
 from fiches.views.bibliography import display as bibliography_display
@@ -50,6 +51,7 @@ urlpatterns = [
     path("biblio/<int:doc_id>/", bibliography_display, name="display-bibliography"),
     path("biblio/edit/<int:doc_id>/", bibliography_edit, name="bibliography-edit"),
     path("biblio/delete/<int:doc_id>/", bibliography_delete, name="bibliography-delete"),
+    path("biblio/cancel/<int:doc_id>/", bibliography_cancel, name="bibliography-cancel"),
     re_path(r"^biblio/new/(?:(?:type_(?P<doctype>[1-5])/))?$", bibliography_create, name="bibliography-create"),
     path("biblio/endnote/<int:doc_id>/", bibliography_endnote, name="endnote-biblio-one"),
     path("biblio/endnote/", bibliography_endnote, {"getid": True, "doc_id": None}, name="endnote-biblio-list"),

@@ -22,10 +22,10 @@ from base64 import b64decode
 from functools import reduce
 from itertools import chain
 
-from django.db import connection
+from django.db import connection, IntegrityError, transaction
 from django.db.models import Q
 from django.forms.models import inlineformset_factory
-from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect, HttpResponseServerError
+from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect, HttpResponseServerError, JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import get_object_or_404, render
 from django.template.context_processors import csrf
@@ -35,9 +35,10 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.http import require_POST
 from fiches.forms import BiblioForm, ContributionDocForm, ContributionDocSecForm, NoteFormBiblio
 from fiches.models import Biblio, ContributionDoc, Depot, DocumentType, PrimaryKeyword, SecondaryKeyword
-from fiches.models.documents import DocumentFile, NoteBiblio
+from fiches.models.documents import DocumentFile, NoteBiblio, Manuscript
 from fiches.utils import get_last_model_activity, log_model_activity, remove_object_index, update_object_index
 
 # ===============================================================================
@@ -349,6 +350,8 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
         return HttpResponseForbidden(_("Accès non autorisé"))
 
     doc = None
+    document_type = None
+    default_depot = None
 
     # Handle existing bibliography
     if doc_id:
@@ -375,7 +378,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
             document_type=document_type,
             depot=default_depot,
         )
-        doc.save()  # Save immediately to get an ID for M2M relations
+        doc.save()
 
     # -------------------------------
     # Keywords Query
@@ -442,13 +445,6 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
             req_post["date2_f"] = date2_f_val.replace("/", "-")
         biblioForm = BiblioForm(req_post, instance=doc)
 
-        # Ensure document_type is set for new documents (fix IntegrityError)
-        if new_doc and getattr(doc, "document_type", None) is None:
-            # Try to get from POST or fallback to new_doctype
-            document_type_id = request.POST.get("document_type") or new_doctype
-            if document_type_id:
-                doc.document_type = get_object_or_404(DocumentType, pk=document_type_id)
-
         if biblioForm.is_valid():
             doc = biblioForm.save(commit=False)
             # Save subj_person M2M
@@ -501,7 +497,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
 
     else:
         # Initialize forms for GET requests
-        biblioForm = BiblioForm(instance=doc) if doc else BiblioForm()
+        biblioForm = BiblioForm(instance=doc)
         noteFormset = NoteFormset(instance=doc, queryset=note_qs)
         current_lit_type = getattr(doc, "litterature_type", None)
         contributionFormset = ContributionFormset(instance=doc, form_kwargs={"litterature_type": current_lit_type})
@@ -528,7 +524,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     # Public Notes (Read-only display)
     # -------------------------------
     public_notes = None
-    if doc and not request.user.has_perm("fiches.can_publish_note"):
+    if doc and doc.pk and not request.user.has_perm("fiches.can_publish_note"):
         public_notes = NoteBiblio.objects.filter(owner=doc, access_public=True)
 
     # -------------------------------
@@ -537,7 +533,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     ext_template = "fiches/edition/edit_base2.html"
 
     show_biblio_header = False
-    if doc:
+    if doc and doc.pk:
         show_biblio_header = any(
             [
                 doc.title,
@@ -577,6 +573,22 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     )
 
 
+@require_POST
+def cancel_new_bibliography(request, doc_id):
+    if not request.user.is_authenticated or not request.user.has_perm("fiches.change_biblio"):
+        return HttpResponseForbidden(_("Accès non autorisé"))
+
+    biblio = get_object_or_404(Biblio, pk=doc_id)
+
+    if biblio.creator_id and biblio.creator_id != request.user.id and not request.user.has_perm("fiches.delete_biblio"):
+        return HttpResponseForbidden(_("Accès non autorisé"))
+
+    remove_object_index(biblio)
+    biblio.delete()
+
+    return JsonResponse({"status": "deleted"})
+
+
 def delete(request, doc_id):
     """
     Delete the Bibliography entry.
@@ -592,7 +604,23 @@ def delete(request, doc_id):
     # Remove Haystack index
     remove_object_index(doc)
 
-    doc.delete()
+    try:
+        with transaction.atomic():
+            doc.delete()
+    except IntegrityError:
+        # Legacy database constraints may prevent automatic cascading.
+        # Clean up dependent rows manually and retry the deletion.
+        doc.contributiondoc_set.all().delete()
+        NoteBiblio.objects.filter(owner=doc).delete()
+        doc.documentfiles.clear()
+        doc.subj_primary_kw.clear()
+        doc.subj_secondary_kw.clear()
+        doc.subj_person.clear()
+        doc.subj_society.clear()
+        Manuscript.objects.filter(biblio_man=doc).update(biblio_man=None)
+
+        with transaction.atomic():
+            doc.delete()
 
     from_url = request.session.get("biblio_from")
     if from_url:

@@ -142,11 +142,35 @@ var fiches_edit = $.extend({}, fiches_edit, {
 	
 	//--
 	, cancelEdition: function(display_url) {
-		if (typeof(display_url)=='undefined') return false;
 		var do_cancel = (this.has_changed) ? 
 				confirm("Les dernières modifications n'ont pas été enregistrées. Si vous continuez elles seront perdues.\nContinuer ?") :
 				true;
-		if (do_cancel) { document.location = display_url; }
+		if (!do_cancel) { return false; }
+
+		var editForm = $(".content form.edit-form"),
+			cancelInput = editForm.find("input[name='__cancel_endpoint']"),
+			newDocId = editForm.find("input[name='__new_doc_id']").val(),
+			csrfToken = editForm.find("input[name='csrfmiddlewaretoken']").val();
+
+		var isNewDoc = cancelInput.length && cancelInput.val() && newDocId;
+		var targetLocation = display_url || document.referrer || '/fiches/biblio/';
+		if (isNewDoc) {
+			var newDocFallback = '/fiches/biblio/';
+			if (!display_url || /\/fiches\/biblio\/\d+\/$/.test(display_url)) {
+				targetLocation = newDocFallback;
+			}
+		}
+		var redirectTo = function() { document.location = targetLocation; };
+
+		if (isNewDoc) {
+			$.ajax({
+				url: cancelInput.val().replace(/\/$/, '') + '/' + newDocId + '/',
+				type: "POST",
+				headers: { "X-CSRFToken": csrfToken }
+			}).always(redirectTo);
+		} else {
+			redirectTo();
+		}
 		return false;
 	} 
 	
