@@ -11,10 +11,12 @@
 <script type="text/javascript">
 // 1) Dynamic URLs for the collection object
 var current_collection_id = "{{ coll.id }}";
-var collection_display_popup_url_base_id = '{% url "named-collection-display-popup" 0 %}'.replace('/0/', '/__COLL_ID__/');
+var collection_display_popup_url_base_id = '{% url "named-collection-display-popup" 0 %}'.replace('0/', '__COLL_ID__/');
 var collection_new_url = '{% url "collection-new" %}';
-var collection_edit_url_base_id = '{% url "collection-edit" 0 %}'.replace('/0/', '/__COLL_ID__/');
-var collection_delete_url_base_id = '{% url "collection-delete" 0 %}'.replace('/0/', '/__COLL_ID__/');
+var collection_edit_url_base_id = '{% url "collection-edit" 0 %}'.replace('0/', '__COLL_ID__/');
+var collection_delete_url_base_id = '{% url "collection-delete" 0 %}'.replace('0/', '__COLL_ID__/');
+var userCanChangeOwner = {{ perms.fiches.change_collection_owner|yesno:"true,false" }};
+window.userCanChangeOwner = userCanChangeOwner;
 
 function getCookie(name) {
     let cookieValue = null;
@@ -47,9 +49,9 @@ try {
     collection.current_id = "{{ coll.id }}";
     $.extend(collection.urls, {
         create: '{% url "collection-new" %}',
-        remove: '{% url "collection-delete" 0 %}'.replace('/0/', '/__COLL_ID__/'),
-        edit:   '{% url "collection-edit" 0 %}'.replace('/0/', '/__COLL_ID__/'),
-        popup:  '{% url "named-collection-display-popup" 0 %}'.replace('/0/', '/__COLL_ID__/')
+        remove: '{% url "collection-delete" 0 %}'.replace('0/', '__COLL_ID__/'),
+        edit:   '{% url "collection-edit" 0 %}'.replace('0/', '__COLL_ID__/'),
+        popup:  '{% url "named-collection-display-popup" 0 %}'.replace('0/', '__COLL_ID__/')
     });
 } catch(e) {
     console.error("Error initializing collection.urls:", e);
@@ -142,7 +144,20 @@ $(document).ready(function(){
         var $li = $(this),
             cmdbox = $("<span>", {'class':'cmd-box'}).prependTo($li);
 
-        // New window button
+        if (userCanChangeOwner && typeof collection.edit === 'function') {
+            cmdbox.append(
+                $("<button>", {
+                    text: "Modifier",
+                    title: "Modifier la liste",
+                    click: function(evt) {
+                        collection.edit(get_button_coll_id(evt));
+                        $(evt.target).blur();
+                        return false;
+                    }
+                }).button({ text: false, icons: { primary: "ui-icon-pencil" }})
+            );
+        }
+
         cmdbox.append(
             $("<button>", {
                 text: "Nouvelle fenêtre",

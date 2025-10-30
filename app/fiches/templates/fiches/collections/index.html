@@ -27,10 +27,12 @@
 	{{ block.super }}
 	<script type="text/javascript">
 		var current_collection_id = "{{ coll.id }}",
-		    collection_display_popup_url_base = '{% url 'named-collection-display-popup' "#" %}',
+		    collection_display_popup_url_base = '{% url 'named-collection-display-popup' 0 %}'.replace('0/', '__COLL_ID__/'),
 		    collection_new_url = '{% url 'collection-new' %}',
-		    collection_edit_url_base = '{% url 'collection-edit' "#" %}',
-		    collection_delete_url_base = '{% url 'collection-delete' "#" %}';
+		    collection_edit_url_base = '{% url 'collection-edit' 0 %}'.replace('0/', '__COLL_ID__/'),
+		    collection_delete_url_base = '{% url 'collection-delete' 0 %}'.replace('0/', '__COLL_ID__/'),
+		    userCanChangeOwner = {{ perms.fiches.change_collection_owner|yesno:"true,false" }};
+		window.userCanChangeOwner = userCanChangeOwner;
 	</script>
 	<script type="text/javascript" src="{% static 'js/collection.js' %}"></script>
 	<script type="text/javascript">
@@ -39,9 +41,9 @@
 			collection.current_id = "{{ coll.id }}";
 			$.extend(collection.urls, {
 				'create' : '{% url 'collection-new' %}',
-				'remove' : '{% url 'collection-delete' "#" %}',
-				'edit'   : '{% url 'collection-edit' "#" %}',
-				'popup'  : '{% url 'named-collection-display-popup' "#" %}'
+				'remove' : '{% url 'collection-delete' 0 %}'.replace('0/', '__COLL_ID__/'),
+				'edit'   : '{% url 'collection-edit' 0 %}'.replace('0/', '__COLL_ID__/'),
+				'popup'  : '{% url 'named-collection-display-popup' 0 %}'.replace('0/', '__COLL_ID__/')
 			});
 		}catch(e){}
 		
@@ -112,10 +114,23 @@
 				}
 			);
 			
-			// Shared collections
+			// Shared collections / collections en consultation
 			$("#shared-collection li, #contrib-collection li").each(function(){
 				var $li = $(this),
 					cmdbox = $("<span>", {'class':'cmd-box'}).prependTo($li);
+					if (userCanChangeOwner) {
+						cmdbox.append(
+							$("<button>", {
+								text: "Modifier",
+								title: "Modifier la liste",
+								click: function(evt) {
+									collection.edit(get_button_coll_id(evt));
+									$(evt.target).blur();
+									return false;
+								}
+							}).button({text: false, icons: { primary: "ui-icon-pencil" }})
+						);
+					}
 					cmdbox.append($("<button>", {							
 							text: "Nouvelle fenêtre",
 							title: "Ouvrir dans une nouvelle fenêtre",
