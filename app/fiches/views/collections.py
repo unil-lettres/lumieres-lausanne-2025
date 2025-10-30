@@ -544,11 +544,26 @@ def edit(request, coll_id=None, create_coll=False, coll_saved=False):
 
     if create_coll:
         coll = ObjectCollection(owner=request.user, access_owner=request.user)
+        can_edit_details = True
     else:
         coll = get_object_or_404(ObjectCollection, pk=coll_id)
+        user_groups = request.user.profile.get_usergroups()
+        can_edit_details = (
+            coll.owner == request.user
+            or coll.change_groups.filter(id__in=user_groups.values_list("id", flat=True)).exists()
+        )
+
+        if not (can_edit_details or request.user.has_perm("fiches.change_collection_owner")):
+            return HttpResponseForbidden("Accès non autorisé.")
+
+    form_kwargs = {
+        "instance": coll,
+        "user": request.user,
+        "can_edit_details": can_edit_details,
+    }
 
     if request.method == "POST":
-        collForm = ObjectCollectionForm(request.POST, instance=coll)
+        collForm = ObjectCollectionForm(request.POST, **form_kwargs)
         if collForm.is_valid():
             coll = collForm.save()
             request.session["cur_coll"] = coll.id
@@ -559,7 +574,7 @@ def edit(request, coll_id=None, create_coll=False, coll_saved=False):
             # Log the form errors for debugging purposes.
             print("Form errors:", collForm.errors)
     else:
-        collForm = ObjectCollectionForm(instance=coll)
+        collForm = ObjectCollectionForm(**form_kwargs)
 
     response = render(
         request,
@@ -569,6 +584,7 @@ def edit(request, coll_id=None, create_coll=False, coll_saved=False):
             "coll_id": coll_id,
             "coll_saved": coll_saved,
             "edit_done_js_callback": edit_done_js_callback,
+            "can_edit_details": can_edit_details,
         },
     )
 

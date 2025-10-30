@@ -58,8 +58,19 @@
 	<button onclick="document.location='{% url 'collection-edit' coll_id %}';">Continuer à modifier</button>
 	<button onclick="close_dlog({'coll_id':"{{ coll_id }}"})">Fermer</button>
 {% else %}
+    {% if not can_edit_details %}
+    <p class="info info-readonly">{% trans "Seul le propriétaire ou un groupe contributeur peut modifier les champs ci-dessous. Vous pouvez uniquement réassigner la collection à un nouveau propriétaire." %}</p>
+    {% endif %}
 	<form action="" method="post">{% csrf_token %}
 		<input type="hidden" name="callback" value="{{ edit_done_js_callback }}" />
+        {% if form.owner %}
+        <div class="fieldWrapper field-owner">
+            {{ form.owner.errors }}
+            <label for="{{ form.owner.id_for_label }}">{{ form.owner.label }}:</label>
+            {{ form.owner }}
+            {% if form.owner.help_text %}<span class="helptext">{{ form.owner.help_text }}</span>{% endif %}
+        </div>
+        {% endif %}
 	    <div class="fieldWrapper field-name">
 	        {{ form.name.errors }}
 	        <label for="id_name">{{ form.name.label }}:</label>

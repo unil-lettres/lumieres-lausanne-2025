@@ -40,6 +40,9 @@ class ObjectCollection(ACModel):
         verbose_name = _("Collection")
         verbose_name_plural = _("Collections")
         ordering = ['id']
+        permissions = [
+            ("change_collection_owner", "Peut changer le propriétaire de la collection"),
+        ]
 
     def __str__(self):
         return str(self.name)

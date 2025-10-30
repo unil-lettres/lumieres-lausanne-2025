@@ -57,10 +57,9 @@ var collection = (function(){
 			if (typeof coll_id === 'undefined' || !coll_id || isNaN(coll_id)) {
 				return false;
 			}
-			// Replace the placeholder '__COLL_ID__' with the actual collection ID
 			var url = collection.urls.edit.replace('__COLL_ID__', coll_id);
 			if (arguments.length > 1 && typeof arguments[1] === 'object' && typeof arguments[1].callback === 'string') {
-				url += '&callback=' + arguments[1].callback;
+				url += (url.indexOf('?') > -1 ? '&' : '?') + 'callback=' + arguments[1].callback;
 			}
 			var dlog = $("<div>", {
 				'id': 'collection-edit-dlog',

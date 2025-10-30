@@ -379,6 +379,37 @@ class ObjectCollectionForm(forms.ModelForm):
     """
     Form for the ObjectCollection model.
     """
+    def __init__(self, *args, **kwargs):
+        self.request_user = kwargs.pop("user", None)
+        self.can_edit_details = kwargs.pop("can_edit_details", True)
+        super().__init__(*args, **kwargs)
+
+        can_change_owner = bool(
+            self.request_user and self.request_user.has_perm("fiches.change_collection_owner")
+        )
+
+        if can_change_owner:
+            owner_queryset = User.objects.order_by("last_name", "first_name", "username")
+            self.fields["owner"] = forms.ModelChoiceField(
+                queryset=owner_queryset,
+                label=_("Propriétaire"),
+                help_text=_("L'utilisateur qui possédera cette collection."),
+                required=True,
+            )
+            if self.instance and self.instance.pk:
+                self.initial.setdefault("owner", self.instance.owner_id)
+            elif self.request_user:
+                self.initial.setdefault("owner", self.request_user.pk)
+            self.order_fields(["owner"] + [f for f in self.fields if f != "owner"])
+        else:
+            self.fields.pop("owner", None)
+
+        if not self.can_edit_details:
+            for field_name, field in self.fields.items():
+                if field_name == "owner":
+                    continue
+                field.disabled = True
+
     class Meta:
         model = ObjectCollection
         # Exclude the owner field so it won't be rendered or expected in POST data.
@@ -396,6 +427,27 @@ class ObjectCollectionForm(forms.ModelForm):
         # if person is None:
         #     cleaned_data["contribution_type"] = None
         return cleaned_data
+
+    def save(self, commit=True):
+        collection = super().save(commit=False)
+
+        can_change_owner = (
+            hasattr(self, "request_user")
+            and self.request_user
+            and self.request_user.has_perm("fiches.change_collection_owner")
+            and "owner" in self.cleaned_data
+        )
+        if can_change_owner:
+            new_owner = self.cleaned_data["owner"]
+            if new_owner:
+                collection.owner = new_owner
+                if hasattr(collection, "access_owner"):
+                    collection.access_owner = new_owner
+
+        if commit:
+            collection.save()
+            self.save_m2m()
+        return collection
 
 
 
