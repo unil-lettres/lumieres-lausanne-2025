@@ -437,7 +437,6 @@ class ObjectCollectionForm(forms.ModelForm):
             'name': forms.TextInput(attrs={'placeholder': _('Enter collection name')}),
             # Add other widgets as needed
         }
-
     def clean(self):
         cleaned_data = super().clean()
         # Remove or update the following if not needed:
