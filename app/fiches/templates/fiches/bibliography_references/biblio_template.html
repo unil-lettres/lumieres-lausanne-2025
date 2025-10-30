@@ -49,9 +49,9 @@
             {#<!-- ##### Article de Revue ##### -->#}
             {#<!-- Titre Article -->#}
             {% if nolink %}
-                <span class="title-article">, &laquo;&nbsp;{{ ref.short_title|default:ref.title }}&nbsp;&raquo;</span>
+                <span class="title-article">, &laquo;{{ ref.short_title|default:ref.title }}&raquo;</span>
             {% else %}
-                <span class="title-article">, <a id="Biblio__{{ ref.id }}" class="title-article collectable ia-link" href="{% url 'display-bibliography' ref.id %}{% if q %}?{{ q }}{% endif %}" target="{{ link_target|default:"_top" }}" {% if ref.short_title %}title="{{ ref.title }}" {% endif %}>&laquo;&nbsp;{{ ref.short_title|default:ref.title }}&nbsp;&raquo;</a></span>
+                <span class="title-article">, <a id="Biblio__{{ ref.id }}" class="title-article collectable ia-link" href="{% url 'display-bibliography' ref.id %}{% if q %}?{{ q }}{% endif %}" target="{{ link_target|default:"_top" }}" {% if ref.short_title %}title="{{ ref.title }}" {% endif %}>&laquo;{{ ref.short_title|default:ref.title }}&raquo;</a></span>
             {% endif %}
 
             {#<!-- Nom revue -->#}
@@ -79,25 +79,11 @@
             {#<!-- ##### Manuscript ##### -->#}
             {% with ref.transcription_set.all|length as nb_trans %}
                 {#<!-- Titre -->#}
-                <span>,
-                    {% if ref.book_title %}
-                        &laquo;&nbsp;
-                    {% else %}
-                        <em>
-                    {% endif %}
-                    {% if nolink or nb_trans == 0 or ref.id not in user_accessible_trans %}
-                        {{ ref.short_title|default:ref.title }}
-                    {% else %}
-                        <a id="Transcription__{{ ref.transcription_set.all.0.id }}" href="{% url 'transcription-display' ref.transcription_set.all.0.id %}{% if q %}?{{ q }}{% endif %}" class="ia-link" target="{{ link_target|default:"_top" }}" {% if ref.short_title %}title="{{ ref.title }}" {% endif %}>
-                            {{ ref.short_title|default:ref.title }}
-                        </a>
-                    {% endif %}
-                    {% if ref.book_title %}
-                        &nbsp;&raquo;, in <em>{{ ref.book_title }}</em>
-                    {% else %}
-                        </em>
-                    {% endif %}
-                </span>
+                {% if ref.book_title %}
+                    <span>, &laquo;{% if nolink or nb_trans == 0 or ref.id not in user_accessible_trans %}{{ ref.short_title|default:ref.title }}{% else %}<a id="Transcription__{{ ref.transcription_set.all.0.id }}" href="{% url 'transcription-display' ref.transcription_set.all.0.id %}{% if q %}?{{ q }}{% endif %}" class="ia-link" target="{{ link_target|default:"_top" }}" {% if ref.short_title %}title="{{ ref.title }}" {% endif %}>{{ ref.short_title|default:ref.title }}</a>{% endif %}&raquo;, in <em>{{ ref.book_title }}</em>{% if ref.volume %}, vol. {{ ref.volume }}{% endif %}</span>
+                {% else %}
+                    <span>, <em>{% if nolink or nb_trans == 0 or ref.id not in user_accessible_trans %}{{ ref.short_title|default:ref.title }}{% else %}<a id="Transcription__{{ ref.transcription_set.all.0.id }}" href="{% url 'transcription-display' ref.transcription_set.all.0.id %}{% if q %}?{{ q }}{% endif %}" class="ia-link" target="{{ link_target|default:"_top" }}" {% if ref.short_title %}title="{{ ref.title }}" {% endif %}>{{ ref.short_title|default:ref.title }}</a>{% endif %}</em></span>
+                {% endif %}
 
                 {% if ref.litterature_type == 's' %}
                     <span>, {{ ref.manuscript_type.name }}</span>
@@ -109,9 +95,6 @@
                 {#<!-- Dates -->#}
                 <span>, {{ ref|date_biblio:"date" }}{% if ref.date2 %}-{{ ref|date_biblio:"date2" }}{% endif %}</span>
 
-                {% if ref.book_title and ref.volume %}
-                    <span>, vol. {{ ref.volume }}</span>
-                {% endif %}
                 {% if ref.book_title and ref.pages %}
                     <span>, p. {{ ref.pages }}</span>
                 {% endif %}
@@ -132,14 +115,9 @@
 
             {#<!-- Titre -->#}
             {% if nolink %}
-                <span class="title">, {% if ref.book_title or ref.dictionary_title %}&laquo;&nbsp;{% endif %}{{ ref.short_title|default:ref.title }}{% if ref.book_title or ref.dictionary_title %}&nbsp;&raquo;{% endif %}</span>
+                <span class="title">, {% if ref.book_title or ref.dictionary_title %}&laquo;{% endif %}{{ ref.short_title|default:ref.title }}{% if ref.book_title or ref.dictionary_title %}&raquo;{% endif %}</span>
             {% else %}
-                <span class="title">, {% if ref.book_title or ref.dictionary_title %}&laquo;&nbsp;{% endif %}
-                    <a id="Biblio__{{ ref.id }}" class="title collectable ia-link" href="{% url 'display-bibliography' ref.id %}{% if q %}?{{ q }}{% endif %}" target="{{ link_target|default:"_top" }}" {% if ref.short_title %}title="{{ ref.title }}" {% endif %}>
-                        {{ ref.short_title|default:ref.title }}
-                    </a>
-                    {% if ref.book_title or ref.dictionary_title %}&nbsp;&raquo;{% endif %}
-                </span>
+                <span class="title">, {% if ref.book_title or ref.dictionary_title %}&laquo;{% endif %}<a id="Biblio__{{ ref.id }}" class="title collectable ia-link" href="{% url 'display-bibliography' ref.id %}{% if q %}?{{ q }}{% endif %}" target="{{ link_target|default:"_top" }}" {% if ref.short_title %}title="{{ ref.title }}" {% endif %}>{{ ref.short_title|default:ref.title }}</a>{% if ref.book_title or ref.dictionary_title %}&raquo;{% endif %}</span>
             {% endif %}
 
             {#<!-- Titre du livre -->#}
@@ -201,6 +179,10 @@
                     {% endif %}
                     {{ ref.volume_nb }} vol.
                 </span>
+            {% endif %}
+
+            {% if ref.book_title and ref.volume %}
+                <span>, vol. {{ ref.volume }}</span>
             {% endif %}
 
             {#<!-- Pages -->#}

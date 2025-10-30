@@ -97,6 +97,22 @@ class BiblioForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        # When the "volume" field is rendered twice in the edit form (Recueil block + general block),
+        # the browser posts two values. Django keeps the last one, which is often empty, causing the
+        # saved value to be wiped. Normalise the POST data to keep the first non-empty entry instead.
+        if self.data:
+            data_copy = self.data.copy()
+            volume_values = data_copy.getlist("volume")
+            if len(volume_values) > 1:
+                value = ""
+                for item in volume_values:
+                    if str(item).strip():
+                        value = item
+                        break
+                data_copy.setlist("volume", [value])
+                self.data = data_copy
+
         # Example: make "litterature_type" required
         self.fields['litterature_type'].required = True
 

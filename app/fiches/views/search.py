@@ -4,9 +4,11 @@
 #
 
 # stdlib
+import copy
 import datetime
 import calendar
 import json
+import shlex
 from base64 import b64decode
 
 # Django
@@ -15,7 +17,7 @@ from django.apps import apps
 from django.db import models
 from django.db.models import Q
 from django.http import (
-    HttpResponse, Http404, HttpResponseRedirect, HttpResponseNotFound
+    HttpResponse, Http404, HttpResponseRedirect, HttpResponseNotFound, JsonResponse
 )
 from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
@@ -123,8 +125,23 @@ def quick_search(request):
 
     # Base SQS (query)
     sqs = SearchQuerySet().all()
+    def _apply_term_filters(sqs_obj, query_string):
+        if not query_string:
+            return sqs_obj
+        try:
+            terms = shlex.split(query_string)
+            if not terms:
+                terms = [query_string]
+        except ValueError:
+            terms = [query_string]
+        for term in terms:
+            cleaned = term.strip()
+            if cleaned:
+                sqs_obj = sqs_obj.filter(content=AutoQuery(cleaned))
+        return sqs_obj
+
     if q:
-        sqs = sqs.filter(content=AutoQuery(q))
+        sqs = _apply_term_filters(sqs, q)
 
     # Filter by selected models (if any)
     if selected_types:
@@ -139,7 +156,7 @@ def quick_search(request):
     # --- Fast counts via facet on django_ct (for the current query q) ---
     facet_sqs = SearchQuerySet().all()
     if q:
-        facet_sqs = facet_sqs.filter(content=AutoQuery(q))
+        facet_sqs = _apply_term_filters(facet_sqs, q)
     facet_sqs = facet_sqs.facet("django_ct")
     facet_counts = facet_sqs.facet_counts() or {}
     raw = dict(facet_counts.get("fields", {}).get("django_ct", {}))
@@ -166,7 +183,25 @@ def quick_search(request):
     except InvalidPage:
         page = paginator.page(1)
 
-        # Build querystring without the page param for the paginator tag
+    # Remove stale search hits (indexed objects deleted from DB).
+    raw_results = list(page.object_list)
+    filtered_results = []
+    missing_result_ids = []
+    for result in raw_results:
+        obj = getattr(result, "object", None)
+        if obj is None:
+            missing_result_ids.append(result.pk)
+        else:
+            filtered_results.append(result)
+    if missing_result_ids:
+        page.object_list = filtered_results
+        dbg_logger.warning(
+            "quick_search dropped %s stale search result(s) with primary keys: %s",
+            len(missing_result_ids),
+            ", ".join(str(pk) for pk in missing_result_ids),
+        )
+
+    # Build querystring without the page param for the paginator tag
     params = request.GET.copy()
     if "page" in params:
         del params["page"]
@@ -494,8 +529,10 @@ def filter_builder(request, model_name="Person", sfid=None):
         context.update({"doctypes": DocumentType.objects.all()})
 
     if request.session.get("display_settings") is None:
-        request.session["display_settings"] = RESULT_DISPLAY_COLUMNS.copy()
-    display_columns = request.session["display_settings"].get(model_name, {})
+        request.session["display_settings"] = copy.deepcopy(RESULT_DISPLAY_COLUMNS)
+    defaults = RESULT_DISPLAY_COLUMNS.get(model_name, {}) or {}
+    display_columns = defaults.copy()
+    display_columns.update(request.session["display_settings"].get(model_name, {}))
 
     context.update({"display_settings": display_columns, "display_collector": True})
 
@@ -562,8 +599,12 @@ def do_search(request):
         raise Http404
 
     if request.session.get("display_settings") is None:
-        request.session["display_settings"] = RESULT_DISPLAY_COLUMNS.copy()
-    display_columns = request.session["display_settings"].get(query_def["model_name"], {}).copy()
+        request.session["display_settings"] = copy.deepcopy(RESULT_DISPLAY_COLUMNS)
+    defaults = RESULT_DISPLAY_COLUMNS.get(model_name) or {}
+    display_columns = defaults.copy()
+    session_columns = request.session["display_settings"].get(model_name, {})
+    if session_columns:
+        display_columns.update(session_columns)
 
     model = apps.get_model("fiches", query_def["model_name"])
     result_qs = None
@@ -596,8 +637,8 @@ def do_search(request):
 
     nb_val = result_list.count()
 
-    for k in list(display_columns.keys()):
-        display_columns[k] = display_columns[k] == "on"
+    for key, value in list(display_columns.items()):
+        display_columns[key] = bool(value == "on" or value is True)
 
     return render(
         request,
@@ -616,13 +657,25 @@ def save_settings(request):
     new_display_settings = json.loads(request.POST.get("display_settings", "{}"))
 
     if request.session.get("display_settings") is None:
-        request.session["display_settings"] = RESULT_DISPLAY_COLUMNS.copy()
+        request.session["display_settings"] = copy.deepcopy(RESULT_DISPLAY_COLUMNS)
 
-    ds = request.session["display_settings"]
-    ds.update(new_display_settings)
-    request.session["display_settings"] = ds
+    session_settings = request.session["display_settings"]
+    for model_name, model_settings in new_display_settings.items():
+        # Start from the defaults, overlay any existing session values, then the
+        # freshly submitted data, so partial payloads do not wipe known keys.
+        merged = copy.deepcopy(RESULT_DISPLAY_COLUMNS.get(model_name, {}))
+        merged.update(session_settings.get(model_name, {}))
+        merged.update(model_settings)
 
-    return HttpResponse("%s" % ds)
+        if model_name == "Person" and "birth" in model_settings and "death" not in model_settings:
+            merged["death"] = model_settings["birth"]
+
+        session_settings[model_name] = merged
+
+    request.session["display_settings"] = session_settings
+    request.session.modified = True
+
+    return JsonResponse({"display_settings": session_settings})
 
 
 def save_filters(request):

@@ -5,6 +5,7 @@
 {{ object.journal_title|safe }}
 {{ object.series_title|safe }}
 {{ object.dictionary_title|safe }}
+{{ object.collection|safe }}
 
 {# ---------- Authors ---------- #}
 {% for contrib in  object.contributiondoc_set.all %}

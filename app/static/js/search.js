@@ -281,8 +281,32 @@ var display_settings = display_settings || {
 				settings_obj[model_name][row_name.split('__')[1]] = $this.val();
 		    } catch(e) {}
 		});
-		$.post(save_settings_url, {
-			display_settings: $.toJSON(settings_obj)
+		$.ajax({
+			url: save_settings_url,
+			type: "POST",
+			data: {
+				display_settings: $.toJSON(settings_obj)
+			},
+			dataType: "json"
+		})
+		.done(function(response) {
+			if (response && response.display_settings) {
+				display_settings.cache = response.display_settings;
+			}
+		})
+		.fail(function(xhr, statusText) {
+			if (window.console && console.error) {
+				console.error("Saving display settings failed:", statusText, xhr && xhr.status);
+			}
+		})
+		.always(function() {
+			try {
+				execute_query();
+			} catch (err) {
+				if (window.console && console.warn) {
+					console.warn("Unable to refresh results after saving display settings:", err);
+				}
+			}
 		});
     }
 };

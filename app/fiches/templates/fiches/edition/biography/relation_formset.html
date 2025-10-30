@@ -83,6 +83,8 @@
 <script type="text/javascript">
 (function($){
     var init_when_doc_ready = false;
+    var canAddPerson = {% if can_add_person %}true{% else %}false{% endif %};
+    var addPersonUrl = "{% url 'biography-ajax-add-person' %}";
 
     function __init__() {
     $(".Relation_related_person:visible, .ContributionDoc_person:visible").each(function(){ bindRelatedPersonAutocomplete(this) });
@@ -155,7 +157,7 @@
 
     function updateNewFieldBarWidth() {
 
-	}
+    }
 
 
     function bindRelatedPersonAutocomplete(o) {
@@ -196,16 +198,59 @@
 
             .change(function(){
                 var $t = $(this),
-                    v = $t.val(),
+                    v = $.trim($t.val()),
                     n = $t.attr('name'),
                     target = $("[name='"+n.substr("lookup_".length)+"']");
-                // If the value is empty or has been changed manually, clear the hidden field
                 if (!v) {
                   target.val("");
+                  return;
+                }
+                if (!target.val()) {
+                    if (canAddPerson) {
+                        createRelatedPerson(v, function(person){
+                            target.val(person.id);
+                            $t.val(person.name);
+                        });
+                    } else {
+                        target.val("");
+                    }
                 }
             })
 
             .change();
+   }
+
+
+   function getCSRFToken() {
+       var tokenField = $("form.edit-form input[name='csrfmiddlewaretoken']").first();
+       return tokenField.val();
+   }
+
+   function createRelatedPerson(name, callback) {
+       if (!canAddPerson || !addPersonUrl) { return; }
+       var trimmed = $.trim(name || "");
+       if (!trimmed) { return; }
+       $.ajax({
+           url: addPersonUrl,
+           type: "POST",
+           data: { name: trimmed },
+           headers: { "X-CSRFToken": getCSRFToken() }
+       }).done(function(resp){
+           if (resp && (resp.success || resp.id)) {
+               var payload = {
+                   id: resp.id,
+                   name: resp.name || trimmed
+               };
+               if (typeof callback === "function") {
+                   callback(payload);
+               }
+           } else if (resp && resp.error) {
+               alert(resp.error);
+           }
+       }).fail(function(xhr){
+           var msg = (xhr.responseJSON && xhr.responseJSON.error) ? xhr.responseJSON.error : "Impossible d'enregistrer la nouvelle personne.";
+           alert(msg);
+       });
    }
 
 

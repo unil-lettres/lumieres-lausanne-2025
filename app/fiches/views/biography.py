@@ -28,9 +28,16 @@ from django.conf import settings
 from django.contrib.auth.decorators import permission_required
 from django.db.models import Q
 from django.forms.models import inlineformset_factory, modelformset_factory
-from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect
+from django.http import (
+    Http404,
+    HttpResponse,
+    HttpResponseForbidden,
+    HttpResponseRedirect,
+    JsonResponse,
+)
 from django.shortcuts import get_object_or_404, render
 from django.template import RequestContext
+from django.views.decorators.http import require_POST
 
 # from django.core.urlresolvers import reverse
 from django.urls import reverse
@@ -174,6 +181,37 @@ def person_without_bio(request):
         .distinct()
     )
     return render(request, "fiches/workspace/person_for_bio.html", {"persons": persons})
+
+
+@require_POST
+@permission_required("fiches.add_person", raise_exception=True)
+def ajax_add_person(request):
+    name = (request.POST.get("name") or "").strip()
+    if not name:
+        return JsonResponse({"success": False, "error": "empty"}, status=400)
+
+    defaults = {"modern": False}
+    person = Person.objects.filter(name__iexact=name).first()
+    created = False
+    if person is None:
+        person, created = Person.objects.get_or_create(name=name, defaults=defaults)
+    else:
+        # Normalise casing to the provided value if the stored name differs.
+        if person.name != name:
+            person.name = name
+            person.save(update_fields=["name"])
+        if person.modern is None:
+            person.modern = False
+            person.save(update_fields=["modern"])
+
+    return JsonResponse(
+        {
+            "success": True,
+            "id": person.id,
+            "name": person.name,
+            "created": created,
+        }
+    )
 
 
 def build_person_biblio_dict(person):
@@ -500,6 +538,7 @@ def edit(request, person_id, version=0, create_bio=False):
             "professionFormset": professionFormset,
             "prev_url": request.META.get("HTTP_REFERER", None),
             "reverse_relations": person.get_reverse_relations(),
+            "can_add_person": request.user.has_perm("fiches.add_person"),
         }
     )
     # return render('fiches/edition/biography.html', ctx, context_instance=RequestContext(request))

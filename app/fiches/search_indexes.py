@@ -35,7 +35,8 @@ class BiblioIndex(indexes.SearchIndex, indexes.Indexable):
             "livre": "B10",
             "chapitre de livre": "B20",
             "article de revue": "B30",
-            "manuscrit": "B40",
+            "article de dictionnaire": "B40",
+            "manuscrit": "B50",
         }
         return order_map.get(label, "B90")
 

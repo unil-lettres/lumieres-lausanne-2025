@@ -46,7 +46,19 @@
                 return cookieValue;
             }
             const csrftoken = getCookie('csrftoken');
-            const sameOrigin = (url) => url.startsWith(location.origin);
+            function sameOrigin(url) {
+                const host = location.host; // example.com:8000
+                const protocol = location.protocol; // http: or https:
+                const srOrigin = '//' + host;
+                const origin = protocol + srOrigin;
+                return (
+                    url === origin ||
+                    url.slice(0, origin.length + 1) === origin + '/' ||
+                    url === srOrigin ||
+                    url.slice(0, srOrigin.length + 1) === srOrigin + '/' ||
+                    !(/^(\/\/|http:|https:).*/.test(url))
+                );
+            }
             if (!/^GET|HEAD|OPTIONS|TRACE$/.test(settings.type) && sameOrigin(settings.url)) {
                 xhr.setRequestHeader('X-CSRFToken', csrftoken);
             }

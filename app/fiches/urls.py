@@ -24,6 +24,7 @@ from fiches.views.bibliography import documentfile_remove as bibliography_docume
 from fiches.views.bibliography import edit as bibliography_edit
 from fiches.views.bibliography import endnote as bibliography_endnote
 from fiches.views.bibliography import get_person_publications as bibliography_get_person_publications
+from fiches.views.biography import ajax_add_person as biography_ajax_add_person
 from fiches.views.biography import create as biography_create
 from fiches.views.biography import delete as biography_delete
 from fiches.views.biography import display as biography_display
@@ -84,6 +85,7 @@ urlpatterns = [
     path("bio/new/<int:person_id>/", biography_create, name="biography-create"),
     path("bio/<int:person_id>/relations/", biography_relations_list, name="biography-relations-list"),
     path("bio/pfnb/", biography_person_without_bio, name="persons-for-new-biography"),
+    path("bio/ajax/add_person/", biography_ajax_add_person, name="biography-ajax-add-person"),
 
     # Manuscript URLs =================================================================================================
     path("man/<int:man_id>/", bibliography_display_man, name="manuscript-display"),
