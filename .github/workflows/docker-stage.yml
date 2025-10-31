@@ -2,7 +2,7 @@ name: docker-stage
 on:
   push:
     branches:
-      - 'development'
+      - 'dev'
 permissions: read-all
 
 jobs:
@@ -19,7 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          ref: development
+          ref: dev
 
       - name: Build image
         uses: unil-lettres/actions/docker-build@main
@@ -40,7 +40,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          ref: development
+          ref: dev
 
       - name: Merge service
         id: merge
@@ -61,7 +61,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          ref: development
+          ref: dev
 
       - name: Update description
         uses: peter-evans/dockerhub-description@v4
