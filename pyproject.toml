@@ -10,15 +10,15 @@ authors = [
     { name = "Xavier Beheydt", email = "xavier.beheydt@gmail.com" },
 ]
 dependencies = [
-    "Pillow>=9.0,<=10.0.1",
+    "Pillow>=9.0,<=12.0.0",
     "django-ckeditor>=6.7.2",
     "django-haystack>=3.0",
     "django-js-asset>=2.2.0",
-    "django==5.2",
+    "django==5.2.7",
     "mysqlclient>=2.2.7",
     "pysolr>=3.9.0",
     "sorl-thumbnail>=12.7.0",
-    "gunicorn>=20.1,<21.0",
+    "gunicorn>=20.1,<24.0",
 ]
 dynamic = ["version"]
 
