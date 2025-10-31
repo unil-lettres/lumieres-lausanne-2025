@@ -2,7 +2,7 @@ name: docker-stage
 on:
   push:
     branches:
-      - 'dev'
+  - 'dev'
 permissions: read-all
 
 jobs:
