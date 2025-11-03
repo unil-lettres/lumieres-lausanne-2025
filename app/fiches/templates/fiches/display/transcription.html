@@ -144,7 +144,8 @@
 			
 			function initializeViewer() {
 				// TODO: Replace with actual IIIF URL from the transcription model
-				var iiifUrl = "https://patrinum.ch/nanna/proxy/iiif/manifest/323943/";
+				{% comment %} var iiifUrl = "https://patrinum.ch/nanna/proxy/iiif/manifest/323943/"; {% endcomment %}
+				var iiifUrl = "https://iiif.dcsr.unil.ch/Celse/Parisinus_7028/manifest.json";
 				
 				if (iiifUrl) {
 					// Check if it's a manifest URL or direct image info.json
