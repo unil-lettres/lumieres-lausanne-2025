@@ -341,14 +341,9 @@ class Biblio(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        Save the Biblio instance, ensuring a valid Depot is assigned if none is set.
-        If no depot is set, assign the first available Depot as default.
+        Save the Biblio instance. The depot field is intentionally left untouched so
+        new records can start without a default location.
         """
-        if not self.depot_id:
-            from fiches.models import Depot
-            default_depot = Depot.objects.first()
-            if default_depot:
-                self.depot = default_depot
         super().save(*args, **kwargs)
         cache.delete(f"lumieres__biblioref__{self.id}")
 

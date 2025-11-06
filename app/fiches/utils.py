@@ -85,3 +85,37 @@ def query_fiche(queries_dict, model_name, app_label='fiches', qs=None):
         qs = model._default_manager.all()
 
     return qs.filter(q)
+
+
+def user_can_change_documentfile(user, docfile):
+    """
+    Return True when the user may edit the given DocumentFile.
+    Ownership or the broad ``change_any_documentfile`` permission grant access.
+    Otherwise the user needs the standard change permission and access to the file.
+    """
+    if not getattr(user, "is_authenticated", False):
+        return False
+    if getattr(docfile, "access_owner_id", None) == getattr(user, "id", None):
+        return True
+    if user.has_perm("fiches.change_any_documentfile"):
+        return True
+    if not docfile.user_access(user, any_login=True):
+        return False
+    return user.has_perm("fiches.change_documentfile")
+
+
+def user_can_delete_documentfile(user, docfile):
+    """
+    Return True when the user may delete the given DocumentFile.
+    Ownership or the broad ``delete_any_documentfile`` permission grant access.
+    Otherwise the user needs the standard delete permission and access to the file.
+    """
+    if not getattr(user, "is_authenticated", False):
+        return False
+    if getattr(docfile, "access_owner_id", None) == getattr(user, "id", None):
+        return True
+    if user.has_perm("fiches.delete_any_documentfile"):
+        return True
+    if not docfile.user_access(user, any_login=True):
+        return False
+    return user.has_perm("fiches.delete_documentfile")
