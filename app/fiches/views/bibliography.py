@@ -37,9 +37,16 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
 from fiches.forms import BiblioForm, ContributionDocForm, ContributionDocSecForm, NoteFormBiblio
-from fiches.models import Biblio, ContributionDoc, Depot, DocumentType, PrimaryKeyword, SecondaryKeyword
+from fiches.models import Biblio, ContributionDoc, DocumentType, PrimaryKeyword, SecondaryKeyword
 from fiches.models.documents import DocumentFile, NoteBiblio, Manuscript
-from fiches.utils import get_last_model_activity, log_model_activity, remove_object_index, update_object_index
+from fiches.utils import (
+    get_last_model_activity,
+    log_model_activity,
+    remove_object_index,
+    update_object_index,
+    user_can_change_documentfile,
+    user_can_delete_documentfile,
+)
 
 # ===============================================================================
 # BIBLIOGRAPHY
@@ -351,7 +358,6 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
 
     doc = None
     document_type = None
-    default_depot = None
 
     # Handle existing bibliography
     if doc_id:
@@ -372,11 +378,9 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
         else:
             document_type_id = new_doctype
         document_type = get_object_or_404(DocumentType, pk=document_type_id) if document_type_id else None
-        default_depot = Depot.objects.first()
         doc = Biblio(
             creator=request.user,
             document_type=document_type,
-            depot=default_depot,
         )
         doc.save()
 
@@ -650,6 +654,8 @@ def documentfile_change_list(request, doc_id):
 def documentfile_add(request, doc_id, docfile_id):
     doc = get_object_or_404(Biblio, pk=doc_id)
     docfile = get_object_or_404(DocumentFile, pk=docfile_id)
+    if not user_can_change_documentfile(request.user, docfile):
+        return HttpResponseForbidden(_("Accès non autorisé"))
     doc.documentfiles.add(docfile)
     doc.save()
     return HttpResponse("ok")
@@ -669,15 +675,19 @@ def documentfile_remove(request, doc_id, docfile_id):
 
     doc = get_object_or_404(Biblio, pk=doc_id)
     docfile = get_object_or_404(DocumentFile, pk=docfile_id)
+    if not user_can_change_documentfile(request.user, docfile):
+        return HttpResponseForbidden(_("Accès non autorisé"))
     remove_done = False
 
     # Number of Biblio objects linked to this documentfile
     nb_ref = docfile.biblio_set.count()
 
     if request.method == "POST":
-        if request.POST.get("doc_id", "") == doc_id and request.POST.get("docfile_id") == docfile_id:
+        if request.POST.get("doc_id", "") == str(doc_id) and request.POST.get("docfile_id") == str(docfile_id):
             doc.documentfiles.remove(docfile)
             if request.POST.get("docfile_delete") and docfile.biblio_set.count() == 0:
+                if not user_can_delete_documentfile(request.user, docfile):
+                    return HttpResponseForbidden(_("Accès non autorisé"))
                 docfile.delete()
             doc.save()
             remove_done = True

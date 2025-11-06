@@ -37,7 +37,14 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import models
-from django.http import Http404, HttpResponse, HttpResponseNotFound, HttpResponseRedirect, HttpResponseServerError
+from django.http import (
+    Http404,
+    HttpResponse,
+    HttpResponseForbidden,
+    HttpResponseNotFound,
+    HttpResponseRedirect,
+    HttpResponseServerError,
+)
 from django.shortcuts import get_object_or_404, render
 from django.template import Context, RequestContext, loader
 
@@ -52,6 +59,7 @@ from django.views.decorators.vary import vary_on_headers
 from fiches.models import ACModel, ActivityLog, Finding, FreeContent, News, Transcription
 from utils import dbg_logger
 from fiches.forms import DocumentFileForm
+from fiches.utils import user_can_change_documentfile
 
 logger = logging.getLogger(__name__)  # XXX: delete it
 
@@ -391,6 +399,8 @@ def documentfile_frame_edit(request, docfile_id, edit_done=False):
     from fiches.models.documents.document_file import DocumentFile
 
     docfile = get_object_or_404(DocumentFile, pk=docfile_id)
+    if not user_can_change_documentfile(request.user, docfile):
+        return HttpResponseForbidden(_("Accès non autorisé"))
     if request.method == "POST":
         form = DocumentFileForm(request.POST, request.FILES, instance=docfile)
         if form.is_valid():
