@@ -17,7 +17,6 @@ migration from an older Python/Django version.
 - App URLs: `app/fiches/urls.py`
 - Views: `app/fiches/views/__init__.py`
 - Models: `app/fiches/models/__init__.py`
-- Tests: `app/fiches/tests/__init__.py`
 - Global statics: `app/static/`
 - App statics: `app/fiches/static/fiches/`
 - App templates: `app/fiches/templates/fiches/`
@@ -25,5 +24,4 @@ migration from an older Python/Django version.
 **Instructions**
 - Wait for user request before each step.
 - Notify if any instruction or configuration files need to be updated.
-- Create or update unit tests at each step (if working to `app/**`).
 - Add copyright with `docs/copyright.md` template in every top of source files commented.
