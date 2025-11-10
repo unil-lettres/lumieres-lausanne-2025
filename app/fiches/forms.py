@@ -327,6 +327,25 @@ class TranscriptionForm(forms.ModelForm):
     class Meta:
         model = Transcription
         fields = '__all__'
+        widgets = {
+            'facsimile_iiif_url': forms.URLInput(attrs={'style': 'width: 400px;'}),
+        }
+
+    def clean_facsimile_iiif_url(self):
+        """Validate that the IIIF manifest URL points to valid JSON."""
+        url = self.cleaned_data.get('facsimile_iiif_url')
+        if url:
+            try:
+                import requests
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()
+                import json
+                json.loads(response.text)
+            except (requests.RequestException, json.JSONDecodeError, ImportError):
+                raise forms.ValidationError(
+                    _("Invalid IIIF manifest URL. Must point to valid JSON.")
+                )
+        return url
 
     def clean(self):
         cleaned_data = super().clean()
