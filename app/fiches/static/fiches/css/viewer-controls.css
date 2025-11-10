@@ -1,0 +1,257 @@
+/*
+   Copyright (C) 2010-2025 Université de Lausanne, RISET
+   < http://www.unil.ch/riset/ >
+
+   This file is part of Lumières.Lausanne.
+   Lumières.Lausanne is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   Lumières.Lausanne is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+   This copyright notice MUST APPEAR in all copies of the file.
+*/
+
+/* Common Viewer Controls CSS */
+.viewer-control-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 1000;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.control-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.control-btn:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.control-btn:active {
+    background: #dee2e6;
+    transform: translateY(1px);
+}
+
+.control-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.control-btn:disabled:hover {
+    background: #fff;
+    border-color: #ced4da;
+}
+
+.page-indicator {
+    font-size: 14px;
+    font-weight: 500;
+    color: #495057;
+    margin: 0 8px;
+    white-space: nowrap;
+}
+
+/* Control Icons using CSS sprites from OpenSeadragon */
+.control-icon {
+    width: 20px;
+    height: 20px;
+    display: block;
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+.prev-icon {
+    background-image: url('/static/js/lib/openseadragon/images/previous_rest.png');
+}
+.control-btn:hover .prev-icon {
+    background-image: url('/static/js/lib/openseadragon/images/previous_hover.png');
+}
+.control-btn:active .prev-icon {
+    background-image: url('/static/js/lib/openseadragon/images/previous_pressed.png');
+}
+
+.next-icon {
+    background-image: url('/static/js/lib/openseadragon/images/next_rest.png');
+}
+.control-btn:hover .next-icon {
+    background-image: url('/static/js/lib/openseadragon/images/next_hover.png');
+}
+.control-btn:active .next-icon {
+    background-image: url('/static/js/lib/openseadragon/images/next_pressed.png');
+}
+
+.zoom-in-icon {
+    background-image: url('/static/js/lib/openseadragon/images/zoomin_rest.png');
+}
+.control-btn:hover .zoom-in-icon {
+    background-image: url('/static/js/lib/openseadragon/images/zoomin_hover.png');
+}
+.control-btn:active .zoom-in-icon {
+    background-image: url('/static/js/lib/openseadragon/images/zoomin_pressed.png');
+}
+
+.zoom-out-icon {
+    background-image: url('/static/js/lib/openseadragon/images/zoomout_rest.png');
+}
+.control-btn:hover .zoom-out-icon {
+    background-image: url('/static/js/lib/openseadragon/images/zoomout_hover.png');
+}
+.control-btn:active .zoom-out-icon {
+    background-image: url('/static/js/lib/openseadragon/images/zoomout_pressed.png');
+}
+
+.rotate-icon {
+    background-image: url('/static/js/lib/openseadragon/images/rotateright_rest.png');
+}
+.control-btn:hover .rotate-icon {
+    background-image: url('/static/js/lib/openseadragon/images/rotateright_hover.png');
+}
+.control-btn:active .rotate-icon {
+    background-image: url('/static/js/lib/openseadragon/images/rotateright_pressed.png');
+}
+
+.fullscreen-icon {
+    background-image: url('/static/js/lib/openseadragon/images/fullpage_rest.png');
+}
+.control-btn:hover .fullscreen-icon {
+    background-image: url('/static/js/lib/openseadragon/images/fullpage_hover.png');
+}
+.control-btn:active .fullscreen-icon {
+    background-image: url('/static/js/lib/openseadragon/images/fullpage_pressed.png');
+}
+
+.reset-icon {
+    background-image: url('/static/js/lib/openseadragon/images/home_rest.png');
+}
+.control-btn:hover .reset-icon {
+    background-image: url('/static/js/lib/openseadragon/images/home_hover.png');
+}
+.control-btn:active .reset-icon {
+    background-image: url('/static/js/lib/openseadragon/images/home_pressed.png');
+}
+
+/* Custom icons for contrast and brightness (using Unicode symbols) */
+.contrast-icon::before {
+    content: "◐";
+    font-size: 18px;
+    line-height: 1;
+    color: #495057;
+    font-style: normal;
+}
+
+.brightness-icon::before {
+    content: "☀";
+    font-size: 18px;
+    line-height: 1;
+    color: #495057;
+    font-style: normal;
+}
+
+/* Dropdown popup styles */
+.control-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-popup {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 120px;
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 8px;
+    margin-top: 2px;
+    display: none;
+    z-index: 1001;
+}
+
+.dropdown-popup.show {
+    display: block;
+}
+
+.dropdown-popup input[type="range"] {
+    width: 100%;
+    height: 16px;
+    margin: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .viewer-control-bar {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .control-group {
+        gap: 2px;
+    }
+    
+    .control-btn {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .page-indicator {
+        font-size: 12px;
+        margin: 0 4px;
+    }
+}
+
+/* Fullscreen mode adjustments */
+.openseadragon-container.fullscreen .viewer-control-bar {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    background: rgba(248, 249, 250, 0.95);
+    backdrop-filter: blur(5px);
+}
+
+/* Ensure controls are always visible */
+.viewer-control-bar {
+    user-select: none;
+}
+
+.control-btn:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}
+
+.control-btn:focus:not(:focus-visible) {
+    outline: none;
+}

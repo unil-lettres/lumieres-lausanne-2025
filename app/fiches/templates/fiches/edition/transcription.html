@@ -32,10 +32,13 @@
 	{{ block.super }}
 	<!-- OpenSeadragon -->
 	<script src="{% static 'js/lib/openseadragon/openseadragon.min.js' %}"></script>
+	<!-- Viewer Controls -->
+	<script src="{% static 'fiches/js/viewer-controls.js' %}"></script>
 {% endblock head_js %}
 
 {% block head_css %}
 	{{ block.super }}
+	<link rel="stylesheet" href="{% static 'fiches/css/viewer-controls.css' %}" />
 	<style type="text/css">
 		form.transcription .text textarea { height: 670px; width: 800px; }
 		
@@ -63,7 +66,7 @@
 		
 		.facsimile-viewer-panel {
 			flex-shrink: 0;
-			width: 400px;
+			width: 450px;
 			position: sticky;
 			top: 20px;
 		}
@@ -73,25 +76,6 @@
 			height: 500px;
 			background-color: #000;
 			border: 1px solid #ccc;
-		}
-		
-		.facsimile-controls {
-			margin-bottom: 10px;
-			padding: 10px;
-			background: #f5f5f5;
-			border: 1px solid #ddd;
-		}
-		
-		.facsimile-controls h3 {
-			margin: 0 0 10px 0;
-			font-size: 14px;
-			font-weight: bold;
-		}
-		
-		.facsimile-controls button {
-			margin-right: 5px;
-			padding: 5px 10px;
-			cursor: pointer;
 		}
 		
 		/* Hide viewer initially */
@@ -377,13 +361,8 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 	
 	<!-- Right column: Facsimile Viewer -->
 	<div class="facsimile-viewer-panel" id="facsimile-viewer-panel">
-		<div class="facsimile-controls">
-			<h3>Facsimilé</h3>
-			<button id="facsimile-zoom-in" type="button">Zoom +</button>
-			<button id="facsimile-zoom-out" type="button">Zoom -</button>
-			<button id="facsimile-home" type="button">Réinitialiser</button>
-			<button id="facsimile-full-page" type="button">Plein écran</button>
-		</div>
+		<h3 style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold;">Facsimilé</h3>
+		{% include "fiches/includes/viewer_controls.html" %}
 		<div id="facsimile-viewer"></div>
 	</div>
 </div>
@@ -567,23 +546,37 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 			if (facsimileViewer && typeof facsimileViewer.destroy === 'function') {
 				try { facsimileViewer.destroy(); } catch (e) { console.warn(e); }
 			}
+			
+			// Destroy existing controls
+			if (window.viewerControls && typeof window.viewerControls.destroy === 'function') {
+				window.viewerControls.destroy();
+			}
+			
 			facsimileViewer = OpenSeadragon({
 				id: "facsimile-viewer",
 				prefixUrl: "{% static 'js/lib/openseadragon/images/' %}",
 				tileSources: tileSources,
-				sequenceMode: tileSources.length > 1,
-				showNavigationControl: true,
-				navigationControlAnchor: OpenSeadragon.ControlAnchor.TOP_RIGHT,
-				zoomInButton: "facsimile-zoom-in",
-				zoomOutButton: "facsimile-zoom-out",
-				homeButton: "facsimile-home",
-				fullPageButton: "facsimile-full-page",
-				showNavigator: true,
+				sequenceMode: true, // Always enable sequence mode
+				initialPage: 0,
+				preserveViewport: false,
+				preserveImageSizeOnResize: true,
+				visibilityRatio: 0.5,
+				showNavigationControl: false, // Disable default controls
+				showZoomControl: false,
+				showHomeControl: false,
+				showFullPageControl: false,
+				showSequenceControl: false,
+				showNavigator: tileSources.length > 1,
 				navigatorPosition: "BOTTOM_RIGHT",
 				navigatorHeight: "120px",
 				navigatorWidth: "150px",
 				showReferenceStrip: tileSources.length > 1,
 				referenceStripScroll: 'horizontal'
+			});
+			
+			// Initialize custom controls after viewer is ready
+			facsimileViewer.addHandler('open', function() {
+				window.viewerControls = window.initViewerControls(facsimileViewer);
 			});
 		}
 	});
