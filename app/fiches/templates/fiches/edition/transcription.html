@@ -111,6 +111,7 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 		    <div>{{ transForm.facsimile_iiif_url.errors }}</div>
 		    <label for="id_facsimile_iiif_url">{{ transForm.facsimile_iiif_url.label }}{% tooltiplink "ctxt-help-facsimile-iiif-url" %}</label>
 		    {{ transForm.facsimile_iiif_url }}
+		    <button type="button" id="validate-facsimile-url" style="margin-left: 10px;">Charger</button>
 			<div id="ctxt-help-facsimile-iiif-url" style="display:none">
 				<h6>Facsimile IIIF URL</h6>
 				<p>URL of the IIIF manifest</p>
@@ -335,6 +336,40 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 				alert('Please fill in the following required fields before saving:\n' + missing.join('\n'));
 				e.preventDefault();
 			}
+		});
+
+		// Handle facsimile URL validation
+		$('#validate-facsimile-url').click(function() {
+			var url = $('#id_facsimile_iiif_url').val().trim();
+			if (!url) {
+				alert('Veuillez d\'abord saisir une URL de manifeste IIIF.');
+				return;
+			}
+			// Show loading
+			$(this).prop('disabled', true).text('Chargement...');
+			
+			$.ajax({
+				url: url,
+				dataType: 'json',
+				timeout: 10000,
+				success: function(data) {
+					alert('✓ Manifeste IIIF valide ! Le fac-similé peut être chargé.');
+				},
+				error: function(xhr, status, error) {
+					var msg = '✗ URL de manifeste IIIF invalide.\n';
+					if (status === 'timeout') {
+						msg += 'Délai d\'attente dépassé.';
+					} else if (xhr.status === 0) {
+						msg += 'Erreur réseau - URL non accessible.';
+					} else {
+						msg += 'HTTP ' + xhr.status + ': ' + error;
+					}
+					alert(msg);
+				},
+				complete: function() {
+					$('#validate-facsimile-url').prop('disabled', false).text('Charger');
+				}
+			});
 		});
 	});
 })(jQuery);
