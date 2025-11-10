@@ -588,39 +588,5 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 		}
 	});
 })(jQuery);
-
-// On page load, if facsimile URL exists, disable editing and load viewer
-(function($){
-	$(document).ready(function(){
-		var url = $('#id_facsimile_iiif_url').val().trim();
-		if (url) {
-			// Disable input to prevent editing
-			$('#id_facsimile_iiif_url').prop('disabled', true);
-			// Add hidden field to submit value
-			$('<input type="hidden" name="facsimile_iiif_url" value="' + url + '">').insertAfter('#id_facsimile_iiif_url');
-			// Set button to unload mode
-			$('#validate-facsimile-url').data('loaded', true).text('Supprimer');
-			// Load the viewer
-			loadFacsimileViewer(url);
-		}
-	});
-})(jQuery);
-
-// On page load, if facsimile URL exists, disable editing and load viewer
-(function($){
-	$(document).ready(function(){
-		var url = $('#id_facsimile_iiif_url').val().trim();
-		if (url) {
-			// Disable input to prevent editing
-			$('#id_facsimile_iiif_url').prop('disabled', true);
-			// Add hidden field to submit value
-			$('<input type="hidden" name="facsimile_iiif_url" value="' + url + '">').insertAfter('#id_facsimile_iiif_url');
-			// Set button to unload mode
-			$('#validate-facsimile-url').data('loaded', true).text('Supprimer');
-			// Load the viewer
-			loadFacsimileViewer(url);
-		}
-	});
-})(jQuery);
 </script>
 {% endblock main_content %}
