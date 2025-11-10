@@ -107,6 +107,16 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 	
 	{#<!-- ========== TEXT ========== -->#}
 	<fieldset class="no-border">
+		<div class="fieldWrapper facsimile_iiif_url">
+		    <div>{{ transForm.facsimile_iiif_url.errors }}</div>
+		    <label for="id_facsimile_iiif_url">{{ transForm.facsimile_iiif_url.label }}{% tooltiplink "ctxt-help-facsimile-iiif-url" %}</label>
+		    {{ transForm.facsimile_iiif_url }}
+			<div id="ctxt-help-facsimile-iiif-url" style="display:none">
+				<h6>Facsimile IIIF URL</h6>
+				<p>URL of the IIIF manifest</p>
+			</div>
+		</div>
+		<div class="fixclear"></div>
 		<div class="fieldWrapper text">
 		    <div>{{ transForm.text.errors }}
 		    {#{{ transForm.text.label_tag }}#}</div>
