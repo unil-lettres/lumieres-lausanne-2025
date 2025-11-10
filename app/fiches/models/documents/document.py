@@ -6,9 +6,9 @@
 
 # fiches/models/documents/document.py
 
-from ckeditor.fields import RichTextField
 from types import SimpleNamespace
 
+from ckeditor.fields import RichTextField
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -724,10 +724,6 @@ class TranscriptionManager(models.Manager):
             "GROUP BY t.id "
             "ORDER BY MAX(l.date) DESC"
         )[:count]
-
-
-from django.contrib.auth.models import User
-from django.db import models
 
 
 class Transcription(ACModel):
