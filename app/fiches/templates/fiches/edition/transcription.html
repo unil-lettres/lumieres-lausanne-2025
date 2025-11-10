@@ -422,7 +422,7 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 			if (loaded) {
 				unloadFacsimileViewer();
 				$btn.data('loaded', false).text('Charger');
-				$('#id_facsimile_iiif_url').prop('readonly', false).prop('disabled', false);
+				$('#id_facsimile_iiif_url').prop('disabled', false);
 				return;
 			}
 			// Otherwise, try to validate and load
@@ -442,8 +442,9 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 					// valid manifest / info.json
 					loadFacsimileViewer(url);
 					$btn.data('loaded', true).text('Supprimer');
-					// make input readonly to prevent accidental edits
-					$('#id_facsimile_iiif_url').prop('readonly', true).prop('disabled', true);
+					// disable input to prevent edits and add hidden field to submit value
+					$('#id_facsimile_iiif_url').prop('disabled', true);
+					$('<input type="hidden" name="facsimile_iiif_url" value="' + url + '">').insertAfter('#id_facsimile_iiif_url');
 				},
 				error: function(xhr, status, error) {
 					var msg = '✗ URL de manifeste IIIF invalide.\n';
@@ -480,8 +481,10 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 			var viewerDiv = document.getElementById('facsimile-viewer');
 			if (viewerDiv) viewerDiv.innerHTML = '';
 			$('#facsimile-viewer-panel').removeClass('visible');
-			// clear input value
+			// clear input value, remove hidden field, enable input
 			$('#id_facsimile_iiif_url').val('');
+			$('input[type="hidden"][name="facsimile_iiif_url"]').remove();
+			$('#id_facsimile_iiif_url').prop('disabled', false);
 		}
 		
 		// Function to load facsimile viewer
@@ -582,6 +585,40 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 				showReferenceStrip: tileSources.length > 1,
 				referenceStripScroll: 'horizontal'
 			});
+		}
+	});
+})(jQuery);
+
+// On page load, if facsimile URL exists, disable editing and load viewer
+(function($){
+	$(document).ready(function(){
+		var url = $('#id_facsimile_iiif_url').val().trim();
+		if (url) {
+			// Disable input to prevent editing
+			$('#id_facsimile_iiif_url').prop('disabled', true);
+			// Add hidden field to submit value
+			$('<input type="hidden" name="facsimile_iiif_url" value="' + url + '">').insertAfter('#id_facsimile_iiif_url');
+			// Set button to unload mode
+			$('#validate-facsimile-url').data('loaded', true).text('Supprimer');
+			// Load the viewer
+			loadFacsimileViewer(url);
+		}
+	});
+})(jQuery);
+
+// On page load, if facsimile URL exists, disable editing and load viewer
+(function($){
+	$(document).ready(function(){
+		var url = $('#id_facsimile_iiif_url').val().trim();
+		if (url) {
+			// Disable input to prevent editing
+			$('#id_facsimile_iiif_url').prop('disabled', true);
+			// Add hidden field to submit value
+			$('<input type="hidden" name="facsimile_iiif_url" value="' + url + '">').insertAfter('#id_facsimile_iiif_url');
+			// Set button to unload mode
+			$('#validate-facsimile-url').data('loaded', true).text('Supprimer');
+			// Load the viewer
+			loadFacsimileViewer(url);
 		}
 	});
 })(jQuery);
