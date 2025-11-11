@@ -297,12 +297,23 @@ $(document).ready(function(){
 		if (format_node.data('vardateformat') == 'inited') { return; }
 		
 		// Normalized format
-		var	format = String(format_node.val()).toLowerCase(),
+		var format_field = $("input[id='id_" + format_node.attr("name") + "']"),
+			stored_format_value = format_field.length ? format_field.val() : "",
+			format_node_val = stored_format_value || format_node.val() || "",
+			format = String(format_node_val).toLowerCase(),
 			date_node = $("input[name='" + format_node.attr("name").slice(0,-2) + "']"),
 			output_val = [];
 
+		if (stored_format_value) {
+			format_node.val(stored_format_value);
+		}
 
-		let date_format = $("input[id='id_" + format_node.attr("name")+ "']").val().replace(/%/g, "").toLowerCase().split("-");
+		var sanitized_format_parts = (stored_format_value || format_node.val() || "")
+				.toLowerCase()
+				.replace(/[^dmy]/g, ""),
+			date_format = sanitized_format_parts
+				? sanitized_format_parts.split("")
+				: DATE_FORMAT.split("");
 		$(".fieldWrapper." + format_node.attr("name")).hide();
 
 		// Basic validity checks

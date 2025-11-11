@@ -17,6 +17,7 @@ class PrimaryKeyword(models.Model):
         
         verbose_name = _("Mot clé principal")
         verbose_name_plural = _("Mots clés principaux")
+        ordering = ("word",)
 
 
 class SecondaryKeyword(models.Model):
@@ -42,3 +43,4 @@ class SecondaryKeyword(models.Model):
         verbose_name_plural = _("Mots clés secondaires")
         managed = False
         db_table = "fiches_secondarykeyword"
+        ordering = ("primary_keyword__word", "word")
