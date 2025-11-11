@@ -104,6 +104,73 @@
 				max-height: none;
 			}
 		}
+		
+		/* Layout mode styles */
+		.layout-toggle-group {
+			display: flex;
+			gap: 8px;
+			margin-bottom: 10px;
+			justify-content: center;
+		}
+		
+		.layout-btn {
+			padding: 8px 16px;
+			background: #fff;
+			border: 1px solid #ced4da;
+			border-radius: 4px;
+			font-size: 14px;
+			cursor: pointer;
+			transition: all 0.2s ease;
+			color: #212529;
+		}
+		
+		.layout-btn:hover {
+			background: #e9ecef;
+			border-color: #adb5bd;
+		}
+		
+		.layout-btn.active {
+			background: #ff8c00;
+			color: #fff;
+			border-color: #ff8c00;
+		}
+		
+		.layout-btn.active:hover {
+			background: #e67e00;
+			border-color: #cc7000;
+		}
+		
+		/* Text-only mode */
+		body[data-layout-mode="text-only"] .viewer-panel {
+			display: none;
+		}
+		
+		body[data-layout-mode="text-only"] .transcription-content {
+			max-width: 100%;
+		}
+		
+		body[data-layout-mode="text-only"] .transcription-content #transcription-data {
+			max-height: none;
+		}
+		
+		/* Viewer-only mode */
+		body[data-layout-mode="viewer-only"] .transcription-content {
+			display: none;
+		}
+		
+		body[data-layout-mode="viewer-only"] .transcription-viewer-container {
+			justify-content: center;
+		}
+		
+		body[data-layout-mode="viewer-only"] .viewer-panel {
+			position: static;
+			width: 800px;
+			max-width: 90%;
+		}
+		
+		body[data-layout-mode="viewer-only"] #openseadragon-viewer {
+			height: 800px;
+		}
 	</style>
 {% endblock head_css %}
 
@@ -273,6 +340,35 @@
 			setTimeout(scrollCiteAs, 0); // a direct call doesn't work on FF
 			$(document).scroll(scrollCiteAs);
 		});
+		
+		//{# ---------- Layout Mode Toggle ---------- #}
+		$(function() {
+			// Initialize layout mode (default: split-view)
+			var currentLayout = 'split-view';
+			document.body.setAttribute('data-layout-mode', currentLayout);
+			
+			// Handle layout button clicks
+			$('.layout-btn').on('click', function() {
+				var newLayout = $(this).attr('data-layout');
+				
+				// Update active button
+				$('.layout-btn').removeClass('active');
+				$(this).addClass('active');
+				
+				// Update body data attribute
+				document.body.setAttribute('data-layout-mode', newLayout);
+				currentLayout = newLayout;
+				
+				// Store preference in sessionStorage
+				sessionStorage.setItem('transcription-layout-mode', newLayout);
+			});
+			
+			// Restore layout preference from sessionStorage
+			var savedLayout = sessionStorage.getItem('transcription-layout-mode');
+			if (savedLayout && savedLayout !== currentLayout) {
+				$('.layout-btn[data-layout="' + savedLayout + '"]').trigger('click');
+			}
+		});
 	</script>
 {% endblock %}
 {% endif %}
@@ -306,6 +402,21 @@
         <p class="info info-noaccess">Vous ne pouvez pas accéder à cette transcription</p>
 	{% else %}
 	
+		{#<!-- Layout mode toggle buttons -->#}
+		{% if trans.facsimile_iiif_url %}
+		<div id="layout-toggle-buttons" class="layout-toggle-group">
+			<button type="button" class="layout-btn" data-layout="text-only" title="Texte uniquement">
+				Texte
+			</button>
+			<button type="button" class="layout-btn active" data-layout="split-view" title="Texte et facsimilé">
+				Texte + Facsimilé
+			</button>
+			<button type="button" class="layout-btn" data-layout="viewer-only" title="Facsimilé uniquement">
+				Facsimilé
+			</button>
+		</div>
+		{% endif %}
+
         <h2 class="transcription">{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 %}</h2>
 		
 		{#<!-- Transcription text with viewer on the right -->#}
