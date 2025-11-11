@@ -7,6 +7,9 @@
 </div>
 
 <script type="text/javascript">
+var TRANSCRIPTION_PADDING_DEFAULT = '20px';
+var TRANSCRIPTION_PADDING_TOC = '170px';
+
 function toggleBR() {
 	if ( $('#lb-toggle > span').hasClass('show') ) {
         $('div.transcription-data br').not($('div.transcription-data .verse br')).css('display','inline');
@@ -45,12 +48,12 @@ function toggleTOC() {
     if ( $('#transcription-toc').length > 0 ) {
         $('#transcription-toc, a.tocref').remove();
         $('#toc-toggle > span').text('Montrer la table des matières');
-        $('.transcription-data').first().css('padding-right', '40px');
+	    $('.transcription-data').first().css('padding-right', TRANSCRIPTION_PADDING_DEFAULT);
     } else {
         $('#toc-toggle > span').text('Cacher la table des matières');
 
         var trans = $('.transcription-data').first();
-        trans.css('padding-right', '190px');
+	    trans.css('padding-right', TRANSCRIPTION_PADDING_TOC);
         var toc = $('<ul id="transcription-toc"><div class="title">Table des matières</div></ul>');
         $('h2, h3', trans).each(function (i) {
             var header = $(this);
