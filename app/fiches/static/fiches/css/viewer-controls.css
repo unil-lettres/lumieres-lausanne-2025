@@ -20,6 +20,57 @@
 */
 
 /* Common Viewer Controls CSS */
+
+/*
+ * Unified button styles
+ * Make the transcription top-bar buttons (which use jQuery UI classes like
+ * `.ui-button`) visually match the viewer icon buttons `.control-btn`.
+ * This keeps markup changes minimal and centralizes the appearance here.
+ */
+.unified-text-btn,
+.ui-button,
+.ui-button.ui-widget,
+.ui-button.ui-state-default {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 6px 10px;
+    height: auto;
+    min-height: 32px;
+    background: #fff;
+    border: 1px solid #ced4da;
+    color: #212529;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+}
+
+.unified-text-btn:hover,
+.ui-button:hover,
+.ui-button.ui-state-default:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.unified-text-btn:active,
+.ui-button:active {
+    background: #dee2e6;
+}
+
+.ui-button .ui-button-text { /* maintain existing inner span usage */
+    display: inline-block;
+}
+
+.ui-button[aria-disabled="true"],
+.ui-button.ui-state-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .viewer-control-bar {
     display: flex;
     align-items: center;
@@ -240,6 +291,46 @@
     z-index: 9999;
     background: rgba(248, 249, 250, 0.95);
     backdrop-filter: blur(5px);
+}
+
+/* Transcription controls: compact layout for the top-of-text buttons
+ * - keep them on a single line on wide screens
+ * - reduce font size and padding to match the viewer control visual weight
+ */
+#transcription-view-controls p {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin: 0 0 12px 0;
+    flex-wrap: nowrap; /* keep in one line if possible */
+}
+
+#transcription-view-controls .ui-button,
+#transcription-view-controls .ui-button.ui-widget {
+    padding: 4px 8px;
+    min-height: 28px;
+    font-size: 13px;
+    border-radius: 4px;
+}
+
+#transcription-view-controls .ui-button .ui-button-text span {
+    font-size: 13px;
+}
+
+#transcription-view-controls .ui-button[aria-disabled="true"],
+#transcription-view-controls .ui-button.ui-state-disabled {
+    opacity: 0.6;
+}
+
+@media (max-width: 900px) {
+    #transcription-view-controls p {
+        flex-wrap: wrap; /* allow wrapping on smaller screens */
+        gap: 6px;
+    }
+    #transcription-view-controls .ui-button {
+        font-size: 12px;
+        padding: 4px 6px;
+    }
 }
 
 /* Ensure controls are always visible */
