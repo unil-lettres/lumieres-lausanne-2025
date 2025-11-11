@@ -149,6 +149,10 @@
 			max-width: 100%;
 		}
 		
+		body[data-layout-mode="text-only"] .transcription-viewer-container {
+			display: block;
+		}
+		
 		body[data-layout-mode="text-only"] .transcription-content #transcription-data {
 			max-height: none;
 		}
@@ -343,31 +347,32 @@
 		
 		//{# ---------- Layout Mode Toggle ---------- #}
 		$(function() {
-			// Initialize layout mode (default: split-view)
-			var currentLayout = 'split-view';
-			document.body.setAttribute('data-layout-mode', currentLayout);
+			var hasViewer = {{ trans.facsimile_iiif_url|yesno:"1,0" }};
+			var storageKey = 'transcription-layout-mode';
+			
+			if (!hasViewer) {
+				document.body.setAttribute('data-layout-mode', 'text-only');
+				sessionStorage.removeItem(storageKey);
+				return;
+			}
+			
+			var defaultLayout = 'split-view';
+			var savedLayout = sessionStorage.getItem(storageKey);
+			var initialLayout = savedLayout ? savedLayout : defaultLayout;
+			document.body.setAttribute('data-layout-mode', initialLayout);
+			
+			$('.layout-btn').removeClass('active');
+			$('.layout-btn[data-layout="' + initialLayout + '"]').addClass('active');
 			
 			// Handle layout button clicks
 			$('.layout-btn').on('click', function() {
 				var newLayout = $(this).attr('data-layout');
 				
-				// Update active button
 				$('.layout-btn').removeClass('active');
 				$(this).addClass('active');
-				
-				// Update body data attribute
 				document.body.setAttribute('data-layout-mode', newLayout);
-				currentLayout = newLayout;
-				
-				// Store preference in sessionStorage
-				sessionStorage.setItem('transcription-layout-mode', newLayout);
+				sessionStorage.setItem(storageKey, newLayout);
 			});
-			
-			// Restore layout preference from sessionStorage
-			var savedLayout = sessionStorage.getItem('transcription-layout-mode');
-			if (savedLayout && savedLayout !== currentLayout) {
-				$('.layout-btn[data-layout="' + savedLayout + '"]').trigger('click');
-			}
 		});
 	</script>
 {% endblock %}
