@@ -44,6 +44,19 @@
 		.transcription-content {
 			flex: 1;
 			min-width: 0; /* Allow flex item to shrink below content size */
+			display: flex;
+			flex-direction: column;
+		}
+
+		.transcription-content #transcription-view-controls {
+			margin-bottom: 12px;
+		}
+
+		.transcription-content #transcription-data {
+			flex: 1;
+			max-height: 600px;
+			overflow-y: auto;
+			overflow-x: hidden;
 		}
 		
 		.viewer-panel {
@@ -84,6 +97,10 @@
 			.viewer-panel {
 				width: 100%;
 				position: static;
+				max-height: none;
+			}
+
+			.transcription-content #transcription-data {
 				max-height: none;
 			}
 		}
