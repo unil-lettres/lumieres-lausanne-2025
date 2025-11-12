@@ -1,0 +1,293 @@
+/*
+   Copyright (C) 2010-2025 Université de Lausanne, RISET
+   <https://www.unil.ch/riset/>
+
+   This file is part of Lumières.Lausanne.
+   Lumières.Lausanne is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   Lumières.Lausanne is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+   This copyright notice MUST APPEAR in all copies of the file.
+*/
+
+/* Two-column layout: transcription on left, viewer on right */
+.transcription-viewer-container {
+	display: flex;
+	gap: 20px;
+	width: 100%;
+	position: relative;
+	z-index: 1;
+}
+
+.transcription-content {
+	flex: 1;
+	min-width: 0; /* Allow flex item to shrink below content size */
+}
+
+.transcription-content #transcription-view-controls {
+	margin-bottom: 12px;
+}
+
+.transcription-content #transcription-data {
+	max-height: 600px;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+.viewer-panel {
+	width: 450px;
+	flex-shrink: 0;
+	position: sticky;
+	top: 20px;
+	height: fit-content;
+	max-height: calc(100vh - 40px);
+	z-index: 10;
+}
+
+#openseadragon-viewer {
+	width: 100%;
+	height: 600px;
+	background-color: #000;
+	border: 1px solid #ccc;
+}
+
+.content .transcription-data {
+	padding: 0 20px;
+}
+
+/* Table of contents styling */
+#transcription-toc {
+	position: static !important;
+	float: none !important;
+	width: 100% !important;
+	background: #f5f5f0;
+	padding: 10px 15px;
+	margin: 0 0 15px 0;
+	border-bottom: 2px solid #c4c5b4;
+	max-height: 75px;
+	overflow-y: auto;
+	font-size: 11px;
+	box-shadow: none !important;
+	top: auto !important;
+	right: auto !important;
+}
+
+#transcription-toc .title {
+	font-weight: bold;
+	margin-bottom: 5px;
+}
+
+#transcription-toc ul {
+	margin: 0;
+	padding: 0;
+}
+
+#transcription-toc li {
+	list-style: disc inside;
+}
+
+#transcription-toc .toclevel2 {
+	padding-left: 10px;
+}
+
+/* Prevent cite_as from overlapping viewer */
+.field_group.cite_as {
+	position: static !important;
+	margin-top: 20px;
+}
+
+/* Responsive: stack on smaller screens */
+@media (max-width: 1200px) {
+	.transcription-viewer-container {
+		flex-direction: column;
+	}
+	
+	.viewer-panel {
+		width: 100%;
+		position: static;
+		max-height: none;
+	}
+
+	.transcription-content #transcription-data {
+		max-height: none;
+	}
+}
+
+/* Layout mode styles */
+.layout-toggle-group {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 10px;
+	justify-content: center;
+}
+
+.layout-btn {
+	padding: 8px 16px;
+	background: #fff;
+	border: 1px solid #ced4da;
+	border-radius: 4px;
+	font-size: 14px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	color: #212529;
+}
+
+.layout-btn:hover {
+	background: #e9ecef;
+	border-color: #adb5bd;
+}
+
+.layout-btn.active {
+	background: #ff8c00;
+	color: #fff;
+	border-color: #ff8c00;
+}
+
+.layout-btn.active:hover {
+	background: #e67e00;
+	border-color: #cc7000;
+}
+
+/* Text-only mode */
+body[data-layout-mode="text-only"] .viewer-panel {
+	display: none;
+}
+
+body[data-layout-mode="text-only"] .transcription-content {
+	max-width: 100%;
+	display: block;
+}
+
+body[data-layout-mode="text-only"] .transcription-viewer-container {
+	display: block;
+}
+
+body[data-layout-mode="text-only"] #transcription-view-controls {
+	margin-bottom: 12px;
+}
+
+body[data-layout-mode="text-only"] .transcription-content-wrapper {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+	gap: 0;
+	position: relative;
+}
+
+body[data-layout-mode="text-only"] #transcription-data {
+	flex: 1;
+	min-width: 0;
+	max-width: calc(100% - 340px);
+	max-height: none;
+	overflow-y: visible;
+}
+
+/* Side notes panel in text-only mode */
+body[data-layout-mode="text-only"] .side-notes-panel {
+	display: block !important;
+	width: 300px;
+	flex-shrink: 0;
+	padding-left: 20px;
+	margin-left: 20px;
+	border-left: 1px solid #ccc;
+	position: relative;
+}
+
+body[data-layout-mode="text-only"] .side-note {
+	position: absolute;
+	left: 20px;
+	right: 0;
+	margin-bottom: 0;
+}
+
+body[data-layout-mode="text-only"] .transcription-doc-notes,
+body[data-layout-mode="text-only"] .transcription-ed-notes {
+	display: none !important;
+}
+
+/* Bottom notes in split-view and viewer-only modes */
+body[data-layout-mode="split-view"] .side-notes-panel,
+body[data-layout-mode="viewer-only"] .side-notes-panel {
+	display: none !important;
+}
+
+/* Viewer-only mode */
+body[data-layout-mode="viewer-only"] .transcription-content {
+	display: none;
+}
+
+body[data-layout-mode="viewer-only"] .transcription-viewer-container {
+	justify-content: center;
+}
+
+body[data-layout-mode="viewer-only"] .viewer-panel {
+	position: static;
+	width: 800px;
+	max-width: 90%;
+}
+
+body[data-layout-mode="viewer-only"] #openseadragon-viewer {
+	height: 800px;
+}
+
+/* Side notes styling */
+.side-notes-panel {
+	display: none;
+	font-size: 0.9em;
+}
+
+.side-notes-panel .side-note {
+	margin-bottom: 15px;
+	padding: 8px;
+	background: #f9f9f9;
+	border-left: 3px solid #ccc;
+	font-size: 0.95em;
+	line-height: 1.4;
+}
+
+body[data-layout-mode="text-only"] .side-notes-panel .side-note {
+	margin-bottom: 0;
+}
+
+.side-notes-panel .side-note.note-editorial {
+	border-left-color: #007bff;
+}
+
+.side-notes-panel .side-note.note-document {
+	border-left-color: #28a745;
+}
+
+.side-notes-panel .side-note .note-number {
+	font-weight: bold;
+	margin-right: 5px;
+}
+
+.side-notes-panel .note-back-link {
+	font-size: 0.85em;
+	margin-left: 5px;
+}
+
+.side-notes-panel .notes-title {
+	font-weight: bold;
+	margin-bottom: 10px;
+	padding-bottom: 5px;
+	border-bottom: 2px solid #333;
+}
+
+/* Highlight note references in text */
+a.note-ref-link {
+	text-decoration: none;
+}
+
+a.note-ref-link:hover {
+	background-color: #ffffcc;
+}
