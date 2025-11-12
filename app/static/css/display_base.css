@@ -129,21 +129,27 @@ ul.relations-reverse { font-style: italic; margin-top: 5px; }
 .content .transcription-data { width: auto !important; max-width: none; }
 #transcription-view-controls { font-size: 11px; margin-bottom: 10px; }
 #transcription-toc {
-    position: fixed;
-    top: 250px;
-    right: 50px;
-    background: #c4c5b4;
-    width: 200px;
-    padding: 15px;
+    position: static !important;
+    float: none !important;
+    width: 100% !important;
+    background: #f5f5f0;
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #c4c5b4;
+    max-height: 12.5%;
+    overflow-y: auto;
     font-size: 11px;
-    max-height: calc(100% - 250px - 150px);
-    overflow-y: scroll;
-    z-index: 10;
-    box-shadow: 0 3px 10px grey;
+    box-shadow: none !important;
+    top: auto !important;
+    right: auto !important;
 }
 #transcription-toc .title {
     font-weight: bold;
     margin-bottom: 5px;
+}
+#transcription-toc ul {
+    margin: 0;
+    padding: 0;
 }
 #transcription-toc li {
     list-style: disc inside;
