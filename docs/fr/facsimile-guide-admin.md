@@ -106,7 +106,6 @@ https://gallica.bnf.fr/iiif/ark:/12148/btv1b8449691v/manifest.json
 **Contrôles disponibles dans la prévisualisation :**
 - **Zoom +/-** : Agrandir/réduire l'image
 - **Home** : Réinitialiser la vue
-- **Plein écran** : Agrandir le visualiseur
 - **Navigateur miniature** : En haut à droite, aperçu de la page complète
 
 ### Validation échouée : Erreur 404

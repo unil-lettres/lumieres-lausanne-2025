@@ -98,18 +98,15 @@ Le visualiseur OpenSeadragon offre plusieurs moyens de navigation :
 
 - **Molette de la souris** : Faire défiler pour zoomer/dézoomer
 - **Boutons + et -** : Cliquer pour zoomer/dézoomer progressivement
-- **Pincement sur écran tactile** : Pincer pour zoomer/dézoomer
 - **Double-clic** : Zoomer sur un point précis
 
 #### Déplacement
 
 - **Clic et glisser** : Maintenir le bouton de la souris et déplacer pour parcourir l'image
-- **Tactile** : Glisser avec un doigt pour déplacer l'image
 
 #### Autres contrôles
 
 - **🏠 Bouton Home** : Réinitialiser le zoom et la position par défaut
-- **⛶ Plein écran** : Agrandir le visualiseur à tout l'écran du navigateur
 - **Miniature de navigation** : En haut à droite, montre la zone actuellement visible
 
 ### Fonctionnalités avancées
@@ -120,13 +117,6 @@ Le visualiseur charge progressivement des images de plus haute résolution au fu
 - Zoomer jusqu'à voir les détails les plus fins du document
 - Observer les filigranes du papier
 - Examiner les détails de l'encre et de l'écriture
-
-#### Mode plein écran
-
-1. Cliquez sur le bouton **⛶** (plein écran)
-2. Le visualiseur occupe tout l'écran du navigateur
-3. Tous les contrôles restent disponibles
-4. Appuyez sur **Échap** ou cliquez à nouveau sur **⛶** pour quitter
 
 ---
 
@@ -179,13 +169,6 @@ La petite miniature en haut à droite du visualiseur :
 2. Vérifiez que JavaScript est activé dans votre navigateur
 3. Essayez un autre navigateur (Chrome, Firefox, Safari, Edge)
 
-### Problèmes d'affichage sur mobile
-
-**Solutions :**
-- Sur petit écran, utilisez le mode texte seul ou facsimilé seul
-- En mode paysage, vous aurez plus d'espace pour le mode partagé
-- Utilisez le pincement pour zoomer sur mobile
-
 ---
 
 ## Conseils d'utilisation
@@ -206,7 +189,6 @@ La petite miniature en haut à droite du visualiseur :
 
 - Le **mode facsimilé seul** offre la meilleure vue pour l'analyse visuelle
 - Zoomez au maximum pour examiner les détails paléographiques
-- Utilisez le plein écran pour une immersion totale dans le document
 
 ---
 
@@ -218,7 +200,6 @@ Le visualiseur fonctionne sur :
 - ✅ **Firefox** (version récente)
 - ✅ **Safari** (version récente)
 - ✅ **Edge** (version récente)
-- ✅ **Navigateurs mobiles** : Safari iOS, Chrome Mobile
 
 Les anciens navigateurs (Internet Explorer 11 et antérieurs) ne sont pas supportés.
 

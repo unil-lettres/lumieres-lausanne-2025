@@ -106,7 +106,6 @@ https://gallica.bnf.fr/iiif/ark:/12148/btv1b8449691v/manifest.json
 **Controls available in preview:**
 - **Zoom +/-**: Zoom in/out
 - **Home**: Reset view
-- **Fullscreen**: Expand viewer
 - **Navigator thumbnail**: Top-right corner, full page preview
 
 ### Failed Validation: 404 Error

@@ -98,18 +98,15 @@ The OpenSeadragon viewer offers multiple navigation methods:
 
 - **Mouse wheel**: Scroll to zoom in/out
 - **+ and - buttons**: Click to zoom in/out progressively
-- **Pinch on touch screen**: Pinch to zoom in/out
 - **Double-click**: Zoom in on a specific point
 
 #### Panning
 
 - **Click and drag**: Hold mouse button and move to pan the image
-- **Touch**: Swipe with one finger to move the image
 
 #### Other Controls
 
 - **🏠 Home button**: Reset zoom and position to default
-- **⛶ Fullscreen**: Expand viewer to fill entire browser window
 - **Navigation thumbnail**: Top-right corner, shows currently visible area
 
 ### Advanced Features
@@ -120,13 +117,6 @@ The viewer progressively loads higher resolution images as you zoom in. You can:
 - Zoom in to see the finest document details
 - Observe paper watermarks
 - Examine ink and handwriting details
-
-#### Fullscreen Mode
-
-1. Click the **⛶** (fullscreen) button
-2. The viewer fills the entire browser screen
-3. All controls remain available
-4. Press **Esc** or click **⛶** again to exit
 
 ---
 
@@ -179,13 +169,6 @@ The small thumbnail in the top-right corner of the viewer:
 2. Verify JavaScript is enabled in your browser
 3. Try another browser (Chrome, Firefox, Safari, Edge)
 
-### Display Issues on Mobile
-
-**Solutions:**
-- On small screens, use text-only or facsimile-only mode
-- In landscape orientation, you'll have more space for split mode
-- Use pinch-to-zoom on mobile
-
 ---
 
 ## Usage Tips
@@ -206,7 +189,6 @@ The small thumbnail in the top-right corner of the viewer:
 
 - **Facsimile-only mode** offers the best view for visual analysis
 - Zoom to maximum to examine paleographic details
-- Use fullscreen for total immersion in the document
 
 ---
 
@@ -218,7 +200,6 @@ The viewer works on:
 - ✅ **Firefox** (recent version)
 - ✅ **Safari** (recent version)
 - ✅ **Edge** (recent version)
-- ✅ **Mobile browsers**: Safari iOS, Chrome Mobile
 
 Older browsers (Internet Explorer 11 and earlier) are not supported.
 

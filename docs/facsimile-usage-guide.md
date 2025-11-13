@@ -132,7 +132,6 @@ In split view mode:
 - Navigation controls include:
   - Zoom in/out buttons
   - Home button (reset zoom)
-  - Fullscreen toggle
   - Navigator thumbnail (top-right corner)
 
 ### Text-Only Mode (with Facsimile Available)
@@ -159,10 +158,9 @@ In facsimile-only mode:
 
 The OpenSeadragon viewer provides:
 
-- **Zoom controls**: Mouse wheel, pinch-to-zoom on touch devices, or +/- buttons
+- **Zoom controls**: Mouse wheel or +/- buttons
 - **Pan**: Click and drag to move around the image
 - **Navigator**: Mini-thumbnail in the top-right showing the current viewport
-- **Fullscreen**: Expand the viewer to fill the entire browser window
 - **Home button**: Reset zoom and pan to the default view
 - **Deep zoom**: Progressive loading of higher resolution tiles as you zoom in
 
@@ -255,7 +253,6 @@ The facsimile viewer is tested and supported on:
 - **Firefox** (latest)
 - **Safari** (latest)
 - **Edge** (latest)
-- **Mobile browsers**: iOS Safari, Chrome Mobile
 
 Older browsers (IE11 and below) are not supported.
 
@@ -299,10 +296,10 @@ The viewer supports:
 - **2025-01**: Initial IIIF facsimile viewer implementation
   - Added `facsimile_iiif_url` field to Transcription model
   - Implemented OpenSeadragon integration
-  - Created layout mode toggles (text/split/viewer)
+  - Added layout mode toggles (text/split/viewer)
   - Added page synchronization between text and images
   - Implemented form validation for IIIF manifest URLs
-  - Added responsive layout for mobile devices
+  - Added responsive layout
   - Created comprehensive user documentation
 
 ---

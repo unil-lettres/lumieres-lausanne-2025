@@ -18,7 +18,7 @@ This document describes the integration of OpenSeadragon viewer for displaying I
 - **OpenSeadragon library**: Added script tag to load `/static/js/lib/openseadragon/openseadragon.min.js`
 - **Viewer initialization**: Configured OpenSeadragon with:
   - IIIF image service support
-  - Navigation controls (zoom in/out, home, fullscreen)
+  - Navigation controls (zoom in/out, home)
   - Mini-navigator in bottom-right corner
   - Custom button IDs for control integration
 
@@ -26,7 +26,7 @@ This document describes the integration of OpenSeadragon viewer for displaying I
 - **Container div**: `.transcription-viewer-container` wraps both columns
 - **Transcription column**: `.transcription-content` contains all existing content
 - **Viewer panel**: `.viewer-panel` with controls and viewer div
-- **Control buttons**: Zoom +/-, Reset, Fullscreen buttons in French
+- **Control buttons**: Zoom +/-, Reset buttons in French
 
 ### 2. Current Configuration
 
@@ -140,7 +140,6 @@ OpenSeadragon supports:
 - Chrome/Edge (latest)
 - Firefox (latest)
 - Safari (latest)
-- Mobile browsers (iOS Safari, Chrome Mobile)
 
 ## Features
 
@@ -148,7 +147,6 @@ OpenSeadragon supports:
 - ✅ Side-by-side view of transcription and facsimile
 - ✅ Sticky viewer panel (stays visible while scrolling)
 - ✅ Zoom controls
-- ✅ Fullscreen mode
 - ✅ Mini-navigator
 - ✅ Responsive layout
 
@@ -157,6 +155,7 @@ OpenSeadragon supports:
 - Multiple image support (for multi-page documents)
 - Synchronized scrolling between transcription and images
 - Image rotation controls
+- Fullscreen mode
 - Download/print options
 
 ## Documentation References
