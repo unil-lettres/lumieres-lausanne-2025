@@ -56,27 +56,39 @@
 		/* Facsimile viewer styles */
 		.transcription-edit-container {
 			display: flex;
+			flex-direction: column; /* stack viewer above editor */
 			gap: 20px;
-			align-items: flex-start;
+			align-items: stretch;
 		}
 		
 		.transcription-edit-content {
-			flex: 1;
+			flex: 1 1 auto;
 		}
 		
 		.facsimile-viewer-panel {
-			flex-shrink: 0;
-			width: 450px;
-			position: sticky;
-			top: 20px;
+			flex: 0 0 auto;
+			width: 100%;
+			position: relative; /* no sticky when stacked */
+			top: auto;
 		}
 		
 		#facsimile-viewer {
-			width: 100%;
-			height: 500px;
+			/* wrapped below in .facsimile-viewer-box to align with editor */
+			width: 878px; /* follow wrapper width */
+			height: 570px; /* match textarea height */
 			background-color: #000;
 			border: 1px solid #ccc;
+			margin: 0; /* no offset */
 		}
+		:root { --facsimile-width: 850px; }
+		.facsimile-viewer-box { width: var(--facsimile-width); margin:0; }
+		.facsimile-viewer-box .viewer-control-bar { width:854px; margin-bottom:8px; }
+		.transcription-title { margin:0 0 8px 0; }
+		.edit-form.transcription { margin-top:0; }
+
+		/* Viewer visibility now controlled on inner wrapper, not the whole panel */
+		#facsimile-viewer-wrapper { display: none; }
+		#facsimile-viewer-wrapper.visible { display: block; }
 		
 		/* Hide viewer initially */
 		.facsimile-viewer-panel {
@@ -141,7 +153,7 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 </script>
 {% endif %}
 
-<h2>{{ transcription.manuscript_b.title }}</h2>
+<h2 class="transcription-title">{{ transcription.manuscript_b.title }}</h2>
 
 <div class="transcription-edit-container">
 	<div class="transcription-edit-content">
@@ -164,6 +176,15 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 			</div>
 		</div>
 		<div class="fixclear"></div>
+
+		<!-- Facsimile Viewer moved below URL field and above transcription text -->
+		<div class="facsimile-viewer-panel" id="facsimile-viewer-panel">
+			<div class="facsimile-viewer-box">
+				{% include "fiches/includes/viewer_controls.html" %}
+				<div id="facsimile-viewer"></div>
+			</div>
+		</div>
+
 		<div class="fieldWrapper text">
 		    <div>{{ transForm.text.errors }}
 		    {#{{ transForm.text.label_tag }}#}</div>
@@ -359,12 +380,7 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 	</form>
 	</div>
 	
-	<!-- Right column: Facsimile Viewer -->
-	<div class="facsimile-viewer-panel" id="facsimile-viewer-panel">
-		<h3 style="margin: 0 0 10px 0; font-size: 14px; font-weight: bold;">Facsimilé</h3>
-		{% include "fiches/includes/viewer_controls.html" %}
-		<div id="facsimile-viewer"></div>
-	</div>
+    
 </div>
 <script type="text/javascript">
 // Synchronise CKEditor avec le textarea avant validation
@@ -392,61 +408,72 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 			}
 		});
 
-		// Handle facsimile URL validation and toggle load/unload
-		var facsimileViewer = null;
-		$('#validate-facsimile-url').click(function() {
-			var $btn = $(this);
-			var loaded = $btn.data('loaded') === true;
-			// If already loaded, act as "Supprimer" (unload)
-			if (loaded) {
-				unloadFacsimileViewer();
-				$btn.data('loaded', false).text('Charger');
-				$('#id_facsimile_iiif_url').prop('disabled', false);
-				return;
-			}
-			// Otherwise, try to validate and load
-			var url = $('#id_facsimile_iiif_url').val().trim();
-			if (!url) {
-				alert('Veuillez d\'abord saisir une URL de manifeste IIIF.');
-				return;
-			}
-			// Show loading
-			$btn.prop('disabled', true).text('Chargement...');
-			
-			$.ajax({
-				url: url,
-				dataType: 'json',
-				timeout: 10000,
-				success: function(data) {
-					// valid manifest / info.json
-					loadFacsimileViewer(url);
-					$btn.data('loaded', true).text('Supprimer');
-					// disable input to prevent edits and add hidden field to submit value
-					$('#id_facsimile_iiif_url').prop('disabled', true);
-					$('<input type="hidden" name="facsimile_iiif_url" value="' + url + '">').insertAfter('#id_facsimile_iiif_url');
-				},
-				error: function(xhr, status, error) {
-					var msg = '✗ URL de manifeste IIIF invalide.\n';
-					if (status === 'timeout') {
-						msg += 'Délai d\'attente dépassé.';
-					} else if (xhr.status === 0) {
-						msg += 'Erreur réseau - URL non accessible.';
-					} else {
-						msg += 'HTTP ' + xhr.status + ': ' + error;
-					}
-					alert(msg);
-				},
-				complete: function() {
-					$btn.prop('disabled', false);
-					// if not marked loaded, ensure text is Charger
-					if ($btn.data('loaded') !== true) {
-						$btn.text('Charger');
-					}
-				}
-			});
-		});
+	// Handle facsimile URL validation and toggle load/unload
+	var facsimileViewer = null;
+	
+	// Auto-load viewer if URL is already present in database
+	(function autoLoadViewer() {
+		var existingUrl = $('#id_facsimile_iiif_url').val().trim();
+		if (existingUrl) {
+			// Load viewer silently without validation
+			loadFacsimileViewer(existingUrl);
+			$('#validate-facsimile-url').data('loaded', true).text('Supprimer');
+			$('#id_facsimile_iiif_url').prop('disabled', true);
+			$('<input type="hidden" name="facsimile_iiif_url" value="' + existingUrl + '">').insertAfter('#id_facsimile_iiif_url');
+		}
+	})();
+	
+	$('#validate-facsimile-url').click(function() {
+		var $btn = $(this);
+		var loaded = $btn.data('loaded') === true;
+		// If already loaded, act as "Supprimer" (unload)
+		if (loaded) {
+			unloadFacsimileViewer();
+			$btn.data('loaded', false).text('Charger');
+			$('#id_facsimile_iiif_url').prop('disabled', false);
+			return;
+		}
+		// Otherwise, try to validate and load
+		var url = $('#id_facsimile_iiif_url').val().trim();
+		if (!url) {
+			alert('Veuillez d\'abord saisir une URL de manifeste IIIF.');
+			return;
+		}
+		// Show loading
+		$btn.prop('disabled', true).text('Chargement...');
 		
-		// Function to unload facsimile viewer and clear state
+		$.ajax({
+			url: url,
+			dataType: 'json',
+			timeout: 10000,
+			success: function(data) {
+				// valid manifest / info.json
+				loadFacsimileViewer(url);
+				$btn.data('loaded', true).text('Supprimer');
+				// disable input to prevent edits and add hidden field to submit value
+				$('#id_facsimile_iiif_url').prop('disabled', true);
+				$('<input type="hidden" name="facsimile_iiif_url" value="' + url + '">').insertAfter('#id_facsimile_iiif_url');
+			},
+			error: function(xhr, status, error) {
+				var msg = '✗ URL de manifeste IIIF invalide.\n';
+				if (status === 'timeout') {
+					msg += 'Délai d\'attente dépassé.';
+				} else if (xhr.status === 0) {
+					msg += 'Erreur réseau - URL non accessible.';
+				} else {
+					msg += 'HTTP ' + xhr.status + ': ' + error;
+				}
+				alert(msg);
+			},
+			complete: function() {
+				$btn.prop('disabled', false);
+				// if not marked loaded, ensure text is Charger
+				if ($btn.data('loaded') !== true) {
+					$btn.text('Charger');
+				}
+			}
+		});
+	});		// Function to unload facsimile viewer and clear state
 		function unloadFacsimileViewer() {
 			if (facsimileViewer && typeof facsimileViewer.destroy === 'function') {
 				try {
