@@ -21,9 +21,19 @@ This copyright notice MUST APPEAR in all copies of the file.
 
 # Facsimile Viewer User Guide
 
+> **Navigation**: [Home](../index.md) > [User Guides](../index.md#user-guides) > User Guide (EN)
+
 ## Overview
 
 This guide explains how to use the IIIF facsimile viewer in Lumières.Lausanne to view transcriptions alongside their original source images.
+
+**Related Documentation:**
+
+- **[Administrator Guide (EN)](facsimile-admin-guide.md)** - Complete guide for administrators
+- **[Guide utilisateur (FR)](../fr/facsimile-guide-utilisateur.md)** - French user guide
+- **[Facsimile Usage Guide](../facsimile-usage-guide.md)** - Complete usage guide with all details
+
+---
 
 ## Table of Contents
 

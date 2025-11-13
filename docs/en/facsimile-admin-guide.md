@@ -21,9 +21,20 @@ This copyright notice MUST APPEAR in all copies of the file.
 
 # Administrator Guide: IIIF Facsimile Management
 
+> **Navigation**: [Home](../index.md) > [Administrator Guides](../index.md#administrator-guides) > Admin Guide (EN)
+
 ## Overview
 
 This guide is intended for administrators and editors who manage transcriptions and their associated facsimiles in the Lumières.Lausanne administration interface.
+
+**Related Documentation:**
+
+- **[User Guide (EN)](facsimile-user-guide.md)** - End-user documentation
+- **[Guide administrateur (FR)](../fr/facsimile-guide-admin.md)** - French admin guide
+- **[Developer: IIIF Migration](../iiif-facsimile-migration.md)** - Technical implementation details
+- **[Developer: OpenSeadragon Integration](../openseadragon-integration.md)** - Integration architecture
+
+---
 
 ## Table of Contents
 

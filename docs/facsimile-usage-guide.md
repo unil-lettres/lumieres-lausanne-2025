@@ -21,9 +21,20 @@ This copyright notice MUST APPEAR in all copies of the file.
 
 # Facsimile Viewer Usage Guide
 
+> **Navigation**: [Home](index.md) > [User Guides](index.md#user-guides) > Facsimile Viewer Usage
+
 ## Overview
 
 This guide explains how to use the IIIF facsimile viewer functionality in Lumières.Lausanne, both for editing transcriptions in the admin interface and for displaying them to end users.
+
+**Related Documentation:**
+
+- **[Administrator Guide (EN)](en/facsimile-admin-guide.md)** - Detailed admin interface guide
+- **[Guide administrateur (FR)](fr/facsimile-guide-admin.md)** - French admin guide
+- **[Developer: OpenSeadragon Integration](openseadragon-integration.md)** - Technical details
+- **[Developer: IIIF Migration](iiif-facsimile-migration.md)** - Implementation details
+
+---
 
 ## Table of Contents
 
@@ -283,9 +294,12 @@ The viewer supports:
 
 ## Related Documentation
 
-- [IIIF Facsimile Viewer Migration](iiif-facsimile-migration.md) - Technical migration details
-- [OpenSeadragon Integration](openseadragon-integration.md) - Integration architecture and next steps
-- [IIIF Presentation API Specification](https://iiif.io/api/presentation/) - External reference
+- **[Administrator Guide (EN)](en/facsimile-admin-guide.md)** - Complete admin interface guide with validation and debugging
+- **[Guide administrateur (FR)](fr/facsimile-guide-admin.md)** - French version of the admin guide
+- **[OpenSeadragon Integration](openseadragon-integration.md)** - Technical integration architecture
+- **[IIIF Facsimile Migration](iiif-facsimile-migration.md)** - Database migration and implementation details
+- **[IIIF Presentation API Specification](https://iiif.io/api/presentation/)** - External IIIF standard reference
+- **[OpenSeadragon Documentation](https://openseadragon.github.io/)** - OpenSeadragon library docs
 
 ---
 

@@ -137,6 +137,36 @@ docker compose exec -T app python manage.py shell
 
 ---
 
+## Documentation
+
+Comprehensive documentation is available in the `docs/` directory and built with MkDocs.
+
+### View Documentation
+
+```bash
+# Serve documentation locally
+mkdocs serve
+# Open http://127.0.0.1:8000
+```
+
+### Documentation Structure
+
+- **[Home Page](docs/index.md)** - Project overview and quick start
+- **User Guides** - For end users browsing the platform
+  - [Facsimile Viewer Usage Guide](docs/facsimile-usage-guide.md)
+  - [User Guide (EN)](docs/en/facsimile-user-guide.md)
+  - [Guide utilisateur (FR)](docs/fr/facsimile-guide-utilisateur.md)
+- **Administrator Guides** - For content editors
+  - [Admin Guide (EN)](docs/en/facsimile-admin-guide.md)
+  - [Guide administrateur (FR)](docs/fr/facsimile-guide-admin.md)
+- **Developer Documentation** - Technical details
+  - [OpenSeadragon Integration](docs/openseadragon-integration.md)
+  - [IIIF Facsimile Migration](docs/iiif-facsimile-migration.md)
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for complete documentation structure.
+
+---
+
 ## VS Code (optional)
 
 - Open the folder, then: **⌘⇧P / CTRL+SHIFT+P → “Dev Containers: Reopen in Container”**  

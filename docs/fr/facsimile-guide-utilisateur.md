@@ -21,9 +21,19 @@ This copyright notice MUST APPEAR in all copies of the file.
 
 # Guide d'utilisation du visualiseur de facsimilés
 
+> **Navigation**: [Accueil](../index.md) > [Guides utilisateur](../index.md#user-guides) > Guide utilisateur (FR)
+
 ## Vue d'ensemble
 
 Ce guide explique comment utiliser le visualiseur de facsimilés IIIF dans Lumières.Lausanne pour consulter les transcriptions avec leurs images originales.
+
+**Documentation connexe :**
+
+- **[Guide administrateur (FR)](facsimile-guide-admin.md)** - Guide complet pour les administrateurs
+- **[User Guide (EN)](../en/facsimile-user-guide.md)** - English user guide
+- **[Facsimile Usage Guide](../facsimile-usage-guide.md)** - Complete English usage guide
+
+---
 
 ## Table des matières
 
