@@ -9,11 +9,11 @@
 <script type="text/javascript">
 function toggleBR() {
 	if ( $('#lb-toggle > span').hasClass('show') ) {
-        $('div.transcription-data br').not($('div.transcription-data .verse br')).css('display','inline');
+        $('div.transcription-data br').not($('div.transcription-data .verse br')).removeClass('hidden-br');
         $("div.transcription-data .brsep").show();
         $('#lb-toggle > span').removeClass('show').text('Cacher les retours à la ligne');
 	} else {
-        $('div.transcription-data br').not($('div.transcription-data .verse br')).css('display','none');
+        $('div.transcription-data br').not($('div.transcription-data .verse br')).addClass('hidden-br');
         $("div.transcription-data .brsep").hide();
         $('#lb-toggle > span').addClass('show').text('Montrer les retours à la ligne');
 	}

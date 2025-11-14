@@ -13,6 +13,24 @@
 .cked-content, .transcription-data {font-size:11pt !important; line-height:1.5;}
 span[style], font[face] {font-size:inherit !important; line-height:inherit !important;}
 
+/* Increase line spacing for visible line breaks (br elements) */
+.transcription-data br {
+	display: block;
+	content: "";
+	margin-bottom: 0.75em;
+}
+
+/* Exception: verse breaks don't get extra spacing */
+.transcription-data .verse br {
+	margin-bottom: 0;
+}
+
+/* Hide line breaks and remove extra spacing when hidden-br class is applied */
+.transcription-data br.hidden-br {
+	display: none;
+	margin-bottom: 0;
+}
+
 /*.content .transcription-data {
 	border: 1px solid #8C8C8C;
 	margin: 0 10px;
