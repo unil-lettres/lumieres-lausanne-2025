@@ -31,29 +31,29 @@
 .ui-button,
 .ui-button.ui-widget,
 .ui-button.ui-state-default {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 6px 10px;
-    height: auto;
-    min-height: 32px;
-    background: #fff;
-    border: 1px solid #ced4da;
-    color: #212529;
-    border-radius: 4px;
-    font-size: 14px;
-    line-height: 1;
+    /* Match tb_but_text style from main toolbar */
+    display: inline-block;
+    font-size: 84.651%;
+    line-height: 17px;
+    padding: 4px 8px;
+    margin: 4px 3px 0;
+    background-color: #DEDEDE;
+    border: 1px solid #98958E;
+    border-radius: 2px;
+    color: #6C6C6C;
     cursor: pointer;
-    transition: all 0.15s ease;
     text-decoration: none;
+    transition: all 0.2s ease;
+    height: auto;
+    min-height: auto;
 }
 
 .unified-text-btn:hover,
 .ui-button:hover,
 .ui-button.ui-state-default:hover {
-    background: #e9ecef;
-    border-color: #adb5bd;
+    color: #222;
+    background-color: #F9F8F4;
+    border-color: #776C4E;
 }
 
 .unified-text-btn:active,
@@ -72,17 +72,18 @@
 }
 
 .viewer-control-bar {
+    /* Match toolbar appearance */
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    padding: 8px 12px;
-    margin-bottom: 12px; /* reduced gap between controls and viewer */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: #DFDFDF;
+    border: 1px solid #8C8C8C;
+    border-radius: 2px;
+    padding: 6px 8px;
+    margin-bottom: 12px;
     position: relative;
     z-index: 1000;
+    height: 28px;
 }
 
 .control-group {
@@ -92,22 +93,24 @@
 }
 
 .control-btn {
+    /* Match tb_but style from main toolbar */
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    background: #fff;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
+    width: 28px;
+    height: 25px;
+    margin: 0;
+    background-color: #DEDEDE;
+    border: 1px solid #98958E;
+    border-radius: 2px;
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
 }
 
 .control-btn:hover {
-    background: #e9ecef;
-    border-color: #adb5bd;
+    background-color: #F9F8F4;
+    border-color: #776C4E;
 }
 
 .control-btn:active {
@@ -121,8 +124,8 @@
 }
 
 .control-btn:disabled:hover {
-    background: #fff;
-    border-color: #ced4da;
+    background-color: #DEDEDE;
+    border-color: #98958E;
 }
 
 .page-indicator {
@@ -293,28 +296,47 @@
     backdrop-filter: blur(5px);
 }
 
-/* Transcription controls: compact layout for the top-of-text buttons
- * - keep them on a single line on wide screens
- * - reduce font size and padding to match the viewer control visual weight
- */
+/* Transcription controls: properly sized and aligned */
 #transcription-view-controls p {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     align-items: center;
     margin: 0 0 12px 0;
-    flex-wrap: nowrap; /* keep in one line if possible */
+    flex-wrap: nowrap;
 }
 
 #transcription-view-controls .ui-button,
 #transcription-view-controls .ui-button.ui-widget {
-    padding: 4px 8px;
-    min-height: 28px;
-    font-size: 13px;
-    border-radius: 4px;
+    /* Match tb_but_text style but with better proportions */
+    padding: 6px 10px !important;
+    margin: 0 !important;
+    min-height: 24px !important;
+    height: auto !important;
+    font-size: 11px !important;
+    line-height: 14px !important;
+    background-color: #DEDEDE !important;
+    border: 1px solid #98958E !important;
+    border-radius: 2px !important;
+    color: #6C6C6C !important;
+    vertical-align: middle !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
 }
 
+#transcription-view-controls .ui-button:hover,
+#transcription-view-controls .ui-button.ui-widget:hover {
+    color: #222 !important;
+    background-color: #F9F8F4 !important;
+    border-color: #776C4E !important;
+}
+
+#transcription-view-controls .ui-button .ui-button-text,
 #transcription-view-controls .ui-button .ui-button-text span {
-    font-size: 13px;
+    font-size: 11px !important;
+    line-height: 14px !important;
+    padding: 0 !important;
+    display: inline !important;
 }
 
 #transcription-view-controls .ui-button[aria-disabled="true"],

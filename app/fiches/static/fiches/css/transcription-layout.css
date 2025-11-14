@@ -122,39 +122,45 @@
 	}
 }
 
-/* Layout mode styles */
+/* Layout mode styles - match toolbar button style */
 .layout-toggle-group {
 	display: flex;
-	gap: 8px;
+	gap: 3px;
 	margin-bottom: 10px;
 	justify-content: center;
 }
 
 .layout-btn {
-	padding: 8px 16px;
-	background: #fff;
-	border: 1px solid #ced4da;
-	border-radius: 4px;
-	font-size: 14px;
+	/* Match tb_but_text style from main toolbar */
+	font-size: 84.651%;
+	line-height: 17px;
+	padding: 4px 8px;
+	margin: 4px 3px 0;
+	background-color: #DEDEDE;
+	border: 1px solid #98958E;
+	border-radius: 2px;
+	color: #6C6C6C;
 	cursor: pointer;
+	text-decoration: none;
+	display: inline-block;
 	transition: all 0.2s ease;
-	color: #212529;
 }
 
 .layout-btn:hover {
-	background: #e9ecef;
-	border-color: #adb5bd;
+	color: #222;
+	background-color: #F9F8F4;
+	border-color: #776C4E;
 }
 
 .layout-btn.active {
-	background: #ff8c00;
+	background-color: #776C4E;
 	color: #fff;
-	border-color: #ff8c00;
+	border-color: #776C4E;
 }
 
 .layout-btn.active:hover {
-	background: #e67e00;
-	border-color: #cc7000;
+	background-color: #6A5F42;
+	border-color: #6A5F42;
 }
 
 /* Text-only mode */
