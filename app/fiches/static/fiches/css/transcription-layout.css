@@ -245,6 +245,11 @@ body[data-layout-mode="viewer-only"] #openseadragon-viewer {
 	height: 800px;
 }
 
+/* Hidden line breaks styling */
+.transcription-data br.hidden-br {
+	display: none;
+}
+
 /* Side notes styling */
 .side-notes-panel {
 	display: none;

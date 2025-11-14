@@ -17,6 +17,12 @@ function toggleBR() {
         $("div.transcription-data .brsep").hide();
         $('#lb-toggle > span').addClass('show').text('Montrer les retours à la ligne');
 	}
+	
+	// Recalculate note positions if in text-only mode
+	var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+	if (layoutMode === 'text-only' && $('.side-notes-panel').length > 0) {
+		setTimeout(repositionSideNotes, 150);
+	}
 }
 
 function toggleView() {
@@ -39,6 +45,12 @@ function toggleView() {
         });
         $("div.transcription-data").toggleClass('norm');
     }
+    
+    // Recalculate note positions if in text-only mode
+    var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+    if (layoutMode === 'text-only' && $('.side-notes-panel').length > 0) {
+        setTimeout(repositionSideNotes, 150);
+    }
 }
 
 function toggleTOC() {
@@ -60,6 +72,12 @@ function toggleTOC() {
         });
         trans.prepend(toc);
     }
+    
+    // Recalculate note positions if in text-only mode
+    var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+    if (layoutMode === 'text-only' && $('.side-notes-panel').length > 0) {
+        setTimeout(repositionSideNotes, 150);
+    }
 }
 
 $(function() {
@@ -80,6 +98,14 @@ $(function() {
 		});
 	});
 	layoutObserver.observe(document.body, { attributes: true });
+
+	// Listen for window resize to reposition side notes
+	$(window).on('resize', function() {
+		var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+		if (layoutMode === 'text-only' && $('.side-notes-panel').length > 0) {
+			setTimeout(repositionSideNotes, 150);
+		}
+	});
 
 	$("div.transcription-data").html(function (i, oldHtml) {
 		return oldHtml.replace(/=\s*(<br[^>]*>)\s*/g,'<span class="brsep">=</span>$1');
@@ -142,6 +168,72 @@ function createSideNotes() {
 	setTimeout(function() {
 		positionSideNotes(sidePanel, trans, hasDocNotes, hasEdNotes);
 	}, 200);
+}
+
+// Function to reposition existing side notes
+function repositionSideNotes() {
+	var sidePanel = $('.side-notes-panel');
+	if (sidePanel.length === 0) return;
+	
+	var sidePanelTop = sidePanel.offset().top;
+	
+	// Reposition document notes
+	$('.side-note.note-document', sidePanel).each(function(noteIndex) {
+		var noteDiv = $(this);
+		var citeId = 'citedocnote-side-' + noteIndex;
+		var marker = $('a[name="' + citeId + '"]');
+		
+		if (marker.length > 0) {
+			var markerOffset = marker.offset();
+			if (markerOffset) {
+				var relativeTop = markerOffset.top - sidePanelTop;
+				noteDiv.css('top', Math.max(0, relativeTop) + 'px');
+			}
+		}
+	});
+	
+	// Reposition editorial notes
+	$('.side-note.note-editorial', sidePanel).each(function(noteIndex) {
+		var noteDiv = $(this);
+		var citeId = 'citeednote-side-' + noteIndex;
+		var marker = $('a[name="' + citeId + '"]');
+		
+		if (marker.length > 0) {
+			var markerOffset = marker.offset();
+			if (markerOffset) {
+				var relativeTop = markerOffset.top - sidePanelTop;
+				noteDiv.css('top', Math.max(0, relativeTop) + 'px');
+			}
+		}
+	});
+	
+	// Prevent note overlaps and recalculate side panel min-height
+	setTimeout(function() {
+		var notes = $('.side-note', sidePanel).toArray().sort(function(a, b) {
+			return (parseInt($(a).css('top')) || 0) - (parseInt($(b).css('top')) || 0);
+		});
+		
+		var lastBottom = 0;
+		var minGap = 5; // Minimum gap between notes
+		
+		$(notes).each(function() {
+			var $note = $(this);
+			var currentTop = parseInt($note.css('top')) || 0;
+			
+			if (currentTop < lastBottom) {
+				$note.css('top', lastBottom + 'px');
+				currentTop = lastBottom;
+			}
+			
+			lastBottom = currentTop + $note.outerHeight() + minGap;
+		});
+		
+		// Set minimum height based on actual note positions
+		if (notes.length > 0) {
+			var maxHeight = lastBottom;
+			sidePanel.css('min-height', maxHeight + 'px');
+		}
+	}, 50);
 }
 
 function positionSideNotes(sidePanel, trans, hasDocNotes, hasEdNotes) {
@@ -215,15 +307,30 @@ function positionSideNotes(sidePanel, trans, hasDocNotes, hasEdNotes) {
 		});
 	}
 	
-	// Ensure the side panel is tall enough to contain all notes
+	// Prevent note overlaps and ensure proper spacing
 	setTimeout(function() {
-		var maxHeight = 0;
-		$('.side-note', sidePanel).each(function() {
-			var top = parseInt($(this).css('top')) || 0;
-			var noteBottom = top + $(this).outerHeight();
-			if (noteBottom > maxHeight) maxHeight = noteBottom;
+		var notes = $('.side-note', sidePanel).toArray().sort(function(a, b) {
+			return (parseInt($(a).css('top')) || 0) - (parseInt($(b).css('top')) || 0);
 		});
-		if (maxHeight > 0) {
+		
+		var lastBottom = 0;
+		var minGap = 5; // Minimum gap between notes
+		
+		$(notes).each(function() {
+			var $note = $(this);
+			var currentTop = parseInt($note.css('top')) || 0;
+			
+			if (currentTop < lastBottom) {
+				$note.css('top', lastBottom + 'px');
+				currentTop = lastBottom;
+			}
+			
+			lastBottom = currentTop + $note.outerHeight() + minGap;
+		});
+		
+		// Set minimum height based on actual note positions
+		if (notes.length > 0) {
+			var maxHeight = lastBottom;
 			sidePanel.css('min-height', maxHeight + 'px');
 		}
 	}, 300);
