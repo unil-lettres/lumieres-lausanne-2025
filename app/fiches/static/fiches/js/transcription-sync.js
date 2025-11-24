@@ -192,7 +192,9 @@ This copyright notice MUST APPEAR in all copies of the file.
     log('[Page Sync] Initializing page synchronization...');
 
     var lastSyncedPage = (typeof viewer.currentPage === 'function') ? viewer.currentPage() : null;
-    var isProgrammaticSync = false;
+    var isProgrammaticScrollSync = false; // Flag for scroll-initiated sync
+    var isProgrammaticViewerSync = false; // Flag for viewer-initiated sync
+    var isUserScrolling = false;          // Flag for user interaction
 
     // Extract page tags (five formats)
     var transcriptionHTML = transcriptionBox.innerHTML;
@@ -303,24 +305,79 @@ This copyright notice MUST APPEAR in all copies of the file.
     log('[Page Sync] All page tags wrapped and ready for tracking');
 
     // Keep lastSyncedPage in sync with viewer navigation
+    // AND sync transcription scroll position when viewer page changes
     try {
       viewer.addHandler('page', function (ev) {
         if (typeof ev.page === 'number') {
-          lastSyncedPage = ev.page;
-          isProgrammaticSync = false;
-          log('[Page Sync] Viewer page event → now on page', lastSyncedPage);
+          var newPage = ev.page;
+          
+          // Only sync transcription if this is a user-initiated page change
+          // (not a programmatic change from scroll sync)
+          // AND the user is not currently scrolling the transcription manually
+          if (!isProgrammaticScrollSync && !isUserScrolling && newPage !== lastSyncedPage) {
+            log('[Page Sync] Viewer page changed by user → syncing transcription to page', newPage);
+            syncTranscriptionToViewer(newPage);
+          }
+          
+          lastSyncedPage = newPage;
         }
       });
     } catch (e) {
       warn('[Page Sync] Could not bind viewer page handler', e);
     }
 
+    // Handler to scroll transcription to match viewer page
+    function syncTranscriptionToViewer(canvasIndex) {
+      var tags = transcriptionBox.querySelectorAll('.page-tag');
+      var targetTag = null;
+      
+      // Find the page tag that matches this canvas index
+      tags.forEach(function (el) {
+        var tagCanvasIndex = parseInt(el.getAttribute('data-canvas-index'), 10);
+        if (tagCanvasIndex === canvasIndex) {
+          targetTag = el;
+        }
+      });
+      
+      if (targetTag) {
+        var originalPage = parseInt(targetTag.getAttribute('data-original-page'), 10);
+        log('[Page Sync] Found page tag for canvas', canvasIndex, '(transcription page', originalPage + ') - scrolling...');
+        
+        // Set flag to prevent scroll handler from firing during this sync
+        isProgrammaticViewerSync = true;
+        
+        // Scroll the tag into view with some top offset
+        var containerRect = transcriptionBox.getBoundingClientRect();
+        var tagRect = targetTag.getBoundingClientRect();
+        var scrollOffset = tagRect.top - containerRect.top - 50; // 50px offset from top
+        
+        transcriptionBox.scrollBy({
+          top: scrollOffset,
+          behavior: 'smooth'
+        });
+        
+        // Reset flag after animation completes (smooth scroll takes ~500ms)
+        setTimeout(function () { 
+          isProgrammaticViewerSync = false; 
+          log('[Page Sync] ✓ Transcription scrolled to canvas', canvasIndex);
+        }, 600);
+      } else {
+        warn('[Page Sync] No page tag found for canvas index', canvasIndex);
+      }
+    }
+
     // Handler to compute the current page from scroll position
     function syncViewerToScroll() {
-      if (isProgrammaticSync) return;
+      // Don't sync if we're in the middle of a viewer-initiated scroll
+      if (isProgrammaticViewerSync) {
+        log('[Page Sync] Skipping scroll sync (viewer-initiated scroll in progress)');
+        return;
+      }
 
       var containerRect = transcriptionBox.getBoundingClientRect();
-      var thresholdTop = containerRect.top + 50; // small offset for UX
+      // Use a slightly larger threshold (60px) than the scroll target (50px)
+      // to ensure the tag we just scrolled to is definitely detected as "visible"
+      var thresholdTop = containerRect.top + 60; 
 
       var visible = null;
       var tags = transcriptionBox.querySelectorAll('.page-tag');
@@ -343,18 +400,26 @@ This copyright notice MUST APPEAR in all copies of the file.
       var targetIndex = Math.min(Math.max(canvasIndex, 0), count - 1);
       
       if (lastSyncedPage !== targetIndex) {
-        isProgrammaticSync = true;
+        log('[Page Sync] ✓ Switching viewer to canvas index', targetIndex, '(transcription page', originalPage + ')');
+        isProgrammaticScrollSync = true;
+        lastSyncedPage = targetIndex; // Update before calling viewer to prevent race conditions
         viewer.goToPage(targetIndex);
-        lastSyncedPage = targetIndex;
-        log('[Page Sync] ✓ Switched viewer to canvas index', targetIndex, '(transcription page', originalPage + ')');
-        setTimeout(function () { isProgrammaticSync = false; }, 250);
+        
+        // Reset flag after page change completes
+        setTimeout(function () { 
+          isProgrammaticScrollSync = false; 
+        }, 500);
       }
     }
 
     var scrollTimeout;
     transcriptionBox.addEventListener('scroll', function () {
+      isUserScrolling = true;
       clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(syncViewerToScroll, 150);
+      scrollTimeout = setTimeout(function() {
+        isUserScrolling = false;
+        syncViewerToScroll();
+      }, 150);
     });
 
     // Initial sync after content settles
