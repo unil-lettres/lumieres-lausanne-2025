@@ -194,23 +194,39 @@ This copyright notice MUST APPEAR in all copies of the file.
     var lastSyncedPage = (typeof viewer.currentPage === 'function') ? viewer.currentPage() : null;
     var isProgrammaticSync = false;
 
-    // Extract page tags (two formats)
+    // Extract page tags (three formats)
     var transcriptionHTML = transcriptionBox.innerHTML;
     var pageTagsRaw = [];
     var m;
 
+    // Format 1: /p. 1/ style
     var reP = /\/p\.\s*(\d+)\//g;
     while ((m = reP.exec(transcriptionHTML)) !== null) {
       pageTagsRaw.push({ pageNumber: parseInt(m[1], 10), pattern: m[0], type: 'p-format' });
     }
 
+    // Format 2: Explicit recto/verso <1r>, <1v>, <2r>, <2v>
     var reRV = /(?:<|&lt;)(\d+)([rv])(?:>|&gt;)/gi;
     reRV.lastIndex = 0;
     while ((m = reRV.exec(transcriptionHTML)) !== null) {
       var num = parseInt(m[1], 10);
-      var side = m[2];
+      var side = m[2].toLowerCase();
       var calc = side === 'r' ? (num * 2 - 1) : (num * 2);
-      pageTagsRaw.push({ pageNumber: calc, pattern: m[0], originalPage: num, side: side, type: 'rv-format' });
+      pageTagsRaw.push({ pageNumber: calc, pattern: m[0], originalPage: num, side: side, type: 'rv-explicit' });
+    }
+
+    // Format 3: Implicit recto <1>, <2>, <3> (number only = recto)
+    // Must exclude patterns already matched by explicit recto/verso and HTML tags
+    var reImplicit = /(?:<|&lt;)(\d+)(?:>|&gt;)/gi;
+    reImplicit.lastIndex = 0;
+    var explicitPatterns = new Set(pageTagsRaw.map(function(t) { return t.pattern; }));
+    while ((m = reImplicit.exec(transcriptionHTML)) !== null) {
+      // Skip if this pattern was already matched as explicit r/v
+      if (explicitPatterns.has(m[0])) continue;
+      
+      var num = parseInt(m[1], 10);
+      var calc = num * 2 - 1;  // Implicit recto: page N → image (N*2-1)
+      pageTagsRaw.push({ pageNumber: calc, pattern: m[0], originalPage: num, side: 'r', type: 'rv-implicit' });
     }
 
     // Sort by first occurrence in the HTML
