@@ -194,7 +194,7 @@ This copyright notice MUST APPEAR in all copies of the file.
     var lastSyncedPage = (typeof viewer.currentPage === 'function') ? viewer.currentPage() : null;
     var isProgrammaticSync = false;
 
-    // Extract page tags (three formats)
+    // Extract page tags (five formats)
     var transcriptionHTML = transcriptionBox.innerHTML;
     var pageTagsRaw = [];
     var m;
@@ -205,7 +205,7 @@ This copyright notice MUST APPEAR in all copies of the file.
       pageTagsRaw.push({ pageNumber: parseInt(m[1], 10), pattern: m[0], type: 'p-format' });
     }
 
-    // Format 2: Explicit recto/verso <1r>, <1v>, <2r>, <2v>
+    // Format 2: Explicit recto/verso in angle brackets <1r>, <1v>, <2r>, <2v>
     var reRV = /(?:<|&lt;)(\d+)([rv])(?:>|&gt;)/gi;
     reRV.lastIndex = 0;
     while ((m = reRV.exec(transcriptionHTML)) !== null) {
@@ -215,7 +215,18 @@ This copyright notice MUST APPEAR in all copies of the file.
       pageTagsRaw.push({ pageNumber: calc, pattern: m[0], originalPage: num, side: side, type: 'rv-explicit' });
     }
 
-    // Format 3: Implicit recto <1>, <2>, <3> (number only = recto)
+    // Format 3: Explicit recto/verso in square brackets [1r], [1v], [2r], [2v]
+    // Exclude years (4+ digits like [1763], [1788])
+    var reBracketRV = /\[(\d{1,3})([rv])\]/gi;
+    reBracketRV.lastIndex = 0;
+    while ((m = reBracketRV.exec(transcriptionHTML)) !== null) {
+      var num = parseInt(m[1], 10);
+      var side = m[2].toLowerCase();
+      var calc = side === 'r' ? (num * 2 - 1) : (num * 2);
+      pageTagsRaw.push({ pageNumber: calc, pattern: m[0], originalPage: num, side: side, type: 'bracket-rv-explicit' });
+    }
+
+    // Format 4: Implicit recto in angle brackets <1>, <2>, <3> (number only = recto)
     // Must exclude patterns already matched by explicit recto/verso and HTML tags
     var reImplicit = /(?:<|&lt;)(\d+)(?:>|&gt;)/gi;
     reImplicit.lastIndex = 0;
@@ -227,6 +238,20 @@ This copyright notice MUST APPEAR in all copies of the file.
       var num = parseInt(m[1], 10);
       var calc = num * 2 - 1;  // Implicit recto: page N → image (N*2-1)
       pageTagsRaw.push({ pageNumber: calc, pattern: m[0], originalPage: num, side: 'r', type: 'rv-implicit' });
+    }
+
+    // Format 5: Implicit recto in square brackets [1], [2], [3] (number only = recto)
+    // Exclude years (4+ digits) and already matched patterns
+    var reBracketImplicit = /\[(\d{1,3})\]/g;
+    reBracketImplicit.lastIndex = 0;
+    while ((m = reBracketImplicit.exec(transcriptionHTML)) !== null) {
+      // Skip if already matched
+      if (explicitPatterns.has(m[0])) continue;
+      
+      var num = parseInt(m[1], 10);
+      var calc = num * 2 - 1;  // Implicit recto: page N → image (N*2-1)
+      pageTagsRaw.push({ pageNumber: calc, pattern: m[0], originalPage: num, side: 'r', type: 'bracket-rv-implicit' });
+      explicitPatterns.add(m[0]);  // Add to set to avoid duplicates
     }
 
     // Sort by first occurrence in the HTML

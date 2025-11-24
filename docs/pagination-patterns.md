@@ -14,49 +14,54 @@ This document describes the pagination marker patterns found in the `fiches_tran
 
 ### 1. Implicit Recto Format (75.7% of rectos)
 
-**Pattern**: `<1>`, `<2>`, `<123>`
+**Pattern**: `<1>`, `<2>`, `<123>` or `[1]`, `[2]`, `[123]`
 
-When only a number appears between angle brackets without an 'r' suffix, it represents a **recto page**.
+When only a number appears between angle brackets or square brackets (1-3 digits) without an 'r' suffix, it represents a **recto page**.
 
 **Mapping to image sequence**:
-- `<1>` → Image 1 (page 1 recto)
-- `<2>` → Image 3 (page 2 recto)
-- `<N>` → Image (N × 2 - 1)
+- `<1>` or `[1]` → Image 1 (page 1 recto)
+- `<2>` or `[2]` → Image 3 (page 2 recto)
+- `<N>` or `[N]` → Image (N × 2 - 1)
 
 **Examples**:
 - Transcription 1287: Uses `<1>`, `<2>`, `<3>`, etc.
+- Transcription 735: Uses `[1]`, `[2]`, etc.
 - Total occurrences: 2,029
 - Unique markers: 262
 
+**Note**: Years (4+ digits like `[1763]`, `[1788]`) are excluded and not treated as pagination.
+
 ### 2. Explicit Recto Format (24.3% of rectos)
 
-**Pattern**: `<1r>`, `<2r>`, `<123r>`
+**Pattern**: `<1r>`, `<2r>`, `<123r>` or `[1r]`, `[2r]`, `[123r]`
 
 The 'r' suffix explicitly indicates a recto page.
 
 **Mapping to image sequence**:
-- `<1r>` → Image 1 (page 1 recto)
-- `<2r>` → Image 3 (page 2 recto)
-- `<Nr>` → Image (N × 2 - 1)
+- `<1r>` or `[1r]` → Image 1 (page 1 recto)
+- `<2r>` or `[2r]` → Image 3 (page 2 recto)
+- `<Nr>` or `[Nr]` → Image (N × 2 - 1)
 
 **Examples**:
 - Transcription 1097: Uses `<1r>`, `<2r>`, `<3r>`, etc.
+- Transcription 737: Uses `[1r]`, `[2r]`, etc.
 - Total occurrences: 650
 - Unique markers: 44
 
 ### 3. Verso Format (always explicit)
 
-**Pattern**: `<1v>`, `<2v>`, `<123v>`
+**Pattern**: `<1v>`, `<2v>`, `<123v>` or `[1v]`, `[2v]`, `[123v]`
 
 The 'v' suffix indicates a verso (back) page.
 
 **Mapping to image sequence**:
-- `<1v>` → Image 2 (page 1 verso)
-- `<2v>` → Image 4 (page 2 verso)
-- `<Nv>` → Image (N × 2)
+- `<1v>` or `[1v]` → Image 2 (page 1 verso)
+- `<2v>` or `[2v]` → Image 4 (page 2 verso)
+- `<Nv>` or `[Nv]` → Image (N × 2)
 
 **Examples**:
 - Most common: `<1v>` appears 686 times
+- Also supports: `[1v]`, `[2v]`, etc.
 - Total occurrences: 2,029
 - Unique markers: 157
 
@@ -86,17 +91,22 @@ Alternative format using "p." prefix with optional brackets.
 The pagination synchronization system processes these markers in the following order:
 
 1. **Extract page format** (`/p. 1/`)
-2. **Extract explicit recto/verso** (`<1r>`, `<1v>`)
-3. **Extract implicit recto** (`<1>`, `<2>`)
+2. **Extract explicit recto/verso in angle brackets** (`<1r>`, `<1v>`)
+3. **Extract explicit recto/verso in square brackets** (`[1r]`, `[1v]`)
+   - Limited to 1-3 digits to exclude years
+4. **Extract implicit recto in angle brackets** (`<1>`, `<2>`)
    - Excludes patterns already matched as explicit recto/verso
    - Excludes HTML tags
+5. **Extract implicit recto in square brackets** (`[1]`, `[2]`)
+   - Limited to 1-3 digits to exclude years (e.g., `[1763]`, `[1788]`)
+   - Excludes patterns already matched
 
 Each marker is wrapped in a span with tracking attributes:
 ```html
 <span class="page-tag" 
       data-page="[mapped-page]" 
       data-original-page="[original]" 
-      data-type="[rv-implicit|rv-explicit|p-format]">
+      data-type="[rv-implicit|rv-explicit|bracket-rv-implicit|bracket-rv-explicit|p-format]">
   [original-marker]
 </span>
 ```
