@@ -260,22 +260,43 @@ This copyright notice MUST APPEAR in all copies of the file.
     var seqCount = viewer.lumiereSequenceCount || (viewer.tileSources ? viewer.tileSources.length : 0);
     log('[Page Sync] Found', pageTagsRaw.length, 'page tags; sequence has', seqCount, 'page(s).');
 
-    // Ensure sentinel for page 1 exists to allow switching back when scrolling to top
-    var hasPageOne = pageTagsRaw.some(function (t) { return t.pageNumber === 1; });
-    if (!hasPageOne) {
-      var sentinel = '<span class="page-tag" data-page="1" data-original-page="1" id="page-tag-start" data-type="sentinel" style="display:inline-block;height:0;line-height:0;overflow:hidden;"></span>';
+    // Auto-detect offset: find the first page number in transcription
+    var firstTransPageNumber = pageTagsRaw.length > 0 ? pageTagsRaw[0].pageNumber : 1;
+    var pageOffset = firstTransPageNumber - 1; // Offset to map to IIIF canvas index 0
+    
+    log('[Page Sync] First transcription page:', firstTransPageNumber, '→ offset:', pageOffset);
+
+    // Ensure sentinel for first page exists to allow switching back when scrolling to top
+    var hasFirstPage = pageTagsRaw.some(function (t) { return t.pageNumber === firstTransPageNumber; });
+    if (!hasFirstPage && pageTagsRaw.length > 0) {
+      var sentinel = '<span class="page-tag" data-page="' + firstTransPageNumber + '" data-original-page="' + firstTransPageNumber + '" id="page-tag-start" data-type="sentinel" style="display:inline-block;height:0;line-height:0;overflow:hidden;"></span>';
       transcriptionHTML = sentinel + transcriptionHTML;
-      log('[Page Sync] Inserted sentinel page tag for page 1 at the start');
+      log('[Page Sync] Inserted sentinel page tag for page', firstTransPageNumber, 'at the start');
     }
 
-    // Wrap all page markers with spans tracking their (possibly clamped) target page
+    // Wrap all page markers with spans tracking their mapped canvas index
     pageTagsRaw.forEach(function (tag, idx) {
       var original = tag.pageNumber;
-      var mapped = original;
-      if (seqCount > 0 && original > seqCount) mapped = seqCount;
-      var wrapped = '<span class="page-tag" data-page="' + mapped + '" data-original-page="' + original + '" id="page-tag-' + idx + '" data-type="' + tag.type + '">' + tag.pattern + '</span>';
+      var canvasIndex = original - pageOffset; // Map to 0-based canvas index
+      var mapped = canvasIndex;
+      
+      // Clamp to valid canvas range
+      if (seqCount > 0) {
+        if (canvasIndex < 1) {
+          mapped = 1;
+          warn('[Page Sync] Page', original, 'maps to canvas', canvasIndex, '< 1, clamped to 1');
+        } else if (canvasIndex > seqCount) {
+          mapped = seqCount;
+          warn('[Page Sync] Page', original, 'maps to canvas', canvasIndex, '>', seqCount, ', clamped to', seqCount);
+        }
+      }
+      
+      var wrapped = '<span class="page-tag" data-page="' + mapped + '" data-original-page="' + original + '" data-canvas-index="' + (mapped - 1) + '" id="page-tag-' + idx + '" data-type="' + tag.type + '">' + tag.pattern + '</span>';
       transcriptionHTML = transcriptionHTML.replace(tag.pattern, wrapped);
-      if (mapped !== original) warn('[Page Sync] Clamped transcription page', original, 'to', mapped, '(sequence size', seqCount + ')');
+      
+      if (canvasIndex !== original) {
+        log('[Page Sync] Mapped page', original, '→ canvas index', (mapped - 1), '(offset:', pageOffset + ')');
+      }
     });
 
     transcriptionBox.innerHTML = transcriptionHTML;
@@ -310,16 +331,22 @@ This copyright notice MUST APPEAR in all copies of the file.
       if (!visible && tags.length) visible = tags[0];
       if (!visible) return;
 
-      var pageNumber = parseInt(visible.getAttribute('data-page'), 10) || 1;
+      // Use the pre-calculated canvas index from data attribute
+      var canvasIndexStr = visible.getAttribute('data-canvas-index');
+      var canvasIndex = canvasIndexStr !== null ? parseInt(canvasIndexStr, 10) : 0;
+      var originalPage = parseInt(visible.getAttribute('data-original-page'), 10) || 1;
+      
       var count = viewer.lumiereSequenceCount || (viewer.tileSources ? viewer.tileSources.length : 0) || 0;
       if (!count) { warn('[Page Sync] Viewer has no items yet – skipping sync'); return; }
 
-      var targetIndex = Math.min(Math.max(pageNumber - 1, 0), count - 1);
+      // Clamp canvas index to valid range
+      var targetIndex = Math.min(Math.max(canvasIndex, 0), count - 1);
+      
       if (lastSyncedPage !== targetIndex) {
         isProgrammaticSync = true;
         viewer.goToPage(targetIndex);
         lastSyncedPage = targetIndex;
-        log('[Page Sync] ✓ Switched viewer to page', targetIndex);
+        log('[Page Sync] ✓ Switched viewer to canvas index', targetIndex, '(transcription page', originalPage + ')');
         setTimeout(function () { isProgrammaticSync = false; }, 250);
       }
     }

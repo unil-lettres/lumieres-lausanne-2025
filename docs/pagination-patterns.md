@@ -101,11 +101,32 @@ The pagination synchronization system processes these markers in the following o
    - Limited to 1-3 digits to exclude years (e.g., `[1763]`, `[1788]`)
    - Excludes patterns already matched
 
+### Automatic Offset Detection
+
+The system **automatically detects the offset** between transcription page numbers and IIIF canvas indices:
+
+- **Detection**: Finds the first page marker in the transcription (e.g., `<91v>` = page 182)
+- **Offset Calculation**: `pageOffset = firstPageNumber - 1` (e.g., 182 - 1 = 181)
+- **Canvas Mapping**: Each page is mapped to its canvas index: `canvasIndex = pageNumber - pageOffset`
+
+**Example**:
+- Transcription starts at `<91v>` (calculated as page 182)
+- Offset = 181
+- `<91v>` → canvas index 0 (182 - 181 - 1 = 0)
+- `<92r>` → canvas index 1 (183 - 181 - 1 = 1)
+- `<92v>` → canvas index 2 (184 - 181 - 1 = 2)
+
+This ensures that:
+- **Transcriptions can start at any folio number** (not just folio 1)
+- **The first page marker always maps to IIIF canvas index 0**
+- **No manual configuration is needed**
+
 Each marker is wrapped in a span with tracking attributes:
 ```html
 <span class="page-tag" 
       data-page="[mapped-page]" 
-      data-original-page="[original]" 
+      data-original-page="[original]"
+      data-canvas-index="[0-based-canvas-index]"
       data-type="[rv-implicit|rv-explicit|bracket-rv-implicit|bracket-rv-explicit|p-format]">
   [original-marker]
 </span>
