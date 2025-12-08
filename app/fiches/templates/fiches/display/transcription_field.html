@@ -57,7 +57,8 @@ function toggleTOC() {
     if ( $('#transcription-toc').length > 0 ) {
         $('#transcription-toc, a.tocref').remove();
         $('#toc-toggle > span').text('Montrer la table des matières');
-        $('.transcription-data').first().css('padding-right', '40px');
+        // Removed padding-right adjustment - TOC is now positioned fixed and doesn't need text adjustment
+        // $('.transcription-data').first().css('padding-right', '40px');
     } else {
         $('#toc-toggle > span').text('Cacher la table des matières');
 
@@ -65,7 +66,8 @@ function toggleTOC() {
         console.log('TOC DEBUG: Found transcription element:', trans.length);
         console.log('TOC DEBUG: Transcription HTML:', trans.html().substring(0, 500));
         
-        trans.css('padding-right', '240px');
+        // Removed padding-right adjustment - TOC is now positioned fixed and doesn't need text adjustment
+        // trans.css('padding-right', '240px');
         var toc = $('<ul id="transcription-toc"><div class="title">Table des matières</div></ul>');
         var headers = $('h2, h3', trans);
         console.log('TOC DEBUG: Found headers:', headers.length);
