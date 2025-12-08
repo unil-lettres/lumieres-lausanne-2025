@@ -71,12 +71,28 @@ This copyright notice MUST APPEAR in all copies of the file.
     if (activeBtn) activeBtn.classList.add('active');
 
     buttons.forEach(function (btn) {
-      btn.addEventListener('click', function () {
+      btn.addEventListener('click', function (e) {
+        log('[Layout Toggle] Button clicked:', e.target);
         var newLayout = btn.getAttribute('data-layout');
+        log('[Layout Toggle] New layout:', newLayout);
         buttons.forEach(function (b) { b.classList.remove('active'); });
         btn.classList.add('active');
         document.body.setAttribute('data-layout-mode', newLayout);
         try { sessionStorage.setItem(storageKey, newLayout); } catch (_) {}
+
+        // Reset zoom when switching mode with proper timing
+        log('[Layout Toggle] Attempting to reset zoom...');
+        if (window.lumiereViewer && window.lumiereViewer.viewport) {
+          // Use requestAnimationFrame to wait for layout recalculation, then add extra time
+          requestAnimationFrame(function() {
+            setTimeout(function() {
+              log('[Layout Toggle] Resetting viewport zoom to fit image');
+              window.lumiereViewer.viewport.goHome(true);
+            }, 200);
+          });
+        } else {
+          log('[Layout Toggle] WARNING: lumiereViewer or viewport not available!');
+        }
       });
     });
   }
@@ -177,6 +193,9 @@ This copyright notice MUST APPEAR in all copies of the file.
 
     // Persist sequence size for sync logic
     viewer.lumiereSequenceCount = tileSources.length;
+
+    // Store viewer globally for access from layout toggle
+    window.lumiereViewer = viewer;
 
     viewer.addHandler('open', function () {
       if (window.initViewerControls) window.initViewerControls(viewer);
