@@ -147,9 +147,22 @@ function processNotes() {
 		$('#transcription-data').unwrap();
 	}
 	
-	// Remove all note-ref-link wrappers
-	$('.note-ref-link').each(function() {
+	// Remove all note-ref-link wrappers and unwrap note markers from any <a> tags
+	var trans = $('.transcription-data').first();
+	
+	// First pass: remove note-ref-link wrappers
+	$('.note-ref-link', trans).each(function() {
 		$(this).replaceWith($(this).contents());
+	});
+	
+	// Second pass: unwrap any remaining <a> tags around note markers
+	// This handles links created by createBottomNotes()
+	$('.note-document, .note-editorial', trans).each(function() {
+		var $this = $(this);
+		// Unwrap from parent <a> tags until we reach a non-<a> parent
+		while ($this.parent().is('a')) {
+			$this.unwrap();
+		}
 	});
 	
 	if (isTextOnly) {

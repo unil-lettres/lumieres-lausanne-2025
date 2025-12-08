@@ -287,6 +287,12 @@ body[data-layout-mode="text-only"] .side-notes-panel .side-note {
 	border-left-color: #28a745;
 }
 
+/* Disable CSS counter for side notes - they use JS-generated numbers */
+.side-notes-panel .side-note.note-document:before,
+.side-notes-panel .side-note.note-editorial:before {
+	content: none !important;
+}
+
 .side-notes-panel .side-note .note-number {
 	font-weight: bold;
 	margin-right: 5px;
