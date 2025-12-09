@@ -8,6 +8,11 @@
 </div>
 
 <script type="text/javascript">
+// Helper function to get current notes position
+function getNotesPosition() {
+	return document.body.getAttribute('data-notes-position') || 'bottom';
+}
+
 function toggleBR() {
 	if ( $('#lb-toggle > span').hasClass('show') ) {
         $('div.transcription-data br').not($('div.transcription-data .verse br')).removeClass('hidden-br');
@@ -20,8 +25,7 @@ function toggleBR() {
 	}
 	
 	// Recalculate note positions if margin notes are displayed
-	var notesPosition = document.body.getAttribute('data-notes-position') || 'bottom';
-	if (notesPosition === 'margin' && $('.side-notes-panel').length > 0) {
+	if (getNotesPosition() === 'margin' && $('.side-notes-panel').length > 0) {
 		setTimeout(repositionSideNotes, 150);
 	}
 }
@@ -48,8 +52,7 @@ function toggleView() {
     }
     
     // Recalculate note positions if margin notes are displayed
-    var notesPosition = document.body.getAttribute('data-notes-position') || 'bottom';
-    if (notesPosition === 'margin' && $('.side-notes-panel').length > 0) {
+    if (getNotesPosition() === 'margin' && $('.side-notes-panel').length > 0) {
         setTimeout(repositionSideNotes, 150);
     }
 }
@@ -93,8 +96,7 @@ function toggleTOC() {
     }
     
     // Recalculate note positions if margin notes are displayed
-    var notesPosition = document.body.getAttribute('data-notes-position') || 'bottom';
-    if (notesPosition === 'margin' && $('.side-notes-panel').length > 0) {
+    if (getNotesPosition() === 'margin' && $('.side-notes-panel').length > 0) {
         setTimeout(repositionSideNotes, 150);
     }
 }
@@ -102,12 +104,12 @@ function toggleTOC() {
 // Initialize notes position preference
 function initializeNotesPosition() {
 	var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
-	var savedPosition;
+	var savedPosition = null;
 	
 	try {
 		savedPosition = sessionStorage.getItem('transcription-notes-position');
 	} catch (e) {
-		savedPosition = null;
+		// sessionStorage not available
 	}
 	
 	// Set default based on layout mode if no saved preference
@@ -126,7 +128,7 @@ function initializeNotesPosition() {
 
 // Toggle notes position between margin and bottom
 function toggleNotesPosition() {
-	var currentPosition = document.body.getAttribute('data-notes-position') || 'bottom';
+	var currentPosition = getNotesPosition();
 	var newPosition = (currentPosition === 'margin') ? 'bottom' : 'margin';
 	
 	document.body.setAttribute('data-notes-position', newPosition);
@@ -176,8 +178,7 @@ $(function() {
 
 	// Listen for window resize to reposition side notes
 	$(window).on('resize', function() {
-		var notesPosition = document.body.getAttribute('data-notes-position') || 'bottom';
-		if (notesPosition === 'margin' && $('.side-notes-panel').length > 0) {
+		if (getNotesPosition() === 'margin' && $('.side-notes-panel').length > 0) {
 			setTimeout(repositionSideNotes, 150);
 		}
 	});
@@ -194,9 +195,7 @@ $(function() {
 
 // Process notes based on layout mode and notes position preference
 function processNotes() {
-	var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
-	var notesPosition = document.body.getAttribute('data-notes-position') || 'bottom';
-	var useMarginNotes = (notesPosition === 'margin');
+	var useMarginNotes = (getNotesPosition() === 'margin');
 	
 	// Clear existing notes
 	$('.transcription-doc-notes, .transcription-ed-notes').remove();
