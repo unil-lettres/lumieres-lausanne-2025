@@ -1,0 +1,6 @@
+/* Placeholder for print styles */
+@media print {
+  .no-print {
+    display: none;
+  }
+}

@@ -137,6 +137,25 @@ docker compose exec -T app python manage.py shell
 
 ---
 
+## Front-end Development
+
+This project uses a modern front-end build system with Vite. See the [Front-end Build System documentation](docs/frontend-build-system.md) for details.
+
+### Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Development with hot reload
+npm run dev
+
+# Production build
+npm run build
+```
+
+---
+
 ## Documentation
 
 Comprehensive documentation is available in the `docs/` directory and built with MkDocs.

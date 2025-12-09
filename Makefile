@@ -52,6 +52,9 @@ include $(MAKE_SUB)/django.mk
 # SOLr port
 include $(MAKE_SUB)/solr.mk
 
+# Front-end build
+include $(MAKE_SUB)/frontend.mk
+
 
 # Recipes =====================================================================
 

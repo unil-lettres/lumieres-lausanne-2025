@@ -1,0 +1,8 @@
+/* Placeholder for form styles */
+input,
+select,
+textarea {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}

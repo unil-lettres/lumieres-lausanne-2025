@@ -1,0 +1,8 @@
+/* Placeholder for utility classes */
+.hidden {
+  display: none;
+}
+
+.visible {
+  display: block;
+}

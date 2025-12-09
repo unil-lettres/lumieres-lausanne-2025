@@ -16,6 +16,7 @@ nav:
     - Facsimile Admin Guide (EN): en/facsimile-admin-guide.md
     - Guide administrateur (FR): fr/facsimile-guide-admin.md
   - Developer Documentation:
+    - Front-end Build System: frontend-build-system.md
     - OpenSeadragon Integration: openseadragon-integration.md
     - IIIF Facsimile Migration: iiif-facsimile-migration.md
   - About:
