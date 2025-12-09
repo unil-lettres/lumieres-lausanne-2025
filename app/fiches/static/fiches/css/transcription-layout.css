@@ -191,9 +191,13 @@ body[data-layout-mode="text-only"] #transcription-view-controls {
 	margin-bottom: 12px;
 }
 
-/* Hide notes position toggle button when not in text-only mode */
-body:not([data-layout-mode="text-only"]) #notes-position-toggle {
+/* Hide notes position toggle button by default, show only in text-only mode */
+#notes-position-toggle {
 	display: none !important;
+}
+
+body[data-layout-mode="text-only"] #notes-position-toggle {
+	display: inline-block !important;
 }
 
 /* Show side notes based on notes position preference, not layout mode */
