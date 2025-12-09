@@ -22,15 +22,24 @@ This copyright notice MUST APPEAR in all copies of the file.
 (function () {
   'use strict';
 
-  // Small helpers -----------------------------------------------------------
+  // Constants and helpers ---------------------------------------------------
+  var STORAGE_KEY_LAYOUT = 'transcription-layout-mode';
+  var STORAGE_KEY_SYNC = 'transcription-sync-enabled';
+  var DEFAULT_LAYOUT = 'split-view';
+  var SCROLL_SYNC_DELAY = 150;
+  var SMOOTH_SCROLL_DURATION = 600;
+  var PAGE_SYNC_INIT_DELAY = 500;
+  var SCROLL_THRESHOLD_OFFSET = 60; // px from container top
+  var SCROLL_TARGET_OFFSET = 50;   // px offset for target scroll position
+
   function log() {
-    if (window && window.console) console.log.apply(console, arguments);
+    if (window?.console) console.log.apply(console, arguments);
   }
   function warn() {
-    if (window && window.console) console.warn.apply(console, arguments);
+    if (window?.console) console.warn.apply(console, arguments);
   }
   function error() {
-    if (window && window.console) console.error.apply(console, arguments);
+    if (window?.console) console.error.apply(console, arguments);
   }
 
   // Entrypoint -------------------------------------------------------------
@@ -50,102 +59,112 @@ This copyright notice MUST APPEAR in all copies of the file.
 
   // Layout toggle logic ----------------------------------------------------
   function setupLayoutToggles(cfg) {
-    var storageKey = 'transcription-layout-mode';
-    var syncStorageKey = 'transcription-sync-enabled';
     var hasViewer = !!cfg.hasViewer;
 
     if (!hasViewer) {
       document.body.setAttribute('data-layout-mode', 'text-only');
-      try { sessionStorage.removeItem(storageKey); } catch (_) {}
+      try { sessionStorage.removeItem(STORAGE_KEY_LAYOUT); } catch (_) {}
       return;
     }
 
-    var defaultLayout = 'split-view';
     var savedLayout = null;
-    try { savedLayout = sessionStorage.getItem(storageKey); } catch (_) {}
-    var initialLayout = savedLayout || defaultLayout;
+    try { savedLayout = sessionStorage.getItem(STORAGE_KEY_LAYOUT); } catch (_) {}
+    var initialLayout = savedLayout || DEFAULT_LAYOUT;
 
     document.body.setAttribute('data-layout-mode', initialLayout);
+    
     var buttons = document.querySelectorAll('.layout-btn');
-    buttons.forEach(function (b) { b.classList.remove('active'); });
-    var activeBtn = document.querySelector('.layout-btn[data-layout="' + initialLayout + '"]');
-    if (activeBtn) activeBtn.classList.add('active');
+    updateActiveButton(buttons, initialLayout);
 
     buttons.forEach(function (btn) {
       btn.addEventListener('click', function (e) {
-        var newLayout = btn.getAttribute('data-layout');
-        
-        // Skip if this is the sync toggle button
+        // Skip sync toggle button
         if (btn.id === 'sync-toggle-btn') return;
+        
+        var newLayout = btn.getAttribute('data-layout');
         
         log('[Layout Toggle] Button clicked:', e.target);
         log('[Layout Toggle] New layout:', newLayout);
-        buttons.forEach(function (b) { b.classList.remove('active'); });
-        btn.classList.add('active');
+        
+        updateActiveButton(buttons, newLayout);
         document.body.setAttribute('data-layout-mode', newLayout);
-        try { sessionStorage.setItem(storageKey, newLayout); } catch (_) {}
+        
+        try { sessionStorage.setItem(STORAGE_KEY_LAYOUT, newLayout); } catch (_) {}
 
         // Disable sync when switching away from split-view
-        if (newLayout !== 'split-view') {
-          if (window.TranscriptionSyncEnabled) {
-            window.TranscriptionSyncEnabled = false;
-            var syncToggleBtn = document.getElementById('sync-toggle-btn');
-            if (syncToggleBtn) {
-              updateSyncButtonState(syncToggleBtn, false);
-              try { sessionStorage.setItem(syncStorageKey, false); } catch (_) {}
-              log('[Layout Toggle] Sync automatically disabled - not in split-view mode');
-            }
-          }
+        if (newLayout !== DEFAULT_LAYOUT) {
+          disableSyncIfActive();
         }
 
-        // Reset zoom when switching mode with proper timing
-        log('[Layout Toggle] Attempting to reset zoom...');
-        if (window.lumiereViewer && window.lumiereViewer.viewport) {
-          // Use requestAnimationFrame to wait for layout recalculation, then add extra time
-          requestAnimationFrame(function() {
-            setTimeout(function() {
-              log('[Layout Toggle] Resetting viewport zoom to fit image');
-              window.lumiereViewer.viewport.goHome(true);
-            }, 200);
-          });
-        } else {
-          log('[Layout Toggle] WARNING: lumiereViewer or viewport not available!');
-        }
+        resetViewerZoom();
       });
     });
 
-    // Setup sync toggle button
+    setupSyncToggleButton();
+  }
+
+  function updateActiveButton(buttons, layoutName) {
+    buttons.forEach(function (b) { b.classList.remove('active'); });
+    var activeBtn = document.querySelector('.layout-btn[data-layout="' + layoutName + '"]');
+    if (activeBtn) activeBtn.classList.add('active');
+  }
+
+  function disableSyncIfActive() {
+    if (window.TranscriptionSyncEnabled) {
+      window.TranscriptionSyncEnabled = false;
+      var syncToggleBtn = document.getElementById('sync-toggle-btn');
+      if (syncToggleBtn) {
+        updateSyncButtonState(syncToggleBtn, false);
+        try { sessionStorage.setItem(STORAGE_KEY_SYNC, false); } catch (_) {}
+        log('[Layout Toggle] Sync automatically disabled - not in split-view mode');
+      }
+    }
+  }
+
+  function resetViewerZoom() {
+    log('[Layout Toggle] Attempting to reset zoom...');
+    if (window.lumiereViewer?.viewport) {
+      requestAnimationFrame(function() {
+        setTimeout(function() {
+          log('[Layout Toggle] Resetting viewport zoom to fit image');
+          window.lumiereViewer.viewport.goHome(true);
+        }, 200);
+      });
+    } else {
+      log('[Layout Toggle] WARNING: lumiereViewer or viewport not available!');
+    }
+  }
+
+  function setupSyncToggleButton() {
     var syncToggleBtn = document.getElementById('sync-toggle-btn');
-    if (syncToggleBtn) {
-      var savedSyncState = null;
-      try { 
-        var syncStateStr = sessionStorage.getItem(syncStorageKey);
-        savedSyncState = syncStateStr !== 'false'; // Default to true
-      } catch (_) { 
-        savedSyncState = true; 
+    if (!syncToggleBtn) return;
+
+    var savedSyncState = true;
+    try { 
+      var syncStateStr = sessionStorage.getItem(STORAGE_KEY_SYNC);
+      savedSyncState = syncStateStr !== 'false';
+    } catch (_) { 
+      // Default to enabled
+    }
+    
+    window.TranscriptionSyncEnabled = savedSyncState;
+    updateSyncButtonState(syncToggleBtn, savedSyncState);
+    
+    syncToggleBtn.addEventListener('click', function (e) {
+      e.preventDefault();
+      
+      var currentLayout = document.body.getAttribute('data-layout-mode');
+      if (currentLayout !== DEFAULT_LAYOUT) {
+        log('[Sync Toggle] Cannot toggle sync - not in split-view mode');
+        return;
       }
       
-      // Set initial state
-      window.TranscriptionSyncEnabled = savedSyncState;
-      updateSyncButtonState(syncToggleBtn, savedSyncState);
-      
-      syncToggleBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        
-        // Only allow toggling in split-view mode
-        var currentLayout = document.body.getAttribute('data-layout-mode');
-        if (currentLayout !== 'split-view') {
-          log('[Sync Toggle] Cannot toggle sync - not in split-view mode');
-          return;
-        }
-        
-        var newState = !window.TranscriptionSyncEnabled;
-        window.TranscriptionSyncEnabled = newState;
-        updateSyncButtonState(syncToggleBtn, newState);
-        try { sessionStorage.setItem(syncStorageKey, newState); } catch (_) {}
-        log('[Sync Toggle] Synchronization', newState ? 'enabled' : 'disabled');
-      });
-    }
+      var newState = !window.TranscriptionSyncEnabled;
+      window.TranscriptionSyncEnabled = newState;
+      updateSyncButtonState(syncToggleBtn, newState);
+      try { sessionStorage.setItem(STORAGE_KEY_SYNC, newState); } catch (_) {}
+      log('[Sync Toggle] Synchronization', newState ? 'enabled' : 'disabled');
+    });
   }
 
   function updateSyncButtonState(btn, isEnabled) {
@@ -194,34 +213,48 @@ This copyright notice MUST APPEAR in all copies of the file.
     var tileSources = [];
 
     // IIIF v3
-    if (manifest && Array.isArray(manifest.items) && manifest.items.length) {
+    if (manifest?.items?.length) {
       manifest.items.forEach(function (canvas) {
-        try {
-          var annPage = canvas.items && canvas.items[0];
-          var ann = annPage && annPage.items && annPage.items[0];
-          var body = ann && ann.body;
-          var svc = body && body.service && body.service[0];
-          var id = svc && (svc['@id'] || svc.id);
-          if (id) tileSources.push(id.replace(/\/?$/, '') + '/info.json');
-        } catch (_) {}
+        var tileSource = extractTileSourceIIIFv3(canvas);
+        if (tileSource) tileSources.push(tileSource);
       });
     }
     // IIIF v2
-    else if (manifest && manifest.sequences && manifest.sequences[0]) {
+    else if (manifest?.sequences?.[0]) {
       var canvases = manifest.sequences[0].canvases || [];
       canvases.forEach(function (canvas) {
-        try {
-          var img = canvas.images && canvas.images[0];
-          var res = img && img.resource;
-          var svc = res && res.service;
-          var id = svc && (svc['@id'] || svc.id);
-          if (id) tileSources.push(id.replace(/\/?$/, '') + '/info.json');
-        } catch (_) {}
+        var tileSource = extractTileSourceIIIFv2(canvas);
+        if (tileSource) tileSources.push(tileSource);
       });
     }
 
     try { log('[IIIF] Total tile sources extracted:', tileSources.length); } catch (_) {}
     return tileSources;
+  }
+
+  function extractTileSourceIIIFv3(canvas) {
+    try {
+      var annPage = canvas.items?.[0];
+      var ann = annPage?.items?.[0];
+      var body = ann?.body;
+      var svc = body?.service?.[0];
+      var id = svc?.['@id'] || svc?.id;
+      return id ? id.replace(/\/?$/, '') + '/info.json' : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function extractTileSourceIIIFv2(canvas) {
+    try {
+      var img = canvas.images?.[0];
+      var res = img?.resource;
+      var svc = res?.service;
+      var id = svc?.['@id'] || svc?.id;
+      return id ? id.replace(/\/?$/, '') + '/info.json' : null;
+    } catch (_) {
+      return null;
+    }
   }
 
   function showError(message) {
@@ -266,7 +299,6 @@ This copyright notice MUST APPEAR in all copies of the file.
     });
   }
 
-  // Page Synchronization ---------------------------------------------------
   function initPageSync(viewer) {
     var transcriptionBox = document.getElementById('transcription-data');
     if (!transcriptionBox || !viewer) return;
@@ -274,55 +306,155 @@ This copyright notice MUST APPEAR in all copies of the file.
     log('[Page Sync] Initializing page synchronization...');
 
     var lastSyncedPage = (typeof viewer.currentPage === 'function') ? viewer.currentPage() : null;
-    var isProgrammaticScrollSync = false; // Flag for scroll-initiated sync
-    var isProgrammaticViewerSync = false; // Flag for viewer-initiated sync
-    var isUserScrolling = false;          // Flag for user interaction
+    var isProgrammaticScrollSync = false;
+    var isProgrammaticViewerSync = false;
+    var scrollTimeout = null;
+    var isUserScrolling = false;
 
-    // Extract page tags (new format: <<page_number>>)
+    var seqCount = viewer.lumiereSequenceCount || viewer.tileSources?.length || 0;
+    var pageOffset = 1;
+    
+    log('[Page Sync] Found sequence with', seqCount, 'page(s).');
+
+    // Extract and wrap page tags
+    wrapPageTags(transcriptionBox, seqCount);
+
+    // Sync viewer page to transcription
+    try {
+      viewer.addHandler('page', function (ev) {
+        if (typeof ev.page !== 'number') return;
+        
+        if (window.TranscriptionSyncEnabled && !isProgrammaticScrollSync && !isUserScrolling && ev.page !== lastSyncedPage) {
+          log('[Page Sync] Viewer page changed by user → syncing transcription to page', ev.page);
+          syncTranscriptionToViewer(ev.page, transcriptionBox);
+        }
+        
+        lastSyncedPage = ev.page;
+      });
+    } catch (e) {
+      warn('[Page Sync] Could not bind viewer page handler', e);
+    }
+
+    // Sync transcription scroll to viewer page
+    function syncTranscriptionToViewer(canvasIndex) {
+      if (!window.TranscriptionSyncEnabled) {
+        log('[Page Sync] Sync disabled - skipping transcription scroll');
+        return;
+      }
+
+      var targetTag = findPageTagByCanvasIndex(transcriptionBox, canvasIndex);
+      if (!targetTag) {
+        warn('[Page Sync] No page tag found for canvas index', canvasIndex);
+        return;
+      }
+
+      var originalPage = parseInt(targetTag.getAttribute('data-original-page'), 10);
+      log('[Page Sync] Found page tag for canvas', canvasIndex, '(transcription page', originalPage + ') - scrolling...');
+      
+      isProgrammaticViewerSync = true;
+      
+      var containerRect = transcriptionBox.getBoundingClientRect();
+      var tagRect = targetTag.getBoundingClientRect();
+      var scrollOffset = tagRect.top - containerRect.top - SCROLL_TARGET_OFFSET;
+      
+      transcriptionBox.scrollBy({
+        top: scrollOffset,
+        behavior: 'smooth'
+      });
+      
+      setTimeout(function () { 
+        isProgrammaticViewerSync = false; 
+        log('[Page Sync] ✓ Transcription scrolled to canvas', canvasIndex);
+      }, SMOOTH_SCROLL_DURATION);
+    }
+
+    // Sync viewer page from transcription scroll
+    function syncViewerToScroll() {
+      if (!window.TranscriptionSyncEnabled) {
+        log('[Page Sync] Sync disabled - skipping viewer scroll');
+        return;
+      }
+
+      if (isProgrammaticViewerSync) {
+        log('[Page Sync] Skipping scroll sync (viewer-initiated scroll in progress)');
+        return;
+      }
+
+      var containerRect = transcriptionBox.getBoundingClientRect();
+      var thresholdTop = containerRect.top + SCROLL_THRESHOLD_OFFSET;
+
+      var visible = findVisiblePageTag(transcriptionBox, thresholdTop);
+      if (!visible) return;
+
+      var canvasIndexStr = visible.getAttribute('data-canvas-index');
+      var canvasIndex = canvasIndexStr !== null ? parseInt(canvasIndexStr, 10) : 0;
+      var originalPage = parseInt(visible.getAttribute('data-original-page'), 10) || 1;
+      
+      if (!seqCount) { 
+        warn('[Page Sync] Viewer has no items yet – skipping sync'); 
+        return; 
+      }
+
+      var targetIndex = Math.min(Math.max(canvasIndex, 0), seqCount - 1);
+      
+      if (lastSyncedPage !== targetIndex) {
+        log('[Page Sync] ✓ Switching viewer to canvas index', targetIndex, '(transcription page', originalPage + ')');
+        isProgrammaticScrollSync = true;
+        lastSyncedPage = targetIndex;
+        viewer.goToPage(targetIndex);
+        
+        setTimeout(function () { 
+          isProgrammaticScrollSync = false; 
+        }, 500);
+      }
+    }
+
+    transcriptionBox.addEventListener('scroll', function () {
+      isUserScrolling = true;
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(function() {
+        isUserScrolling = false;
+        syncViewerToScroll();
+      }, SCROLL_SYNC_DELAY);
+    });
+
+    setTimeout(syncViewerToScroll, PAGE_SYNC_INIT_DELAY);
+  }
+
+  function wrapPageTags(transcriptionBox, seqCount) {
     var transcriptionHTML = transcriptionBox.innerHTML;
     var pageTagsRaw = [];
     var m;
 
-    // New format: <<page_number>> (e.g., <<1>>, <<2>>, <<15>>)
-    // Match both literal and HTML-encoded versions
+    // Extract page tags (new format: <<page_number>>)
     var reNewFormat = /(?:&lt;&lt;|<<)(\d+)(?:&gt;&gt;|>>)/g;
     while ((m = reNewFormat.exec(transcriptionHTML)) !== null) {
-      var pageNum = parseInt(m[1], 10);
       pageTagsRaw.push({ 
-        pageNumber: pageNum, 
+        pageNumber: parseInt(m[1], 10), 
         pattern: m[0], 
-        originalPage: pageNum, 
         type: 'new-format' 
       });
     }
 
-    // Sort by first occurrence in the HTML
-    pageTagsRaw.sort(function (a, b) { return transcriptionHTML.indexOf(a.pattern) - transcriptionHTML.indexOf(b.pattern); });
+    pageTagsRaw.sort(function (a, b) { 
+      return transcriptionHTML.indexOf(a.pattern) - transcriptionHTML.indexOf(b.pattern); 
+    });
 
-    var seqCount = viewer.lumiereSequenceCount || (viewer.tileSources ? viewer.tileSources.length : 0);
     log('[Page Sync] Found', pageTagsRaw.length, 'page tags; sequence has', seqCount, 'page(s).');
 
-    // With new format <<page_number>>, page numbers map directly to canvas indices (1-based to 0-based)
-    // Page 1 → Canvas index 0, Page 2 → Canvas index 1, etc.
-    var pageOffset = 1; // Direct mapping: page N → canvas index (N-1)
-    
-    log('[Page Sync] Using direct page mapping: page N → canvas index (N-1)');
-
-    // Ensure sentinel for first page exists to allow switching back when scrolling to top
+    // Insert sentinel for first page if needed
     var firstPageNumber = 1;
-    var hasFirstPage = pageTagsRaw.some(function (t) { return t.pageNumber === firstPageNumber; });
-    if (!hasFirstPage && pageTagsRaw.length > 0) {
-      var sentinel = '<span class="page-tag" data-page="' + firstPageNumber + '" data-original-page="' + firstPageNumber + '" id="page-tag-start" data-type="sentinel" style="display:inline-block;height:0;line-height:0;overflow:hidden;"></span>';
+    if (!pageTagsRaw.some(function (t) { return t.pageNumber === firstPageNumber; })) {
+      var sentinel = '<span class="page-tag" data-page="1" data-original-page="1" id="page-tag-start" data-type="sentinel" style="display:inline-block;height:0;line-height:0;overflow:hidden;"></span>';
       transcriptionHTML = sentinel + transcriptionHTML;
-      log('[Page Sync] Inserted sentinel page tag for page', firstPageNumber, 'at the start');
+      log('[Page Sync] Inserted sentinel page tag for page 1 at the start');
     }
 
-    // Wrap all page markers with spans tracking their mapped canvas index
+    // Wrap all page markers
     pageTagsRaw.forEach(function (tag, idx) {
       var pageNumber = tag.pageNumber;
-      var canvasIndex = pageNumber - 1; // Direct mapping: page N → canvas index (N-1)
+      var canvasIndex = pageNumber - 1;
       
-      // Clamp to valid canvas range
       if (seqCount > 0) {
         if (canvasIndex < 0) {
           canvasIndex = 0;
@@ -341,139 +473,32 @@ This copyright notice MUST APPEAR in all copies of the file.
 
     transcriptionBox.innerHTML = transcriptionHTML;
     log('[Page Sync] All page tags wrapped and ready for tracking');
+  }
 
-    // Keep lastSyncedPage in sync with viewer navigation
-    // AND sync transcription scroll position when viewer page changes
-    try {
-      viewer.addHandler('page', function (ev) {
-        if (typeof ev.page === 'number') {
-          var newPage = ev.page;
-          
-          // Only sync transcription if this is a user-initiated page change
-          // (not a programmatic change from scroll sync)
-          // AND the user is not currently scrolling the transcription manually
-          // AND sync is enabled
-          if (window.TranscriptionSyncEnabled && !isProgrammaticScrollSync && !isUserScrolling && newPage !== lastSyncedPage) {
-            log('[Page Sync] Viewer page changed by user → syncing transcription to page', newPage);
-            syncTranscriptionToViewer(newPage);
-          }
-          
-          lastSyncedPage = newPage;
-        }
-      });
-    } catch (e) {
-      warn('[Page Sync] Could not bind viewer page handler', e);
-    }
-
-    // Handler to scroll transcription to match viewer page
-    function syncTranscriptionToViewer(canvasIndex) {
-      // Check if sync is enabled
-      if (!window.TranscriptionSyncEnabled) {
-        log('[Page Sync] Sync disabled - skipping transcription scroll');
-        return;
-      }
-
-      var tags = transcriptionBox.querySelectorAll('.page-tag');
-      var targetTag = null;
-      
-      // Find the page tag that matches this canvas index
-      tags.forEach(function (el) {
-        var tagCanvasIndex = parseInt(el.getAttribute('data-canvas-index'), 10);
-        if (tagCanvasIndex === canvasIndex) {
-          targetTag = el;
-        }
-      });
-      
-      if (targetTag) {
-        var originalPage = parseInt(targetTag.getAttribute('data-original-page'), 10);
-        log('[Page Sync] Found page tag for canvas', canvasIndex, '(transcription page', originalPage + ') - scrolling...');
-        
-        // Set flag to prevent scroll handler from firing during this sync
-        isProgrammaticViewerSync = true;
-        
-        // Scroll the tag into view with some top offset
-        var containerRect = transcriptionBox.getBoundingClientRect();
-        var tagRect = targetTag.getBoundingClientRect();
-        var scrollOffset = tagRect.top - containerRect.top - 50; // 50px offset from top
-        
-        transcriptionBox.scrollBy({
-          top: scrollOffset,
-          behavior: 'smooth'
-        });
-        
-        // Reset flag after animation completes (smooth scroll takes ~500ms)
-        setTimeout(function () { 
-          isProgrammaticViewerSync = false; 
-          log('[Page Sync] ✓ Transcription scrolled to canvas', canvasIndex);
-        }, 600);
-      } else {
-        warn('[Page Sync] No page tag found for canvas index', canvasIndex);
+  function findPageTagByCanvasIndex(transcriptionBox, canvasIndex) {
+    var tags = transcriptionBox.querySelectorAll('.page-tag');
+    var targetTag = null;
+    
+    for (var i = 0; i < tags.length; i++) {
+      var tagCanvasIndex = parseInt(tags[i].getAttribute('data-canvas-index'), 10);
+      if (tagCanvasIndex === canvasIndex) {
+        targetTag = tags[i];
+        break;
       }
     }
+    
+    return targetTag;
+  }
 
-    // Handler to compute the current page from scroll position
-    function syncViewerToScroll() {
-      // Check if sync is enabled
-      if (!window.TranscriptionSyncEnabled) {
-        log('[Page Sync] Sync disabled - skipping viewer scroll');
-        return;
-      }
-
-      // Don't sync if we're in the middle of a viewer-initiated scroll
-      if (isProgrammaticViewerSync) {
-        log('[Page Sync] Skipping scroll sync (viewer-initiated scroll in progress)');
-        return;
-      }
-
-      var containerRect = transcriptionBox.getBoundingClientRect();
-      // Use a slightly larger threshold (60px) than the scroll target (50px)
-      // to ensure the tag we just scrolled to is definitely detected as "visible"
-      var thresholdTop = containerRect.top + 60; 
-
-      var visible = null;
-      var tags = transcriptionBox.querySelectorAll('.page-tag');
-      tags.forEach(function (el) {
-        var r = el.getBoundingClientRect();
-        if (r.top <= thresholdTop) visible = el;
-      });
-      if (!visible && tags.length) visible = tags[0];
-      if (!visible) return;
-
-      // Use the pre-calculated canvas index from data attribute
-      var canvasIndexStr = visible.getAttribute('data-canvas-index');
-      var canvasIndex = canvasIndexStr !== null ? parseInt(canvasIndexStr, 10) : 0;
-      var originalPage = parseInt(visible.getAttribute('data-original-page'), 10) || 1;
-      
-      var count = viewer.lumiereSequenceCount || (viewer.tileSources ? viewer.tileSources.length : 0) || 0;
-      if (!count) { warn('[Page Sync] Viewer has no items yet – skipping sync'); return; }
-
-      // Clamp canvas index to valid range
-      var targetIndex = Math.min(Math.max(canvasIndex, 0), count - 1);
-      
-      if (lastSyncedPage !== targetIndex) {
-        log('[Page Sync] ✓ Switching viewer to canvas index', targetIndex, '(transcription page', originalPage + ')');
-        isProgrammaticScrollSync = true;
-        lastSyncedPage = targetIndex; // Update before calling viewer to prevent race conditions
-        viewer.goToPage(targetIndex);
-        
-        // Reset flag after page change completes
-        setTimeout(function () { 
-          isProgrammaticScrollSync = false; 
-        }, 500);
-      }
+  function findVisiblePageTag(transcriptionBox, thresholdTop) {
+    var tags = transcriptionBox.querySelectorAll('.page-tag');
+    var visible = null;
+    
+    for (var i = 0; i < tags.length; i++) {
+      var r = tags[i].getBoundingClientRect();
+      if (r.top <= thresholdTop) visible = tags[i];
     }
-
-    var scrollTimeout;
-    transcriptionBox.addEventListener('scroll', function () {
-      isUserScrolling = true;
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(function() {
-        isUserScrolling = false;
-        syncViewerToScroll();
-      }, 150);
-    });
-
-    // Initial sync after content settles
-    setTimeout(syncViewerToScroll, 500);
+    
+    return visible || (tags.length ? tags[0] : null);
   }
 })();
