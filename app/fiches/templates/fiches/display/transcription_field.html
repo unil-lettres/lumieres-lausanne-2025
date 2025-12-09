@@ -133,6 +133,9 @@ $(function() {
  * Processes page tags in the transcription content.
  * Detects <<page_number>> patterns and wraps them in styled spans.
  * Sets up event listeners for page synchronization.
+ * 
+ * This function is called automatically on page load and processes all
+ * .transcription-data containers in the document.
  */
 function processPageTags() {
 	$('.transcription-data').each(function() {
@@ -143,6 +146,7 @@ function processPageTags() {
 		
 		// Regular expression to match <<page_number>> pattern
 		// Matches: <<1>>, <<12>>, <<123>>, etc.
+		// Uses HTML entities (&lt; &gt;) because Django templates escape HTML
 		var pageTagRegex = /&lt;&lt;(\d+)&gt;&gt;/g;
 		
 		// Replace page tags with styled spans containing data attributes
@@ -160,6 +164,19 @@ function processPageTags() {
 			syncToPage(pageNumber);
 		});
 	});
+}
+
+/**
+ * Gets all page numbers found in the transcription.
+ * 
+ * @returns {Array} Array of page numbers in the order they appear
+ */
+function getPageNumbers() {
+	var pageNumbers = [];
+	$('.transcription-data .page-tag').each(function() {
+		pageNumbers.push(parseInt($(this).data('page'), 10));
+	});
+	return pageNumbers;
 }
 
 /**
