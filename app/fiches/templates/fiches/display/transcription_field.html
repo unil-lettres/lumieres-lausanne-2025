@@ -181,7 +181,9 @@ $(function() {
 		}
 	}
 	
-	// Initial visibility check
+	// Initial visibility check - run after a short delay to ensure layout mode is set
+	setTimeout(updateNotesToggleVisibility, 100);
+	// Also run immediately in case layout mode is already set
 	updateNotesToggleVisibility();
 
 	// Initialize notes position preference from session storage
