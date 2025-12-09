@@ -36,6 +36,12 @@
 		.content .transcription-data {
 			padding: 0 40px;
 		}
+		/* Disable sync button when not in split-view mode */
+		body[data-layout-mode="text-only"] #sync-toggle-btn,
+		body[data-layout-mode="viewer-only"] #sync-toggle-btn {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
 	</style>
 {% endblock head_css %}
 
@@ -142,6 +148,11 @@
 			<button type="button" class="layout-btn" data-layout="viewer-only" title="Facsimilé uniquement">
 				Facsimilé
 			</button>
+			<span id="sync-toggle-wrapper" style="margin-left: 20px; display: inline-block; border-left: 1px solid #ccc; padding-left: 20px;">
+				<button type="button" id="sync-toggle-btn" class="layout-btn active" title="Désactiver/Activer la synchronisation texte-facsimilé">
+					🔗 Synchro
+				</button>
+			</span>
 		</div>
 		{% endif %}
 

@@ -51,6 +51,7 @@ This copyright notice MUST APPEAR in all copies of the file.
   // Layout toggle logic ----------------------------------------------------
   function setupLayoutToggles(cfg) {
     var storageKey = 'transcription-layout-mode';
+    var syncStorageKey = 'transcription-sync-enabled';
     var hasViewer = !!cfg.hasViewer;
 
     if (!hasViewer) {
@@ -72,13 +73,30 @@ This copyright notice MUST APPEAR in all copies of the file.
 
     buttons.forEach(function (btn) {
       btn.addEventListener('click', function (e) {
-        log('[Layout Toggle] Button clicked:', e.target);
         var newLayout = btn.getAttribute('data-layout');
+        
+        // Skip if this is the sync toggle button
+        if (btn.id === 'sync-toggle-btn') return;
+        
+        log('[Layout Toggle] Button clicked:', e.target);
         log('[Layout Toggle] New layout:', newLayout);
         buttons.forEach(function (b) { b.classList.remove('active'); });
         btn.classList.add('active');
         document.body.setAttribute('data-layout-mode', newLayout);
         try { sessionStorage.setItem(storageKey, newLayout); } catch (_) {}
+
+        // Disable sync when switching away from split-view
+        if (newLayout !== 'split-view') {
+          if (window.TranscriptionSyncEnabled) {
+            window.TranscriptionSyncEnabled = false;
+            var syncToggleBtn = document.getElementById('sync-toggle-btn');
+            if (syncToggleBtn) {
+              updateSyncButtonState(syncToggleBtn, false);
+              try { sessionStorage.setItem(syncStorageKey, false); } catch (_) {}
+              log('[Layout Toggle] Sync automatically disabled - not in split-view mode');
+            }
+          }
+        }
 
         // Reset zoom when switching mode with proper timing
         log('[Layout Toggle] Attempting to reset zoom...');
@@ -95,6 +113,51 @@ This copyright notice MUST APPEAR in all copies of the file.
         }
       });
     });
+
+    // Setup sync toggle button
+    var syncToggleBtn = document.getElementById('sync-toggle-btn');
+    if (syncToggleBtn) {
+      var savedSyncState = null;
+      try { 
+        var syncStateStr = sessionStorage.getItem(syncStorageKey);
+        savedSyncState = syncStateStr !== 'false'; // Default to true
+      } catch (_) { 
+        savedSyncState = true; 
+      }
+      
+      // Set initial state
+      window.TranscriptionSyncEnabled = savedSyncState;
+      updateSyncButtonState(syncToggleBtn, savedSyncState);
+      
+      syncToggleBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        
+        // Only allow toggling in split-view mode
+        var currentLayout = document.body.getAttribute('data-layout-mode');
+        if (currentLayout !== 'split-view') {
+          log('[Sync Toggle] Cannot toggle sync - not in split-view mode');
+          return;
+        }
+        
+        var newState = !window.TranscriptionSyncEnabled;
+        window.TranscriptionSyncEnabled = newState;
+        updateSyncButtonState(syncToggleBtn, newState);
+        try { sessionStorage.setItem(syncStorageKey, newState); } catch (_) {}
+        log('[Sync Toggle] Synchronization', newState ? 'enabled' : 'disabled');
+      });
+    }
+  }
+
+  function updateSyncButtonState(btn, isEnabled) {
+    if (isEnabled) {
+      btn.classList.add('active');
+      btn.title = 'Désactiver la synchronisation texte-facsimilé';
+      btn.innerHTML = '🔗 Synchro';
+    } else {
+      btn.classList.remove('active');
+      btn.title = 'Activer la synchronisation texte-facsimilé';
+      btn.innerHTML = '🔌 Synchro';
+    }
   }
 
   // Viewer + IIIF ----------------------------------------------------------
@@ -215,64 +278,22 @@ This copyright notice MUST APPEAR in all copies of the file.
     var isProgrammaticViewerSync = false; // Flag for viewer-initiated sync
     var isUserScrolling = false;          // Flag for user interaction
 
-    // Extract page tags (five formats)
+    // Extract page tags (new format: <<page_number>>)
     var transcriptionHTML = transcriptionBox.innerHTML;
     var pageTagsRaw = [];
     var m;
 
-    // Format 1: /p. 1/ style
-    var reP = /\/p\.\s*(\d+)\//g;
-    while ((m = reP.exec(transcriptionHTML)) !== null) {
-      pageTagsRaw.push({ pageNumber: parseInt(m[1], 10), pattern: m[0], type: 'p-format' });
-    }
-
-    // Format 2: Explicit recto/verso in angle brackets <1r>, <1v>, <2r>, <2v>
-    var reRV = /(?:<|&lt;)(\d+)([rv])(?:>|&gt;)/gi;
-    reRV.lastIndex = 0;
-    while ((m = reRV.exec(transcriptionHTML)) !== null) {
-      var num = parseInt(m[1], 10);
-      var side = m[2].toLowerCase();
-      var calc = side === 'r' ? (num * 2 - 1) : (num * 2);
-      pageTagsRaw.push({ pageNumber: calc, pattern: m[0], originalPage: num, side: side, type: 'rv-explicit' });
-    }
-
-    // Format 3: Explicit recto/verso in square brackets [1r], [1v], [2r], [2v]
-    // Exclude years (4+ digits like [1763], [1788])
-    var reBracketRV = /\[(\d{1,3})([rv])\]/gi;
-    reBracketRV.lastIndex = 0;
-    while ((m = reBracketRV.exec(transcriptionHTML)) !== null) {
-      var num = parseInt(m[1], 10);
-      var side = m[2].toLowerCase();
-      var calc = side === 'r' ? (num * 2 - 1) : (num * 2);
-      pageTagsRaw.push({ pageNumber: calc, pattern: m[0], originalPage: num, side: side, type: 'bracket-rv-explicit' });
-    }
-
-    // Format 4: Implicit recto in angle brackets <1>, <2>, <3> (number only = recto)
-    // Must exclude patterns already matched by explicit recto/verso and HTML tags
-    var reImplicit = /(?:<|&lt;)(\d+)(?:>|&gt;)/gi;
-    reImplicit.lastIndex = 0;
-    var explicitPatterns = new Set(pageTagsRaw.map(function(t) { return t.pattern; }));
-    while ((m = reImplicit.exec(transcriptionHTML)) !== null) {
-      // Skip if this pattern was already matched as explicit r/v
-      if (explicitPatterns.has(m[0])) continue;
-      
-      var num = parseInt(m[1], 10);
-      var calc = num * 2 - 1;  // Implicit recto: page N → image (N*2-1)
-      pageTagsRaw.push({ pageNumber: calc, pattern: m[0], originalPage: num, side: 'r', type: 'rv-implicit' });
-    }
-
-    // Format 5: Implicit recto in square brackets [1], [2], [3] (number only = recto)
-    // Exclude years (4+ digits) and already matched patterns
-    var reBracketImplicit = /\[(\d{1,3})\]/g;
-    reBracketImplicit.lastIndex = 0;
-    while ((m = reBracketImplicit.exec(transcriptionHTML)) !== null) {
-      // Skip if already matched
-      if (explicitPatterns.has(m[0])) continue;
-      
-      var num = parseInt(m[1], 10);
-      var calc = num * 2 - 1;  // Implicit recto: page N → image (N*2-1)
-      pageTagsRaw.push({ pageNumber: calc, pattern: m[0], originalPage: num, side: 'r', type: 'bracket-rv-implicit' });
-      explicitPatterns.add(m[0]);  // Add to set to avoid duplicates
+    // New format: <<page_number>> (e.g., <<1>>, <<2>>, <<15>>)
+    // Match both literal and HTML-encoded versions
+    var reNewFormat = /(?:&lt;&lt;|<<)(\d+)(?:&gt;&gt;|>>)/g;
+    while ((m = reNewFormat.exec(transcriptionHTML)) !== null) {
+      var pageNum = parseInt(m[1], 10);
+      pageTagsRaw.push({ 
+        pageNumber: pageNum, 
+        pattern: m[0], 
+        originalPage: pageNum, 
+        type: 'new-format' 
+      });
     }
 
     // Sort by first occurrence in the HTML
@@ -281,43 +302,41 @@ This copyright notice MUST APPEAR in all copies of the file.
     var seqCount = viewer.lumiereSequenceCount || (viewer.tileSources ? viewer.tileSources.length : 0);
     log('[Page Sync] Found', pageTagsRaw.length, 'page tags; sequence has', seqCount, 'page(s).');
 
-    // Auto-detect offset: find the first page number in transcription
-    var firstTransPageNumber = pageTagsRaw.length > 0 ? pageTagsRaw[0].pageNumber : 1;
-    var pageOffset = firstTransPageNumber - 1; // Offset to map to IIIF canvas index 0
+    // With new format <<page_number>>, page numbers map directly to canvas indices (1-based to 0-based)
+    // Page 1 → Canvas index 0, Page 2 → Canvas index 1, etc.
+    var pageOffset = 1; // Direct mapping: page N → canvas index (N-1)
     
-    log('[Page Sync] First transcription page:', firstTransPageNumber, '→ offset:', pageOffset);
+    log('[Page Sync] Using direct page mapping: page N → canvas index (N-1)');
 
     // Ensure sentinel for first page exists to allow switching back when scrolling to top
-    var hasFirstPage = pageTagsRaw.some(function (t) { return t.pageNumber === firstTransPageNumber; });
+    var firstPageNumber = 1;
+    var hasFirstPage = pageTagsRaw.some(function (t) { return t.pageNumber === firstPageNumber; });
     if (!hasFirstPage && pageTagsRaw.length > 0) {
-      var sentinel = '<span class="page-tag" data-page="' + firstTransPageNumber + '" data-original-page="' + firstTransPageNumber + '" id="page-tag-start" data-type="sentinel" style="display:inline-block;height:0;line-height:0;overflow:hidden;"></span>';
+      var sentinel = '<span class="page-tag" data-page="' + firstPageNumber + '" data-original-page="' + firstPageNumber + '" id="page-tag-start" data-type="sentinel" style="display:inline-block;height:0;line-height:0;overflow:hidden;"></span>';
       transcriptionHTML = sentinel + transcriptionHTML;
-      log('[Page Sync] Inserted sentinel page tag for page', firstTransPageNumber, 'at the start');
+      log('[Page Sync] Inserted sentinel page tag for page', firstPageNumber, 'at the start');
     }
 
     // Wrap all page markers with spans tracking their mapped canvas index
     pageTagsRaw.forEach(function (tag, idx) {
-      var original = tag.pageNumber;
-      var canvasIndex = original - pageOffset; // Map to 0-based canvas index
-      var mapped = canvasIndex;
+      var pageNumber = tag.pageNumber;
+      var canvasIndex = pageNumber - 1; // Direct mapping: page N → canvas index (N-1)
       
       // Clamp to valid canvas range
       if (seqCount > 0) {
-        if (canvasIndex < 1) {
-          mapped = 1;
-          warn('[Page Sync] Page', original, 'maps to canvas', canvasIndex, '< 1, clamped to 1');
-        } else if (canvasIndex > seqCount) {
-          mapped = seqCount;
-          warn('[Page Sync] Page', original, 'maps to canvas', canvasIndex, '>', seqCount, ', clamped to', seqCount);
+        if (canvasIndex < 0) {
+          canvasIndex = 0;
+          warn('[Page Sync] Page', pageNumber, 'maps to canvas index < 0, clamped to 0');
+        } else if (canvasIndex >= seqCount) {
+          canvasIndex = seqCount - 1;
+          warn('[Page Sync] Page', pageNumber, 'maps to canvas index', canvasIndex, '>=', seqCount, ', clamped to', (seqCount - 1));
         }
       }
       
-      var wrapped = '<span class="page-tag" data-page="' + mapped + '" data-original-page="' + original + '" data-canvas-index="' + (mapped - 1) + '" id="page-tag-' + idx + '" data-type="' + tag.type + '">' + tag.pattern + '</span>';
+      var wrapped = '<span class="page-tag" data-page="' + pageNumber + '" data-original-page="' + pageNumber + '" data-canvas-index="' + canvasIndex + '" id="page-tag-' + idx + '" data-type="' + tag.type + '">' + tag.pattern + '</span>';
       transcriptionHTML = transcriptionHTML.replace(tag.pattern, wrapped);
       
-      if (canvasIndex !== original) {
-        log('[Page Sync] Mapped page', original, '→ canvas index', (mapped - 1), '(offset:', pageOffset + ')');
-      }
+      log('[Page Sync] Page', pageNumber, '→ canvas index', canvasIndex);
     });
 
     transcriptionBox.innerHTML = transcriptionHTML;
@@ -333,7 +352,8 @@ This copyright notice MUST APPEAR in all copies of the file.
           // Only sync transcription if this is a user-initiated page change
           // (not a programmatic change from scroll sync)
           // AND the user is not currently scrolling the transcription manually
-          if (!isProgrammaticScrollSync && !isUserScrolling && newPage !== lastSyncedPage) {
+          // AND sync is enabled
+          if (window.TranscriptionSyncEnabled && !isProgrammaticScrollSync && !isUserScrolling && newPage !== lastSyncedPage) {
             log('[Page Sync] Viewer page changed by user → syncing transcription to page', newPage);
             syncTranscriptionToViewer(newPage);
           }
@@ -347,6 +367,12 @@ This copyright notice MUST APPEAR in all copies of the file.
 
     // Handler to scroll transcription to match viewer page
     function syncTranscriptionToViewer(canvasIndex) {
+      // Check if sync is enabled
+      if (!window.TranscriptionSyncEnabled) {
+        log('[Page Sync] Sync disabled - skipping transcription scroll');
+        return;
+      }
+
       var tags = transcriptionBox.querySelectorAll('.page-tag');
       var targetTag = null;
       
@@ -387,6 +413,12 @@ This copyright notice MUST APPEAR in all copies of the file.
 
     // Handler to compute the current page from scroll position
     function syncViewerToScroll() {
+      // Check if sync is enabled
+      if (!window.TranscriptionSyncEnabled) {
+        log('[Page Sync] Sync disabled - skipping viewer scroll');
+        return;
+      }
+
       // Don't sync if we're in the middle of a viewer-initiated scroll
       if (isProgrammaticViewerSync) {
         log('[Page Sync] Skipping scroll sync (viewer-initiated scroll in progress)');
