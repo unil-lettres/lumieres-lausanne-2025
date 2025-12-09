@@ -1,0 +1,125 @@
+{% load static i18n fiches_extras utils %}
+{% comment %}<!--
+   Copyright (C) 2010-2025 Université de Lausanne, RISET
+   < http://www.unil.ch/riset/ >
+
+   This file is part of Lumières.Lausanne.
+   Lumières.Lausanne is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   Lumières.Lausanne is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+   This copyright notice MUST APPEAR in all copies of the file.
+-->{% endcomment %}
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+    <meta charset="utf-8">
+    {% block head_meta %}{% endblock head_meta %}
+    <title>
+        {% block page_title %}{% endblock %} | {% block site_title %}Lumières.Lausanne{% endblock %}
+    </title>
+
+    {% block head %}
+    {% block head_css %}
+    <!-- Favicon -->
+    <link href="{% static 'favicon.ico' %}" type="image/x-icon" rel="shortcut icon">
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon-precomposed" href="{% static 'images/innovagency/apple-icon-57.png' %}" />
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="{% static 'images/innovagency/apple-icon-72.png' %}" />
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="{% static 'images/innovagency/apple-icon-114.png' %}" />
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="{% static 'images/innovagency/apple-icon-144.png' %}" />
+
+    {# Modern build system - Vite bundled assets #}
+    {% if debug %}
+        {# Development mode - hot reload with Vite dev server #}
+        <script type="module" src="http://localhost:3000/@vite/client"></script>
+        <script type="module" src="http://localhost:3000/js/main.js"></script>
+    {% else %}
+        {# Production mode - hashed assets from manifest #}
+        {# TODO: Create Django template tag to read manifest.json #}
+        <link rel="stylesheet" href="{% static 'dist/css/main.css' %}">
+        <script type="module" src="{% static 'dist/js/main.js' %}"></script>
+    {% endif %}
+
+    {# Legacy styles - can be gradually removed #}
+    {% block legacy_css %}
+    <link rel="stylesheet" href="{% static 'css/reset.css' %}" media="all" charset="utf-8" />
+    <link rel="stylesheet" href="{% static 'css/960/960.css' %}">
+    <link rel="stylesheet" href="{% static 'css/fontfacekit/open-sans/stylesheet.css' %}" media="all" charset="utf-8" />
+    <link rel="stylesheet" href="{% static 'css/main2.css' %}" media="all" charset="utf-8" />
+    <link rel="stylesheet" href="{% static 'css/fiches_base2.css' %}" media="all" charset="utf-8" />
+    <link rel="stylesheet" href="{% static 'css/search2.css' %}" media="all" charset="utf-8" />
+    <link rel="stylesheet" href="{% static 'css/display_base.css' %}" media="all" charset="utf-8" />
+    <link rel="stylesheet" href="{% static 'css/edit_base2.css' %}" media="all" charset="utf-8" />
+    <link rel="stylesheet" href="{% static 'css/main2_theme.css' %}" media="all" charset="utf-8" />
+    <link rel="stylesheet" href="{% static 'css/innovagency.css' %}" media="all" charset="utf-8" />
+    <link rel="stylesheet" href="{% static 'css/custom_overrides.css' %}" />
+    {% endblock legacy_css %}
+    {% endblock head_css %}
+
+    {% block head_js %}
+    {# Legacy jQuery - can be kept for backward compatibility during migration #}
+    {% block legacy_jquery %}
+    <script src="https://code.jquery.com/jquery-1.8.2.min.js"></script>
+    <script src="/static/js/lib/jquery/jquery.cookie.js"></script>
+    <script src="/static/js/lib/jquery/jquery.placeholder.js"></script>
+    <script src="/static/js/lib/jquery-ui-1.9/js/jquery-ui-1.9.min.js"></script>
+    <script src="{% static 'js/lib/jquery/jquery.jcarousel.min.js' %}"></script>
+    <script src="{% static 'js/lib/lightbox.js' %}"></script>
+    {% endblock legacy_jquery %}
+
+    {# Modern modules are loaded via main.js entry point #}
+    {% endblock head_js %}
+    {% endblock head %}
+</head>
+
+<body>
+    {% block body %}
+    {% block ribbon_dev %}{% endblock %}
+
+    <div id="page" class="container_12">
+        {% block header %}
+        <div id="header" class="grid_12">
+            {% block header_content %}
+            <h1>Lumières.Lausanne</h1>
+            {% endblock header_content %}
+        </div>
+        {% endblock header %}
+
+        {% block nav %}
+        <div id="nav" class="grid_12">
+            {% block nav_content %}{% endblock nav_content %}
+        </div>
+        {% endblock nav %}
+
+        {% block content_wrapper %}
+        <div id="content" class="grid_12">
+            {% block content %}{% endblock content %}
+        </div>
+        {% endblock content_wrapper %}
+
+        {% block footer %}
+        <div id="footer" class="grid_12">
+            {% block footer_content %}
+            <p>&copy; {% now "Y" %} Université de Lausanne</p>
+            {% endblock footer_content %}
+        </div>
+        {% endblock footer %}
+    </div>
+
+    {% block bottom_js %}
+    {# Additional page-specific scripts can be loaded here #}
+    {% endblock bottom_js %}
+    {% endblock body %}
+</body>
+</html>

@@ -1,0 +1,93 @@
+{% load static i18n fiches_extras utils vite_tags %}
+{% comment %}<!--
+   Copyright (C) 2010-2025 Université de Lausanne, RISET
+   < http://www.unil.ch/riset/ >
+
+   This file is part of Lumières.Lausanne.
+   Lumières.Lausanne is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   Lumières.Lausanne is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+   This copyright notice MUST APPEAR in all copies of the file.
+-->{% endcomment %}
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+    <meta charset="utf-8">
+    {% block head_meta %}{% endblock head_meta %}
+    <title>
+        {% block page_title %}{% endblock %} | {% block site_title %}Lumières.Lausanne{% endblock %}
+    </title>
+
+    {% block head %}
+    {% block head_css %}
+    <!-- Favicon -->
+    <link href="{% static 'favicon.ico' %}" type="image/x-icon" rel="shortcut icon">
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon-precomposed" href="{% static 'images/innovagency/apple-icon-57.png' %}" />
+    <link rel="apple-touch-icon-precomposed" sizes="72x72" href="{% static 'images/innovagency/apple-icon-72.png' %}" />
+    <link rel="apple-touch-icon-precomposed" sizes="114x114" href="{% static 'images/innovagency/apple-icon-114.png' %}" />
+    <link rel="apple-touch-icon-precomposed" sizes="144x144" href="{% static 'images/innovagency/apple-icon-144.png' %}" />
+
+    {# Modern build system - Vite bundled assets #}
+    {% vite_hmr %}
+    {% vite_css 'css/main.css' %}
+    {% endblock head_css %}
+
+    {% block head_js %}
+    {# Main application JavaScript (includes modules) #}
+    {% vite_js 'js/main.js' %}
+    {% endblock head_js %}
+    {% endblock head %}
+</head>
+
+<body>
+    {% block body %}
+    {% block ribbon_dev %}{% endblock %}
+
+    <div id="page" class="container">
+        {% block header %}
+        <div id="header">
+            {% block header_content %}
+            <h1>Lumières.Lausanne</h1>
+            {% endblock header_content %}
+        </div>
+        {% endblock header %}
+
+        {% block nav %}
+        <nav id="nav">
+            {% block nav_content %}{% endblock nav_content %}
+        </nav>
+        {% endblock nav %}
+
+        {% block content_wrapper %}
+        <main id="content">
+            {% block content %}{% endblock content %}
+        </main>
+        {% endblock content_wrapper %}
+
+        {% block footer %}
+        <footer id="footer">
+            {% block footer_content %}
+            <p>&copy; {% now "Y" %} Université de Lausanne</p>
+            {% endblock footer_content %}
+        </footer>
+        {% endblock footer %}
+    </div>
+
+    {% block bottom_js %}
+    {# Additional page-specific scripts #}
+    {% endblock bottom_js %}
+    {% endblock body %}
+</body>
+</html>
