@@ -124,7 +124,62 @@ $(function() {
 	$(".sic").each(function() {
 		$(this).after('<span class="corr">' + $(this).attr('data-corr') + '</span>');
 	});
+
+	// Process page tags <<page_number>> for viewer synchronization
+	processPageTags();
 });
+
+/**
+ * Processes page tags in the transcription content.
+ * Detects <<page_number>> patterns and wraps them in styled spans.
+ * Sets up event listeners for page synchronization.
+ */
+function processPageTags() {
+	$('.transcription-data').each(function() {
+		var $container = $(this);
+		
+		// Find and process all page tags matching <<number>>
+		var html = $container.html();
+		
+		// Regular expression to match <<page_number>> pattern
+		// Matches: <<1>>, <<12>>, <<123>>, etc.
+		var pageTagRegex = /&lt;&lt;(\d+)&gt;&gt;/g;
+		
+		// Replace page tags with styled spans containing data attributes
+		html = html.replace(pageTagRegex, function(match, pageNumber) {
+			return '<span class="page-tag" data-page="' + pageNumber + '" title="Page ' + pageNumber + '">' +
+				   '&lt;&lt;' + pageNumber + '&gt;&gt;</span>';
+		});
+		
+		$container.html(html);
+		
+		// Add click handlers for page synchronization
+		$container.find('.page-tag').on('click', function(e) {
+			e.preventDefault();
+			var pageNumber = $(this).data('page');
+			syncToPage(pageNumber);
+		});
+	});
+}
+
+/**
+ * Synchronizes the viewer to display the specified page number.
+ * This function is called when a page tag is clicked.
+ * 
+ * @param {number} pageNumber - The page number to synchronize to
+ */
+function syncToPage(pageNumber) {
+	// Trigger custom event for page synchronization
+	// This allows other components (like a facsimile viewer) to respond
+	$(document).trigger('transcription:pageSync', [pageNumber]);
+	
+	// Log for debugging
+	console.log('Page synchronization requested for page:', pageNumber);
+	
+	// TODO: Implement actual page navigation/synchronization logic
+	// This will depend on the facsimile viewer implementation
+	// For now, we just trigger an event that can be handled by other scripts
+}
 </script>
 
 <div id="transcription-data" class="transcription-data cked-content" data-mode="dipl">

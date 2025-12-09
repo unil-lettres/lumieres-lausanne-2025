@@ -128,3 +128,33 @@ div.note-editorial:before, p.note-editorial:before {content: counter(noteeditori
 div.note-document:before, p.note-document:before {content: counter(notedocument,lower-roman);padding-right:1em;  }
 
 .ia-content span.note-editorial, .ia-content span.note-document {background: white; color: #f0750b; border: none;}
+
+/* Page tag styling for <<page_number>> markers */
+.page-tag {
+	display: inline-block;
+	padding: 0 4px;
+	margin: 0 2px;
+	background-color: #d4edda;
+	border: 1px solid #28a745;
+	border-radius: 3px;
+	color: #155724;
+	font-size: 90%;
+	font-family: monospace;
+	cursor: pointer;
+}
+
+/* Hide page tags in read mode, show only in edit mode (CKEditor) */
+.transcription-data .page-tag {
+	display: none;
+}
+
+/* Show page tags in CKEditor edit mode */
+.cked-content .page-tag {
+	display: inline-block;
+}
+
+/* Hover effect for page tags */
+.page-tag:hover {
+	background-color: #c3e6cb;
+	border-color: #1e7e34;
+}
