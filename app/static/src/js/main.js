@@ -42,6 +42,4 @@ ready(() => {
   if (window.LL.initLightbox) {
     window.LL.initLightbox();
   }
-
-  console.log('Lumières.Lausanne initialized');
 });

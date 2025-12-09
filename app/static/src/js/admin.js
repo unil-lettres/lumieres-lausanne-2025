@@ -93,7 +93,7 @@ function initProjectUrlTools() {
         // Validate URL format
         try {
           new URL(urlInput.value);
-        } catch (error) {
+        } catch {
           e.preventDefault();
           alert('Please enter a valid URL');
         }

@@ -202,8 +202,8 @@ class Collection {
           dialog.remove();
           window.location.reload();
         })
-        .catch((error) => {
-          console.error('Error removing collection:', error);
+        .catch((err) => {
+          console.error('Error removing collection:', err);
           alert('Erreur lors de la suppression de la collection');
         });
     });

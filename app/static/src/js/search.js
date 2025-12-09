@@ -24,7 +24,7 @@ This copyright notice MUST APPEAR in all copies of the file.
  * Manages search filters for biographical searches
  */
 
-import { $, $1, on, html, val, attr, data, closest, cookie } from './utils/dom.js';
+import { $, $1, on, html, val, closest, cookie } from './utils/dom.js';
 
 class SearchFilter {
   constructor() {
@@ -437,7 +437,6 @@ class SearchFilter {
 
         // Set parameters
         const parts = $('.search-filter-content-part', newFilter);
-        let pIdx = 0;
 
         fDef.params.forEach((param, index) => {
           if (index < parts.length) {
