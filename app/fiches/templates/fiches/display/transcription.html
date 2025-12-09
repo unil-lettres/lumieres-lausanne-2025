@@ -43,6 +43,13 @@
 			cursor: not-allowed;
 		}
 	</style>
+	<style>
+		/* Hide page-number tags in display view (they are visible in editor only) */
+		.transcription-data .pagenumber-tag,
+		.content .transcription-data .pagenumber-tag {
+			display: none !important;
+		}
+	</style>
 {% endblock head_css %}
 
 {% if trans_user_access %}

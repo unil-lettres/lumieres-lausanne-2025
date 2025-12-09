@@ -31,15 +31,15 @@ CKEDITOR.plugins.add('pagenumber', {
                     pageNumber = pageIndex + 1; // Convert to 1-based
                 }
                 
-                // Insert the page number tag
+                // Insert the page number tag wrapped in a span so it can be styled
                 if (pageNumber !== null) {
-                    editor.insertText('<<' + pageNumber + '>>');
+                    editor.insertHtml('<span class="pagenumber-tag">&lt;&lt;' + pageNumber + '&gt;&gt;</span>');
                 } else {
                     // Fallback: ask user for page number
                     var userInput = prompt(local_lang.label.replace('<<', '').replace('>>', ''), '1');
-                    if (userInput !== null && userInput.trim() !== '') {
-                        editor.insertText('<<' + userInput.trim() + '>>');
-                    }
+                        if (userInput !== null && userInput.trim() !== '') {
+                            editor.insertHtml('<span class="pagenumber-tag">&lt;&lt;' + userInput.trim() + '&gt;&gt;</span>');
+                        }
                 }
             }
         });

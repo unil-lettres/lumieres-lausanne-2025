@@ -25,6 +25,16 @@ span[style], font[face] {font-size:inherit !important; line-height:inherit !impo
 	margin-bottom: 0;
 }
 
+/* Page number tag inserted by CKEditor pagenumber plugin (editor iframe + view) */
+.cked-content .pagenumber-tag,
+.transcription-data .pagenumber-tag {
+	color: #157f2e;
+	font-weight: 600;
+	background: rgba(21,127,46,0.07);
+	padding: 0 4px;
+	border-radius: 3px;
+}
+
 /* Hide line breaks and remove extra spacing when hidden-br class is applied */
 .transcription-data br.hidden-br {
 	display: none;
