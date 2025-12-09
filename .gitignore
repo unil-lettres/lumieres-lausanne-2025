@@ -184,6 +184,15 @@ logging/
 staticfiles/
 migrations/
 
+# Node.js / npm
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build output
+app/static/dist/
+
 # Solr
 solr/data/
 

@@ -1,0 +1,36 @@
+{
+  "name": "lumieres-lausanne",
+  "version": "1.0.0",
+  "description": "Front-end build system for Lumières Lausanne - Swiss Enlightenment research platform",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint:js": "eslint app/static/src/**/*.js",
+    "lint:css": "stylelint app/static/src/**/*.css",
+    "format": "prettier --write 'app/static/src/**/*.{js,css}'"
+  },
+  "keywords": [
+    "django",
+    "enlightenment",
+    "research"
+  ],
+  "author": "Université de Lausanne",
+  "license": "GPL-3.0-or-later",
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.13.0",
+    "prettier": "^3.4.2",
+    "stylelint": "^16.12.0",
+    "stylelint-config-standard": "^36.0.1",
+    "vite": "^6.0.3"
+  },
+  "dependencies": {
+    "openseadragon": "^5.0.0",
+    "swiper": "^11.1.15"
+  }
+}
