@@ -142,6 +142,27 @@
                 self.filters.brightness = parseInt(value);
                 self.applyFilters();
             });
+
+            // Page input field handler
+            this.bindPageInput('page-input', function (pageNumber) {
+                if (!self.viewer) return;
+                
+                var totalPages = self.getTotalPages();
+                var targetPage = parseInt(pageNumber, 10);
+                
+                // Validate page number
+                if (isNaN(targetPage) || targetPage < 1 || targetPage > totalPages) {
+                    // Reset to current page if invalid
+                    self.updatePageIndicator();
+                    return;
+                }
+                
+                // Convert from 1-based display to 0-based index
+                var targetIndex = targetPage - 1;
+                
+                console.log('Page input: navigating to page', targetPage, '(index', targetIndex + ')');
+                self.viewer.goToPage(targetIndex);
+            });
         },
 
         /**
@@ -176,6 +197,40 @@
                 };
                 this.boundEvents[id + '_slider'] = wrapperHandler;
                 element.addEventListener('input', wrapperHandler);
+            }
+        },
+
+        /**
+         * Bind page input events (change and enter key)
+         */
+        bindPageInput: function (id, handler) {
+            var element = document.getElementById(id);
+            if (element) {
+                // Remove any existing event listeners first
+                if (this.boundEvents[id + '_change']) {
+                    element.removeEventListener('change', this.boundEvents[id + '_change']);
+                }
+                if (this.boundEvents[id + '_keypress']) {
+                    element.removeEventListener('keypress', this.boundEvents[id + '_keypress']);
+                }
+                
+                // Handle when user leaves the field (blur/change)
+                var changeHandler = function () {
+                    handler(this.value);
+                };
+                this.boundEvents[id + '_change'] = changeHandler;
+                element.addEventListener('change', changeHandler);
+                
+                // Handle when user presses Enter
+                var keypressHandler = function (e) {
+                    if (e.key === 'Enter' || e.keyCode === 13) {
+                        e.preventDefault();
+                        handler(this.value);
+                        this.blur(); // Remove focus after navigating
+                    }
+                };
+                this.boundEvents[id + '_keypress'] = keypressHandler;
+                element.addEventListener('keypress', keypressHandler);
             }
         },
 
@@ -265,17 +320,18 @@
         updatePageIndicator: function () {
             if (!this.viewer) return;
 
-            var currentPageEl = document.getElementById('current-page');
+            var pageInputEl = document.getElementById('page-input');
             var totalPagesEl = document.getElementById('total-pages');
 
-            if (currentPageEl && totalPagesEl) {
+            if (pageInputEl && totalPagesEl) {
                 var currentPageIndex = this.viewer.currentPage(); // 0-based
                 var currentPage = currentPageIndex + 1; // Convert to 1-based for display
                 var totalPages = this.getTotalPages();
 
                 console.log('Page indicator update - Index:', currentPageIndex, 'Display:', currentPage, 'Total:', totalPages);
 
-                currentPageEl.textContent = currentPage;
+                pageInputEl.value = currentPage;
+                pageInputEl.max = totalPages;
                 totalPagesEl.textContent = totalPages;
 
                 // Update navigation button states
@@ -359,10 +415,14 @@
             
             // Remove all tracked event listeners
             for (var id in this.boundEvents) {
-                var element = document.getElementById(id.replace('_slider', ''));
+                var element = document.getElementById(id.replace('_slider', '').replace('_change', '').replace('_keypress', ''));
                 if (element && this.boundEvents[id]) {
                     if (id.includes('_slider')) {
                         element.removeEventListener('input', this.boundEvents[id]);
+                    } else if (id.includes('_change')) {
+                        element.removeEventListener('change', this.boundEvents[id]);
+                    } else if (id.includes('_keypress')) {
+                        element.removeEventListener('keypress', this.boundEvents[id]);
                     } else {
                         element.removeEventListener('click', this.boundEvents[id]);
                     }

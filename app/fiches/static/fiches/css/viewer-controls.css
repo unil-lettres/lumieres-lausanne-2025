@@ -134,6 +134,44 @@
     color: #495057;
     margin: 0 8px;
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.page-input {
+    width: 35px;
+    height: 22px;
+    padding: 2px 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #495057;
+    text-align: center;
+    border: 1px solid #98958E;
+    border-radius: 2px;
+    background-color: #fff;
+    transition: border-color 0.2s ease;
+}
+
+.page-input:hover {
+    border-color: #776C4E;
+}
+
+.page-input:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 1px;
+    border-color: #0d6efd;
+}
+
+.page-input::-webkit-inner-spin-button,
+.page-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+.page-input[type="number"] {
+    -moz-appearance: textfield;
 }
 
 /* Control Icons using CSS sprites from OpenSeadragon */
