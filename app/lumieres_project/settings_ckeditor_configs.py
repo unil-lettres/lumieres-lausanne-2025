@@ -17,7 +17,7 @@ CKEDITOR_CONFIGS = {
         'bodyId': 'project-description-content-id',
         'width': 750,
         'height': 300,
-        'extraPlugins': 'footnote',
+        'extraPlugins': 'footnote,pagenumber',
         'autoGrow_minHeight': '200',
         'autoGrow_maxHeight': '800',
         'autoGrow_bottomSpace': '50',
@@ -38,7 +38,7 @@ CKEDITOR_CONFIGS = {
         'toolbar': 'Project',
         'toolbar_Project': (
             ['Cut', 'Copy', 'Paste', 'PasteText', '-', 'SelectAll', '-', 'Source'],
-            ['Image', 'Smiley', 'SpecialChar', 'PageBreak', 'Footnote'],
+            ['Image', 'Smiley', 'SpecialChar', 'PageBreak', 'Footnote', 'PageNumber'],
             ['Link', 'Unlink', 'Anchor'],
             ['Maximize', '-', 'About'],
             '/',
@@ -55,7 +55,7 @@ CKEDITOR_CONFIGS = {
         'bodyClass': 'cked-content',
         'width': 880,
         'height': 500,
-        'extraPlugins': 'overline,transcription,correction,notes,illeg,footnote',
+        'extraPlugins': 'overline,transcription,correction,notes,illeg,footnote,pagenumber',
         'language': 'fr',
         'removePlugins': 'flash,iframe,bidi,scayt',
         'removeFormatTags': 'font',
@@ -76,7 +76,7 @@ CKEDITOR_CONFIGS = {
             ['Image', 'Table', 'SpecialChar', '-', 'Link', 'Unlink'],
             ['Styles', 'Format', 'BGColor'],
             '/',
-            ['Added', 'Suppressed', 'Notes', 'Footnote'],
+            ['Added', 'Suppressed', 'Notes', 'Footnote', 'PageNumber'],
             ['Supplied', 'Unclear', 'Illeg', 'Correction']
         ),
         'keystrokes': [
