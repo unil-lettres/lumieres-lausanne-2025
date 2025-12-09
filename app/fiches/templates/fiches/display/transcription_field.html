@@ -171,6 +171,19 @@ $(function() {
 	$("#toc-toggle").click(function() { toggleTOC(); });
 	$("#notes-position-toggle").click(function() { toggleNotesPosition(); });
 
+	// Hide/show notes position toggle based on layout mode
+	function updateNotesToggleVisibility() {
+		var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+		if (layoutMode === 'text-only') {
+			$('#notes-position-toggle').show();
+		} else {
+			$('#notes-position-toggle').hide();
+		}
+	}
+	
+	// Initial visibility check
+	updateNotesToggleVisibility();
+
 	// Initialize notes position preference from session storage
 	initializeNotesPosition();
 
@@ -181,6 +194,8 @@ $(function() {
 	var layoutObserver = new MutationObserver(function(mutations) {
 		mutations.forEach(function(mutation) {
 			if (mutation.type === 'attributes' && mutation.attributeName === 'data-layout-mode') {
+				// Update button visibility
+				updateNotesToggleVisibility();
 				// Reinitialize notes position based on new layout mode
 				initializeNotesPosition();
 				processNotes();
