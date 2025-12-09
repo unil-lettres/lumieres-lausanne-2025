@@ -308,7 +308,8 @@ class SearchFilter {
 
           // Handle number validation
           if (filterObj.type === 'number') {
-            if (isNaN(parseInt(filterObj.val)) && filterObj.val !== 'notnull') {
+            const numValue = Number(filterObj.val);
+            if (!Number.isInteger(numValue) && filterObj.val !== 'notnull') {
               return; // Skip invalid number
             }
             if (filterObj.val === 'notnull') {
