@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<!--
+Copyright (C) 2010-2025 Université de Lausanne, RISET
+<https://www.unil.ch/riset/>
+
+This file is part of Lumières.Lausanne.
+Lumières.Lausanne is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Lumières.Lausanne is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+This copyright notice MUST APPEAR in all copies of the file.
+-->
+<html>
+<head>
+    <title>CKEditor Page Number Plugin Test</title>
+    <meta charset="utf-8">
+    <script src="../ckeditor.js"></script>
+</head>
+<body>
+    <h1>CKEditor Page Number Plugin Test</h1>
+    <p>This page tests the pagenumber plugin. Click the "Page Number" button in the toolbar to insert a page tag.</p>
+    
+    <h2>Test with English (default)</h2>
+    <textarea id="editor1" name="editor1">
+        <p>This is a test editor. Click the Page Number button to insert a page tag like &lt;&lt;5&gt;&gt;</p>
+    </textarea>
+    
+    <h2>Test with French</h2>
+    <textarea id="editor2" name="editor2">
+        <p>Ceci est un éditeur de test. Cliquez sur le bouton Page numéro pour insérer une balise de page comme &lt;&lt;5&gt;&gt;</p>
+    </textarea>
+    
+    <script>
+        // Replace the first textarea with CKEditor (English)
+        CKEDITOR.replace('editor1', {
+            extraPlugins: 'pagenumber',
+            toolbar: [
+                ['Cut', 'Copy', 'Paste', '-', 'Undo', 'Redo'],
+                ['Bold', 'Italic', 'Underline'],
+                ['PageNumber', 'SpecialChar'],
+                ['Source']
+            ],
+            height: 200
+        });
+        
+        // Replace the second textarea with CKEditor (French)
+        CKEDITOR.replace('editor2', {
+            language: 'fr',
+            extraPlugins: 'pagenumber',
+            toolbar: [
+                ['Cut', 'Copy', 'Paste', '-', 'Undo', 'Redo'],
+                ['Bold', 'Italic', 'Underline'],
+                ['PageNumber', 'SpecialChar'],
+                ['Source']
+            ],
+            height: 200
+        });
+    </script>
+    
+    <h2>Instructions for Testing</h2>
+    <ol>
+        <li>Position your cursor in either editor</li>
+        <li>Click the "Page Number" (or "Page numéro" in French) button in the toolbar</li>
+        <li>Enter a page number in the dialog (e.g., "5")</li>
+        <li>Click OK</li>
+        <li>Verify that the tag &lt;&lt;5&gt;&gt; appears at the cursor position</li>
+        <li>Test validation by:
+            <ul>
+                <li>Leaving the field empty and clicking OK (should show error)</li>
+                <li>Entering non-numeric text (should show error)</li>
+            </ul>
+        </li>
+    </ol>
+    
+    <h2>Expected Results</h2>
+    <ul>
+        <li>The button should appear in the toolbar with a page icon</li>
+        <li>Clicking it should open a dialog requesting a page number</li>
+        <li>Valid numeric input should insert &lt;&lt;number&gt;&gt; at cursor position</li>
+        <li>Invalid input should show validation errors</li>
+        <li>French editor should show French labels and messages</li>
+    </ul>
+</body>
+</html>
