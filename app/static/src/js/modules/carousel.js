@@ -25,7 +25,6 @@ This copyright notice MUST APPEAR in all copies of the file.
  */
 
 import Swiper from 'swiper';
-import 'swiper/css';
 import { $, $1, on, data } from '../utils/dom.js';
 
 /**

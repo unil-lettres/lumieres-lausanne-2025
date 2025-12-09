@@ -24,6 +24,9 @@ This copyright notice MUST APPEAR in all copies of the file.
  * Imports and organizes all CSS modules
  */
 
+/* Third-party libraries */
+@import url('swiper/css');
+
 /* Reset and base styles */
 @import url('./base/reset.css');
 @import url('./base/typography.css');

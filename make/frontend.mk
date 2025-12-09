@@ -35,7 +35,7 @@ npm-format: check-node  ## Format code with Prettier
 
 # Clean build artifacts
 npm-clean:  ## Clean npm build artifacts
-	$(RM) app/static/dist
-	$(RM) node_modules
+	rm -rf app/static/dist
+	rm -rf node_modules
 
 .PHONY: check-node npm-install npm-dev npm-build npm-preview npm-lint-js npm-lint-css npm-format npm-clean

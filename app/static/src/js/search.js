@@ -307,8 +307,11 @@ class SearchFilter {
           }
 
           // Handle number validation
-          if (filterObj.type === 'number' && filterObj.val === 'notnull') {
-            if (isNaN(parseInt(filterObj.val))) {
+          if (filterObj.type === 'number') {
+            if (isNaN(parseInt(filterObj.val)) && filterObj.val !== 'notnull') {
+              return; // Skip invalid number
+            }
+            if (filterObj.val === 'notnull') {
               filterObj.op = 'isnull';
               filterObj.val = '0';
             }
