@@ -106,10 +106,13 @@ function initializeNotesPosition() {
 	var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
 	var savedPosition = null;
 	
-	try {
-		savedPosition = sessionStorage.getItem('transcription-notes-position');
-	} catch (e) {
-		// sessionStorage not available
+	// Only allow saved preference in text-only mode
+	if (layoutMode === 'text-only') {
+		try {
+			savedPosition = sessionStorage.getItem('transcription-notes-position');
+		} catch (e) {
+			// sessionStorage not available
+		}
 	}
 	
 	// Set default based on layout mode if no saved preference
@@ -117,6 +120,7 @@ function initializeNotesPosition() {
 		if (layoutMode === 'text-only') {
 			savedPosition = 'margin';
 		} else {
+			// Always use bottom for split-view and viewer-only
 			savedPosition = 'bottom';
 		}
 	}
@@ -126,8 +130,15 @@ function initializeNotesPosition() {
 	updateNotesPositionButton(savedPosition);
 }
 
-// Toggle notes position between margin and bottom
+// Toggle notes position between margin and bottom (only in text-only mode)
 function toggleNotesPosition() {
+	var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+	
+	// Only allow toggle in text-only mode
+	if (layoutMode !== 'text-only') {
+		return;
+	}
+	
 	var currentPosition = getNotesPosition();
 	var newPosition = (currentPosition === 'margin') ? 'bottom' : 'margin';
 	
@@ -170,6 +181,8 @@ $(function() {
 	var layoutObserver = new MutationObserver(function(mutations) {
 		mutations.forEach(function(mutation) {
 			if (mutation.type === 'attributes' && mutation.attributeName === 'data-layout-mode') {
+				// Reinitialize notes position based on new layout mode
+				initializeNotesPosition();
 				processNotes();
 			}
 		});
@@ -195,7 +208,8 @@ $(function() {
 
 // Process notes based on layout mode and notes position preference
 function processNotes() {
-	var useMarginNotes = (getNotesPosition() === 'margin');
+	var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+	var useMarginNotes = (layoutMode === 'text-only' && getNotesPosition() === 'margin');
 	
 	// Clear existing notes
 	$('.transcription-doc-notes, .transcription-ed-notes').remove();

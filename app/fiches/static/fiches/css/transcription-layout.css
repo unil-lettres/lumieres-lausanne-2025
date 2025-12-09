@@ -191,6 +191,11 @@ body[data-layout-mode="text-only"] #transcription-view-controls {
 	margin-bottom: 12px;
 }
 
+/* Hide notes position toggle button when not in text-only mode */
+body:not([data-layout-mode="text-only"]) #notes-position-toggle {
+	display: none !important;
+}
+
 /* Show side notes based on notes position preference, not layout mode */
 body[data-notes-position="margin"] .transcription-content-wrapper {
 	display: flex;
