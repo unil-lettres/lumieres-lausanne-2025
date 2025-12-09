@@ -165,8 +165,13 @@
 
 .page-input::-webkit-inner-spin-button,
 .page-input::-webkit-outer-spin-button {
-    opacity: 1;
-    height: 20px;
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+.page-input[type="number"] {
+    -moz-appearance: textfield;
 }
 
 /* Control Icons using CSS sprites from OpenSeadragon */
