@@ -30,14 +30,7 @@ The tag will be inserted in the format `<<page_number>>`, for example: `<<5>>`
 
 ## Configuration
 
-The plugin is enabled in the following CKEditor configurations:
-
-- `project_ckeditor`: Available in the Project editor
-- `transcription_ckeditor`: Available in the Transcription editor
-
-### Adding to Other Configurations
-
-To add the plugin to another CKEditor configuration, update `app/lumieres_project/settings_ckeditor_configs.py`:
+To enable the plugin in a CKEditor configuration, update `app/lumieres_project/settings_ckeditor_configs.py`:
 
 1. Add `pagenumber` to the `extraPlugins` setting:
    ```python

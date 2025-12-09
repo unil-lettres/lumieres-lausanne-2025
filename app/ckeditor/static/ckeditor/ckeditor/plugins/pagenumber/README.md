@@ -19,10 +19,18 @@ This plugin adds a "Page Number" button to CKEditor that allows users to insert 
 
 ## Installation
 
-The plugin is already integrated into the Lumières.Lausanne CKEditor configurations. To use it in a new configuration:
+To use this plugin in a CKEditor configuration:
 
 1. Add `pagenumber` to the `extraPlugins` setting
 2. Add `PageNumber` to your toolbar configuration
+
+Example:
+```python
+'extraPlugins': 'existing,plugins,pagenumber',
+'toolbar_Name': (
+    ['OtherButtons', 'PageNumber'],
+),
+```
 
 ## Files
 
