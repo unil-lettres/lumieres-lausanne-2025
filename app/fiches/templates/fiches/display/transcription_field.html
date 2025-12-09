@@ -190,10 +190,12 @@ function syncToPage(pageNumber) {
 	// This allows other components (like a facsimile viewer) to respond
 	$(document).trigger('transcription:pageSync', [pageNumber]);
 	
-	// Log for debugging
-	console.log('Page synchronization requested for page:', pageNumber);
+	// Log for debugging (can be disabled in production)
+	if (typeof console !== 'undefined' && console.log) {
+		console.log('Page synchronization requested for page:', pageNumber);
+	}
 	
-	// TODO: Implement actual page navigation/synchronization logic
+	// TODO(#90): Implement actual page navigation/synchronization logic
 	// This will depend on the facsimile viewer implementation
 	// For now, we just trigger an event that can be handled by other scripts
 }

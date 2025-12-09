@@ -6,7 +6,7 @@ See docs/copyright.md
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth.models import User
-from fiches.models.documents.document import Biblio, Transcription
+from fiches.models.documents.document import Biblio, Transcription, DocumentType
 
 
 class TranscriptionPageTagTest(TestCase):
@@ -19,11 +19,17 @@ class TranscriptionPageTagTest(TestCase):
             password="testpass123"
         )
         
+        # Create a document type for testing
+        self.doc_type = DocumentType.objects.create(
+            type="manuscrit",
+            verbose_name="Manuscrit"
+        )
+        
         # Create a bibliography entry
         self.biblio = Biblio.objects.create(
             title="Test Manuscript",
             litterature_type="p",
-            document_type_id=1
+            document_type=self.doc_type
         )
         
         # Create a transcription with page tags
