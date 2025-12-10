@@ -200,6 +200,12 @@ body[data-layout-mode="text-only"] #notes-position-toggle {
 	display: inline-block !important;
 }
 
+/* Extra guard class applied via JS to handle jQuery UI inline styles */
+#notes-position-toggle.notes-toggle-hidden {
+	display: none !important;
+	visibility: hidden !important;
+}
+
 /* Show side notes based on notes position preference, not layout mode */
 body[data-notes-position="margin"] .transcription-content-wrapper {
 	display: flex;

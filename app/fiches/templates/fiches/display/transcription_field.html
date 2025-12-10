@@ -174,10 +174,13 @@ $(function() {
 	// Hide/show notes position toggle based on layout mode
 	function updateNotesToggleVisibility() {
 		var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
-		if (layoutMode === 'text-only') {
-			$('#notes-position-toggle').show();
+		var $toggle = $('#notes-position-toggle');
+		var shouldShow = layoutMode === 'text-only';
+		
+		if (shouldShow) {
+			$toggle.removeClass('notes-toggle-hidden').removeAttr('hidden').attr('aria-hidden', 'false');
 		} else {
-			$('#notes-position-toggle').hide();
+			$toggle.addClass('notes-toggle-hidden').attr('hidden', 'hidden').attr('aria-hidden', 'true');
 		}
 	}
 	
