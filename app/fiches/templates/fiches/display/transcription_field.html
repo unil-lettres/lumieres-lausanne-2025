@@ -3,10 +3,16 @@
         <a id="view-toggle" data-mode="dipl"><span>Passer en version éditée</span></a>
         <a id="lb-toggle"><span>Cacher les retours à la ligne</span></a>
         <a id="toc-toggle"><span>Montrer la table des matières</span></a>
+        <a id="notes-position-toggle"><span>Notes en bas de page</span></a>
     </p>
 </div>
 
 <script type="text/javascript">
+// Helper function to get current notes position
+function getNotesPosition() {
+	return document.body.getAttribute('data-notes-position') || 'bottom';
+}
+
 function toggleBR() {
 	if ( $('#lb-toggle > span').hasClass('show') ) {
         $('div.transcription-data br').not($('div.transcription-data .verse br')).removeClass('hidden-br');
@@ -18,9 +24,8 @@ function toggleBR() {
         $('#lb-toggle > span').addClass('show').text('Montrer les retours à la ligne');
 	}
 	
-	// Recalculate note positions if in text-only mode
-	var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
-	if (layoutMode === 'text-only' && $('.side-notes-panel').length > 0) {
+	// Recalculate note positions if margin notes are displayed
+	if (getNotesPosition() === 'margin' && $('.side-notes-panel').length > 0) {
 		setTimeout(repositionSideNotes, 150);
 	}
 }
@@ -46,9 +51,8 @@ function toggleView() {
         $("div.transcription-data").toggleClass('norm');
     }
     
-    // Recalculate note positions if in text-only mode
-    var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
-    if (layoutMode === 'text-only' && $('.side-notes-panel').length > 0) {
+    // Recalculate note positions if margin notes are displayed
+    if (getNotesPosition() === 'margin' && $('.side-notes-panel').length > 0) {
         setTimeout(repositionSideNotes, 150);
     }
 }
@@ -91,11 +95,73 @@ function toggleTOC() {
         }
     }
     
-    // Recalculate note positions if in text-only mode
-    var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
-    if (layoutMode === 'text-only' && $('.side-notes-panel').length > 0) {
+    // Recalculate note positions if margin notes are displayed
+    if (getNotesPosition() === 'margin' && $('.side-notes-panel').length > 0) {
         setTimeout(repositionSideNotes, 150);
     }
+}
+
+// Initialize notes position preference
+function initializeNotesPosition() {
+	var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+	var savedPosition = null;
+	
+	// Only allow saved preference in text-only mode
+	if (layoutMode === 'text-only') {
+		try {
+			savedPosition = sessionStorage.getItem('transcription-notes-position');
+		} catch (e) {
+			// sessionStorage not available
+		}
+	}
+	
+	// Set default based on layout mode if no saved preference
+	if (!savedPosition) {
+		if (layoutMode === 'text-only') {
+			savedPosition = 'margin';
+		} else {
+			// Always use bottom for split-view and viewer-only
+			savedPosition = 'bottom';
+		}
+	}
+	
+	// Store the preference
+	document.body.setAttribute('data-notes-position', savedPosition);
+	updateNotesPositionButton(savedPosition);
+}
+
+// Toggle notes position between margin and bottom (only in text-only mode)
+function toggleNotesPosition() {
+	var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+	
+	// Only allow toggle in text-only mode
+	if (layoutMode !== 'text-only') {
+		return;
+	}
+	
+	var currentPosition = getNotesPosition();
+	var newPosition = (currentPosition === 'margin') ? 'bottom' : 'margin';
+	
+	document.body.setAttribute('data-notes-position', newPosition);
+	
+	try {
+		sessionStorage.setItem('transcription-notes-position', newPosition);
+	} catch (e) {
+		// Ignore if session storage is not available
+	}
+	
+	updateNotesPositionButton(newPosition);
+	processNotes();
+}
+
+// Update the notes position button text
+function updateNotesPositionButton(position) {
+	var $button = $('#notes-position-toggle > span');
+	if (position === 'margin') {
+		$button.text('Notes en bas de page');
+	} else {
+		$button.text('Notes en marge');
+	}
 }
 
 $(function() {
@@ -103,6 +169,28 @@ $(function() {
 	$("#lb-toggle").click(function() { toggleBR(); });
 	$("#view-toggle").click(function() { toggleView(); });
 	$("#toc-toggle").click(function() { toggleTOC(); });
+	$("#notes-position-toggle").click(function() { toggleNotesPosition(); });
+
+	// Hide/show notes position toggle based on layout mode
+	function updateNotesToggleVisibility() {
+		var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+		var $toggle = $('#notes-position-toggle');
+		var shouldShow = layoutMode === 'text-only';
+		
+		if (shouldShow) {
+			$toggle.removeClass('notes-toggle-hidden').removeAttr('hidden').attr('aria-hidden', 'false');
+		} else {
+			$toggle.addClass('notes-toggle-hidden').attr('hidden', 'hidden').attr('aria-hidden', 'true');
+		}
+	}
+	
+	// Initial visibility check - run after a short delay to ensure layout mode is set
+	setTimeout(updateNotesToggleVisibility, 100);
+	// Also run immediately in case layout mode is already set
+	updateNotesToggleVisibility();
+
+	// Initialize notes position preference from session storage
+	initializeNotesPosition();
 
 	// Process notes for both side panel and bottom display
 	processNotes();
@@ -111,6 +199,10 @@ $(function() {
 	var layoutObserver = new MutationObserver(function(mutations) {
 		mutations.forEach(function(mutation) {
 			if (mutation.type === 'attributes' && mutation.attributeName === 'data-layout-mode') {
+				// Update button visibility
+				updateNotesToggleVisibility();
+				// Reinitialize notes position based on new layout mode
+				initializeNotesPosition();
 				processNotes();
 			}
 		});
@@ -119,8 +211,7 @@ $(function() {
 
 	// Listen for window resize to reposition side notes
 	$(window).on('resize', function() {
-		var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
-		if (layoutMode === 'text-only' && $('.side-notes-panel').length > 0) {
+		if (getNotesPosition() === 'margin' && $('.side-notes-panel').length > 0) {
 			setTimeout(repositionSideNotes, 150);
 		}
 	});
@@ -135,10 +226,10 @@ $(function() {
 	});
 });
 
-// Process notes based on layout mode
+// Process notes based on layout mode and notes position preference
 function processNotes() {
 	var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
-	var isTextOnly = layoutMode === 'text-only';
+	var useMarginNotes = (layoutMode === 'text-only' && getNotesPosition() === 'margin');
 	
 	// Clear existing notes
 	$('.transcription-doc-notes, .transcription-ed-notes').remove();
@@ -167,7 +258,7 @@ function processNotes() {
 		}
 	});
 	
-	if (isTextOnly) {
+	if (useMarginNotes) {
 		// Wrap transcription-data in a flex container for side-by-side layout
 		$('#transcription-data').wrap('<div class="transcription-content-wrapper"></div>');
 		// Create side notes panel

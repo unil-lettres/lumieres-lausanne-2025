@@ -191,7 +191,23 @@ body[data-layout-mode="text-only"] #transcription-view-controls {
 	margin-bottom: 12px;
 }
 
-body[data-layout-mode="text-only"] .transcription-content-wrapper {
+/* Hide notes position toggle button by default, show only in text-only mode */
+#notes-position-toggle {
+	display: none !important;
+}
+
+body[data-layout-mode="text-only"] #notes-position-toggle {
+	display: inline-block !important;
+}
+
+/* Extra guard class applied via JS to handle jQuery UI inline styles */
+#notes-position-toggle.notes-toggle-hidden {
+	display: none !important;
+	visibility: hidden !important;
+}
+
+/* Show side notes based on notes position preference, not layout mode */
+body[data-notes-position="margin"] .transcription-content-wrapper {
 	display: flex;
 	flex-direction: row;
 	align-items: flex-start;
@@ -199,16 +215,19 @@ body[data-layout-mode="text-only"] .transcription-content-wrapper {
 	position: relative;
 }
 
-body[data-layout-mode="text-only"] #transcription-data {
+body[data-notes-position="margin"] #transcription-data {
 	flex: 1;
 	min-width: 0;
 	max-width: calc(100% - 340px);
+}
+
+body[data-layout-mode="text-only"][data-notes-position="margin"] #transcription-data {
 	max-height: none;
 	overflow-y: visible;
 }
 
-/* Side notes panel in text-only mode */
-body[data-layout-mode="text-only"] .side-notes-panel {
+/* Side notes panel when notes position is set to margin */
+body[data-notes-position="margin"] .side-notes-panel {
 	display: block !important;
 	width: 300px;
 	flex-shrink: 0;
@@ -218,21 +237,20 @@ body[data-layout-mode="text-only"] .side-notes-panel {
 	position: relative;
 }
 
-body[data-layout-mode="text-only"] .side-note {
+body[data-notes-position="margin"] .side-note {
 	position: absolute;
 	left: 20px;
 	right: 0;
 	margin-bottom: 0;
 }
 
-body[data-layout-mode="text-only"] .transcription-doc-notes,
-body[data-layout-mode="text-only"] .transcription-ed-notes {
+body[data-notes-position="margin"] .transcription-doc-notes,
+body[data-notes-position="margin"] .transcription-ed-notes {
 	display: none !important;
 }
 
-/* Bottom notes in split-view and viewer-only modes */
-body[data-layout-mode="split-view"] .side-notes-panel,
-body[data-layout-mode="viewer-only"] .side-notes-panel {
+/* Bottom notes when notes position is set to bottom */
+body[data-notes-position="bottom"] .side-notes-panel {
 	display: none !important;
 }
 
