@@ -267,6 +267,8 @@ body[data-layout-mode="viewer-only"] .viewer-panel {
 	position: static;
 	width: 800px;
 	max-width: 90%;
+	max-height: none;
+	height: auto;
 }
 
 body[data-layout-mode="viewer-only"] #openseadragon-viewer {
