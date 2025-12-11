@@ -75,12 +75,15 @@ docker compose exec -T db sh -lc \
 
 ```bash
 docker compose exec -T db mysql -uroot -ptoor -e "
-ALTER TABLE lumieres_lausanne.fiches_biblio
-  MODIFY depot varchar(128) NULL DEFAULT NULL;
-ALTER TABLE lumieres_lausanne.fiches_manuscript
-  MODIFY depot varchar(128) NULL DEFAULT NULL;
-ALTER TABLE lumieres_lausanne.auth_user
-  MODIFY COLUMN last_login DATETIME NULL;
+ALTER TABLE lumieres_lausanne.fiches_biblio            MODIFY depot varchar(128) NULL DEFAULT NULL;
+ALTER TABLE lumieres_lausanne.fiches_manuscript        MODIFY depot varchar(128) NULL DEFAULT NULL;
+ALTER TABLE lumieres_lausanne.auth_user                MODIFY last_login datetime NULL;
+ALTER TABLE lumieres_lausanne.fiches_contributiondoc   MODIFY document_id int NULL;
+ALTER TABLE lumieres_lausanne.fiches_contributionman   MODIFY document_id int NULL;
+ALTER TABLE lumieres_lausanne.fiches_notebiblio        MODIFY owner_id int NULL;
+ALTER TABLE lumieres_lausanne.fiches_notemanuscript    MODIFY owner_id int NULL;
+-- Facsimile viewer (IIIF) – nullable, safe for rollback:
+ALTER TABLE lumieres_lausanne.fiches_transcription ADD COLUMN facsimile_iiif_url varchar(200) NULL AFTER envelope;
 "
 ```
 
