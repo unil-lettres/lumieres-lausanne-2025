@@ -215,5 +215,5 @@ docker compose up -d web
 ### License & Contact
 
 © University of Lausanne.  
-Released under the [GNU Affero General Public License v3.0](LICENSE).  
+License: pending (internal use only).  
 For questions, open an issue or contact the maintainers.
