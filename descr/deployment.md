@@ -23,6 +23,7 @@
   -- Facsimile viewer (IIIF) – nullable, safe for rollback:
   ALTER TABLE fiches_transcription ADD COLUMN facsimile_iiif_url varchar(200) NULL AFTER envelope;
   ```
+  _We do not run Django migrations on restored legacy dumps; normalize the schema with the ALTERs above, then sync roles and rebuild the index._
 - `250715-db-lumieres.sql`: latest imported reference dump (July 15). Keep until replaced.
 - Runtime directories bind-mounted into containers: `logging/`, `media/`, `static/`, `staticfiles/`, `solr/`.
 
@@ -67,8 +68,6 @@
 3. **Post-deploy checks**
    ```bash
    curl -I http://127.0.0.1:8000/
-   docker compose -f docker-compose.staging.yml exec web \
-     bash -lc 'python /app/app/manage.py migrate --noinput'
    docker compose -f docker-compose.staging.yml exec web \
      bash -lc 'python /app/app/manage.py collectstatic --noinput'
    ```

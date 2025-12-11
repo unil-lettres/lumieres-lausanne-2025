@@ -71,7 +71,7 @@ docker compose exec -T db sh -lc \
   < lumieres-prod-20250812.sql
 ```
 
-3) (Only if your dump comes from the historical Django v1 schema) apply these small fixes:
+3) (Only if your dump comes from the historical Django v1 schema) apply these small fixes (we do not run Django migrations on restored legacy dumps—normalize the schema with these ALTERs):
 
 ```bash
 docker compose exec -T db mysql -uroot -ptoor -e "
@@ -87,10 +87,9 @@ ALTER TABLE lumieres_lausanne.fiches_transcription ADD COLUMN facsimile_iiif_url
 "
 ```
 
-4) Migrate and create a Django superuser (optional):
+4) Create a Django superuser (optional):
 
 ```bash
-docker compose exec -T app python manage.py migrate --noinput
 docker compose exec -T app python manage.py createsuperuser
 ```
 
@@ -99,6 +98,8 @@ docker compose exec -T app python manage.py createsuperuser
 ```bash
 docker compose exec -T app python manage.py sync_status_roles --apply
 ```
+
+6) Rebuild the search index (Solr / Haystack) if needed (see section below).
 
 ---
 
