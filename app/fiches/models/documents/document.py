@@ -6,9 +6,9 @@
 
 # fiches/models/documents/document.py
 
+from ckeditor.fields import RichTextField
 from types import SimpleNamespace
 
-from ckeditor.fields import RichTextField
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -726,6 +726,10 @@ class TranscriptionManager(models.Manager):
         )[:count]
 
 
+from django.contrib.auth.models import User
+from django.db import models
+
+
 class Transcription(ACModel):
     manuscript = models.ForeignKey("fiches.Manuscript", blank=True, null=True, on_delete=models.SET_NULL)
 
@@ -751,12 +755,6 @@ class Transcription(ACModel):
 
     text = RichTextField(config_name="transcription_ckeditor", blank=True)
     envelope = RichTextField(verbose_name=_("Enveloppe"), config_name="envelope_ckeditor", blank=True)
-
-    facsimile_iiif_url = models.URLField(
-        verbose_name=_("Facsimile IIIF URL"),
-        blank=True,
-        help_text=_("URL of the IIIF manifest (e.g., ending with info.json)")
-    )
 
     access_private = models.BooleanField(blank=True, default=True, verbose_name=_("Privé"))
 
