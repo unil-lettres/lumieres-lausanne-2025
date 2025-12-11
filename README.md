@@ -94,6 +94,12 @@ docker compose exec -T app python manage.py migrate --noinput
 docker compose exec -T app python manage.py createsuperuser
 ```
 
+5) Refresh roles/permissions after importing a dump (cleans up the legacy “assistants” group and reassigns custom perms):
+
+```bash
+docker compose exec -T app python manage.py sync_status_roles --apply
+```
+
 ---
 
 ## Rebuild the search index (Solr / Haystack)
