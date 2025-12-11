@@ -756,6 +756,13 @@ class Transcription(ACModel):
     text = RichTextField(config_name="transcription_ckeditor", blank=True)
     envelope = RichTextField(verbose_name=_("Enveloppe"), config_name="envelope_ckeditor", blank=True)
 
+    # IIIF facsimile manifest URL (manifest.json or info.json)
+    facsimile_iiif_url = models.URLField(
+        verbose_name=_("Facsimile IIIF URL"),
+        blank=True,
+        help_text=_("URL of the IIIF manifest (e.g., ending with info.json)"),
+    )
+
     access_private = models.BooleanField(blank=True, default=True, verbose_name=_("Privé"))
 
     objects = TranscriptionManager()
