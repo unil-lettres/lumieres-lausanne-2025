@@ -6,6 +6,7 @@
 
 # fiches/models/documents/document.py
 
+import re
 from ckeditor.fields import RichTextField
 from types import SimpleNamespace
 
@@ -792,6 +793,33 @@ class Transcription(ACModel):
 
     def get_absolute_url(self):
         return reverse("transcription-display", args=[str(self.id)])
+
+    @staticmethod
+    def _wrap_page_tags(value):
+        """
+        Wrap <<n>> markers in a green span so they stay visible in editors/display.
+        Existing wrappers are stripped first to avoid nesting.
+        """
+        if not value:
+            return value
+        cleaned = re.sub(
+            r'<span[^>]*class="page-tag-inline"[^>]*>(.*?)</span>',
+            r'\1',
+            value,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        return re.sub(
+            r'(&lt;&lt;\s*\d+\s*&gt;&gt;|<<\s*\d+\s*>>)',
+            r'<span class="page-tag-inline" style="color:#0b7a0b;font-weight:bold;">\1</span>',
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+
+    def save(self, *args, **kwargs):
+        # Ensure page markers are wrapped before persisting
+        self.text = self._wrap_page_tags(self.text)
+        self.envelope = self._wrap_page_tags(self.envelope)
+        super().save(*args, **kwargs)
 
     class Meta:
         app_label = "fiches"

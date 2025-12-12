@@ -49,7 +49,27 @@
 		form.transcription .radio_field li label, 
 		form.transcription label.inner-label { background-color: #fff; color: #000; font-weight: normal; margin:0; padding: 0;}
 		
-		form.transcription .trans-text-container { margin-top: 3px; }
+		form.transcription .trans-text-container { margin-top: 3px; position: relative; }
+		form.transcription .trans-text-container.pending { visibility: hidden; min-height: 120px; }
+		/* Facsimile URL field: align on viewer width and give the input room */
+		.fieldWrapper.facsimile_iiif_url {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			max-width: var(--facsimile-width);
+			width: 100%;
+			flex-wrap: wrap;
+		}
+		.fieldWrapper.facsimile_iiif_url label { margin: 0; min-width: 140px; }
+		.fieldWrapper.facsimile_iiif_url input[type="text"],
+		.fieldWrapper.facsimile_iiif_url input[type="url"],
+		.fieldWrapper.facsimile_iiif_url #id_facsimile_iiif_url {
+			flex: 1 1 50ch; /* target ~50 characters */
+			width: 50ch;
+			min-width: 50ch;
+			max-width: 100%;
+		}
+		.fieldWrapper.facsimile_iiif_url button { flex: 0 0 auto; }
 /*		form.transcription fieldset.access { border-left: 0; } */
 		form.transcription .author_name { font-size: 120%; }
 
@@ -198,7 +218,7 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 		    <div>{{ transForm.text.errors }}
 		    {#{{ transForm.text.label_tag }}#}</div>
 			<div class="fixclear"></div>
-			<div class="trans-text-container">{{ transForm.text }}</div>
+			<div class="trans-text-container pending" id="trans-text-container">{{ transForm.text }}</div>
 		</div>
 	</fieldset>
 
@@ -617,5 +637,134 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 		}
 	});
 })(jQuery);
+</script>
+
+{# Highlight page tags (<<n>>) in CKEditor without changing stored data #}
+<script type="text/javascript">
+(function () {
+	if (!window.CKEDITOR) return;
+
+	// Loosen ACF globally so spans with inline styles survive
+	CKEDITOR.config.allowedContent = true;
+	CKEDITOR.config.extraAllowedContent = (CKEDITOR.config.extraAllowedContent || '') + '; span(page-tag-inline)[style,class]';
+
+	var TAG_REGEX = /(&lt;&lt;\s*\d+\s*&gt;&gt;|<<\s*\d+\s*>>)/g;
+
+	function stripPageTagSpans(html) {
+		return html.replace(/<span class="page-tag-inline">(.*?)<\/span>/gi, '$1');
+	}
+
+	function wrapPageTags(html) {
+		var stripped = stripPageTagSpans(html);
+		// Match <<123>> or &lt;&lt;123&gt;&gt; with optional whitespace
+		return stripped.replace(TAG_REGEX, '<span class="page-tag-inline" style="color:#0b7a0b;font-weight:bold;">$1</span>');
+	}
+
+	function attachHighlighter(editor) {
+		var busy = false;
+		// Allow our helper span to survive the CKEditor filter
+		if (editor.filter && typeof editor.filter.allow === 'function') {
+			editor.filter.allow('span[!class]{page-tag-inline}()');
+		} else if (editor.config) {
+			// Fallback: permit the class via config
+			var extra = editor.config.extraAllowedContent || '';
+			editor.config.extraAllowedContent = extra ? extra + '; span(page-tag-inline)' : 'span(page-tag-inline)';
+		}
+		// Ensure spans with styling are kept
+		if (editor.config) {
+			editor.config.allowedContent = true;
+			editor.config.extraAllowedContent = (editor.config.extraAllowedContent || '') + '; span[style,class]';
+		}
+
+		editor.addContentsCss('.page-tag-inline{color:#0b7a0b;font-weight:bold;}');
+
+		function refresh() {
+			if (busy) return;
+			busy = true;
+
+			var selection = editor.getSelection();
+			var bookmarks = selection ? selection.createBookmarks2(true) : null;
+			var data = editor.getData();
+			var wrapped = wrapPageTags(data);
+
+			if (wrapped !== data) {
+				// Avoid extra snapshots; restore selection after setData
+				editor.once('dataReady', function () {
+					if (bookmarks) {
+						var sel = editor.getSelection();
+						if (sel) sel.selectBookmarks(bookmarks);
+					}
+				});
+				editor.setData(wrapped, { noSnapshot: true });
+			}
+			busy = false;
+		}
+
+		editor.on('instanceReady', function () { refresh(); setTimeout(refresh, 100); });
+		editor.on('change', refresh);
+		editor.on('dataReady', refresh);
+		editor.on('key', function () { setTimeout(refresh, 0); });
+		editor.on('setData', function (evt) {
+			evt.data.dataValue = wrapPageTags(evt.data.dataValue);
+		});
+
+		// Keep spans when saving so coloring persists
+	}
+
+	function revealEditor() {
+		var container = document.getElementById('trans-text-container');
+		if (container) {
+			container.classList.remove('pending');
+			container.style.visibility = 'visible';
+		}
+	}
+
+	CKEDITOR.on('instanceReady', function (ev) {
+		attachHighlighter(ev.editor);
+		if (ev.editor.name === 'id_text') {
+			revealEditor();
+		}
+	});
+
+	// Fallback: ensure editor is shown even if instanceReady was missed
+	document.addEventListener('DOMContentLoaded', function () {
+		setTimeout(function () {
+			revealEditor();
+		}, 1200);
+	});
+
+	// Before form submit, wrap page tags so they are stored with highlighting spans
+	document.addEventListener('DOMContentLoaded', function () {
+		var form = document.querySelector('form.edit-form.transcription');
+		if (!form) return;
+		form.addEventListener('submit', function () {
+			for (var name in CKEDITOR.instances) {
+				if (!Object.prototype.hasOwnProperty.call(CKEDITOR.instances, name)) continue;
+				var ed = CKEDITOR.instances[name];
+				var data = ed.getData();
+				var wrapped = wrapPageTags(data);
+				if (wrapped !== data) {
+					ed.setData(wrapped, { noSnapshot: true });
+				}
+				ed.updateElement();
+			}
+		});
+	});
+
+	// One-shot wrap after load in case toolbar init skipped events
+	document.addEventListener('DOMContentLoaded', function () {
+		setTimeout(function () {
+			for (var name in CKEDITOR.instances) {
+				if (!Object.prototype.hasOwnProperty.call(CKEDITOR.instances, name)) continue;
+				var ed = CKEDITOR.instances[name];
+				var data = ed.getData();
+				var wrapped = wrapPageTags(data);
+				if (wrapped !== data) {
+					ed.setData(wrapped, { noSnapshot: true });
+				}
+			}
+		}, 300);
+	});
+})();
 </script>
 {% endblock main_content %}

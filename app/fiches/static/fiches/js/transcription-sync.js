@@ -164,6 +164,11 @@ This copyright notice MUST APPEAR in all copies of the file.
       updateSyncButtonState(syncToggleBtn, newState);
       try { sessionStorage.setItem(STORAGE_KEY_SYNC, newState); } catch (_) {}
       log('[Sync Toggle] Synchronization', newState ? 'enabled' : 'disabled');
+
+      // If sync is being turned on, immediately align viewer to the current text position
+      if (newState && typeof window.lumiereSyncViewerToScroll === 'function') {
+        window.lumiereSyncViewerToScroll();
+      }
     });
   }
 
@@ -419,6 +424,9 @@ This copyright notice MUST APPEAR in all copies of the file.
     });
 
     setTimeout(syncViewerToScroll, PAGE_SYNC_INIT_DELAY);
+
+    // Expose a one-shot sync to current scroll position for external triggers (e.g., toggling sync on)
+    window.lumiereSyncViewerToScroll = syncViewerToScroll;
   }
 
   function wrapPageTags(transcriptionBox, seqCount) {

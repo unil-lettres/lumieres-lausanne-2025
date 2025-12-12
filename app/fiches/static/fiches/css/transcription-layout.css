@@ -318,6 +318,11 @@ body[data-layout-mode="text-only"] .side-notes-panel .side-note {
 	margin-right: 5px;
 }
 
+.page-tag {
+	color: #0b7a0b; /* make page markers visually distinct */
+	font-weight: bold;
+}
+
 .side-notes-panel .note-back-link {
 	font-size: 0.85em;
 	margin-left: 5px;

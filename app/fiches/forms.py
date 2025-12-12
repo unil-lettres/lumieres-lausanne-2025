@@ -328,6 +328,29 @@ class TranscriptionForm(forms.ModelForm):
         model = Transcription
         fields = '__all__'
 
+    @staticmethod
+    def _highlight_page_tags(html):
+        """
+        Wrap <<n>> page markers in a green span. Existing wrappers are stripped first
+        to avoid nesting. Inline style is used so it shows in CKEditor and persists.
+        """
+        if not html:
+            return html
+        # Strip any existing page-tag-inline span
+        html = re.sub(
+            r'<span[^>]*class="page-tag-inline"[^>]*>(.*?)</span>',
+            r'\1',
+            html,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        # Wrap markers
+        return re.sub(
+            r'(&lt;&lt;\s*\d+\s*&gt;&gt;|<<\s*\d+\s*>>)',
+            r'<span class="page-tag-inline" style="color:#0b7a0b;font-weight:bold;">\1</span>',
+            html,
+            flags=re.IGNORECASE,
+        )
+
     def clean(self):
         cleaned_data = super().clean()
 
@@ -351,6 +374,11 @@ class TranscriptionForm(forms.ModelForm):
                 del cleaned_data["manuscript_b"]
         else:
             del cleaned_data["manuscript_b"]
+
+        # Highlight page tags in text/envelope so they are visible in CKEditor
+        for field_name in ("text", "envelope"):
+            if field_name in cleaned_data:
+                cleaned_data[field_name] = self._highlight_page_tags(cleaned_data.get(field_name))
 
         return cleaned_data
 
@@ -661,3 +689,4 @@ class ProjectForm(forms.ModelForm):
             'js/admin/project_url_tools.js',
         )
 
+import re
