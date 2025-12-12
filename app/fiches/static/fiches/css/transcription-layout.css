@@ -200,6 +200,12 @@ body[data-layout-mode="text-only"] #notes-position-toggle {
 	display: inline-block !important;
 }
 
+/* Align transcription utility buttons sizing with layout buttons */
+#transcription-view-controls a.ui-button {
+	padding: 6px 12px;
+	font-size: 12px;
+}
+
 /* Extra guard class applied via JS to handle jQuery UI inline styles */
 #notes-position-toggle.notes-toggle-hidden {
 	display: none !important;

@@ -176,11 +176,11 @@ This copyright notice MUST APPEAR in all copies of the file.
     if (isEnabled) {
       btn.classList.add('active');
       btn.title = 'Désactiver la synchronisation texte-facsimilé';
-      btn.innerHTML = '🔗 Synchro';
+      btn.innerHTML = '🔗 Synchroniser la navigation';
     } else {
       btn.classList.remove('active');
       btn.title = 'Activer la synchronisation texte-facsimilé';
-      btn.innerHTML = '🔌 Synchro';
+      btn.innerHTML = '🔌 Synchroniser la navigation';
     }
   }
 
@@ -270,12 +270,13 @@ This copyright notice MUST APPEAR in all copies of the file.
   }
 
   function initViewer(tileSources) {
+    var initialPageIndex = computeInitialPageIndex(tileSources.length);
     var viewer = OpenSeadragon({
       id: 'openseadragon-viewer',
       prefixUrl: (window.STATIC_PREFIX_OPENSEADRAGON || '/static/js/lib/openseadragon/images/') ,
       tileSources: tileSources,
       sequenceMode: true,
-      initialPage: 0,
+      initialPage: initialPageIndex,
       preserveViewport: false,
       preserveImageSizeOnResize: true,
       visibilityRatio: 0.5,
@@ -304,6 +305,19 @@ This copyright notice MUST APPEAR in all copies of the file.
     });
   }
 
+  function computeInitialPageIndex(seqCount) {
+    var box = document.getElementById('transcription-data');
+    if (!box) return 0;
+    var html = box.innerHTML || '';
+    var match = html.match(/(?:&lt;&lt;|<<)\s*(\d+)\s*(?:&gt;&gt;|>>)/);
+    if (!match) return 0;
+    var pageNum = parseInt(match[1], 10);
+    if (!isFinite(pageNum) || pageNum <= 0) return 0;
+    var idx = pageNum - 1;
+    if (seqCount && idx >= seqCount) idx = seqCount - 1;
+    return Math.max(0, idx);
+  }
+
   function initPageSync(viewer) {
     var transcriptionBox = document.getElementById('transcription-data');
     if (!transcriptionBox || !viewer) return;
@@ -328,7 +342,7 @@ This copyright notice MUST APPEAR in all copies of the file.
     try {
       viewer.addHandler('page', function (ev) {
         if (typeof ev.page !== 'number') return;
-        
+
         if (window.TranscriptionSyncEnabled && !isProgrammaticScrollSync && !isUserScrolling && ev.page !== lastSyncedPage) {
           log('[Page Sync] Viewer page changed by user → syncing transcription to page', ev.page);
           syncTranscriptionToViewer(ev.page, transcriptionBox);
@@ -423,13 +437,21 @@ This copyright notice MUST APPEAR in all copies of the file.
       }, SCROLL_SYNC_DELAY);
     });
 
-    setTimeout(syncViewerToScroll, PAGE_SYNC_INIT_DELAY);
+    // Initial alignment: only if current viewer page has a matching tag
+    setTimeout(function () {
+      var current = (viewer && typeof viewer.currentPage === 'function') ? viewer.currentPage() : null;
+      if (current !== null && findPageTagByCanvasIndex(transcriptionBox, current)) {
+        syncViewerToScroll();
+      } else {
+        log('[Page Sync] Initial alignment skipped (no matching tag for current viewer page)');
+      }
+    }, PAGE_SYNC_INIT_DELAY);
 
     // Expose a one-shot sync to current scroll position for external triggers (e.g., toggling sync on)
     window.lumiereSyncViewerToScroll = syncViewerToScroll;
   }
 
-  function wrapPageTags(transcriptionBox, seqCount) {
+    function wrapPageTags(transcriptionBox, seqCount) {
     var transcriptionHTML = transcriptionBox.innerHTML;
     var pageTagsRaw = [];
     var m;
@@ -449,14 +471,6 @@ This copyright notice MUST APPEAR in all copies of the file.
     });
 
     log('[Page Sync] Found', pageTagsRaw.length, 'page tags; sequence has', seqCount, 'page(s).');
-
-    // Insert sentinel for first page if needed
-    var firstPageNumber = 1;
-    if (!pageTagsRaw.some(function (t) { return t.pageNumber === firstPageNumber; })) {
-      var sentinel = '<span class="page-tag" data-page="1" data-original-page="1" id="page-tag-start" data-type="sentinel" style="display:inline-block;height:0;line-height:0;overflow:hidden;"></span>';
-      transcriptionHTML = sentinel + transcriptionHTML;
-      log('[Page Sync] Inserted sentinel page tag for page 1 at the start');
-    }
 
     // Wrap all page markers
     pageTagsRaw.forEach(function (tag, idx) {
@@ -485,17 +499,14 @@ This copyright notice MUST APPEAR in all copies of the file.
 
   function findPageTagByCanvasIndex(transcriptionBox, canvasIndex) {
     var tags = transcriptionBox.querySelectorAll('.page-tag');
-    var targetTag = null;
-    
     for (var i = 0; i < tags.length; i++) {
       var tagCanvasIndex = parseInt(tags[i].getAttribute('data-canvas-index'), 10);
       if (tagCanvasIndex === canvasIndex) {
-        targetTag = tags[i];
-        break;
+        return tags[i];
       }
     }
-    
-    return targetTag;
+    // No exact match: do not force scroll
+    return null;
   }
 
   function findVisiblePageTag(transcriptionBox, thresholdTop) {
