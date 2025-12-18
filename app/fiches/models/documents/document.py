@@ -759,9 +759,18 @@ class Transcription(ACModel):
 
     # IIIF facsimile manifest URL (manifest.json or info.json)
     facsimile_iiif_url = models.URLField(
-        verbose_name=_("Facsimile IIIF URL"),
+        verbose_name=_("URL IIIF du facsimilé"),
         blank=True,
-        help_text=_("URL of the IIIF manifest (e.g., ending with info.json)"),
+        help_text=_("URL du manifeste IIIF (par ex. se terminant par info.json)."),
+    )
+
+    facsimile_start_canvas = models.PositiveIntegerField(
+        verbose_name=_("Canvas de départ du facsimilé"),
+        blank=True,
+        null=True,
+        help_text=_(
+            "Index de canvas à utiliser comme première page de la transcription (par défaut: 1)."
+        ),
     )
 
     access_private = models.BooleanField(blank=True, default=True, verbose_name=_("Privé"))
@@ -793,33 +802,6 @@ class Transcription(ACModel):
 
     def get_absolute_url(self):
         return reverse("transcription-display", args=[str(self.id)])
-
-    @staticmethod
-    def _wrap_page_tags(value):
-        """
-        Wrap <<n>> markers in a green span so they stay visible in editors/display.
-        Existing wrappers are stripped first to avoid nesting.
-        """
-        if not value:
-            return value
-        cleaned = re.sub(
-            r'<span[^>]*class="page-tag-inline"[^>]*>(.*?)</span>',
-            r'\1',
-            value,
-            flags=re.IGNORECASE | re.DOTALL,
-        )
-        return re.sub(
-            r'(&lt;&lt;\s*\d+\s*&gt;&gt;|<<\s*\d+\s*>>)',
-            r'<span class="page-tag-inline" style="color:#0b7a0b;font-weight:bold;">\1</span>',
-            cleaned,
-            flags=re.IGNORECASE,
-        )
-
-    def save(self, *args, **kwargs):
-        # Ensure page markers are wrapped before persisting
-        self.text = self._wrap_page_tags(self.text)
-        self.envelope = self._wrap_page_tags(self.envelope)
-        super().save(*args, **kwargs)
 
     class Meta:
         app_label = "fiches"

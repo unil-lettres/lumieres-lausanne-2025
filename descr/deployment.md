@@ -22,6 +22,8 @@
   ALTER TABLE fiches_notemanuscript    MODIFY owner_id int NULL;
   -- Facsimile viewer (IIIF) – nullable, safe for rollback:
   ALTER TABLE fiches_transcription ADD COLUMN facsimile_iiif_url varchar(200) NULL AFTER envelope;
+  -- Facsimile viewer (IIIF) – 1-based start canvas index (optional):
+  ALTER TABLE fiches_transcription ADD COLUMN facsimile_start_canvas int NULL AFTER facsimile_iiif_url;
   ```
   _We do not run Django migrations on restored legacy dumps; normalize the schema with the ALTERs above, then sync roles and rebuild the index._
 - `250715-db-lumieres.sql`: latest imported reference dump (July 15). Keep until replaced.

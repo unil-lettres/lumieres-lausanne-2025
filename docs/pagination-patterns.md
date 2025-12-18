@@ -4,6 +4,8 @@
 
 This document describes the pagination marker patterns found in the `fiches_transcription.text` field and how they are processed by the facsimile viewer synchronization system.
 
+As of December 2025, pagination synchronization is based on **existing folio/page markers** in the transcription text (e.g. `<1>`, `<1v>`), not on custom `<<n>>` markers.
+
 ## Analysis Summary (November 2025)
 
 - **Total transcriptions analyzed**: 1,241
@@ -12,137 +14,52 @@ This document describes the pagination marker patterns found in the `fiches_tran
 
 ## Supported Patterns
 
-### 1. Implicit Recto Format (75.7% of rectos)
+### Angle-bracket folio markers (used for sync)
 
-**Pattern**: `<1>`, `<2>`, `<123>` or `[1]`, `[2]`, `[123]`
+**Pattern**: `<1>`, `<2>`, `<123>`, `<1r>`, `<1v>`, `<123v>` (case-insensitive `r`/`v`)
 
-When only a number appears between angle brackets or square brackets (1-3 digits) without an 'r' suffix, it represents a **recto page**.
+These markers are treated as **page-break markers**. Each occurrence indicates a transition to the “next” facsimile image.
 
-**Mapping to image sequence**:
-- `<1>` or `[1]` → Image 1 (page 1 recto)
-- `<2>` or `[2]` → Image 3 (page 2 recto)
-- `<N>` or `[N]` → Image (N × 2 - 1)
+**Important**: the numeric part is not used to compute a canvas index. The system uses the **order of occurrences** in the text.
 
-**Examples**:
-- Transcription 1287: Uses `<1>`, `<2>`, `<3>`, etc.
-- Transcription 735: Uses `[1]`, `[2]`, etc.
-- Total occurrences: 2,029
-- Unique markers: 262
+Example (simplified):
+- first marker found in the text → first displayed facsimile canvas
+- second marker → next facsimile canvas
+- etc.
 
-**Note**: Years (4+ digits like `[1763]`, `[1788]`) are excluded and not treated as pagination.
+This makes synchronization robust even when the folio numbering in the transcription is not perfectly aligned with the IIIF source (e.g. additional covers/blanks).
 
-### 2. Explicit Recto Format (24.3% of rectos)
+## Facsimile start canvas offset
 
-**Pattern**: `<1r>`, `<2r>`, `<123r>` or `[1r]`, `[2r]`, `[123r]`
+Some IIIF manifests contain extra canvases at the beginning (e.g. book cover, guard pages, blank pages). To avoid shifting all page-break mappings in the transcription, the `Transcription` model provides:
 
-The 'r' suffix explicitly indicates a recto page.
+- `facsimile_start_canvas` (integer, optional, 1-based)
+  - empty/null → start at canvas 1 (the first canvas)
+  - `2` → treat the second canvas as the first transcription page, etc.
 
-**Mapping to image sequence**:
-- `<1r>` or `[1r]` → Image 1 (page 1 recto)
-- `<2r>` or `[2r]` → Image 3 (page 2 recto)
-- `<Nr>` or `[Nr]` → Image (N × 2 - 1)
-
-**Examples**:
-- Transcription 1097: Uses `<1r>`, `<2r>`, `<3r>`, etc.
-- Transcription 737: Uses `[1r]`, `[2r]`, etc.
-- Total occurrences: 650
-- Unique markers: 44
-
-### 3. Verso Format (always explicit)
-
-**Pattern**: `<1v>`, `<2v>`, `<123v>` or `[1v]`, `[2v]`, `[123v]`
-
-The 'v' suffix indicates a verso (back) page.
-
-**Mapping to image sequence**:
-- `<1v>` or `[1v]` → Image 2 (page 1 verso)
-- `<2v>` or `[2v]` → Image 4 (page 2 verso)
-- `<Nv>` or `[Nv]` → Image (N × 2)
-
-**Examples**:
-- Most common: `<1v>` appears 686 times
-- Also supports: `[1v]`, `[2v]`, etc.
-- Total occurrences: 2,029
-- Unique markers: 157
-
-### 4. Page Format (rare)
-
-**Pattern**: `p. [1]`, `p. [1v]`, `p. 1`
-
-Alternative format using "p." prefix with optional brackets.
-
-**Examples**:
-- Transcription 735: Uses `p. [1]`, `p. [1v]`, `p. [2]`, etc.
-- Total occurrences: 53
-- Unique markers: 53
-
-## Mixed Pattern Transcriptions
-
-**10 transcriptions** use both implicit and explicit recto formats in the same document:
-
-- Transcription 735: `<1v>`, `<2r>`, `p. [3]`, etc.
-- Transcription 737: `<1v>`, `<2r>`, `<2v>`, `<3r>`, etc.
-- Transcription 1287: `<1>`, `<1v>`, `<2>`, `<2v>`, etc.
+During rendering, the viewer computes:
+- `startCanvasIndex0 = facsimile_start_canvas - 1` (defaults to `0`)
+- for each marker occurrence `i` (0-based): `canvasIndex = startCanvasIndex0 + i`
 
 ## Implementation
 
 ### JavaScript (transcription-sync.js)
 
-The pagination synchronization system processes these markers in the following order:
+The pagination synchronization system:
 
-1. **Extract page format** (`/p. 1/`)
-2. **Extract explicit recto/verso in angle brackets** (`<1r>`, `<1v>`)
-3. **Extract explicit recto/verso in square brackets** (`[1r]`, `[1v]`)
-   - Limited to 1-3 digits to exclude years
-4. **Extract implicit recto in angle brackets** (`<1>`, `<2>`)
-   - Excludes patterns already matched as explicit recto/verso
-   - Excludes HTML tags
-5. **Extract implicit recto in square brackets** (`[1]`, `[2]`)
-   - Limited to 1-3 digits to exclude years (e.g., `[1763]`, `[1788]`)
-   - Excludes patterns already matched
+1. Extracts all supported `<…>` markers in document order
+2. Treats each marker occurrence as a sequential page break
+3. Applies the `facsimile_start_canvas` offset to map marker #1 → canvas index
 
-### Automatic Offset Detection
-
-The system **automatically detects the offset** between transcription page numbers and IIIF canvas indices:
-
-- **Detection**: Finds the first page marker in the transcription (e.g., `<91v>` = page 182)
-- **Offset Calculation**: `pageOffset = firstPageNumber - 1` (e.g., 182 - 1 = 181)
-- **Canvas Mapping**: Each page is mapped to its canvas index: `canvasIndex = pageNumber - pageOffset`
-
-**Example**:
-- Transcription starts at `<91v>` (calculated as page 182)
-- Offset = 181
-- `<91v>` → canvas index 0 (182 - 181 - 1 = 0)
-- `<92r>` → canvas index 1 (183 - 181 - 1 = 1)
-- `<92v>` → canvas index 2 (184 - 181 - 1 = 2)
-
-This ensures that:
-- **Transcriptions can start at any folio number** (not just folio 1)
-- **The first page marker always maps to IIIF canvas index 0**
-- **No manual configuration is needed**
-
-Each marker is wrapped in a span with tracking attributes:
+Each marker is wrapped in a span with tracking attributes (generated at runtime):
 ```html
 <span class="page-tag" 
-      data-page="[mapped-page]" 
-      data-original-page="[original]"
+      data-folio="[marker-content-without-brackets]" 
+      data-marker-index="[1-based-occurrence-index]"
       data-canvas-index="[0-based-canvas-index]"
-      data-type="[rv-implicit|rv-explicit|bracket-rv-implicit|bracket-rv-explicit|p-format]">
+      >
   [original-marker]
 </span>
-```
-
-### Calculation Logic
-
-```javascript
-// Implicit recto: <N>
-pageNumber = N × 2 - 1
-
-// Explicit recto: <Nr>
-pageNumber = N × 2 - 1
-
-// Verso: <Nv>
-pageNumber = N × 2
 ```
 
 ## Data Sources

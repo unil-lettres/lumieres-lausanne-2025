@@ -58,6 +58,7 @@
 	height: 600px;
 	background-color: #000;
 	border: 1px solid #ccc;
+	position: relative; /* allows overlay elements like marker toast */
 }
 
 .content .transcription-data {

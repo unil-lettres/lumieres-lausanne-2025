@@ -84,6 +84,7 @@
 		window.TranscriptionConfig = {
 			// IIIF URL (manifest or info.json)
 			iiifUrl: "{{ trans.facsimile_iiif_url|escapejs }}",
+			facsimileStartCanvas: {% if trans.facsimile_start_canvas %}{{ trans.facsimile_start_canvas }}{% else %}null{% endif %},
 			hasViewer: {{ trans.facsimile_iiif_url|yesno:"true,false" }}
 		};
 		//{# keep the cite as box at the bottom of the window #}

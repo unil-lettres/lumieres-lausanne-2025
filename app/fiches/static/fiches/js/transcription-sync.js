@@ -53,7 +53,7 @@ This copyright notice MUST APPEAR in all copies of the file.
     var cfg = window.TranscriptionConfig || {};
     setupLayoutToggles(cfg);
     if (cfg.hasViewer && cfg.iiifUrl) {
-      setupViewer(cfg.iiifUrl);
+      setupViewer(cfg);
     }
   }
 
@@ -185,12 +185,13 @@ This copyright notice MUST APPEAR in all copies of the file.
   }
 
   // Viewer + IIIF ----------------------------------------------------------
-  function setupViewer(iiifUrl) {
+  function setupViewer(cfg) {
     if (!window.OpenSeadragon) {
       error('[Viewer] OpenSeadragon not available');
       return;
     }
 
+    var iiifUrl = cfg?.iiifUrl;
     if (!iiifUrl || !iiifUrl.trim()) return;
 
     if (iiifUrl.indexOf('manifest') !== -1) {
@@ -201,7 +202,7 @@ This copyright notice MUST APPEAR in all copies of the file.
         })
         .then(function (manifest) {
           var tileSources = extractTileSourcesFromManifest(manifest);
-          if (tileSources.length) initViewer(tileSources);
+          if (tileSources.length) initViewer(tileSources, cfg);
           else showError('Erreur: Impossible d\'extraire les images du manifeste IIIF');
         })
         .catch(function (e) {
@@ -209,7 +210,7 @@ This copyright notice MUST APPEAR in all copies of the file.
           showError('Erreur: Impossible de charger le manifeste IIIF<br><small>' + (e && e.message ? e.message : e) + '</small>');
         });
     } else {
-      initViewer([iiifUrl]);
+      initViewer([iiifUrl], cfg);
     }
   }
 
@@ -269,8 +270,8 @@ This copyright notice MUST APPEAR in all copies of the file.
     }
   }
 
-  function initViewer(tileSources) {
-    var initialPageIndex = computeInitialPageIndex(tileSources.length);
+  function initViewer(tileSources, cfg) {
+    var initialPageIndex = computeStartCanvasIndex(tileSources.length, cfg?.facsimileStartCanvas);
     var viewer = OpenSeadragon({
       id: 'openseadragon-viewer',
       prefixUrl: (window.STATIC_PREFIX_OPENSEADRAGON || '/static/js/lib/openseadragon/images/') ,
@@ -301,24 +302,18 @@ This copyright notice MUST APPEAR in all copies of the file.
 
     viewer.addHandler('open', function () {
       if (window.initViewerControls) window.initViewerControls(viewer);
-      initPageSync(viewer);
+      initPageSync(viewer, cfg);
     });
   }
 
-  function computeInitialPageIndex(seqCount) {
-    var box = document.getElementById('transcription-data');
-    if (!box) return 0;
-    var html = box.innerHTML || '';
-    var match = html.match(/(?:&lt;&lt;|<<)\s*(\d+)\s*(?:&gt;&gt;|>>)/);
-    if (!match) return 0;
-    var pageNum = parseInt(match[1], 10);
-    if (!isFinite(pageNum) || pageNum <= 0) return 0;
-    var idx = pageNum - 1;
-    if (seqCount && idx >= seqCount) idx = seqCount - 1;
-    return Math.max(0, idx);
+  function computeStartCanvasIndex(seqCount, startCanvas1Based) {
+    var raw = parseInt(startCanvas1Based, 10);
+    var start0 = isFinite(raw) && raw > 0 ? raw - 1 : 0;
+    if (seqCount && start0 >= seqCount) start0 = seqCount - 1;
+    return Math.max(0, start0);
   }
 
-  function initPageSync(viewer) {
+  function initPageSync(viewer, cfg) {
     var transcriptionBox = document.getElementById('transcription-data');
     if (!transcriptionBox || !viewer) return;
 
@@ -329,14 +324,65 @@ This copyright notice MUST APPEAR in all copies of the file.
     var isProgrammaticViewerSync = false;
     var scrollTimeout = null;
     var isUserScrolling = false;
+    var lastMarkerIndicatorKey = null;
 
     var seqCount = viewer.lumiereSequenceCount || viewer.tileSources?.length || 0;
-    var pageOffset = 1;
+    var startCanvasIndex0 = computeStartCanvasIndex(seqCount, cfg?.facsimileStartCanvas);
     
     log('[Page Sync] Found sequence with', seqCount, 'page(s).');
 
     // Extract and wrap page tags
-    wrapPageTags(transcriptionBox, seqCount);
+    var markerCount = wrapPageBreakMarkers(transcriptionBox, seqCount, startCanvasIndex0);
+    if (!markerCount) {
+      log('[Page Sync] No page markers found; scroll synchronization disabled for this transcription.');
+      return;
+    }
+
+    function updateMarkerIndicator(canvasIndex) {
+      var el = document.getElementById('viewer-marker-indicator');
+      var tag = findPageTagByCanvasIndex(transcriptionBox, canvasIndex);
+      var folio = tag ? (tag.getAttribute('data-folio') || '') : '';
+      var markerIdx = tag ? (tag.getAttribute('data-marker-index') || '') : '';
+      var key = String(canvasIndex) + '|' + String(markerIdx) + '|' + String(folio);
+
+      if (el) {
+        el.textContent = folio ? ('Repère: <' + folio + '>') : 'Repère: —';
+
+        if (key !== lastMarkerIndicatorKey) {
+          el.classList.remove('blink');
+          // force reflow to restart animation
+          void el.offsetWidth; // eslint-disable-line no-unused-expressions
+          el.classList.add('blink');
+        }
+      }
+
+      // Also show a short-lived toast over the canvas area when the marker changes.
+      if (key !== lastMarkerIndicatorKey) {
+        showMarkerToast(folio ? ('Repère <' + folio + '>') : 'Repère —');
+        lastMarkerIndicatorKey = key;
+      }
+    }
+
+    function showMarkerToast(text) {
+      var container = document.getElementById('openseadragon-viewer');
+      if (!container) return;
+
+      var toast = document.getElementById('viewer-marker-toast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'viewer-marker-toast';
+        toast.className = 'marker-toast';
+        toast.setAttribute('aria-live', 'polite');
+        toast.setAttribute('role', 'status');
+        container.appendChild(toast);
+      }
+
+      toast.textContent = text || '';
+      toast.classList.remove('show');
+      // force reflow to restart animation
+      void toast.offsetWidth; // eslint-disable-line no-unused-expressions
+      toast.classList.add('show');
+    }
 
     // Sync viewer page to transcription
     try {
@@ -349,6 +395,7 @@ This copyright notice MUST APPEAR in all copies of the file.
         }
         
         lastSyncedPage = ev.page;
+        updateMarkerIndicator(ev.page);
       });
     } catch (e) {
       warn('[Page Sync] Could not bind viewer page handler', e);
@@ -367,8 +414,9 @@ This copyright notice MUST APPEAR in all copies of the file.
         return;
       }
 
-      var originalPage = parseInt(targetTag.getAttribute('data-original-page'), 10);
-      log('[Page Sync] Found page tag for canvas', canvasIndex, '(transcription page', originalPage + ') - scrolling...');
+      var folio = targetTag.getAttribute('data-folio') || '?';
+      var markerIdx = targetTag.getAttribute('data-marker-index') || '?';
+      log('[Page Sync] Found page marker for canvas', canvasIndex, '(marker', markerIdx + ', folio', folio + ') - scrolling...');
       
       isProgrammaticViewerSync = true;
       
@@ -407,7 +455,8 @@ This copyright notice MUST APPEAR in all copies of the file.
 
       var canvasIndexStr = visible.getAttribute('data-canvas-index');
       var canvasIndex = canvasIndexStr !== null ? parseInt(canvasIndexStr, 10) : 0;
-      var originalPage = parseInt(visible.getAttribute('data-original-page'), 10) || 1;
+      var folio = visible.getAttribute('data-folio') || '?';
+      var markerIdx = visible.getAttribute('data-marker-index') || '?';
       
       if (!seqCount) { 
         warn('[Page Sync] Viewer has no items yet – skipping sync'); 
@@ -417,7 +466,7 @@ This copyright notice MUST APPEAR in all copies of the file.
       var targetIndex = Math.min(Math.max(canvasIndex, 0), seqCount - 1);
       
       if (lastSyncedPage !== targetIndex) {
-        log('[Page Sync] ✓ Switching viewer to canvas index', targetIndex, '(transcription page', originalPage + ')');
+        log('[Page Sync] ✓ Switching viewer to canvas index', targetIndex, '(marker', markerIdx + ', folio', folio + ')');
         isProgrammaticScrollSync = true;
         lastSyncedPage = targetIndex;
         viewer.goToPage(targetIndex);
@@ -445,56 +494,55 @@ This copyright notice MUST APPEAR in all copies of the file.
       } else {
         log('[Page Sync] Initial alignment skipped (no matching tag for current viewer page)');
       }
+      if (current !== null) updateMarkerIndicator(current);
     }, PAGE_SYNC_INIT_DELAY);
 
     // Expose a one-shot sync to current scroll position for external triggers (e.g., toggling sync on)
     window.lumiereSyncViewerToScroll = syncViewerToScroll;
   }
 
-    function wrapPageTags(transcriptionBox, seqCount) {
-    var transcriptionHTML = transcriptionBox.innerHTML;
-    var pageTagsRaw = [];
-    var m;
+  function unwrapExistingPageTags(html) {
+    if (!html) return html;
+    return html.replace(/<span[^>]*class=["']page-tag["'][^>]*>(.*?)<\/span>/gi, '$1');
+  }
 
-    // Extract page tags (new format: <<page_number>>)
-    var reNewFormat = /(?:&lt;&lt;|<<)(\d+)(?:&gt;&gt;|>>)/g;
-    while ((m = reNewFormat.exec(transcriptionHTML)) !== null) {
-      pageTagsRaw.push({ 
-        pageNumber: parseInt(m[1], 10), 
-        pattern: m[0], 
-        type: 'new-format' 
-      });
-    }
+  function wrapPageBreakMarkers(transcriptionBox, seqCount, startCanvasIndex0) {
+    var transcriptionHTML = unwrapExistingPageTags(transcriptionBox.innerHTML || '');
 
-    pageTagsRaw.sort(function (a, b) { 
-      return transcriptionHTML.indexOf(a.pattern) - transcriptionHTML.indexOf(b.pattern); 
-    });
+    // Marker patterns observed in transcription 1080:
+    // - <1>, <2>, <10>, ...
+    // - <4v>, <6v>, <10v>, ...
+    // - sometimes HTML-escaped: &lt;4v&gt;
+    //
+    // We treat each marker occurrence as a sequential page-break.
+    var reFolio = /(?:&lt;|<)\s*(\d{1,3})\s*([rv])?\s*(?:&gt;|>)/gi;
 
-    log('[Page Sync] Found', pageTagsRaw.length, 'page tags; sequence has', seqCount, 'page(s).');
+    var markerIndex = 0;
+    transcriptionHTML = transcriptionHTML.replace(reFolio, function (full, num, rv) {
+      var folio = String(num || '') + String(rv || '');
+      var canvasIndex = startCanvasIndex0 + markerIndex;
 
-    // Wrap all page markers
-    pageTagsRaw.forEach(function (tag, idx) {
-      var pageNumber = tag.pageNumber;
-      var canvasIndex = pageNumber - 1;
-      
       if (seqCount > 0) {
-        if (canvasIndex < 0) {
-          canvasIndex = 0;
-          warn('[Page Sync] Page', pageNumber, 'maps to canvas index < 0, clamped to 0');
-        } else if (canvasIndex >= seqCount) {
-          canvasIndex = seqCount - 1;
-          warn('[Page Sync] Page', pageNumber, 'maps to canvas index', canvasIndex, '>=', seqCount, ', clamped to', (seqCount - 1));
-        }
+        if (canvasIndex < 0) canvasIndex = 0;
+        if (canvasIndex >= seqCount) canvasIndex = seqCount - 1;
       }
-      
-      var wrapped = '<span class="page-tag" data-page="' + pageNumber + '" data-original-page="' + pageNumber + '" data-canvas-index="' + canvasIndex + '" id="page-tag-' + idx + '" data-type="' + tag.type + '">' + tag.pattern + '</span>';
-      transcriptionHTML = transcriptionHTML.replace(tag.pattern, wrapped);
-      
-      log('[Page Sync] Page', pageNumber, '→ canvas index', canvasIndex);
+
+      var wrapped =
+        '<span class="page-tag"' +
+        ' data-folio="' + folio + '"' +
+        ' data-marker-index="' + (markerIndex + 1) + '"' +
+        ' data-canvas-index="' + canvasIndex + '"' +
+        ' id="page-tag-' + markerIndex + '">' +
+        full +
+        '</span>';
+
+      markerIndex += 1;
+      return wrapped;
     });
 
     transcriptionBox.innerHTML = transcriptionHTML;
-    log('[Page Sync] All page tags wrapped and ready for tracking');
+    log('[Page Sync] Wrapped', markerIndex, 'page-break markers; start canvas index', startCanvasIndex0);
+    return markerIndex;
   }
 
   function findPageTagByCanvasIndex(transcriptionBox, canvasIndex) {
@@ -519,5 +567,22 @@ This copyright notice MUST APPEAR in all copies of the file.
     }
     
     return visible || (tags.length ? tags[0] : null);
+  }
+
+  function findNearestPageTagForCanvasIndex(transcriptionBox, canvasIndex) {
+    var tags = transcriptionBox.querySelectorAll('.page-tag');
+    if (!tags.length) return null;
+
+    var best = null;
+    var bestIdx = -1;
+    for (var i = 0; i < tags.length; i++) {
+      var idx = parseInt(tags[i].getAttribute('data-canvas-index'), 10);
+      if (!isFinite(idx)) continue;
+      if (idx <= canvasIndex && idx >= bestIdx) {
+        best = tags[i];
+        bestIdx = idx;
+      }
+    }
+    return best || tags[0];
   }
 })();
