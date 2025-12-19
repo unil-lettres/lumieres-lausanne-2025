@@ -552,6 +552,7 @@ This copyright notice MUST APPEAR in all copies of the file.
         if (canvasIndex >= seqCount) canvasIndex = seqCount - 1;
       }
 
+      var markerText = full.replace(prefix, '');
       var wrapped =
         prefix +
         '<span class="page-tag"' +
@@ -559,7 +560,7 @@ This copyright notice MUST APPEAR in all copies of the file.
         ' data-marker-index="' + (markerIndex + 1) + '"' +
         ' data-canvas-index="' + canvasIndex + '"' +
         ' id="page-tag-' + markerIndex + '">' +
-        full +
+        markerText +
         '</span>';
 
       markerIndex += 1;
