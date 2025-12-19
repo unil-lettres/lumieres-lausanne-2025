@@ -544,7 +544,7 @@ This copyright notice MUST APPEAR in all copies of the file.
     //   ^|[^0-9A-Za-z]  -> ensure we are not inside a word/number
     //   (&lt;|<) ... (>&gt;|>) -> real angle brackets (encoded or not)
     // Everything else stays untouched.
-    var reFolio = /(^|[^0-9A-Za-z])((?:&lt;|<)\s*(\d{1,3})\s*([rv])?\s*(?:&gt;|>))(?![0-9A-Za-z])/gi;
+    var reFolio = /(^|[\s\r\n\t>\(\[\{])((?:&lt;|<)\s*(\d{1,3})\s*([rv])?\s*(?:&gt;|>))(?=$|[\s\r\n\t<\.,;:\)\]\}])/gi;
 
     var markerIndex = 1; // 1 is already reserved for the virtual first marker
     transcriptionHTML = transcriptionHTML.replace(reFolio, function (full, prefix, markerText, num, rv) {
