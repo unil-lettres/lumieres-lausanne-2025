@@ -325,6 +325,7 @@ This copyright notice MUST APPEAR in all copies of the file.
     var scrollTimeout = null;
     var isUserScrolling = false;
     var lastMarkerIndicatorKey = null;
+    var isBeforeFirstMarker = true;
 
     var seqCount = viewer.lumiereSequenceCount || viewer.tileSources?.length || 0;
     var startCanvasIndex0 = computeStartCanvasIndex(seqCount, cfg?.facsimileStartCanvas);
@@ -340,13 +341,13 @@ This copyright notice MUST APPEAR in all copies of the file.
 
     function updateMarkerIndicator(canvasIndex) {
       var el = document.getElementById('viewer-marker-indicator');
-      var tag = typeof canvasIndex === 'number' ? findPageTagByCanvasIndex(transcriptionBox, canvasIndex) : null;
+      var tag = (!isBeforeFirstMarker && typeof canvasIndex === 'number') ? findPageTagByCanvasIndex(transcriptionBox, canvasIndex) : null;
       var folio = tag ? (tag.getAttribute('data-folio') || '') : '';
       var markerIdx = tag ? (tag.getAttribute('data-marker-index') || '') : '';
-      var key = String(canvasIndex) + '|' + String(markerIdx) + '|' + String(folio);
+      var key = String(isBeforeFirstMarker ? 'before' : canvasIndex) + '|' + String(markerIdx) + '|' + String(folio);
 
       if (el) {
-        el.textContent = folio ? ('Repère: <' + folio + '>') : 'Repère: —';
+        el.textContent = (!isBeforeFirstMarker && folio) ? ('Repère: <' + folio + '>') : 'Repère: —';
 
         if (key !== lastMarkerIndicatorKey) {
           el.classList.remove('blink');
@@ -358,7 +359,7 @@ This copyright notice MUST APPEAR in all copies of the file.
 
       // Also show a short-lived toast over the canvas area when the marker changes.
       if (key !== lastMarkerIndicatorKey) {
-        showMarkerToast(folio ? ('Repère <' + folio + '>') : 'Repère —');
+        showMarkerToast((!isBeforeFirstMarker && folio) ? ('Repère <' + folio + '>') : 'Repère —');
         lastMarkerIndicatorKey = key;
       }
     }
@@ -453,6 +454,7 @@ This copyright notice MUST APPEAR in all copies of the file.
       var visible = findVisiblePageTag(transcriptionBox, thresholdTop);
       // If we are above the first marker, stick to the start canvas and clear the repère.
       if (visible === null) {
+        isBeforeFirstMarker = true;
         var startIndex = Math.min(Math.max(startCanvasIndex0, 0), seqCount ? seqCount - 1 : 0);
         if (lastSyncedPage !== startIndex) {
           log('[Page Sync] At top of transcription → go to start canvas', startIndex);
@@ -464,6 +466,7 @@ This copyright notice MUST APPEAR in all copies of the file.
         updateMarkerIndicator(null);
         return;
       }
+      isBeforeFirstMarker = false;
 
       var canvasIndexStr = visible.getAttribute('data-canvas-index');
       var canvasIndex = canvasIndexStr !== null ? parseInt(canvasIndexStr, 10) : 0;
