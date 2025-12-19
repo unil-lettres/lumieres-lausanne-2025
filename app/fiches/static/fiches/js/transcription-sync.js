@@ -576,27 +576,35 @@ This copyright notice MUST APPEAR in all copies of the file.
     var tags = transcriptionBox.querySelectorAll('.page-tag');
     if (!tags.length) return null;
 
-    if (scrollTop <= 0) return null; // Above the first marker
-
     var containerRect = transcriptionBox.getBoundingClientRect();
     var viewportBottom = containerRect.bottom;
+    var viewportTop = containerRect.top;
 
-    var visible = null;
+    // If we truly are at the very top (no scroll), treat as before-first.
+    if (scrollTop <= 0) return null;
+
+    var inView = [];
     for (var i = 0; i < tags.length; i++) {
       var r = tags[i].getBoundingClientRect();
-      if (r.top <= thresholdTop) visible = tags[i];
+      var intersects = r.bottom >= viewportTop && r.top <= viewportBottom;
+      if (!intersects) continue;
+      inView.push({ el: tags[i], rect: r });
     }
-    if (visible) return visible;
 
-    // If no tag crossed the threshold, pick the first tag that is currently in view
-    for (var j = 0; j < tags.length; j++) {
-      var rr = tags[j].getBoundingClientRect();
-      if (rr.top < viewportBottom && rr.bottom > thresholdTop) {
-        return tags[j];
+    if (!inView.length) return tags[0] || null;
+
+    // Prefer the last tag in view that has crossed the threshold
+    var candidate = null;
+    for (var j = 0; j < inView.length; j++) {
+      if (inView[j].rect.top <= thresholdTop) {
+        candidate = inView[j].el;
       }
     }
 
-    return tags[0];
+    if (candidate) return candidate;
+
+    // Otherwise, take the first tag currently in view (nearest upcoming)
+    return inView[0].el;
   }
 
   function findNearestPageTagForCanvasIndex(transcriptionBox, canvasIndex) {
