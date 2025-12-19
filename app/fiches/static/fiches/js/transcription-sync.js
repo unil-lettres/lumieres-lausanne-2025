@@ -539,12 +539,10 @@ This copyright notice MUST APPEAR in all copies of the file.
     // - sometimes HTML-escaped: &lt;4v&gt;
     //
     // We treat each marker occurrence as a sequential page-break.
-    // Require real angle brackets and digits (optionally r/v) with word-boundaries around.
-    // Match breakdown:
-    //   ^|[^0-9A-Za-z]  -> ensure we are not inside a word/number
-    //   (&lt;|<) ... (>&gt;|>) -> real angle brackets (encoded or not)
-    // Everything else stays untouched.
-    var reFolio = /(^|[\s\r\n\t>\(\[\{])((?:&lt;|<)\s*(\d{1,3})\s*([rv])?\s*(?:&gt;|>))(?=$|[\s\r\n\t<\.,;:\)\]\}])/gi;
+    // Require real angle brackets and digits (optionally r/v) with word-boundaries around,
+    // and only match when starting at beginning of text/line or after a <br>.
+    // This avoids matching inline note references like "...nerfs<11> derriere..."
+    var reFolio = /(^|[\r\n]|<br\s*\/?>)\s*((?:&lt;|<)\s*(\d{1,3})\s*([rv])?\s*(?:&gt;|>))(?=$|[\s\r\n<])/gi;
 
     var markerIndex = 1; // 1 is already reserved for the virtual first marker
     transcriptionHTML = transcriptionHTML.replace(reFolio, function (full, prefix, markerText, num, rv) {
