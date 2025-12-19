@@ -539,10 +539,11 @@ This copyright notice MUST APPEAR in all copies of the file.
     // - sometimes HTML-escaped: &lt;4v&gt;
     //
     // We treat each marker occurrence as a sequential page-break.
-    var reFolio = /(?:&lt;|<)\s*(\d{1,3})\s*([rv])?\s*(?:&gt;|>)/gi;
+    // Require real angle brackets and digits (optionally r/v) with word-boundaries around
+    var reFolio = /(^|[^0-9A-Za-z])(?:&lt;|<)\s*(\d{1,3})\s*([rv])?\s*(?:&gt;|>)(?![0-9A-Za-z])/gi;
 
     var markerIndex = 1; // 1 is already reserved for the virtual first marker
-    transcriptionHTML = transcriptionHTML.replace(reFolio, function (full, num, rv) {
+    transcriptionHTML = transcriptionHTML.replace(reFolio, function (full, prefix, num, rv) {
       var folio = String(num || '') + String(rv || '');
       var canvasIndex = startCanvasIndex0 + markerIndex;
 
@@ -552,6 +553,7 @@ This copyright notice MUST APPEAR in all copies of the file.
       }
 
       var wrapped =
+        prefix +
         '<span class="page-tag"' +
         ' data-folio="' + folio + '"' +
         ' data-marker-index="' + (markerIndex + 1) + '"' +
