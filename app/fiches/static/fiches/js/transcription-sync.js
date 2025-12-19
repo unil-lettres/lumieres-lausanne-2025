@@ -575,14 +575,16 @@ This copyright notice MUST APPEAR in all copies of the file.
 
     transcriptionBox.innerHTML = transcriptionHTML;
 
-    // Remove any page tags that ended up inside a superscript (footnote-style) to avoid counting note refs
+    // Remove any page tags that ended up inside a footnote-like context (sup/a/footnote classes)
     try {
-      var supTags = transcriptionBox.querySelectorAll('sup .page-tag');
-      supTags.forEach(function (el) {
-        el.replaceWith(el.textContent || '');
+      var tags = transcriptionBox.querySelectorAll('.page-tag');
+      tags.forEach(function (el) {
+        if (el.closest('sup') || el.closest('a') || el.closest('.footnote') || el.closest('.note') || el.closest('.footnote-ref')) {
+          el.replaceWith(el.textContent || '');
+        }
       });
     } catch (e) {
-      warn('[Page Sync] Could not clean superscript page tags', e);
+      warn('[Page Sync] Could not clean footnote page tags', e);
     }
 
     log('[Page Sync] Wrapped', markerIndex, 'page-break markers; start canvas index', startCanvasIndex0);
