@@ -574,6 +574,17 @@ This copyright notice MUST APPEAR in all copies of the file.
     });
 
     transcriptionBox.innerHTML = transcriptionHTML;
+
+    // Remove any page tags that ended up inside a superscript (footnote-style) to avoid counting note refs
+    try {
+      var supTags = transcriptionBox.querySelectorAll('sup .page-tag');
+      supTags.forEach(function (el) {
+        el.replaceWith(el.textContent || '');
+      });
+    } catch (e) {
+      warn('[Page Sync] Could not clean superscript page tags', e);
+    }
+
     log('[Page Sync] Wrapped', markerIndex, 'page-break markers; start canvas index', startCanvasIndex0);
     return markerIndex;
   }
