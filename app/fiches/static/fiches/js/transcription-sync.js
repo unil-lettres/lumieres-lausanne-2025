@@ -451,7 +451,7 @@ This copyright notice MUST APPEAR in all copies of the file.
       var containerRect = transcriptionBox.getBoundingClientRect();
       var thresholdTop = containerRect.top + SCROLL_THRESHOLD_OFFSET;
 
-      var visible = findVisiblePageTag(transcriptionBox, thresholdTop);
+      var visible = findVisiblePageTag(transcriptionBox, thresholdTop, transcriptionBox.scrollTop || 0);
       // If we are above the first marker, stick to the start canvas and clear the repère.
       if (visible === null) {
         isBeforeFirstMarker = true;
@@ -572,14 +572,11 @@ This copyright notice MUST APPEAR in all copies of the file.
     return null;
   }
 
-  function findVisiblePageTag(transcriptionBox, thresholdTop) {
+  function findVisiblePageTag(transcriptionBox, thresholdTop, scrollTop) {
     var tags = transcriptionBox.querySelectorAll('.page-tag');
     if (!tags.length) return null;
 
-    var firstRect = tags[0].getBoundingClientRect();
-    if (thresholdTop < firstRect.top) {
-      return null; // Above the first marker
-    }
+    if (scrollTop <= 0) return null; // Above the first marker
 
     var visible = null;
     for (var i = 0; i < tags.length; i++) {
