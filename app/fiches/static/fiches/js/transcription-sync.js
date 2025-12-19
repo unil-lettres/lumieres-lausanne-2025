@@ -326,6 +326,8 @@ This copyright notice MUST APPEAR in all copies of the file.
     var isUserScrolling = false;
     var lastMarkerIndicatorKey = null;
     var isBeforeFirstMarker = true;
+    var lastToastKey = null;
+    var lastToastTime = 0;
 
     var seqCount = viewer.lumiereSequenceCount || viewer.tileSources?.length || 0;
     var startCanvasIndex0 = computeStartCanvasIndex(seqCount, cfg?.facsimileStartCanvas);
@@ -365,6 +367,14 @@ This copyright notice MUST APPEAR in all copies of the file.
     }
 
     function showMarkerToast(text) {
+      var now = Date.now();
+      var toastKey = text || '';
+      if (toastKey === lastToastKey && (now - lastToastTime) < 500) {
+        return; // prevent double flash on rapid duplicate updates
+      }
+      lastToastKey = toastKey;
+      lastToastTime = now;
+
       var container = document.getElementById('openseadragon-viewer');
       if (!container) return;
 
