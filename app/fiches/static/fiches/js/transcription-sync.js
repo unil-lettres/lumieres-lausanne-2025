@@ -539,11 +539,20 @@ This copyright notice MUST APPEAR in all copies of the file.
     // - sometimes HTML-escaped: &lt;4v&gt;
     //
     // We treat each marker occurrence as a sequential page-break.
-    // Require real angle brackets and digits (optionally r/v) with word-boundaries around
-    var reFolio = /(^|[^0-9A-Za-z])(?:&lt;|<)\s*(\d{1,3})\s*([rv])?\s*(?:&gt;|>)(?![0-9A-Za-z])/gi;
+    // Require real angle brackets and digits (optionally r/v) with word-boundaries around.
+    // Match breakdown:
+    //   ^|[^0-9A-Za-z]  -> ensure we are not inside a word/number
+    //   (&lt;|<) ... (>&gt;|>) -> real angle brackets (encoded or not)
+    // Everything else stays untouched.
+    var reFolio = /(^|[^0-9A-Za-z])((?:&lt;|<)\s*(\d{1,3})\s*([rv])?\s*(?:&gt;|>))(?![0-9A-Za-z])/gi;
 
     var markerIndex = 1; // 1 is already reserved for the virtual first marker
-    transcriptionHTML = transcriptionHTML.replace(reFolio, function (full, prefix, num, rv) {
+    transcriptionHTML = transcriptionHTML.replace(reFolio, function (full, prefix, markerText, num, rv) {
+      // Extra guard: if for some reason no angle bracket, leave untouched
+      if (markerText.indexOf('<') === -1 && markerText.indexOf('&lt;') === -1) {
+        return full;
+      }
+
       var folio = String(num || '') + String(rv || '');
       var canvasIndex = startCanvasIndex0 + markerIndex;
 
@@ -552,7 +561,6 @@ This copyright notice MUST APPEAR in all copies of the file.
         if (canvasIndex >= seqCount) canvasIndex = seqCount - 1;
       }
 
-      var markerText = full.replace(prefix, '');
       var wrapped =
         prefix +
         '<span class="page-tag"' +
