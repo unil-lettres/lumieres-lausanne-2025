@@ -326,8 +326,6 @@ This copyright notice MUST APPEAR in all copies of the file.
     var isUserScrolling = false;
     var lastMarkerIndicatorKey = null;
     var isBeforeFirstMarker = true;
-    var lastToastKey = null;
-    var lastToastTime = 0;
 
     var seqCount = viewer.lumiereSequenceCount || viewer.tileSources?.length || 0;
     var startCanvasIndex0 = computeStartCanvasIndex(seqCount, cfg?.facsimileStartCanvas);
@@ -360,39 +358,7 @@ This copyright notice MUST APPEAR in all copies of the file.
       }
 
       // Also show a short-lived toast over the canvas area when the marker changes.
-      if (key !== lastMarkerIndicatorKey) {
-        showMarkerToast((!isBeforeFirstMarker && folio) ? ('Repère <' + folio + '>') : 'Repère —');
-        lastMarkerIndicatorKey = key;
-      }
-    }
-
-    function showMarkerToast(text) {
-      var now = Date.now();
-      var toastKey = text || '';
-      if (toastKey === lastToastKey && (now - lastToastTime) < 1200) {
-        return; // prevent double flash on rapid duplicate updates
-      }
-      lastToastKey = toastKey;
-      lastToastTime = now;
-
-      var container = document.getElementById('openseadragon-viewer');
-      if (!container) return;
-
-      var toast = document.getElementById('viewer-marker-toast');
-      if (!toast) {
-        toast = document.createElement('div');
-        toast.id = 'viewer-marker-toast';
-        toast.className = 'marker-toast';
-        toast.setAttribute('aria-live', 'polite');
-        toast.setAttribute('role', 'status');
-        container.appendChild(toast);
-      }
-
-      toast.textContent = text || '';
-      toast.classList.remove('show');
-      // force reflow to restart animation
-      void toast.offsetWidth; // eslint-disable-line no-unused-expressions
-      toast.classList.add('show');
+      lastMarkerIndicatorKey = key;
     }
 
     // Sync viewer page to transcription
