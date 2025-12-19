@@ -340,7 +340,7 @@ This copyright notice MUST APPEAR in all copies of the file.
 
     function updateMarkerIndicator(canvasIndex) {
       var el = document.getElementById('viewer-marker-indicator');
-      var tag = findPageTagByCanvasIndex(transcriptionBox, canvasIndex);
+      var tag = typeof canvasIndex === 'number' ? findPageTagByCanvasIndex(transcriptionBox, canvasIndex) : null;
       var folio = tag ? (tag.getAttribute('data-folio') || '') : '';
       var markerIdx = tag ? (tag.getAttribute('data-marker-index') || '') : '';
       var key = String(canvasIndex) + '|' + String(markerIdx) + '|' + String(folio);
@@ -451,7 +451,19 @@ This copyright notice MUST APPEAR in all copies of the file.
       var thresholdTop = containerRect.top + SCROLL_THRESHOLD_OFFSET;
 
       var visible = findVisiblePageTag(transcriptionBox, thresholdTop);
-      if (!visible) return;
+      // If we are above the first marker, stick to the start canvas and clear the repère.
+      if (visible === null) {
+        var startIndex = Math.min(Math.max(startCanvasIndex0, 0), seqCount ? seqCount - 1 : 0);
+        if (lastSyncedPage !== startIndex) {
+          log('[Page Sync] At top of transcription → go to start canvas', startIndex);
+          isProgrammaticScrollSync = true;
+          lastSyncedPage = startIndex;
+          viewer.goToPage(startIndex);
+          setTimeout(function () { isProgrammaticScrollSync = false; }, 500);
+        }
+        updateMarkerIndicator(null);
+        return;
+      }
 
       var canvasIndexStr = visible.getAttribute('data-canvas-index');
       var canvasIndex = canvasIndexStr !== null ? parseInt(canvasIndexStr, 10) : 0;
@@ -559,14 +571,19 @@ This copyright notice MUST APPEAR in all copies of the file.
 
   function findVisiblePageTag(transcriptionBox, thresholdTop) {
     var tags = transcriptionBox.querySelectorAll('.page-tag');
+    if (!tags.length) return null;
+
+    var firstRect = tags[0].getBoundingClientRect();
+    if (thresholdTop < firstRect.top) {
+      return null; // Above the first marker
+    }
+
     var visible = null;
-    
     for (var i = 0; i < tags.length; i++) {
       var r = tags[i].getBoundingClientRect();
       if (r.top <= thresholdTop) visible = tags[i];
     }
-    
-    return visible || (tags.length ? tags[0] : null);
+    return visible || tags[0];
   }
 
   function findNearestPageTagForCanvasIndex(transcriptionBox, canvasIndex) {
