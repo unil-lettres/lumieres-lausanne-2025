@@ -22,25 +22,26 @@
 
 <!-- Common viewer controls for both display and edit modes -->
 <div class="viewer-control-bar" id="viewer-control-bar">
-    <!-- Navigation controls -->
+    <!-- Left group: navigation + page indicator -->
     <div class="control-group navigation-controls">
         <button type="button" id="viewer-prev-page" class="control-btn" title="Page précédente" aria-label="Page précédente">
             <i class="control-icon prev-icon"></i>
         </button>
-        
+        <button type="button" id="viewer-next-page" class="control-btn" title="Page suivante" aria-label="Page suivante">
+            <i class="control-icon next-icon"></i>
+        </button>
         <span class="page-indicator" id="viewer-page-indicator" aria-live="polite">
             <input type="number" id="page-input" class="page-input" min="1" value="1" title="Aller à la page" aria-label="Numéro de page" />
             / <span id="total-pages">1</span>
         </span>
-        
-        <button type="button" id="viewer-next-page" class="control-btn" title="Page suivante" aria-label="Page suivante">
-            <i class="control-icon next-icon"></i>
-        </button>
+    </div>
 
+    <!-- Center: marker indicator -->
+    <div class="control-group marker-controls">
         <span class="marker-indicator" id="viewer-marker-indicator" aria-live="polite"></span>
     </div>
     
-    <!-- Zoom controls -->
+    <!-- Right group: zoom controls -->
     <div class="control-group zoom-controls">
         <button type="button" id="viewer-zoom-in" class="control-btn" title="Zoom avant" aria-label="Zoom avant">
             <i class="control-icon zoom-in-icon"></i>
@@ -54,5 +55,4 @@
             <i class="control-icon reset-icon"></i>
         </button>
     </div>
-    
 </div>
