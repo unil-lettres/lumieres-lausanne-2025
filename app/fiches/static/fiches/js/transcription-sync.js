@@ -612,7 +612,17 @@ This copyright notice MUST APPEAR in all copies of the file.
       inView.push({ el: tags[i], rect: r });
     }
 
-    if (!inView.length) return tags[0] || null;
+    if (!inView.length) {
+      // Pick the closest tag above the viewport, or if none, the closest below.
+      var above = null;
+      var below = null;
+      for (var j = 0; j < tags.length; j++) {
+        var rr = tags[j].getBoundingClientRect();
+        if (rr.top <= viewportTop) above = tags[j];
+        else if (!below) below = tags[j];
+      }
+      return above || below || tags[0] || null;
+    }
 
     // Prefer the last tag in view that has crossed the threshold
     var candidate = null;
