@@ -292,13 +292,13 @@
 }
 
 .reset-icon {
-    background-image: url('/static/js/lib/openseadragon/images/home_rest.png');
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' stroke='%23444' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'><path d='M4 11a8 8 0 1 1 8 8'/><polyline points='10 9 14 9 14 13'/></svg>");
 }
 .control-btn:hover .reset-icon {
-    background-image: url('/static/js/lib/openseadragon/images/home_hover.png');
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' stroke='%230d6efd' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'><path d='M4 11a8 8 0 1 1 8 8'/><polyline points='10 9 14 9 14 13'/></svg>");
 }
 .control-btn:active .reset-icon {
-    background-image: url('/static/js/lib/openseadragon/images/home_pressed.png');
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' stroke='%230a58ca' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'><path d='M4 11a8 8 0 1 1 8 8'/><polyline points='10 9 14 9 14 13'/></svg>");
 }
 
 /* Custom icons for contrast and brightness (using Unicode symbols) */
