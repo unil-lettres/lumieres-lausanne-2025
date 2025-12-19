@@ -548,8 +548,9 @@ This copyright notice MUST APPEAR in all copies of the file.
 
     var markerIndex = 1; // 1 is already reserved for the virtual first marker
     transcriptionHTML = transcriptionHTML.replace(reFolio, function (full, prefix, markerText, num, rv) {
-      // Extra guard: if for some reason no angle bracket, leave untouched
-      if (markerText.indexOf('<') === -1 && markerText.indexOf('&lt;') === -1) {
+      // Extra guards: must really be a clean <number[r|v]> token once decoded
+      var plain = markerText.replace(/&lt;/gi, '<').replace(/&gt;/gi, '>');
+      if (!/^<\s*\d{1,3}\s*[rv]?\s*>$/.test(plain)) {
         return full;
       }
 
