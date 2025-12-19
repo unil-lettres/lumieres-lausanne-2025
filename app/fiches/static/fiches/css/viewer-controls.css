@@ -181,7 +181,8 @@
 }
 
 .marker-toast.show {
-    animation: markerToast 1400ms ease-in-out;
+    opacity: 1;
+    animation: markerToast 1200ms ease-in-out forwards;
 }
 
 @keyframes markerToast {

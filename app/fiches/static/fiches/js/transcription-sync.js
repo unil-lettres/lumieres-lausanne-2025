@@ -369,7 +369,7 @@ This copyright notice MUST APPEAR in all copies of the file.
     function showMarkerToast(text) {
       var now = Date.now();
       var toastKey = text || '';
-      if (toastKey === lastToastKey && (now - lastToastTime) < 500) {
+      if (toastKey === lastToastKey && (now - lastToastTime) < 1200) {
         return; // prevent double flash on rapid duplicate updates
       }
       lastToastKey = toastKey;
