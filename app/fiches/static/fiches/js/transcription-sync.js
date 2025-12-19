@@ -578,12 +578,25 @@ This copyright notice MUST APPEAR in all copies of the file.
 
     if (scrollTop <= 0) return null; // Above the first marker
 
+    var containerRect = transcriptionBox.getBoundingClientRect();
+    var viewportBottom = containerRect.bottom;
+
     var visible = null;
     for (var i = 0; i < tags.length; i++) {
       var r = tags[i].getBoundingClientRect();
       if (r.top <= thresholdTop) visible = tags[i];
     }
-    return visible || tags[0];
+    if (visible) return visible;
+
+    // If no tag crossed the threshold, pick the first tag that is currently in view
+    for (var j = 0; j < tags.length; j++) {
+      var rr = tags[j].getBoundingClientRect();
+      if (rr.top < viewportBottom && rr.bottom > thresholdTop) {
+        return tags[j];
+      }
+    }
+
+    return tags[0];
   }
 
   function findNearestPageTagForCanvasIndex(transcriptionBox, canvasIndex) {
