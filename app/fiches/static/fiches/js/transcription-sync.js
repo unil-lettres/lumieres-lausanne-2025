@@ -524,6 +524,15 @@ This copyright notice MUST APPEAR in all copies of the file.
   function wrapPageBreakMarkers(transcriptionBox, seqCount, startCanvasIndex0) {
     var transcriptionHTML = unwrapExistingPageTags(transcriptionBox.innerHTML || '');
 
+    // Inject a virtual first marker <1> at the very start so the area before the
+    // first explicit marker is mapped to the start canvas without requiring a
+    // manual <0>. Keep it minimally visible to be pickable by geometry checks.
+    transcriptionHTML =
+      '<span class="page-tag page-tag-virtual" ' +
+      'data-folio="1" data-marker-index="1" data-canvas-index="' + startCanvasIndex0 + '" ' +
+      'id="page-tag-virtual-0" style="display:block;height:1px;overflow:hidden;padding:0;margin:0;"></span>' +
+      transcriptionHTML;
+
     // Marker patterns observed in transcription 1080:
     // - <1>, <2>, <10>, ...
     // - <4v>, <6v>, <10v>, ...
@@ -532,7 +541,7 @@ This copyright notice MUST APPEAR in all copies of the file.
     // We treat each marker occurrence as a sequential page-break.
     var reFolio = /(?:&lt;|<)\s*(\d{1,3})\s*([rv])?\s*(?:&gt;|>)/gi;
 
-    var markerIndex = 0;
+    var markerIndex = 1; // 1 is already reserved for the virtual first marker
     transcriptionHTML = transcriptionHTML.replace(reFolio, function (full, num, rv) {
       var folio = String(num || '') + String(rv || '');
       var canvasIndex = startCanvasIndex0 + markerIndex;
