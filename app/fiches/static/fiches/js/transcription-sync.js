@@ -322,6 +322,7 @@ This copyright notice MUST APPEAR in all copies of the file.
     var lastSyncedPage = (typeof viewer.currentPage === 'function') ? viewer.currentPage() : null;
     var isProgrammaticScrollSync = false;
     var isProgrammaticViewerSync = false;
+    var isProgrammaticBlankSkip = false;
     var scrollTimeout = null;
     var isUserScrolling = false;
     var lastMarkerIndicatorKey = null;
@@ -342,6 +343,9 @@ This copyright notice MUST APPEAR in all copies of the file.
     function updateMarkerIndicator(canvasIndex) {
       var el = document.getElementById('viewer-marker-indicator');
       var tag = (!isBeforeFirstMarker && typeof canvasIndex === 'number') ? findPageTagByCanvasIndex(transcriptionBox, canvasIndex) : null;
+      if (window.TranscriptionSyncEnabled && tag && isBlankPageTag(tag)) {
+        tag = findNonBlankTagForCanvasIndex(transcriptionBox, canvasIndex);
+      }
       var folio = tag ? (tag.getAttribute('data-folio') || '') : '';
       var markerIdx = tag ? (tag.getAttribute('data-marker-index') || '') : '';
       var key = String(isBeforeFirstMarker ? 'before' : canvasIndex) + '|' + String(markerIdx) + '|' + String(folio);
@@ -361,10 +365,32 @@ This copyright notice MUST APPEAR in all copies of the file.
       lastMarkerIndicatorKey = key;
     }
 
+    function maybeSkipBlankCanvas(canvasIndex) {
+      var tag = findPageTagByCanvasIndex(transcriptionBox, canvasIndex);
+      if (!tag || !isBlankPageTag(tag)) return false;
+
+      var targetTag = findNonBlankTagForCanvasIndex(transcriptionBox, canvasIndex);
+      if (!targetTag) return false;
+
+      var targetIndex = parseInt(targetTag.getAttribute('data-canvas-index'), 10);
+      if (!isFinite(targetIndex) || targetIndex === canvasIndex) return false;
+
+      log('[Page Sync] Skipping blank canvas', canvasIndex, '→', targetIndex);
+      isProgrammaticBlankSkip = true;
+      viewer.goToPage(targetIndex);
+      return true;
+    }
+
     // Sync viewer page to transcription
     try {
       viewer.addHandler('page', function (ev) {
         if (typeof ev.page !== 'number') return;
+
+        if (isProgrammaticBlankSkip) {
+          isProgrammaticBlankSkip = false;
+        } else if (window.TranscriptionSyncEnabled && maybeSkipBlankCanvas(ev.page)) {
+          return;
+        }
 
         if (window.TranscriptionSyncEnabled && !isProgrammaticScrollSync && !isUserScrolling && ev.page !== lastSyncedPage) {
           log('[Page Sync] Viewer page changed by user → syncing transcription to page', ev.page);
@@ -386,6 +412,9 @@ This copyright notice MUST APPEAR in all copies of the file.
       }
 
       var targetTag = findPageTagByCanvasIndex(transcriptionBox, canvasIndex);
+      if (window.TranscriptionSyncEnabled && targetTag && isBlankPageTag(targetTag)) {
+        targetTag = findNonBlankTagForCanvasIndex(transcriptionBox, canvasIndex);
+      }
       if (!targetTag) {
         warn('[Page Sync] No page tag found for canvas index', canvasIndex);
         return;
@@ -428,6 +457,10 @@ This copyright notice MUST APPEAR in all copies of the file.
       var thresholdTop = containerRect.top + SCROLL_THRESHOLD_OFFSET;
 
       var visible = findVisiblePageTag(transcriptionBox, thresholdTop, transcriptionBox.scrollTop || 0);
+      if (window.TranscriptionSyncEnabled && visible && isBlankPageTag(visible)) {
+        var nonBlankVisible = findNextNonBlankTag(transcriptionBox, visible);
+        visible = nonBlankVisible || visible;
+      }
       // If we are above the first marker, stick to the start canvas and clear the repère.
       if (visible === null) {
         isBeforeFirstMarker = true;
@@ -480,6 +513,9 @@ This copyright notice MUST APPEAR in all copies of the file.
     // Initial alignment: only if current viewer page has a matching tag
     setTimeout(function () {
       var current = (viewer && typeof viewer.currentPage === 'function') ? viewer.currentPage() : null;
+      if (current !== null && window.TranscriptionSyncEnabled && maybeSkipBlankCanvas(current)) {
+        return;
+      }
       if (current !== null && findPageTagByCanvasIndex(transcriptionBox, current)) {
         syncViewerToScroll();
       } else {
@@ -516,17 +552,28 @@ This copyright notice MUST APPEAR in all copies of the file.
     //
     // We treat each marker occurrence as a sequential page-break.
     // Require real angle brackets and digits (optionally r/v) with word-boundaries around.
-    // Avoid inline matches (requires a non-alnum just before, and a non-alnum/space after).
-    var reFolio = /(^|[^0-9A-Za-z])((?:&lt;|<)\s*(\d{1,3})\s*([rv])?\s*(?:&gt;|>))(?![0-9A-Za-z])/gi;
+    // Avoid inline matches by checking surrounding chars at runtime.
+    var reFolio = /(?:&lt;|<)\s*(\d{1,3})\s*([rv])?\s*(?:&gt;|>)/gi;
 
     var markerIndex = 1; // 1 is already reserved for the virtual first marker
-    transcriptionHTML = transcriptionHTML.replace(reFolio, function (full, prefix, markerText, num, rv) {
+    transcriptionHTML = transcriptionHTML.replace(reFolio, function (markerText, num, rv, offset, html) {
+      var before = offset > 0 ? html.charAt(offset - 1) : '';
+      var after = offset + markerText.length < html.length ? html.charAt(offset + markerText.length) : '';
+      if (before && /[0-9A-Za-z]/.test(before)) {
+        return markerText;
+      }
+      if (after && /[0-9A-Za-z]/.test(after)) {
+        return markerText;
+      }
+
       // Extra guards: must really be a clean <number[r|v]> token once decoded
       var plain = markerText.replace(/&lt;/gi, '<').replace(/&gt;/gi, '>');
       if (!/^<\s*\d{1,3}\s*[rv]?\s*>$/.test(plain)) {
-        return full;
+        return markerText;
       }
 
+      var numValue = parseInt(num, 10);
+      var isBlank = isFinite(numValue) && numValue === 0;
       var folio = String(num || '') + String(rv || '');
       var canvasIndex = startCanvasIndex0 + markerIndex;
 
@@ -536,9 +583,9 @@ This copyright notice MUST APPEAR in all copies of the file.
       }
 
       var wrapped =
-        prefix +
-        '<span class="page-tag"' +
+        '<span class="page-tag' + (isBlank ? ' page-tag-blank' : '') + '"' +
         ' data-folio="' + folio + '"' +
+        (isBlank ? ' data-blank="true"' : '') +
         ' data-marker-index="' + (markerIndex + 1) + '"' +
         ' data-canvas-index="' + canvasIndex + '"' +
         ' id="page-tag-' + markerIndex + '">' +
@@ -577,6 +624,49 @@ This copyright notice MUST APPEAR in all copies of the file.
     }
     // No exact match: do not force scroll
     return null;
+  }
+
+  function isBlankPageTag(tag) {
+    return !!tag && tag.getAttribute('data-blank') === 'true';
+  }
+
+  function findNextNonBlankTagFromIndex(tags, startIndex) {
+    for (var i = startIndex + 1; i < tags.length; i++) {
+      if (!isBlankPageTag(tags[i])) return tags[i];
+    }
+    for (var j = startIndex - 1; j >= 0; j--) {
+      if (!isBlankPageTag(tags[j])) return tags[j];
+    }
+    return null;
+  }
+
+  function findNextNonBlankTag(transcriptionBox, startTag) {
+    if (!startTag) return null;
+    var tags = transcriptionBox.querySelectorAll('.page-tag');
+    var startIndex = -1;
+    for (var i = 0; i < tags.length; i++) {
+      if (tags[i] === startTag) {
+        startIndex = i;
+        break;
+      }
+    }
+    if (startIndex === -1) return null;
+    return findNextNonBlankTagFromIndex(tags, startIndex);
+  }
+
+  function findNonBlankTagForCanvasIndex(transcriptionBox, canvasIndex) {
+    var tags = transcriptionBox.querySelectorAll('.page-tag');
+    var matchIndex = -1;
+    for (var i = 0; i < tags.length; i++) {
+      var tagCanvasIndex = parseInt(tags[i].getAttribute('data-canvas-index'), 10);
+      if (tagCanvasIndex === canvasIndex) {
+        matchIndex = i;
+        break;
+      }
+    }
+    if (matchIndex === -1) return null;
+    if (!isBlankPageTag(tags[matchIndex])) return tags[matchIndex];
+    return findNextNonBlankTagFromIndex(tags, matchIndex);
   }
 
   function findVisiblePageTag(transcriptionBox, thresholdTop, scrollTop) {
@@ -631,6 +721,7 @@ This copyright notice MUST APPEAR in all copies of the file.
     var best = null;
     var bestIdx = -1;
     for (var i = 0; i < tags.length; i++) {
+      if (isBlankPageTag(tags[i])) continue;
       var idx = parseInt(tags[i].getAttribute('data-canvas-index'), 10);
       if (!isFinite(idx)) continue;
       if (idx <= canvasIndex && idx >= bestIdx) {

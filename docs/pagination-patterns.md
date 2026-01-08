@@ -4,7 +4,7 @@
 
 This document describes the pagination marker patterns found in the `fiches_transcription.text` field and how they are processed by the facsimile viewer synchronization system.
 
-As of December 2025, pagination synchronization is based on **existing folio/page markers** in the transcription text (e.g. `<1>`, `<1v>`), not on custom `<<n>>` markers.
+As of December 2025, pagination synchronization is based on **existing folio/page markers** in the transcription text (e.g. `<1>`, `<1v>`).
 
 ## Analysis Summary (November 2025)
 
@@ -28,6 +28,12 @@ Example (simplified):
 - etc.
 
 This makes synchronization robust even when the folio numbering in the transcription is not perfectly aligned with the IIIF source (e.g. additional covers/blanks).
+
+### Blank page markers (skip-only)
+
+**Pattern**: `<0>`
+
+Use this when a blank facsimile page should be counted but not shown. The marker is treated as a page break to keep alignment, and when sync is enabled the viewer skips blank canvases and the Repere indicator ignores them.
 
 ## Facsimile start canvas offset
 
