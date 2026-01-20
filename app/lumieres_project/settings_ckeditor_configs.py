@@ -72,7 +72,7 @@ CKEDITOR_CONFIGS = {
             ['Save', '-'],
             ['SelectAll', 'Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord', '-', 'Undo', 'Redo', '-', 'Find', 'Replace', '-', 'ShowBlocks', 'Source', '-', 'Maximize'],
             '/',
-            ['Italic', 'Underline', 'Overline', 'Superscript'],
+            ['Bold', 'Italic', 'Underline', 'Overline', 'Superscript'],
             ['Image', 'Table', 'SpecialChar', '-', 'Link', 'Unlink'],
             ['Styles', 'Format', 'BGColor'],
             '/',

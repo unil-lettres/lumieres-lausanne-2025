@@ -765,12 +765,9 @@ class Transcription(ACModel):
     )
 
     facsimile_start_canvas = models.PositiveIntegerField(
-        verbose_name=_("Canvas de départ du facsimilé"),
+        verbose_name=_("Page de départ du facsimilé"),
         blank=True,
         null=True,
-        help_text=_(
-            "Index de canvas à utiliser comme première page de la transcription (par défaut: 1)."
-        ),
     )
 
     access_private = models.BooleanField(blank=True, default=True, verbose_name=_("Privé"))
