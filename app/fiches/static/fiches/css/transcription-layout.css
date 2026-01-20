@@ -1,0 +1,352 @@
+/*
+   Copyright (C) 2010-2025 Université de Lausanne, RISET
+   <https://www.unil.ch/riset/>
+
+   This file is part of Lumières.Lausanne.
+   Lumières.Lausanne is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   Lumières.Lausanne is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+   This copyright notice MUST APPEAR in all copies of the file.
+*/
+
+/* Two-column layout: transcription on left, viewer on right */
+.transcription-viewer-container {
+	display: flex;
+	gap: 20px;
+	width: 100%;
+	position: relative;
+	z-index: 1;
+}
+
+.transcription-content {
+	flex: 1;
+	min-width: 0; /* Allow flex item to shrink below content size */
+}
+
+.transcription-content #transcription-view-controls {
+	margin-bottom: 12px;
+}
+
+.transcription-content #transcription-data {
+	max-height: 600px;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+.viewer-panel {
+	width: 450px;
+	flex-shrink: 0;
+	position: sticky;
+	top: 20px;
+	height: fit-content;
+	max-height: calc(100vh - 40px);
+	z-index: 10;
+}
+
+#openseadragon-viewer {
+	width: 100%;
+	height: 600px;
+	background-color: #000;
+	border: 1px solid #ccc;
+	position: relative; /* allows overlay elements like marker toast */
+}
+
+.content .transcription-data {
+	padding: 0 20px;
+}
+
+/* Table of contents styling - Fixed position on right side */
+#transcription-toc {
+	position: fixed !important;
+	top: 250px !important;
+	right: 50px !important;
+	bottom: auto !important;
+	left: auto !important;
+	background: #c4c5b4 !important;
+	width: 200px !important;
+	padding: 15px !important;
+	font-size: 11px !important;
+	max-height: calc(100% - 250px - 150px) !important;
+	overflow-y: auto !important;
+	z-index: 9999 !important;
+	box-shadow: 0 3px 10px grey !important;
+	display: block !important;
+	visibility: visible !important;
+	margin: 0 !important;
+}
+
+#transcription-toc .title {
+	font-weight: bold;
+	margin-bottom: 5px;
+}
+
+#transcription-toc li {
+	list-style: disc inside;
+	margin: 0 !important;
+	padding: 2px 0 !important;
+}
+
+#transcription-toc .toclevel2 {
+	padding-left: 10px !important;
+}
+
+#transcription-toc a {
+	color: #0066cc !important;
+	text-decoration: none !important;
+}
+
+#transcription-toc a:hover {
+	color: #0052a3 !important;
+	text-decoration: underline !important;
+}
+
+/* Prevent cite_as from overlapping viewer */
+.field_group.cite_as {
+	position: static !important;
+	margin-top: 20px;
+}
+
+/* Responsive: stack on smaller screens */
+@media (max-width: 1200px) {
+	.transcription-viewer-container {
+		flex-direction: column;
+	}
+	
+	.viewer-panel {
+		width: 100%;
+		position: static;
+		max-height: none;
+	}
+
+	.transcription-content #transcription-data {
+		max-height: none;
+	}
+}
+
+/* Layout mode styles - match toolbar button style */
+.layout-toggle-group {
+	display: flex;
+	gap: 3px;
+	margin-bottom: 10px;
+	justify-content: center;
+}
+
+.layout-btn {
+	/* Match tb_but_text style from main toolbar */
+	font-size: 84.651%;
+	line-height: 17px;
+	padding: 4px 8px;
+	margin: 4px 3px 0;
+	background-color: #DEDEDE;
+	border: 1px solid #98958E;
+	border-radius: 2px;
+	color: #6C6C6C;
+	cursor: pointer;
+	text-decoration: none;
+	display: inline-block;
+	transition: all 0.2s ease;
+}
+
+.layout-btn:hover {
+	color: #222;
+	background-color: #F9F8F4;
+	border-color: #776C4E;
+}
+
+.layout-btn.active {
+	background-color: #776C4E;
+	color: #fff;
+	border-color: #776C4E;
+}
+
+.layout-btn.active:hover {
+	background-color: #6A5F42;
+	border-color: #6A5F42;
+}
+
+/* Text-only mode */
+body[data-layout-mode="text-only"] .viewer-panel {
+	display: none;
+}
+
+body[data-layout-mode="text-only"] .transcription-content {
+	max-width: 100%;
+	display: block;
+}
+
+body[data-layout-mode="text-only"] .transcription-viewer-container {
+	display: block;
+}
+
+body[data-layout-mode="text-only"] #transcription-view-controls {
+	margin-bottom: 12px;
+}
+
+/* Hide notes position toggle button by default, show only in text-only mode */
+#notes-position-toggle {
+	display: none !important;
+}
+
+body[data-layout-mode="text-only"] #notes-position-toggle {
+	display: inline-block !important;
+}
+
+/* Align transcription utility buttons sizing with layout buttons */
+#transcription-view-controls a.ui-button {
+	padding: 6px 12px;
+	font-size: 12px;
+}
+
+/* Extra guard class applied via JS to handle jQuery UI inline styles */
+#notes-position-toggle.notes-toggle-hidden {
+	display: none !important;
+	visibility: hidden !important;
+}
+
+/* Show side notes based on notes position preference, not layout mode */
+body[data-notes-position="margin"] .transcription-content-wrapper {
+	display: flex;
+	flex-direction: row;
+	align-items: flex-start;
+	gap: 0;
+	position: relative;
+}
+
+body[data-notes-position="margin"] #transcription-data {
+	flex: 1;
+	min-width: 0;
+	max-width: calc(100% - 340px);
+}
+
+body[data-layout-mode="text-only"][data-notes-position="margin"] #transcription-data {
+	max-height: none;
+	overflow-y: visible;
+}
+
+/* Side notes panel when notes position is set to margin */
+body[data-notes-position="margin"] .side-notes-panel {
+	display: block !important;
+	width: 300px;
+	flex-shrink: 0;
+	padding-left: 20px;
+	margin-left: 20px;
+	border-left: 1px solid #ccc;
+	position: relative;
+}
+
+body[data-notes-position="margin"] .side-note {
+	position: absolute;
+	left: 20px;
+	right: 0;
+	margin-bottom: 0;
+}
+
+body[data-notes-position="margin"] .transcription-doc-notes,
+body[data-notes-position="margin"] .transcription-ed-notes {
+	display: none !important;
+}
+
+/* Bottom notes when notes position is set to bottom */
+body[data-notes-position="bottom"] .side-notes-panel {
+	display: none !important;
+}
+
+/* Viewer-only mode */
+body[data-layout-mode="viewer-only"] .transcription-content {
+	display: none;
+}
+
+body[data-layout-mode="viewer-only"] .transcription-viewer-container {
+	justify-content: center;
+}
+
+body[data-layout-mode="viewer-only"] .viewer-panel {
+	position: static;
+	width: 800px;
+	max-width: 90%;
+	max-height: none;
+	height: auto;
+}
+
+body[data-layout-mode="viewer-only"] #openseadragon-viewer {
+	height: 800px;
+}
+
+/* Hidden line breaks styling */
+.transcription-data br.hidden-br {
+	display: none;
+}
+
+/* Side notes styling */
+.side-notes-panel {
+	display: none;
+	font-size: 0.9em;
+}
+
+.side-notes-panel .side-note {
+	margin-bottom: 15px;
+	padding: 8px;
+	background: #f9f9f9;
+	border-left: 3px solid #ccc;
+	font-size: 0.95em;
+	line-height: 1.4;
+}
+
+body[data-layout-mode="text-only"] .side-notes-panel .side-note {
+	margin-bottom: 0;
+}
+
+.side-notes-panel .side-note.note-editorial {
+	border-left-color: #007bff;
+}
+
+.side-notes-panel .side-note.note-document {
+	border-left-color: #28a745;
+}
+
+/* Disable CSS counter for side notes - they use JS-generated numbers */
+.side-notes-panel .side-note.note-document:before,
+.side-notes-panel .side-note.note-editorial:before {
+	content: none !important;
+}
+
+.side-notes-panel .side-note .note-number {
+	font-weight: bold;
+	margin-right: 5px;
+}
+
+.page-tag {
+	color: #0b7a0b; /* make page markers visually distinct */
+	font-weight: bold;
+}
+
+.side-notes-panel .note-back-link {
+	font-size: 0.85em;
+	margin-left: 5px;
+}
+
+.side-notes-panel .notes-title {
+	font-weight: bold;
+	margin-bottom: 10px;
+	padding-bottom: 5px;
+	border-bottom: 2px solid #333;
+}
+
+/* Highlight note references in text */
+a.note-ref-link {
+	text-decoration: none;
+}
+
+a.note-ref-link:hover {
+	background-color: #ffffcc;
+}

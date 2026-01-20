@@ -33,6 +33,14 @@
                 "pattern": "Starting development server at (https?://\\S+|[0-9]+)",
                 "uriFormat": "%s://localhost:%s/about.html"
             }
+        },
+        {
+            "name": "Launch localhost:8000",
+            "type": "firefox",
+            "request": "launch",
+            "reAttach": true,
+            "url": "http://localhost:8000/",
+            "webRoot": "${workspaceFolder}"
         }
     ]
 }

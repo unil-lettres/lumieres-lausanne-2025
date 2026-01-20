@@ -30,9 +30,17 @@
 {% block head_css %}
 	{{ block.super }}
 	<link rel="stylesheet" href="{% static 'css/tinyMCE_transcripts.css' %}" media="all" charset="utf-8" />
+	<link rel="stylesheet" href="{% static 'fiches/css/viewer-controls.css' %}" />
+	<link rel="stylesheet" href="{% static 'fiches/css/transcription-layout.css' %}" />
 	<style>
 		.content .transcription-data {
 			padding: 0 40px;
+		}
+		/* Disable sync button when not in split-view mode */
+		body[data-layout-mode="text-only"] #sync-toggle-btn,
+		body[data-layout-mode="viewer-only"] #sync-toggle-btn {
+			opacity: 0.5;
+			cursor: not-allowed;
 		}
 	</style>
 {% endblock head_css %}
@@ -48,8 +56,13 @@
 <!-- jQuery UI JS with the "button" widget -->
 <script src="{% static 'js/lib/jquery-ui-1.9/js/jquery-ui-1.9.min.js' %}"></script>
 
+<!-- OpenSeadragon -->
+<script src="{% static 'js/lib/openseadragon/openseadragon.min.js' %}"></script>
+<!-- Viewer Controls -->
+<script src="{% static 'fiches/js/viewer-controls.js' %}"></script>
+
     <script type="text/javascript" src="{% static 'js/highlighter.js' %}"></script>
-	<script type="text/javascript">
+    <script type="text/javascript">
 		{% if user.is_authenticated and display_collector %}
 		//{# ---------- Collection Mamagement ---------- #}
 		function add_obj2col(){
@@ -60,6 +73,13 @@
 			});
 		}
 		{% endif %}
+		// Pass minimal configuration to external script
+		window.TranscriptionConfig = {
+			// IIIF URL (manifest or info.json)
+			iiifUrl: "{{ trans.facsimile_iiif_url|escapejs }}",
+			facsimileStartCanvas: {% if trans.facsimile_start_canvas %}{{ trans.facsimile_start_canvas }}{% else %}null{% endif %},
+			hasViewer: {{ trans.facsimile_iiif_url|yesno:"true,false" }}
+		};
 		//{# keep the cite as box at the bottom of the window #}
 		$(function () {
 			var scrollCiteAs = function scrollCiteAs() {
@@ -81,7 +101,10 @@
 			setTimeout(scrollCiteAs, 0); // a direct call doesn't work on FF
 			$(document).scroll(scrollCiteAs);
 		});
+		// External script takes care of layout toggles and page sync
 	</script>
+    <!-- External module: viewer init + page sync + layout toggles -->
+    <script src="{% static 'fiches/js/transcription-sync.js' %}"></script>
 {% endblock %}
 {% endif %}
 
@@ -109,12 +132,49 @@
 
 {#<!-- ========== Fiche Content ========== -->#}
 {% block main_content %}
-	{{ block.super }}
+	{{ block.super }}
 	{% if not trans_user_access %}
         <p class="info info-noaccess">Vous ne pouvez pas accéder à cette transcription</p>
 	{% else %}
+	
+		{#<!-- Layout mode toggle buttons -->#}
+		{% if trans.facsimile_iiif_url %}
+		<div id="layout-toggle-buttons" class="layout-toggle-group">
+			<button type="button" class="layout-btn" data-layout="text-only" title="Texte uniquement">
+				Texte
+			</button>
+			<button type="button" class="layout-btn active" data-layout="split-view" title="Texte et facsimilé">
+				Texte + Facsimilé
+			</button>
+			<button type="button" class="layout-btn" data-layout="viewer-only" title="Facsimilé uniquement">
+				Facsimilé
+			</button>
+			<span id="sync-toggle-wrapper" style="margin-left: 20px; display: inline-block; border-left: 1px solid #ccc; padding-left: 20px;">
+				<button type="button" id="sync-toggle-btn" class="layout-btn active" title="Désactiver/Activer la synchronisation texte-facsimilé">
+					🔗 Synchro
+				</button>
+			</span>
+		</div>
+		{% endif %}
+
         <h2 class="transcription">{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 %}</h2>
-		{% include "fiches/display/transcription_field.html" with trans=trans.text %}
+		
+		{#<!-- Transcription text with viewer on the right -->#}
+		<div class="transcription-viewer-container">
+			<div class="transcription-content">
+				{% include "fiches/display/transcription_field.html" with trans=trans.text %}
+			</div>
+			
+			<!-- Right column: OpenSeadragon Viewer (only if IIIF URL exists) -->
+			{% if trans.facsimile_iiif_url %}
+			<div class="viewer-panel">
+				{% include "fiches/includes/viewer_controls.html" %}
+				<div id="openseadragon-viewer"></div>
+			</div>
+			{% endif %}
+		</div>
+		
+		{#<!-- Envelope section -->#}
 		{% if trans.envelope %}
 		<br/>
 		<div class="field_label">Enveloppe</div>

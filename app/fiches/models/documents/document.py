@@ -6,6 +6,7 @@
 
 # fiches/models/documents/document.py
 
+import re
 from ckeditor.fields import RichTextField
 from types import SimpleNamespace
 
@@ -755,6 +756,22 @@ class Transcription(ACModel):
 
     text = RichTextField(config_name="transcription_ckeditor", blank=True)
     envelope = RichTextField(verbose_name=_("Enveloppe"), config_name="envelope_ckeditor", blank=True)
+
+    # IIIF facsimile manifest URL (manifest.json or info.json)
+    facsimile_iiif_url = models.URLField(
+        verbose_name=_("URL IIIF du facsimilé"),
+        blank=True,
+        help_text=_("URL du manifeste IIIF (par ex. se terminant par info.json)."),
+    )
+
+    facsimile_start_canvas = models.PositiveIntegerField(
+        verbose_name=_("Canvas de départ du facsimilé"),
+        blank=True,
+        null=True,
+        help_text=_(
+            "Index de canvas à utiliser comme première page de la transcription (par défaut: 1)."
+        ),
+    )
 
     access_private = models.BooleanField(blank=True, default=True, verbose_name=_("Privé"))
 

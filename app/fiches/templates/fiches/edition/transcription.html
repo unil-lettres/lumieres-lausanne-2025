@@ -19,7 +19,7 @@
 
    This copyright notice MUST APPEAR in all copies of the file.
 -->{% endcomment %}
-{% load fiches_extras i18n %}
+{% load fiches_extras i18n static %}
 
 {% block page_title %}{{ transcription.manuscript_b.title|truncatewords:6|slice:"65"}}{{ block.super }}{% endblock page_title %}
 
@@ -28,8 +28,17 @@
 	{{ transForm.media }}
 {% endblock head %}
 
+{% block head_js %}
+	{{ block.super }}
+	<!-- OpenSeadragon -->
+	<script src="{% static 'js/lib/openseadragon/openseadragon.min.js' %}"></script>
+	<!-- Viewer Controls -->
+	<script src="{% static 'fiches/js/viewer-controls.js' %}"></script>
+{% endblock head_js %}
+
 {% block head_css %}
 	{{ block.super }}
+	<link rel="stylesheet" href="{% static 'fiches/css/viewer-controls.css' %}" />
 	<style type="text/css">
 		form.transcription .text textarea { height: 670px; width: 800px; }
 		
@@ -40,9 +49,81 @@
 		form.transcription .radio_field li label, 
 		form.transcription label.inner-label { background-color: #fff; color: #000; font-weight: normal; margin:0; padding: 0;}
 		
-		form.transcription .trans-text-container { margin-top: 3px; }
+		form.transcription .trans-text-container { margin-top: 3px; position: relative; }
+		/* Facsimile URL field: align on viewer width and give the input room */
+		.fieldWrapper.facsimile_iiif_url,
+		.fieldWrapper.facsimile_start_canvas {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			max-width: var(--facsimile-width);
+			width: 100%;
+			flex-wrap: wrap;
+		}
+		.fieldWrapper.facsimile_iiif_url label,
+		.fieldWrapper.facsimile_start_canvas label { margin: 0; min-width: 140px; }
+		.fieldWrapper.facsimile_iiif_url input[type="text"],
+		.fieldWrapper.facsimile_iiif_url input[type="url"],
+		.fieldWrapper.facsimile_iiif_url #id_facsimile_iiif_url {
+			flex: 1 1 50ch; /* target ~50 characters */
+			width: 50ch;
+			min-width: 50ch;
+			max-width: 100%;
+		}
+		.fieldWrapper.facsimile_iiif_url button { flex: 0 0 auto; }
+		.fieldWrapper.facsimile_start_canvas input[type="number"],
+		.fieldWrapper.facsimile_start_canvas #id_facsimile_start_canvas {
+			width: 10ch;
+		}
 /*		form.transcription fieldset.access { border-left: 0; } */
 		form.transcription .author_name { font-size: 120%; }
+
+		/* Facsimile viewer styles */
+		.transcription-edit-container {
+			display: flex;
+			flex-direction: column; /* stack viewer above editor */
+			gap: 20px;
+			align-items: stretch;
+		}
+		
+		.transcription-edit-content {
+			flex: 1 1 auto;
+		}
+		
+		.facsimile-viewer-panel {
+			flex: 0 0 auto;
+			width: 100%;
+			position: relative; /* no sticky when stacked */
+			top: auto;
+		}
+		
+		#facsimile-viewer {
+			/* wrapped below in .facsimile-viewer-box to align with editor */
+			width: 878px; /* follow wrapper width */
+			height: 570px; /* match textarea height */
+			background-color: #000;
+			border: 1px solid #ccc;
+			margin: 0; /* no offset */
+		}
+		:root { --facsimile-width: 850px; }
+		.facsimile-viewer-box { width: var(--facsimile-width); margin:0; }
+		.facsimile-viewer-box .viewer-control-bar { width:854px; margin-bottom:8px; }
+		.transcription-title { margin:0 0 8px 0; }
+		.edit-form.transcription { margin-top:0; }
+
+		/* Viewer visibility now controlled on inner wrapper, not the whole panel */
+		#facsimile-viewer-wrapper { display: none; }
+		#facsimile-viewer-wrapper.visible { display: block; }
+		
+		/* Hide viewer initially */
+		.facsimile-viewer-panel {
+			display: none;
+		}
+		
+		.facsimile-viewer-panel.visible {
+			display: block;
+		}
+
 	</style>
 {% endblock head_css %}
 
@@ -98,22 +179,51 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 </script>
 {% endif %}
 
-<h2>{{ transcription.manuscript_b.title }}</h2>
-<form method="post" action="" class="edit-form transcription">{% csrf_token %}
-    <input type="hidden" name="__continue" value="on" />
+<h2 class="transcription-title">{{ transcription.manuscript_b.title }}</h2>
+
+<div class="transcription-edit-container">
+	<div class="transcription-edit-content">
+		<form method="post" action="" class="edit-form transcription">{% csrf_token %}
+		    <input type="hidden" name="__continue" value="on" />
 
 	{{ transForm.manuscript }}
 	{{ transForm.manuscript_b }}
 	
 	{#<!-- ========== TEXT ========== -->#}
-	<fieldset class="no-border">
-		<div class="fieldWrapper text">
-		    <div>{{ transForm.text.errors }}
-		    {#{{ transForm.text.label_tag }}#}</div>
+		<fieldset class="no-border">
+			<div class="fieldWrapper facsimile_iiif_url">
+			    <div>{{ transForm.facsimile_iiif_url.errors }}</div>
+			    <label for="id_facsimile_iiif_url">{{ transForm.facsimile_iiif_url.label }}{% tooltiplink "ctxt-help-facsimile-iiif-url" %}</label>
+			    {{ transForm.facsimile_iiif_url }}
+			    <button type="button" id="validate-facsimile-url" style="margin-left: 10px;">Charger</button>
+				<div id="ctxt-help-facsimile-iiif-url" style="display:none">
+					<h6>URL IIIF du facsimilé</h6>
+					<p>URL du manifeste IIIF</p>
+				</div>
+			</div>
+			<div class="fieldWrapper facsimile_start_canvas">
+			    <div>{{ transForm.facsimile_start_canvas.errors }}</div>
+			    <label for="id_facsimile_start_canvas">{{ transForm.facsimile_start_canvas.label }}</label>
+			    {{ transForm.facsimile_start_canvas }}
+			    <span class="helptext">{{ transForm.facsimile_start_canvas.help_text }}</span>
+			</div>
 			<div class="fixclear"></div>
-			<div class="trans-text-container">{{ transForm.text }}</div>
+
+		<!-- Facsimile Viewer moved below URL field and above transcription text -->
+		<div class="facsimile-viewer-panel" id="facsimile-viewer-panel">
+			<div class="facsimile-viewer-box">
+				{% include "fiches/includes/viewer_controls.html" %}
+				<div id="facsimile-viewer"></div>
+			</div>
 		</div>
-	</fieldset>
+
+			<div class="fieldWrapper text">
+			    <div>{{ transForm.text.errors }}
+			    {#{{ transForm.text.label_tag }}#}</div>
+				<div class="fixclear"></div>
+				<div class="trans-text-container" id="trans-text-container">{{ transForm.text }}</div>
+			</div>
+		</fieldset>
 
 	{#<!-- ========== ENVELOPE ========== -->#}
 	<fieldset class="collapsible{% if not transcription.envelope %} collapsed{% endif %}">
@@ -299,8 +409,11 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 		<div class="legend">Notes</div>
 		{% with "TRANSCRIPTION" as tinymce_config_name %}{% include "fiches/edition/note_formset.html" %}{% endwith %}
 	</fieldset>
+	</form>
+	</div>
 	
-</form>
+    
+</div>
 <script type="text/javascript">
 // Synchronise CKEditor avec le textarea avant validation
 (function($){
@@ -326,7 +439,207 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 				e.preventDefault();
 			}
 		});
+
+	// Handle facsimile URL validation and toggle load/unload
+	var facsimileViewer = null;
+	
+	// Auto-load viewer if URL is already present in database
+	(function autoLoadViewer() {
+		var existingUrl = $('#id_facsimile_iiif_url').val().trim();
+		if (existingUrl) {
+			// Load viewer silently without validation
+			loadFacsimileViewer(existingUrl);
+			$('#validate-facsimile-url').data('loaded', true).text('Supprimer');
+			$('#id_facsimile_iiif_url').prop('disabled', true);
+			$('<input type="hidden" name="facsimile_iiif_url" value="' + existingUrl + '">').insertAfter('#id_facsimile_iiif_url');
+		}
+	})();
+	
+	$('#validate-facsimile-url').click(function() {
+		var $btn = $(this);
+		var loaded = $btn.data('loaded') === true;
+		// If already loaded, act as "Supprimer" (unload)
+		if (loaded) {
+			unloadFacsimileViewer();
+			$btn.data('loaded', false).text('Charger');
+			$('#id_facsimile_iiif_url').prop('disabled', false);
+			return;
+		}
+		// Otherwise, try to validate and load
+		var url = $('#id_facsimile_iiif_url').val().trim();
+		if (!url) {
+			alert('Veuillez d\'abord saisir une URL de manifeste IIIF.');
+			return;
+		}
+		// Show loading
+		$btn.prop('disabled', true).text('Chargement...');
+		
+		$.ajax({
+			url: url,
+			dataType: 'json',
+			timeout: 10000,
+			success: function(data) {
+				// valid manifest / info.json
+				loadFacsimileViewer(url);
+				$btn.data('loaded', true).text('Supprimer');
+				// disable input to prevent edits and add hidden field to submit value
+				$('#id_facsimile_iiif_url').prop('disabled', true);
+				$('<input type="hidden" name="facsimile_iiif_url" value="' + url + '">').insertAfter('#id_facsimile_iiif_url');
+			},
+			error: function(xhr, status, error) {
+				var msg = '✗ URL de manifeste IIIF invalide.\n';
+				if (status === 'timeout') {
+					msg += 'Délai d\'attente dépassé.';
+				} else if (xhr.status === 0) {
+					msg += 'Erreur réseau - URL non accessible.';
+				} else {
+					msg += 'HTTP ' + xhr.status + ': ' + error;
+				}
+				alert(msg);
+			},
+			complete: function() {
+				$btn.prop('disabled', false);
+				// if not marked loaded, ensure text is Charger
+				if ($btn.data('loaded') !== true) {
+					$btn.text('Charger');
+				}
+			}
+		});
+	});		// Function to unload facsimile viewer and clear state
+		function unloadFacsimileViewer() {
+			if (facsimileViewer && typeof facsimileViewer.destroy === 'function') {
+				try {
+					facsimileViewer.destroy();
+				} catch (e) {
+					console.warn('Error destroying facsimile viewer', e);
+				}
+				facsimileViewer = null;
+			}
+			// clear viewer container and hide panel
+			var viewerDiv = document.getElementById('facsimile-viewer');
+			if (viewerDiv) viewerDiv.innerHTML = '';
+			$('#facsimile-viewer-panel').removeClass('visible');
+			// clear input value, remove hidden field, enable input
+			$('#id_facsimile_iiif_url').val('');
+			$('input[type="hidden"][name="facsimile_iiif_url"]').remove();
+			$('#id_facsimile_iiif_url').prop('disabled', false);
+		}
+		
+		// Function to load facsimile viewer
+		function loadFacsimileViewer(iiifUrl) {
+			// Show the viewer panel
+			$('#facsimile-viewer-panel').addClass('visible');
+			
+			// Check if it's a manifest URL or direct image info.json
+			if (iiifUrl.includes('manifest')) {
+				// Fetch the manifest and extract images
+				fetch(iiifUrl)
+					.then(function(response) {
+						if (!response.ok) {
+							throw new Error('HTTP error! status: ' + response.status);
+						}
+						return response.json();
+					})
+					.then(function(manifest) {
+						var tileSources = [];
+						
+						// IIIF Presentation API v3 (items)
+						if (manifest.items && manifest.items.length > 0) {
+							manifest.items.forEach(function(canvas) {
+								if (canvas.items && canvas.items[0] && canvas.items[0].items) {
+									var annotation = canvas.items[0].items[0];
+									if (annotation.body) {
+										var body = annotation.body;
+										// Get service URL from service array
+										if (body.service && body.service.length > 0) {
+											var serviceId = body.service[0]['@id'] || body.service[0].id;
+											if (serviceId) {
+												tileSources.push(serviceId + '/info.json');
+											}
+										}
+									}
+								}
+							});
+						}
+						// IIIF Presentation API v2 (sequences)
+						else if (manifest.sequences && manifest.sequences[0]) {
+							var canvases = manifest.sequences[0].canvases || [];
+							canvases.forEach(function(canvas) {
+								if (canvas.images && canvas.images[0]) {
+									var resource = canvas.images[0].resource;
+									if (resource.service) {
+										var serviceId = resource.service['@id'] || resource.service.id;
+										if (serviceId) {
+											tileSources.push(serviceId + '/info.json');
+										}
+									}
+								}
+							});
+						}
+						
+						if (tileSources.length > 0) {
+							initFacsimileViewer(tileSources);
+						} else {
+							showFacsimileError('Erreur: Impossible d\'extraire les images du manifeste IIIF');
+						}
+					})
+					.catch(function(error) {
+						console.error('Failed to load manifest:', error);
+						showFacsimileError('Erreur: Impossible de charger le manifeste IIIF<br><small>' + error.message + '</small>');
+					});
+			} else {
+				// Direct image info.json URL
+				initFacsimileViewer([iiifUrl]);
+			}
+		}
+		
+		function showFacsimileError(message) {
+			var viewerDiv = document.getElementById('facsimile-viewer');
+			if (viewerDiv) {
+				viewerDiv.innerHTML = '<div style="color: white; padding: 20px; text-align: center;">' + message + '</div>';
+			}
+		}
+		
+		function initFacsimileViewer(tileSources) {
+			// destroy existing viewer if any
+			if (facsimileViewer && typeof facsimileViewer.destroy === 'function') {
+				try { facsimileViewer.destroy(); } catch (e) { console.warn(e); }
+			}
+			
+			// Destroy existing controls
+			if (window.viewerControls && typeof window.viewerControls.destroy === 'function') {
+				window.viewerControls.destroy();
+			}
+			
+			facsimileViewer = OpenSeadragon({
+				id: "facsimile-viewer",
+				prefixUrl: "{% static 'js/lib/openseadragon/images/' %}",
+				tileSources: tileSources,
+				sequenceMode: true, // Always enable sequence mode
+				initialPage: 0,
+				preserveViewport: false,
+				preserveImageSizeOnResize: true,
+				visibilityRatio: 0.5,
+				showNavigationControl: false, // Disable default controls
+				showZoomControl: false,
+				showHomeControl: false,
+				showFullPageControl: false,
+				showSequenceControl: false,
+				showNavigator: tileSources.length > 1,
+				navigatorPosition: "TOP_RIGHT",
+				navigatorHeight: "120px",
+				navigatorWidth: "150px",
+				showReferenceStrip: tileSources.length > 1,
+				referenceStripScroll: 'horizontal'
+			});
+			
+			// Initialize custom controls after viewer is ready
+			facsimileViewer.addHandler('open', function() {
+				window.viewerControls = window.initViewerControls(facsimileViewer);
+			});
+		}
 	});
 })(jQuery);
 </script>
+
 {% endblock main_content %}

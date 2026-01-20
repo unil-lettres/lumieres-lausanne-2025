@@ -3,19 +3,30 @@
         <a id="view-toggle" data-mode="dipl"><span>Passer en version éditée</span></a>
         <a id="lb-toggle"><span>Cacher les retours à la ligne</span></a>
         <a id="toc-toggle"><span>Montrer la table des matières</span></a>
+        <a id="notes-position-toggle"><span>Notes en bas de page</span></a>
     </p>
 </div>
 
 <script type="text/javascript">
+// Helper function to get current notes position
+function getNotesPosition() {
+	return document.body.getAttribute('data-notes-position') || 'bottom';
+}
+
 function toggleBR() {
 	if ( $('#lb-toggle > span').hasClass('show') ) {
-        $('div.transcription-data br').not($('div.transcription-data .verse br')).css('display','inline');
+        $('div.transcription-data br').not($('div.transcription-data .verse br')).removeClass('hidden-br');
         $("div.transcription-data .brsep").show();
         $('#lb-toggle > span').removeClass('show').text('Cacher les retours à la ligne');
 	} else {
-        $('div.transcription-data br').not($('div.transcription-data .verse br')).css('display','none');
+        $('div.transcription-data br').not($('div.transcription-data .verse br')).addClass('hidden-br');
         $("div.transcription-data .brsep").hide();
         $('#lb-toggle > span').addClass('show').text('Montrer les retours à la ligne');
+	}
+	
+	// Recalculate note positions if margin notes are displayed
+	if (getNotesPosition() === 'margin' && $('.side-notes-panel').length > 0) {
+		setTimeout(repositionSideNotes, 150);
 	}
 }
 
@@ -39,29 +50,118 @@ function toggleView() {
         });
         $("div.transcription-data").toggleClass('norm');
     }
+    
+    // Recalculate note positions if margin notes are displayed
+    if (getNotesPosition() === 'margin' && $('.side-notes-panel').length > 0) {
+        setTimeout(repositionSideNotes, 150);
+    }
 }
 
 function toggleTOC() {
     if ( $('#transcription-toc').length > 0 ) {
         $('#transcription-toc, a.tocref').remove();
         $('#toc-toggle > span').text('Montrer la table des matières');
-        $('.transcription-data').first().css('padding-right', '40px');
+        // Removed padding-right adjustment - TOC is now positioned fixed and doesn't need text adjustment
+        // $('.transcription-data').first().css('padding-right', '40px');
     } else {
         $('#toc-toggle > span').text('Cacher la table des matières');
 
         var trans = $('.transcription-data').first();
-        trans.css('padding-right', '190px');
+        console.log('TOC DEBUG: Found transcription element:', trans.length);
+        console.log('TOC DEBUG: Transcription HTML:', trans.html().substring(0, 500));
+        
+        // Removed padding-right adjustment - TOC is now positioned fixed and doesn't need text adjustment
+        // trans.css('padding-right', '240px');
         var toc = $('<ul id="transcription-toc"><div class="title">Table des matières</div></ul>');
-        $('h2, h3', trans).each(function (i) {
+        var headers = $('h2, h3', trans);
+        console.log('TOC DEBUG: Found headers:', headers.length);
+        headers.each(function (i) {
             var header = $(this);
+            console.log('TOC DEBUG: Header', i, ':', this.tagName, header.text());
             var level = (this.tagName === 'H2') ? 1 : 2;
             header.prepend('<a name="toc-' + i + '" class="tocref"></a>');
             header = header.clone().find('.sic, del, .brsep').remove().end();
             toc.append('<li class="toclevel' + level + '"><a href="#toc-' + i
                        + '">' + header.text() + '</a></li>');
         });
-        trans.append(toc);
+        console.log('TOC DEBUG: TOC HTML:', toc.html());
+        // Append to transcription-viewer-container for proper positioning
+        var container = $('.transcription-viewer-container');
+        if (container.length > 0) {
+            container.append(toc);
+        } else {
+            // Fallback to body if container not found
+            $('body').append(toc);
+        }
     }
+    
+    // Recalculate note positions if margin notes are displayed
+    if (getNotesPosition() === 'margin' && $('.side-notes-panel').length > 0) {
+        setTimeout(repositionSideNotes, 150);
+    }
+}
+
+// Initialize notes position preference
+function initializeNotesPosition() {
+	var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+	var savedPosition = null;
+	
+	// Only allow saved preference in text-only mode
+	if (layoutMode === 'text-only') {
+		try {
+			savedPosition = sessionStorage.getItem('transcription-notes-position');
+		} catch (e) {
+			// sessionStorage not available
+		}
+	}
+	
+	// Set default based on layout mode if no saved preference
+	if (!savedPosition) {
+		if (layoutMode === 'text-only') {
+			savedPosition = 'margin';
+		} else {
+			// Always use bottom for split-view and viewer-only
+			savedPosition = 'bottom';
+		}
+	}
+	
+	// Store the preference
+	document.body.setAttribute('data-notes-position', savedPosition);
+	updateNotesPositionButton(savedPosition);
+}
+
+// Toggle notes position between margin and bottom (only in text-only mode)
+function toggleNotesPosition() {
+	var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+	
+	// Only allow toggle in text-only mode
+	if (layoutMode !== 'text-only') {
+		return;
+	}
+	
+	var currentPosition = getNotesPosition();
+	var newPosition = (currentPosition === 'margin') ? 'bottom' : 'margin';
+	
+	document.body.setAttribute('data-notes-position', newPosition);
+	
+	try {
+		sessionStorage.setItem('transcription-notes-position', newPosition);
+	} catch (e) {
+		// Ignore if session storage is not available
+	}
+	
+	updateNotesPositionButton(newPosition);
+	processNotes();
+}
+
+// Update the notes position button text
+function updateNotesPositionButton(position) {
+	var $button = $('#notes-position-toggle > span');
+	if (position === 'margin') {
+		$button.text('Notes en bas de page');
+	} else {
+		$button.text('Notes en marge');
+	}
 }
 
 $(function() {
@@ -69,7 +169,297 @@ $(function() {
 	$("#lb-toggle").click(function() { toggleBR(); });
 	$("#view-toggle").click(function() { toggleView(); });
 	$("#toc-toggle").click(function() { toggleTOC(); });
+	$("#notes-position-toggle").click(function() { toggleNotesPosition(); });
 
+	// Hide/show notes position toggle based on layout mode
+	function updateNotesToggleVisibility() {
+		var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+		var $toggle = $('#notes-position-toggle');
+		var shouldShow = layoutMode === 'text-only';
+		
+		if (shouldShow) {
+			$toggle.removeClass('notes-toggle-hidden').removeAttr('hidden').attr('aria-hidden', 'false');
+		} else {
+			$toggle.addClass('notes-toggle-hidden').attr('hidden', 'hidden').attr('aria-hidden', 'true');
+		}
+	}
+	
+	// Initial visibility check - run after a short delay to ensure layout mode is set
+	setTimeout(updateNotesToggleVisibility, 100);
+	// Also run immediately in case layout mode is already set
+	updateNotesToggleVisibility();
+
+	// Initialize notes position preference from session storage
+	initializeNotesPosition();
+
+	// Process notes for both side panel and bottom display
+	processNotes();
+
+	// Listen for layout mode changes to rebuild notes
+	var layoutObserver = new MutationObserver(function(mutations) {
+		mutations.forEach(function(mutation) {
+			if (mutation.type === 'attributes' && mutation.attributeName === 'data-layout-mode') {
+				// Update button visibility
+				updateNotesToggleVisibility();
+				// Reinitialize notes position based on new layout mode
+				initializeNotesPosition();
+				processNotes();
+			}
+		});
+	});
+	layoutObserver.observe(document.body, { attributes: true });
+
+	// Listen for window resize to reposition side notes
+	$(window).on('resize', function() {
+		if (getNotesPosition() === 'margin' && $('.side-notes-panel').length > 0) {
+			setTimeout(repositionSideNotes, 150);
+		}
+	});
+
+	$("div.transcription-data").html(function (i, oldHtml) {
+		return oldHtml.replace(/=\s*(<br[^>]*>)\s*/g,'<span class="brsep">=</span>$1');
+	});
+
+	$(".illeg").after('<span class="illeg-short">[...]</span>');
+	$(".sic").each(function() {
+		$(this).after('<span class="corr">' + $(this).attr('data-corr') + '</span>');
+	});
+});
+
+// Process notes based on layout mode and notes position preference
+function processNotes() {
+	var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+	var useMarginNotes = (layoutMode === 'text-only' && getNotesPosition() === 'margin');
+	
+	// Clear existing notes
+	$('.transcription-doc-notes, .transcription-ed-notes').remove();
+	$('.side-notes-panel').remove();
+	
+	// Unwrap if wrapped
+	if ($('#transcription-data').parent().hasClass('transcription-content-wrapper')) {
+		$('#transcription-data').unwrap();
+	}
+	
+	// Remove all note-ref-link wrappers and unwrap note markers from any <a> tags
+	var trans = $('.transcription-data').first();
+	
+	// First pass: remove note-ref-link wrappers
+	$('.note-ref-link', trans).each(function() {
+		$(this).replaceWith($(this).contents());
+	});
+	
+	// Second pass: unwrap any remaining <a> tags around note markers
+	// This handles links created by createBottomNotes()
+	$('.note-document, .note-editorial', trans).each(function() {
+		var $this = $(this);
+		// Unwrap from parent <a> tags until we reach a non-<a> parent
+		while ($this.parent().is('a')) {
+			$this.unwrap();
+		}
+	});
+	
+	if (useMarginNotes) {
+		// Wrap transcription-data in a flex container for side-by-side layout
+		$('#transcription-data').wrap('<div class="transcription-content-wrapper"></div>');
+		// Create side notes panel
+		setTimeout(createSideNotes, 150); // Small delay to ensure DOM is ready
+	} else {
+		// Create bottom notes (original behavior)
+		createBottomNotes();
+	}
+}
+
+// Create notes in side panel for text-only mode
+function createSideNotes() {
+	var trans = $('.transcription-data').first();
+	var sidePanel = $('<div class="side-notes-panel"></div>');
+	
+	var hasDocNotes = $('.note-document', trans).length > 0;
+	var hasEdNotes = $('.note-editorial', trans).length > 0;
+	
+	if (!hasDocNotes && !hasEdNotes) return;
+	
+	// Insert side panel into the wrapper
+	var wrapper = $('#transcription-data').parent('.transcription-content-wrapper');
+	if (wrapper.length === 0) {
+		wrapper = $('#transcription-data').closest('.transcription-content');
+	}
+	wrapper.append(sidePanel);
+	
+	// Wait for layout to settle before calculating positions
+	setTimeout(function() {
+		positionSideNotes(sidePanel, trans, hasDocNotes, hasEdNotes);
+	}, 200);
+}
+
+// Function to reposition existing side notes
+function repositionSideNotes() {
+	var sidePanel = $('.side-notes-panel');
+	if (sidePanel.length === 0) return;
+	
+	var sidePanelTop = sidePanel.offset().top;
+	
+	// Reposition document notes
+	$('.side-note.note-document', sidePanel).each(function(noteIndex) {
+		var noteDiv = $(this);
+		var citeId = 'citedocnote-side-' + noteIndex;
+		var marker = $('a[name="' + citeId + '"]');
+		
+		if (marker.length > 0) {
+			var markerOffset = marker.offset();
+			if (markerOffset) {
+				var relativeTop = markerOffset.top - sidePanelTop;
+				noteDiv.css('top', Math.max(0, relativeTop) + 'px');
+			}
+		}
+	});
+	
+	// Reposition editorial notes
+	$('.side-note.note-editorial', sidePanel).each(function(noteIndex) {
+		var noteDiv = $(this);
+		var citeId = 'citeednote-side-' + noteIndex;
+		var marker = $('a[name="' + citeId + '"]');
+		
+		if (marker.length > 0) {
+			var markerOffset = marker.offset();
+			if (markerOffset) {
+				var relativeTop = markerOffset.top - sidePanelTop;
+				noteDiv.css('top', Math.max(0, relativeTop) + 'px');
+			}
+		}
+	});
+	
+	// Prevent note overlaps and recalculate side panel min-height
+	setTimeout(function() {
+		var notes = $('.side-note', sidePanel).toArray().sort(function(a, b) {
+			return (parseInt($(a).css('top')) || 0) - (parseInt($(b).css('top')) || 0);
+		});
+		
+		var lastBottom = 0;
+		var minGap = 5; // Minimum gap between notes
+		
+		$(notes).each(function() {
+			var $note = $(this);
+			var currentTop = parseInt($note.css('top')) || 0;
+			
+			if (currentTop < lastBottom) {
+				$note.css('top', lastBottom + 'px');
+				currentTop = lastBottom;
+			}
+			
+			lastBottom = currentTop + $note.outerHeight() + minGap;
+		});
+		
+		// Set minimum height based on actual note positions
+		if (notes.length > 0) {
+			var maxHeight = lastBottom;
+			sidePanel.css('min-height', maxHeight + 'px');
+		}
+	}, 50);
+}
+
+function positionSideNotes(sidePanel, trans, hasDocNotes, hasEdNotes) {
+	// Get the top offset of the transcription-data container
+	var transTop = $('#transcription-data').offset().top;
+	var sidePanelTop = sidePanel.offset().top;
+	
+	// Process document notes
+	if (hasDocNotes) {
+		$('.note-document', trans).each(function(noteIndex) {
+			var $this = $(this);
+			var noteId = 'docnote-side-' + noteIndex;
+			var citeId = 'citedocnote-side-' + noteIndex;
+			
+			// Wrap the note marker
+			if (!$this.parent().hasClass('note-ref-link')) {
+				$this.wrap('<a href="#' + noteId + '" name="' + citeId + '" class="note-ref-link" />');
+			}
+			
+			// Create side note
+			var noteHtml = $($.parseHTML($this.attr('data-note').replace(/&quot;/igm, '"')
+												  .replace(/&gt;/igm, '>').replace(/&lt;/igm, '<')));
+			var noteDiv = $('<div class="side-note note-document"></div>');
+			noteDiv.append('<span class="note-number">' + toRoman(noteIndex + 1).toLowerCase() + '</span>');
+			noteDiv.append('<a href="#' + citeId + '" name="' + noteId + '" class="note-back-link">↑</a> ');
+			noteDiv.append(noteHtml);
+			
+			sidePanel.append(noteDiv);
+			
+			// Calculate position relative to the marker - wait for DOM update
+			setTimeout(function() {
+				var markerOffset = $this.parent('.note-ref-link').offset();
+				if (markerOffset) {
+					var relativeTop = markerOffset.top - sidePanelTop;
+					noteDiv.css('top', Math.max(0, relativeTop) + 'px');
+				}
+			}, 50);
+		});
+	}
+	
+	// Process editorial notes
+	if (hasEdNotes) {
+		$('.note-editorial', trans).each(function(noteIndex) {
+			var $this = $(this);
+			var noteId = 'ednote-side-' + noteIndex;
+			var citeId = 'citeednote-side-' + noteIndex;
+			
+			// Wrap the note marker
+			if (!$this.parent().hasClass('note-ref-link')) {
+				$this.wrap('<a href="#' + noteId + '" name="' + citeId + '" class="note-ref-link" />');
+			}
+			
+			// Create side note
+			var noteHtml = $($.parseHTML($this.attr('data-note').replace(/&quot;/igm, '"')
+												  .replace(/&gt;/igm, '>').replace(/&lt;/igm, '<')));
+			var noteDiv = $('<div class="side-note note-editorial"></div>');
+			noteDiv.append('<span class="note-number">' + (noteIndex + 1) + '</span>');
+			noteDiv.append('<a href="#' + citeId + '" name="' + noteId + '" class="note-back-link">↑</a> ');
+			noteDiv.append(noteHtml);
+			
+			sidePanel.append(noteDiv);
+			
+			// Calculate position relative to the marker - wait for DOM update
+			setTimeout(function() {
+				var markerOffset = $this.parent('.note-ref-link').offset();
+				if (markerOffset) {
+					var relativeTop = markerOffset.top - sidePanelTop;
+					noteDiv.css('top', Math.max(0, relativeTop) + 'px');
+				}
+			}, 50);
+		});
+	}
+	
+	// Prevent note overlaps and ensure proper spacing
+	setTimeout(function() {
+		var notes = $('.side-note', sidePanel).toArray().sort(function(a, b) {
+			return (parseInt($(a).css('top')) || 0) - (parseInt($(b).css('top')) || 0);
+		});
+		
+		var lastBottom = 0;
+		var minGap = 5; // Minimum gap between notes
+		
+		$(notes).each(function() {
+			var $note = $(this);
+			var currentTop = parseInt($note.css('top')) || 0;
+			
+			if (currentTop < lastBottom) {
+				$note.css('top', lastBottom + 'px');
+				currentTop = lastBottom;
+			}
+			
+			lastBottom = currentTop + $note.outerHeight() + minGap;
+		});
+		
+		// Set minimum height based on actual note positions
+		if (notes.length > 0) {
+			var maxHeight = lastBottom;
+			sidePanel.css('min-height', maxHeight + 'px');
+		}
+	}, 300);
+}
+
+// Create notes at bottom (original behavior) for split-view and viewer-only modes
+function createBottomNotes() {
 	$('.transcription-data').each(function (transIndex) {
 		var trans = $(this);
 		$('.note-document', this).each(function(noteIndex) {
@@ -115,16 +505,20 @@ $(function() {
 			$('.transcription-ed-notes', trans).append(html);
 		});
 	});
+}
 
-	$("div.transcription-data").html(function (i, oldHtml) {
-		return oldHtml.replace(/=\s*(<br[^>]*>)\s*/g,'<span class="brsep">=</span>$1');
-	});
-
-	$(".illeg").after('<span class="illeg-short">[...]</span>');
-	$(".sic").each(function() {
-		$(this).after('<span class="corr">' + $(this).attr('data-corr') + '</span>');
-	});
-});
+// Helper function to convert number to Roman numerals (for document notes)
+function toRoman(num) {
+	var lookup = {M:1000,CM:900,D:500,CD:400,C:100,XC:90,L:50,XL:40,X:10,IX:9,V:5,IV:4,I:1};
+	var roman = '';
+	for (var i in lookup) {
+		while (num >= lookup[i]) {
+			roman += i;
+			num -= lookup[i];
+		}
+	}
+	return roman;
+}
 </script>
 
 <div id="transcription-data" class="transcription-data cked-content" data-mode="dipl">

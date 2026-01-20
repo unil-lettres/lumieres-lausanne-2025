@@ -71,25 +71,35 @@ docker compose exec -T db sh -lc \
   < lumieres-prod-20250812.sql
 ```
 
-3) (Only if your dump comes from the historical Django v1 schema) apply these small fixes:
+3) (Only if your dump comes from the historical Django v1 schema) apply these small fixes (we do not run Django migrations on restored legacy dumps—normalize the schema with these ALTERs):
 
 ```bash
 docker compose exec -T db mysql -uroot -ptoor -e "
-ALTER TABLE lumieres_lausanne.fiches_biblio
-  MODIFY depot varchar(128) NULL DEFAULT NULL;
-ALTER TABLE lumieres_lausanne.fiches_manuscript
-  MODIFY depot varchar(128) NULL DEFAULT NULL;
-ALTER TABLE lumieres_lausanne.auth_user
-  MODIFY COLUMN last_login DATETIME NULL;
+ALTER TABLE lumieres_lausanne.fiches_biblio            MODIFY depot varchar(128) NULL DEFAULT NULL;
+ALTER TABLE lumieres_lausanne.fiches_manuscript        MODIFY depot varchar(128) NULL DEFAULT NULL;
+ALTER TABLE lumieres_lausanne.auth_user                MODIFY last_login datetime NULL;
+ALTER TABLE lumieres_lausanne.fiches_contributiondoc   MODIFY document_id int NULL;
+ALTER TABLE lumieres_lausanne.fiches_contributionman   MODIFY document_id int NULL;
+ALTER TABLE lumieres_lausanne.fiches_notebiblio        MODIFY owner_id int NULL;
+ALTER TABLE lumieres_lausanne.fiches_notemanuscript    MODIFY owner_id int NULL;
+-- Facsimile viewer (IIIF) – nullable, safe for rollback:
+ALTER TABLE lumieres_lausanne.fiches_transcription ADD COLUMN facsimile_iiif_url varchar(200) NULL AFTER envelope;
 "
 ```
 
-4) Migrate and create a Django superuser (optional):
+4) Create a Django superuser (optional):
 
 ```bash
-docker compose exec -T app python manage.py migrate --noinput
 docker compose exec -T app python manage.py createsuperuser
 ```
+
+5) Refresh roles/permissions after importing a dump (cleans up the legacy “assistants” group and reassigns custom perms):
+
+```bash
+docker compose exec -T app python manage.py sync_status_roles --apply
+```
+
+6) Rebuild the search index (Solr / Haystack) if needed (see section below).
 
 ---
 
@@ -137,6 +147,36 @@ docker compose exec -T app python manage.py shell
 
 ---
 
+## Documentation
+
+Comprehensive documentation is available in the `docs/` directory and built with MkDocs.
+
+### View Documentation
+
+```bash
+# Serve documentation locally
+mkdocs serve
+# Open http://127.0.0.1:8000
+```
+
+### Documentation Structure
+
+- **[Home Page](docs/index.md)** - Project overview and quick start
+- **User Guides** - For end users browsing the platform
+  - [Facsimile Viewer Usage Guide](docs/facsimile-usage-guide.md)
+  - [User Guide (EN)](docs/en/facsimile-user-guide.md)
+  - [Guide utilisateur (FR)](docs/fr/facsimile-guide-utilisateur.md)
+- **Administrator Guides** - For content editors
+  - [Admin Guide (EN)](docs/en/facsimile-admin-guide.md)
+  - [Guide administrateur (FR)](docs/fr/facsimile-guide-admin.md)
+- **Developer Documentation** - Technical details
+  - [OpenSeadragon Integration](docs/openseadragon-integration.md)
+  - [IIIF Facsimile Migration](docs/iiif-facsimile-migration.md)
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for complete documentation structure.
+
+---
+
 ## VS Code (optional)
 
 - Open the folder, then: **⌘⇧P / CTRL+SHIFT+P → “Dev Containers: Reopen in Container”**  
@@ -175,5 +215,5 @@ docker compose up -d web
 ### License & Contact
 
 © University of Lausanne.  
-Released under the [GNU Affero General Public License v3.0](LICENSE).  
+License: pending (internal use only).  
 For questions, open an issue or contact the maintainers.

@@ -661,3 +661,4 @@ class ProjectForm(forms.ModelForm):
             'js/admin/project_url_tools.js',
         )
 
+import re
