@@ -50,6 +50,15 @@ Use the same service versions as the staging VM:
 
 ## Maintenance Window Plan
 
+### Pre-cutover Checklist (Safety)
+- Confirm legacy stack is stopped before starting new `web`/`solr` to avoid port and Traefik conflicts.
+- From `/u01/projects/dockerized/lumieres2-prod`, verify compose project and volumes:
+  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml ps`
+  - `docker volume ls | grep lumieres-prod`
+- Confirm new data paths exist and are writable:
+  - `/u01/projects/dockerized/media`
+  - `/u01/projects/dockerized/lumieres2-prod/{static,logging}`
+
 ### 1) Disable Monitoring
 - Pause Uptime Kuma check for https://lumieres.unil.ch
 
