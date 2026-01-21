@@ -13,3 +13,7 @@ services:
         condition: service_healthy
       solr:
         condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.frontend.rule=Host:lumieres.unil.ch,www.lumieres.unil.ch
+      - traefik.port=8000
