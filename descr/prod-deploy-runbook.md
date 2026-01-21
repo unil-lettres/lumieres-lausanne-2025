@@ -57,6 +57,15 @@ Use the same service versions as the staging VM:
 Use a temporary nginx container with the same Traefik Host rule:
 1) Stop legacy app container (keep db/solr running for now).
 2) Start maintenance container with label Host:lumieres.unil.ch
+   Example:
+   ```bash
+   docker run -d --name lumieres-maintenance \
+     --label traefik.enable=true \
+     --label traefik.frontend.rule=Host:lumieres.unil.ch \
+     --label traefik.port=80 \
+     -v /u01/projects/dockerized/lumieres2-prod/maintenance:/usr/share/nginx/html:ro \
+     nginx:alpine
+   ```
 
 ### 3) Backup Legacy DB
 1) Dump from legacy mysql:5.5 container.
@@ -97,9 +106,14 @@ Use a temporary nginx container with the same Traefik Host rule:
 - Media files stay at /u01/projects/dockerized/media.
 - New stack uses DockerHub image (prod tag or digest).
 
-## Open Questions (Before Execution)
-- Solr core setup path and configset location.
-- Maintenance page mechanism preference (nginx container vs static proxy change).
+## Resolved Decisions
+- **Solr configset path**: copy repo `solr/configsets/lumieres` to
+  `/u01/projects/dockerized/lumieres2-prod/solr/configsets/lumieres`.
+  Core name stays `lumieres`, created via
+  `solr-precreate lumieres /var/solr/configsets/lumieres`.
+- **Maintenance page**: use a temporary `nginx:alpine` container with Traefik v1.7
+  labels (`Host:lumieres.unil.ch`) and a bind-mount to a simple static
+  maintenance page directory.
 
 ## Release Pin (Current)
 - Image tag: `unillett/lumieres:v2026.01.21`
