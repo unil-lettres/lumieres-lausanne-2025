@@ -98,6 +98,10 @@ Use a temporary nginx container with the same Traefik Host rule:
 - New stack uses DockerHub image (prod tag or digest).
 
 ## Open Questions (Before Execution)
-- Final image tag/digest to deploy?
 - Solr core setup path and configset location.
 - Maintenance page mechanism preference (nginx container vs static proxy change).
+
+## Release Pin (Current)
+- Image tag: `unillett/lumieres:v2026.01.21`
+- amd64 digest: `sha256:aea53e1a06c8e9302a923f6457cf4e11573f3bfac3533fb9dde03d0176027084`
+- arm64 digest: `sha256:5b15aa4308316c27277923b024b79f2838d38eca82eb3340d44c32c087664ac9`
