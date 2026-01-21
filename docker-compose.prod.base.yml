@@ -1,0 +1,51 @@
+# docker-compose.prod.base.yml
+# Prod base file for the VM (web/db/solr), paired with docker-compose.prod.yml.
+name: lumieres-prod
+
+services:
+  db:
+    image: mysql:9.3
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL","mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  web:
+    image: unillett/lumieres:prod-latest
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+      solr: { condition: service_healthy }
+    env_file: .env
+    working_dir: /app/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=lumieres_project.settings
+    volumes:
+      - /u01/projects/dockerized/lumieres2-prod/static:/app/app/lumieres_project/staticfiles
+      - /u01/projects/dockerized/media:/app/app/media
+      - /u01/projects/dockerized/lumieres2-prod/logging:/app/logging
+    ports: ["8000:8000"]
+    command: ["gunicorn","lumieres_project.wsgi:application","--bind","0.0.0.0:8000","--workers","3","--timeout","120"]
+
+  solr:
+    image: solr:8
+    restart: unless-stopped
+    ports: ["8983:8983"]
+    volumes:
+      - /u01/projects/dockerized/lumieres2-prod/solr/configsets/lumieres:/var/solr/configsets/lumieres:ro
+      - /u01/projects/dockerized/lumieres2-prod/solr/data:/var/solr/data
+    command: >
+      bash -lc "solr-precreate lumieres /var/solr/configsets/lumieres && solr-foreground"
+    healthcheck:
+      test: ["CMD-SHELL","wget -qO- 'http://localhost:8983/solr/admin/cores?action=STATUS&core=lumieres' | grep -q '\"name\":\"lumieres\"'"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db_data: {}

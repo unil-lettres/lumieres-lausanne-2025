@@ -1,13 +1,15 @@
 # docker-compose.prod.yml
+# Prod override for lumieres2-prod: expects a base file that defines web/db/solr
+# with production bind mounts (mirrors staging layout).
 services:
-  app:
+  web:
+    image: ${LUMIERES_IMAGE:-unillett/lumieres:prod-latest}
     environment:
       DJANGO_DEBUG: "0"                # prod: gunicorn (from Dockerfile CMD)
       COLLECTSTATIC: "1"               # run collectstatic at container start
       DJANGO_SETTINGS_MODULE: lumieres_project.settings
-    volumes: []                        # disable dev bind mounts
-    ports:
-      - "8000:8000"                    # or expose via your reverse proxy
     depends_on:
       db:
+        condition: service_healthy
+      solr:
         condition: service_healthy

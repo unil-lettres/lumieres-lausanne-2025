@@ -63,20 +63,21 @@
 2. **Pull and swap only the `web` image**
    (Use when DB/Solr remain unchanged and the same tag is pushed.)
    ```bash
-   docker compose -f docker-compose.staging.yml pull web
-   docker compose -f docker-compose.staging.yml up -d --no-deps web
-   docker compose -f docker-compose.staging.yml logs -f web
+   docker compose -f docker-compose.yml -f docker-compose.staging.yml pull web
+   docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --no-deps web
+   docker compose -f docker-compose.yml -f docker-compose.staging.yml logs -f web
    ```
+   If `COMPOSE_FILE` is set on the host (recommended), you can run `docker compose` without `-f`.
 3. **Post-deploy checks**
    ```bash
    curl -I http://127.0.0.1:8000/
-   docker compose -f docker-compose.staging.yml exec web \
+   docker compose -f docker-compose.yml -f docker-compose.staging.yml exec web \
      bash -lc 'python /app/app/manage.py collectstatic --noinput'
    ```
    _Static files are stored on the host via `/var/www/lumieres2/static`, so `collectstatic` must run after every deploy to refresh the bind-mounted tree._
 4. **Search index refresh**
    ```bash
-  docker compose -f docker-compose.staging.yml exec web \
+  docker compose -f docker-compose.yml -f docker-compose.staging.yml exec web \
     bash -lc 'python /app/app/manage.py rebuild_index --noinput'
    ```
    Use `update_index` instead of `rebuild_index` when the schema didn’t change.
@@ -85,7 +86,7 @@
 - [ ] Rebuild/run the index command above.
 - [ ] Sync roles (see `descr/roles.md`):
   ```bash
-  docker compose -f docker-compose.staging.yml exec web \
+  docker compose -f docker-compose.yml -f docker-compose.staging.yml exec web \
     bash -lc 'python /app/app/manage.py sync_status_roles --apply'
   ```
 - [ ] UI checks
