@@ -97,7 +97,40 @@ Use a temporary nginx container with the same Traefik Host rule:
 - Media files stay at /u01/projects/dockerized/media.
 - New stack uses DockerHub image (prod tag or digest).
 
-## Open Questions (Before Execution)
-- Final image tag/digest to deploy?
-- Solr core setup path and configset location.
-- Maintenance page mechanism preference (nginx container vs static proxy change).
+## Resolved Decisions
+- **Solr configset path**: copy repo `solr/configsets/lumieres` to
+  `/u01/projects/dockerized/lumieres2-prod/solr/configsets/lumieres`.
+  Core name stays `lumieres`, created via
+  `solr-precreate lumieres /var/solr/configsets/lumieres`.
+- **Maintenance page**: use a temporary `nginx:alpine` container with Traefik v1.7
+  labels (`Host:lumieres.unil.ch`) and a bind-mount to a simple static
+  maintenance page directory.
+- **HTTP->HTTPS**: Traefik v1.7 uses a file provider config at
+  `/u01/projects/dockerized/proxy_v1file/traefik.toml`. Add a frontend redirect
+  to enforce HTTPS without `:443` in the Location header:
+  ```
+  [frontends.lumieres.redirect]
+    regex = "^http://(.*)"
+    replacement = "https://$1"
+    permanent = true
+  ```
+
+## Release Pin (Current)
+- Image tag: `unillett/lumieres:v2026.01.21`
+- amd64 digest: `sha256:aea53e1a06c8e9302a923f6457cf4e11573f3bfac3533fb9dde03d0176027084`
+- arm64 digest: `sha256:5b15aa4308316c27277923b024b79f2838d38eca82eb3340d44c32c087664ac9`
+
+## Postmortem (2026-01-21)
+Observed issues and fixes during first prod cutover to Django 5:
+- Static/media initially missing: Django does not serve static in prod; added a small `nginx:alpine` front container (Traefik v1.7 on bridge) to serve `/static/`, `/media/`, `/user-media/`, and proxy `/` to `web:8000`.
+- Thumbnails missing on `/actualites/`: `MEDIA_ROOT` is `/app/app/media`; mount must be `/u01/projects/dockerized/media:/app/app/media` in the web service (previous `/app/media` mount caused FileNotFoundError).
+- Thumbnail cache writes blocked until media cache permissions fixed; ensure `/u01/projects/dockerized/media/cache` is writable (g+rwX with setgid or 2775).
+- `prod-latest` tag did not exist on DockerHub; pin to the release tag (`v2026.01.21`) to avoid pull failures.
+- Solr 8 required Log4j overrides; mount the 2.17.2 jars into `/opt/solr/server/lib/ext/` (core, api, slf4j-impl, 1.2-api, web).
+- Traefik HTTP redirects were applied via file provider config (see above), not
+  the global entrypoint redirect.
+
+Action items for next deploy:
+- Bake the front nginx service into the prod compose files (or document the runtime `docker run` + `docker network connect bridge` step).
+- Keep the web media mount aligned with `MEDIA_ROOT` and validate `/actualites/` renders `<img>` and `/media/cache/...` returns 200.
+- Confirm the prod tag exists before recreating containers (avoid `prod-latest`).
