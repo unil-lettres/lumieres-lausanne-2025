@@ -177,9 +177,18 @@ Use a temporary nginx container with the same Traefik Host rule:
   ```
 
 ## Release Pin (Current)
-- Image tag: `unillett/lumieres:v2026.01.21`
-- amd64 digest: `sha256:aea53e1a06c8e9302a923f6457cf4e11573f3bfac3533fb9dde03d0176027084`
-- arm64 digest: `sha256:5b15aa4308316c27277923b024b79f2838d38eca82eb3340d44c32c087664ac9`
+- Image tag: `unillett/lumieres:v2026.01.27`
+
+## Deployment Record (2026-01-27)
+Actions performed for prod update:
+- Merged `dev` into `master`, pushed `master`.
+- Created and pushed release tag `v2026.01.27`.
+- Pulled `unillett/lumieres:v2026.01.27` on prod and recreated `web`.
+- Ran `collectstatic` on prod.
+- Pinned `LUMIERES_IMAGE` in `/u01/projects/dockerized/lumieres2-prod/.env` to `unillett/lumieres:v2026.01.27`.
+Verification checklist:
+- Footer UNIL logo updated + link to https://www.unil.ch/lettres.
+- “Designed by” white + “Innovagency.ch” orange.
 
 ## Postmortem (2026-01-21)
 Observed issues and fixes during first prod cutover to Django 5:

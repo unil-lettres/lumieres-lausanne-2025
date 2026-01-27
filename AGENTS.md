@@ -13,6 +13,7 @@ Operational guardrails:
 Repo conventions:
 - Compose files live at repo root (`docker-compose.staging.yml`, `docker-compose.prod.base.yml`, `docker-compose.prod.yml`).
 - Static changes on staging/prod usually require `collectstatic` after deploying a new image.
+- Prod releases follow the “merge dev → master → tag vYYYY.MM.DD → deploy tag” workflow.
 
 Sensitive data:
 - Avoid opening files under `descr/private` unless explicitly requested.
