@@ -31,6 +31,49 @@ Use the same service versions as the staging VM:
 - Solr: 8
 - App: deploy the production image built from the same commit/tag as staging
 
+## Staging Deployment Notes (GH Actions + DockerHub)
+Goal: make staging refresh repeatable and easy.
+
+### Build Trigger
+- Docker image for staging is built by a GitHub Actions workflow on push to `dev`.
+- Resulting image is published as `unillett/lumieres:stage-latest` on DockerHub.
+
+### How to Check Build/Tag
+Option A: GitHub Actions UI (preferred if available)
+1) Open the repo Actions page and locate the latest workflow run for `dev`.
+2) Wait for it to finish successfully before pulling on the VM.
+
+Option B: DockerHub tag timestamp (quick check)
+- The tag `stage-latest` has `last_pushed` and `last_updated` times in the DockerHub API.
+- Example check from local shell:
+  ```
+  curl -fsSL "https://hub.docker.com/v2/repositories/unillett/lumieres/tags/?page_size=1&name=stage-latest"
+  ```
+  Look at `results[0].tag_last_pushed` and compare to your latest commit time.
+
+### Deploy to Staging VM
+Target: https://plt-tst-2.unil.ch (host alias: `plett-stage`)
+```
+ssh plett-stage
+cd /var/www/lumieres2
+docker compose -f docker-compose.staging.yml pull web
+docker compose -f docker-compose.staging.yml up -d --force-recreate web
+```
+
+### Static Files (Required After Web Update)
+If logos or CSS don’t change after a deploy, run collectstatic:
+```
+ssh plett-stage
+cd /var/www/lumieres2
+docker compose -f docker-compose.staging.yml exec -T web python manage.py collectstatic --noinput
+```
+Then hard refresh the browser (Ctrl/Cmd+Shift+R).
+
+### Quick Sanity Checks
+- Footer logos updated and correct links.
+- “Designed by” text colors correct (white + orange).
+- Home page renders CSS and images.
+
 ## Preflight (No Downtime)
 1) Confirm production image tags/digests on DockerHub.
 2) Prepare new compose files and env on the VM (no service start yet):
