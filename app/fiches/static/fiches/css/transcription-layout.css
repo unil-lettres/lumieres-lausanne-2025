@@ -307,11 +307,11 @@ body[data-layout-mode="text-only"] .side-notes-panel .side-note {
 }
 
 .side-notes-panel .side-note.note-editorial {
-	border-left-color: #007bff;
+	border-left-color: #f0750b;
 }
 
 .side-notes-panel .side-note.note-document {
-	border-left-color: #28a745;
+	border-left-color: #555;
 }
 
 /* Disable CSS counter for side notes - they use JS-generated numbers */

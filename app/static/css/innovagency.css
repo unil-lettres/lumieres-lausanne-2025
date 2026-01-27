@@ -343,7 +343,7 @@ h3.ia {
 }
 
 .ia-content-inner .content .norm {
-	background-color: #EFEFEF;
+	background: transparent;
 }
 
 /* content message */

@@ -50,6 +50,7 @@ function toggleView() {
         });
         $("div.transcription-data").toggleClass('norm');
     }
+    syncSideNotesMode();
     
     // Recalculate note positions if margin notes are displayed
     if (getNotesPosition() === 'margin' && $('.side-notes-panel').length > 0) {
@@ -164,6 +165,12 @@ function updateNotesPositionButton(position) {
 	}
 }
 
+// Keep side notes display mode in sync with the transcription view (dipl/norm)
+function syncSideNotesMode() {
+	var isNorm = $('.transcription-data').hasClass('norm');
+	$('.side-notes-panel').toggleClass('norm', isNorm);
+}
+
 $(function() {
 	$("a", "#transcription-view-controls").button();
 	$("#lb-toggle").click(function() { toggleBR(); });
@@ -194,6 +201,7 @@ $(function() {
 
 	// Process notes for both side panel and bottom display
 	processNotes();
+	syncSideNotesMode();
 
 	// Listen for layout mode changes to rebuild notes
 	var layoutObserver = new MutationObserver(function(mutations) {
@@ -204,6 +212,7 @@ $(function() {
 				// Reinitialize notes position based on new layout mode
 				initializeNotesPosition();
 				processNotes();
+				syncSideNotesMode();
 			}
 		});
 	});
@@ -267,6 +276,7 @@ function processNotes() {
 		// Create bottom notes (original behavior)
 		createBottomNotes();
 	}
+	setTimeout(syncSideNotesMode, 200);
 }
 
 // Create notes in side panel for text-only mode
@@ -285,6 +295,7 @@ function createSideNotes() {
 		wrapper = $('#transcription-data').closest('.transcription-content');
 	}
 	wrapper.append(sidePanel);
+	syncSideNotesMode();
 	
 	// Wait for layout to settle before calculating positions
 	setTimeout(function() {
