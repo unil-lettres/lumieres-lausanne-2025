@@ -198,6 +198,9 @@ Docker.raw
 .DS_Store
 **/.DS_Store
 
+# Local secrets (keep out of repo)
+descr/private/
+
 # Backups
 *.bak
 

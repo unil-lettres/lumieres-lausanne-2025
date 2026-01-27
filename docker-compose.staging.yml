@@ -36,6 +36,11 @@ services:
     volumes:
       - /var/www/lumieres2/solr/configsets/lumieres:/var/solr/configsets/lumieres:ro
       - /var/www/lumieres2/solr/data:/var/solr/data
+      - /var/www/lumieres2/solr/lib/log4j-core-2.17.2.jar:/opt/solr/server/lib/ext/log4j-core-2.13.2.jar:ro
+      - /var/www/lumieres2/solr/lib/log4j-api-2.17.2.jar:/opt/solr/server/lib/ext/log4j-api-2.13.2.jar:ro
+      - /var/www/lumieres2/solr/lib/log4j-slf4j-impl-2.17.2.jar:/opt/solr/server/lib/ext/log4j-slf4j-impl-2.13.2.jar:ro
+      - /var/www/lumieres2/solr/lib/log4j-1.2-api-2.17.2.jar:/opt/solr/server/lib/ext/log4j-1.2-api-2.13.2.jar:ro
+      - /var/www/lumieres2/solr/lib/log4j-web-2.17.2.jar:/opt/solr/server/lib/ext/log4j-web-2.13.2.jar:ro
     command: >
       bash -lc "solr-precreate lumieres /var/solr/configsets/lumieres && solr-foreground"
     healthcheck:
