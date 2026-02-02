@@ -25,8 +25,9 @@ Tests verify that dead code (rotate, brightness, contrast controls) has been rem
 from source files and that existing controls remain.
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 
 @pytest.fixture
@@ -122,4 +123,5 @@ def test_css_file_has_essential_styles(css_file):
 
 if __name__ == "__main__":
     # Run tests with pytest
+    pytest.main([__file__, "-v", "--tb=short"])
     pytest.main([__file__, "-v", "--tb=short"])
