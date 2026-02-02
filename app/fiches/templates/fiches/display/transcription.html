@@ -140,20 +140,34 @@
 		{#<!-- Layout mode toggle buttons -->#}
 		{% if trans.facsimile_iiif_url %}
 		<div id="layout-toggle-buttons" class="layout-toggle-group">
-			<button type="button" class="layout-btn" data-layout="text-only" title="Texte uniquement">
+			<button type="button" class="layout-btn text-only-btn" data-layout="text-only" title="Mode texte uniquement">
 				Texte
 			</button>
-			<button type="button" class="layout-btn active" data-layout="split-view" title="Texte et facsimilé">
+			<button type="button" class="layout-btn split-view-btn active" data-layout="split-view" title="Mode texte et facsimilé synchronisés">
 				Texte + Facsimilé
 			</button>
-			<button type="button" class="layout-btn" data-layout="viewer-only" title="Facsimilé uniquement">
+			<button type="button" class="layout-btn viewer-only-btn" data-layout="viewer-only" title="Mode facsimilé uniquement">
 				Facsimilé
 			</button>
-			<span id="sync-toggle-wrapper" style="margin-left: 20px; display: inline-block; border-left: 1px solid #ccc; padding-left: 20px;">
-				<button type="button" id="sync-toggle-btn" class="layout-btn active" title="Désactiver/Activer la synchronisation texte-facsimilé">
-					🔗 Synchro
-				</button>
-			</span>
+			<button type="button" id="options-menu-btn" class="layout-btn options-btn" title="Options d'affichage">
+				Options <span class="dropdown-arrow">▼</span>
+			</button>
+			
+			{#<!-- Options dropdown menu (hidden by default, shown on click) -->#}
+			<div id="options-dropdown" class="options-dropdown">
+				<label class="option-item">
+					<input type="checkbox" name="option-version" value="edited" data-option="use-edited-version">
+					<span>Version éditée</span>
+				</label>
+				<label class="option-item">
+					<input type="checkbox" name="option-linebreaks" value="hide" data-option="hide-linebreaks">
+					<span>Cacher les retours à la ligne</span>
+				</label>
+				<label class="option-item">
+					<input type="checkbox" name="option-toc" value="show" data-option="show-toc">
+					<span>Afficher la table des matières</span>
+				</label>
+			</div>
 		</div>
 		{% endif %}
 

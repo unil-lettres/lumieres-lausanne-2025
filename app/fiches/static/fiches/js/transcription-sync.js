@@ -52,6 +52,7 @@ This copyright notice MUST APPEAR in all copies of the file.
   function init() {
     var cfg = window.TranscriptionConfig || {};
     setupLayoutToggles(cfg);
+    setupOptionsMenu();
     if (cfg.hasViewer && cfg.iiifUrl) {
       setupViewer(cfg);
     }
@@ -78,8 +79,8 @@ This copyright notice MUST APPEAR in all copies of the file.
 
     buttons.forEach(function (btn) {
       btn.addEventListener('click', function (e) {
-        // Skip sync toggle button
-        if (btn.id === 'sync-toggle-btn') return;
+        // Skip options menu button
+        if (btn.id === 'options-menu-btn') return;
         
         var newLayout = btn.getAttribute('data-layout');
         
@@ -91,16 +92,9 @@ This copyright notice MUST APPEAR in all copies of the file.
         
         try { sessionStorage.setItem(STORAGE_KEY_LAYOUT, newLayout); } catch (_) {}
 
-        // Disable sync when switching away from split-view
-        if (newLayout !== DEFAULT_LAYOUT) {
-          disableSyncIfActive();
-        }
-
         resetViewerZoom();
       });
     });
-
-    setupSyncToggleButton();
   }
 
   function updateActiveButton(buttons, layoutName) {
@@ -109,16 +103,61 @@ This copyright notice MUST APPEAR in all copies of the file.
     if (activeBtn) activeBtn.classList.add('active');
   }
 
-  function disableSyncIfActive() {
-    if (window.TranscriptionSyncEnabled) {
-      window.TranscriptionSyncEnabled = false;
-      var syncToggleBtn = document.getElementById('sync-toggle-btn');
-      if (syncToggleBtn) {
-        updateSyncButtonState(syncToggleBtn, false);
-        try { sessionStorage.setItem(STORAGE_KEY_SYNC, false); } catch (_) {}
-        log('[Layout Toggle] Sync automatically disabled - not in split-view mode');
-      }
+  // Options menu management ------------------------------------------------
+  function setupOptionsMenu() {
+    var optionsBtn = document.getElementById('options-menu-btn');
+    var optionsDropdown = document.getElementById('options-dropdown');
+    
+    if (!optionsBtn || !optionsDropdown) {
+      log('[Options Menu] Elements not found, skipping setup');
+      return;
     }
+    
+    // Toggle menu on button click
+    optionsBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var isShowing = optionsDropdown.classList.contains('show');
+      
+      if (isShowing) {
+        optionsDropdown.classList.remove('show');
+        optionsBtn.classList.remove('active');
+      } else {
+        optionsDropdown.classList.add('show');
+        optionsBtn.classList.add('active');
+      }
+      
+      log('[Options Menu] Dropdown', isShowing ? 'closed' : 'opened');
+    });
+    
+    // Close menu on outside click
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('#layout-toggle-buttons')) {
+        optionsDropdown.classList.remove('show');
+        optionsBtn.classList.remove('active');
+      }
+    });
+    
+    // Handle option checkbox changes
+    var checkboxes = optionsDropdown.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(function(checkbox) {
+      // Restore previous state from sessionStorage
+      var optionKey = 'trans-option-' + checkbox.dataset.option;
+      try {
+        var saved = sessionStorage.getItem(optionKey);
+        if (saved === 'true') {
+          checkbox.checked = true;
+        }
+      } catch (_) {}
+      
+      // Save on change
+      checkbox.addEventListener('change', function() {
+        try {
+          sessionStorage.setItem(optionKey, this.checked);
+        } catch (_) {}
+        log('[Options Menu] Option changed:', this.dataset.option, '=', this.checked);
+        // TODO: Phase 3 - Apply visual changes based on option
+      });
+    });
   }
 
   function resetViewerZoom() {
@@ -132,55 +171,6 @@ This copyright notice MUST APPEAR in all copies of the file.
       });
     } else {
       log('[Layout Toggle] WARNING: lumiereViewer or viewport not available!');
-    }
-  }
-
-  function setupSyncToggleButton() {
-    var syncToggleBtn = document.getElementById('sync-toggle-btn');
-    if (!syncToggleBtn) return;
-
-    var savedSyncState = true;
-    try { 
-      var syncStateStr = sessionStorage.getItem(STORAGE_KEY_SYNC);
-      savedSyncState = syncStateStr !== 'false';
-    } catch (_) { 
-      // Default to enabled
-    }
-    
-    window.TranscriptionSyncEnabled = savedSyncState;
-    updateSyncButtonState(syncToggleBtn, savedSyncState);
-    
-    syncToggleBtn.addEventListener('click', function (e) {
-      e.preventDefault();
-      
-      var currentLayout = document.body.getAttribute('data-layout-mode');
-      if (currentLayout !== DEFAULT_LAYOUT) {
-        log('[Sync Toggle] Cannot toggle sync - not in split-view mode');
-        return;
-      }
-      
-      var newState = !window.TranscriptionSyncEnabled;
-      window.TranscriptionSyncEnabled = newState;
-      updateSyncButtonState(syncToggleBtn, newState);
-      try { sessionStorage.setItem(STORAGE_KEY_SYNC, newState); } catch (_) {}
-      log('[Sync Toggle] Synchronization', newState ? 'enabled' : 'disabled');
-
-      // If sync is being turned on, immediately align viewer to the current text position
-      if (newState && typeof window.lumiereSyncViewerToScroll === 'function') {
-        window.lumiereSyncViewerToScroll();
-      }
-    });
-  }
-
-  function updateSyncButtonState(btn, isEnabled) {
-    if (isEnabled) {
-      btn.classList.add('active');
-      btn.title = 'Désactiver la synchronisation texte-facsimilé';
-      btn.innerHTML = '🔗 Synchroniser la navigation';
-    } else {
-      btn.classList.remove('active');
-      btn.title = 'Activer la synchronisation texte-facsimilé';
-      btn.innerHTML = '🔌 Synchroniser la navigation';
     }
   }
 
