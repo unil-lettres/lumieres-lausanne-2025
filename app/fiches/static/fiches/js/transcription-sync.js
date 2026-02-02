@@ -52,6 +52,7 @@ This copyright notice MUST APPEAR in all copies of the file.
   function init() {
     var cfg = window.TranscriptionConfig || {};
     setupLayoutToggles(cfg);
+    initializeModeAvailability(); // PHASE 3: Check content availability
     setupOptionsMenu();
     if (cfg.hasViewer && cfg.iiifUrl) {
       setupViewer(cfg);
@@ -92,6 +93,17 @@ This copyright notice MUST APPEAR in all copies of the file.
         
         try { sessionStorage.setItem(STORAGE_KEY_LAYOUT, newLayout); } catch (_) {}
 
+        // Close options dropdown when switching modes
+        var optionsDropdown = document.getElementById('options-dropdown');
+        var optionsBtn = document.getElementById('options-menu-btn');
+        if (optionsDropdown && optionsBtn) {
+          optionsDropdown.classList.remove('show');
+          optionsBtn.classList.remove('active');
+        }
+
+        // PHASE 3: Update options menu for this mode
+        updateOptionsMenuForMode(newLayout);
+        
         resetViewerZoom();
       });
     });
@@ -103,9 +115,179 @@ This copyright notice MUST APPEAR in all copies of the file.
     if (activeBtn) activeBtn.classList.add('active');
   }
 
+  // PHASE 3: Mode availability logic -------------------------------------
+  /**
+   * Initialize mode availability based on content
+   */
+  function initializeModeAvailability() {
+    var container = document.getElementById('layout-toggle-buttons');
+    if (!container) {
+      log('[Mode Availability] Container not found');
+      return;
+    }
+    
+    var hasFacsimile = container.dataset.hasFacsimile === 'true';
+    var hasTranscription = container.dataset.hasTranscription === 'true';
+    
+    var textBtn = container.querySelector('.text-only-btn');
+    var splitBtn = container.querySelector('.split-view-btn');
+    var viewerBtn = container.querySelector('.viewer-only-btn');
+    var optionsBtn = document.getElementById('options-menu-btn');
+    
+    if (!textBtn || !splitBtn || !viewerBtn || !optionsBtn) {
+      log('[Mode Availability] Some buttons not found');
+      return;
+    }
+    
+    // Case 1: Only facsimile
+    if (!hasTranscription && hasFacsimile) {
+      textBtn.disabled = true;
+      splitBtn.disabled = true;
+      viewerBtn.disabled = false;
+      optionsBtn.disabled = true;
+      setLayout('viewer-only'); // Force viewer mode
+      log('[Mode Availability] Only facsimile available - forced viewer-only mode');
+    }
+    
+    // Case 2: Only transcription
+    else if (hasTranscription && !hasFacsimile) {
+      textBtn.disabled = false;
+      splitBtn.disabled = true;
+      viewerBtn.disabled = true;
+      optionsBtn.disabled = false;
+      setLayout('text-only'); // Force text mode
+      log('[Mode Availability] Only transcription available - forced text-only mode');
+    }
+    
+    // Case 3: Both (normal case)
+    else if (hasTranscription && hasFacsimile) {
+      textBtn.disabled = false;
+      splitBtn.disabled = false;
+      viewerBtn.disabled = false;
+      optionsBtn.disabled = false;
+      // Default already set in setupLayoutToggles (split-view active)
+      log('[Mode Availability] Both transcription and facsimile available');
+    }
+    
+    log('[Facsimile Viewer] Availability:', {
+      hasFacsimile: hasFacsimile,
+      hasTranscription: hasTranscription,
+      textEnabled: !textBtn.disabled,
+      splitEnabled: !splitBtn.disabled,
+      viewerEnabled: !viewerBtn.disabled,
+      optionsEnabled: !optionsBtn.disabled
+    });
+  }
+
+  /**
+   * Helper to set layout mode (used by initializeModeAvailability)
+   */
+  function setLayout(layoutMode) {
+    document.body.setAttribute('data-layout-mode', layoutMode);
+    var buttons = document.querySelectorAll('.layout-btn');
+    updateActiveButton(buttons, layoutMode);
+    
+    try { sessionStorage.setItem(STORAGE_KEY_LAYOUT, layoutMode); } catch (_) {}
+    
+    // Update options menu for this mode
+    updateOptionsMenuForMode(layoutMode);
+  }
+
+  /**
+   * Update options menu visibility based on current mode
+   */
+  function updateOptionsMenuForMode(mode) {
+    var optionsDropdown = document.getElementById('options-dropdown');
+    var optionsBtn = document.getElementById('options-menu-btn');
+    var hasFacsimile = document.getElementById('layout-toggle-buttons')?.dataset.hasFacsimile === 'true';
+    
+    if (!optionsDropdown || !optionsBtn) return;
+    
+    // Hide options menu if in viewer-only mode
+    if (mode === 'viewer-only') {
+      optionsDropdown.innerHTML = '<div style="padding: 8px; color: #999;">Aucune option disponible</div>';
+      optionsBtn.disabled = true;
+      log('[Options Menu] Viewer-only mode - no options');
+    }
+    // Show text options
+    else if (mode === 'text-only') {
+      optionsDropdown.innerHTML = [
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="use-diplomatic-version" ' + (sessionStorage.getItem('trans-option-use-diplomatic-version') === 'true' ? 'checked' : '') + '>',
+        '  <span>Version diplomatique</span>',
+        '</label>',
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="hide-linebreaks" ' + (sessionStorage.getItem('trans-option-hide-linebreaks') === 'true' ? 'checked' : '') + '>',
+        '  <span>Masquer les retours à la ligne</span>',
+        '</label>',
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="show-toc" ' + (sessionStorage.getItem('trans-option-show-toc') === 'true' ? 'checked' : '') + '>',
+        '  <span>Afficher la table des matières</span>',
+        '</label>',
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="show-marginalia" ' + (sessionStorage.getItem('trans-option-show-marginalia') === 'true' ? 'checked' : '') + '>',
+        '  <span>Afficher les notes en marge</span>',
+        '</label>'
+      ].join('');
+      optionsBtn.disabled = false;
+      log('[Options Menu] Text-only mode options set');
+    }
+    // Show split-view options
+    else if (mode === 'split-view') {
+      optionsDropdown.innerHTML = [
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="use-edited-version" ' + (sessionStorage.getItem('trans-option-use-edited-version') === 'true' ? 'checked' : '') + '>',
+        '  <span>Version éditée</span>',
+        '</label>',
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="hide-linebreaks" ' + (sessionStorage.getItem('trans-option-hide-linebreaks') === 'true' ? 'checked' : '') + '>',
+        '  <span>Masquer les retours à la ligne</span>',
+        '</label>',
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="show-toc" ' + (sessionStorage.getItem('trans-option-show-toc') === 'true' ? 'checked' : '') + '>',
+        '  <span>Afficher la table des matières</span>',
+        '</label>'
+      ].join('');
+      optionsBtn.disabled = false;
+      log('[Options Menu] Split-view mode options set');
+    }
+    
+    // Re-bind checkbox event listeners
+    bindOptionCheckboxes();
+  }
+
+  /**
+   * Bind event listeners to all option checkboxes
+   */
+  function bindOptionCheckboxes() {
+    var optionsDropdown = document.getElementById('options-dropdown');
+    var checkboxes = optionsDropdown?.querySelectorAll('input[type="checkbox"]') || [];
+    
+    checkboxes.forEach(function(checkbox) {
+      // Remove old listeners by cloning
+      var newCheckbox = checkbox.cloneNode(true);
+      checkbox.parentNode.replaceChild(newCheckbox, checkbox);
+      
+      // Add new listener
+      newCheckbox.addEventListener('change', function() {
+        var key = 'trans-option-' + this.dataset.option;
+        sessionStorage.setItem(key, this.checked);
+        log('[Options]', this.dataset.option, '=', this.checked);
+        
+        // TODO: Phase 4 - Apply visual changes
+        // Examples:
+        // - Use edited version: show/hide edit marks
+        // - Hide linebreaks: remove <br> visualization
+        // - Show TOC: toggle TOC panel visibility
+        // - Show marginalia: apply margin note styling
+      });
+    });
+  }
+
   // Options menu management ------------------------------------------------
   function setupOptionsMenu() {
     var optionsBtn = document.getElementById('options-menu-btn');
+
     var optionsDropdown = document.getElementById('options-dropdown');
     
     if (!optionsBtn || !optionsDropdown) {

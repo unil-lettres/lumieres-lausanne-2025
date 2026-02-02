@@ -137,9 +137,13 @@
         <p class="info info-noaccess">Vous ne pouvez pas accéder à cette transcription</p>
 	{% else %}
 	
+		<h2 class="transcription">{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 %}</h2>
+		
 		{#<!-- Layout mode toggle buttons -->#}
 		{% if trans.facsimile_iiif_url %}
-		<div id="layout-toggle-buttons" class="layout-toggle-group">
+	<div id="layout-toggle-buttons" class="layout-toggle-group"
+	     data-has-facsimile="{{ trans.facsimile_iiif_url|yesno:'true,false' }}"
+	     data-has-transcription="true">
 			<button type="button" class="layout-btn text-only-btn" data-layout="text-only" title="Mode texte uniquement">
 				Texte
 			</button>
@@ -171,8 +175,6 @@
 		</div>
 		{% endif %}
 
-        <h2 class="transcription">{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 %}</h2>
-		
 		{#<!-- Transcription text with viewer on the right -->#}
 		<div class="transcription-viewer-container">
 			<div class="transcription-content">

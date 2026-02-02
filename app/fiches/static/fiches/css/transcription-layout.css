@@ -19,6 +19,11 @@
    This copyright notice MUST APPEAR in all copies of the file.
 */
 
+/* Transcription title styling */
+h2.transcription {
+	margin-bottom: 0px;
+}
+
 /* Layout toggle button bar */
 .layout-toggle-group {
 	display: flex;
@@ -486,4 +491,43 @@ a.note-ref-link {
 
 a.note-ref-link:hover {
 	background-color: #ffffcc;
+}
+
+/* ========================================================================
+   PHASE 3: Conditional Logic - Mode Availability States
+   ======================================================================== */
+
+/* When no facsimile: disable facsimile-related buttons */
+#layout-toggle-buttons[data-has-facsimile="false"] .split-view-btn,
+#layout-toggle-buttons[data-has-facsimile="false"] .viewer-only-btn,
+#layout-toggle-buttons[data-has-facsimile="false"] #options-menu-btn {
+	opacity: 0.5;
+	cursor: not-allowed;
+	background-color: #f0f0f0;
+	color: #999;
+	pointer-events: none;
+}
+
+/* When no transcription: disable text-only and split-view */
+#layout-toggle-buttons[data-has-transcription="false"] .text-only-btn,
+#layout-toggle-buttons[data-has-transcription="false"] .split-view-btn {
+	opacity: 0.5;
+	cursor: not-allowed;
+	background-color: #f0f0f0;
+	color: #999;
+	pointer-events: none;
+}
+
+/* Disabled state styling (for button[disabled] attribute) */
+.layout-btn:disabled,
+.layout-btn[disabled] {
+	opacity: 0.5;
+	cursor: not-allowed;
+	background-color: #f0f0f0;
+	color: #999;
+}
+
+.layout-btn:disabled:hover,
+.layout-btn[disabled]:hover {
+	background-color: #f0f0f0;
 }

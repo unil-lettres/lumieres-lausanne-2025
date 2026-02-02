@@ -305,7 +305,7 @@ a:active  { color: #FF0000; }
 
 /*---------- MAIN -> CONTENT --------------------*/
 .main .content { /*font-family: Verdana,Geneva,Arial,Helvetica,sans-serif;*/ line-height: 1.3em; background-color: #FFF; color: #222;  overflow: hidden; padding: 10px; }
-.main .content h2,.main .content h3, .main .content h4 { margin-bottom: 15px; }
+.main .content h2,.main .content h3, .main .content h4 { margin-bottom: 0px; }
 
 p.error-msg code { font-weight: bold; }
 
