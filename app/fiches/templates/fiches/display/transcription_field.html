@@ -5,14 +5,18 @@ function getNotesPosition() {
 }
 
 function toggleBR() {
-	if ( $('#lb-toggle > span').hasClass('show') ) {
+	// Check if line breaks are currently hidden by looking at the actual BR elements
+	var firstBr = $('div.transcription-data br').not($('div.transcription-data .verse br')).first();
+	var areHidden = firstBr.hasClass('hidden-br');
+	
+	if (areHidden) {
+        // Show line breaks
         $('div.transcription-data br').not($('div.transcription-data .verse br')).removeClass('hidden-br');
         $("div.transcription-data .brsep").show();
-        $('#lb-toggle > span').removeClass('show').text('Cacher les retours à la ligne');
 	} else {
+        // Hide line breaks
         $('div.transcription-data br').not($('div.transcription-data .verse br')).addClass('hidden-br');
         $("div.transcription-data .brsep").hide();
-        $('#lb-toggle > span').addClass('show').text('Montrer les retours à la ligne');
 	}
 	
 	// Recalculate note positions if margin notes are displayed
@@ -521,6 +525,12 @@ function toRoman(num) {
 	}
 	return roman;
 }
+
+// Make toggle functions globally accessible for options menu
+window.toggleBR = toggleBR;
+window.toggleView = toggleView;
+window.toggleTOC = toggleTOC;
+window.toggleNotesPosition = toggleNotesPosition;
 </script>
 
 <div id="transcription-data" class="transcription-data cked-content" data-mode="dipl">

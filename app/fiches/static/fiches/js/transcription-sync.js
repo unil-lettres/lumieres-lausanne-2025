@@ -96,6 +96,12 @@ This copyright notice MUST APPEAR in all copies of the file.
         // Skip options menu button
         if (btn.id === 'options-menu-btn') return;
         
+        // Prevent clicking on already active layout button
+        if (btn.classList.contains('active')) {
+          e.preventDefault();
+          return;
+        }
+        
         var newLayout = btn.getAttribute('data-layout');
         
         log('[Layout Toggle] Button clicked:', e.target);
@@ -224,21 +230,24 @@ This copyright notice MUST APPEAR in all copies of the file.
     }
     // Show text options
     else if (mode === 'text-only') {
+      // Get current UI state to initialize checkboxes
+      var currentState = getCurrentUIState();
+      
       optionsDropdown.innerHTML = [
         '<label class="option-item">',
-        '  <input type="checkbox" data-option="use-diplomatic-version" ' + (sessionStorage.getItem('trans-option-use-diplomatic-version') === 'true' ? 'checked' : '') + '>',
+        '  <input type="checkbox" data-option="use-diplomatic-version" ' + (currentState.isDiplomatic ? 'checked' : '') + '>',
         '  <span>Version diplomatique</span>',
         '</label>',
         '<label class="option-item">',
-        '  <input type="checkbox" data-option="hide-linebreaks" ' + (sessionStorage.getItem('trans-option-hide-linebreaks') === 'true' ? 'checked' : '') + '>',
+        '  <input type="checkbox" data-option="hide-linebreaks" ' + (currentState.linebreaksHidden ? 'checked' : '') + '>',
         '  <span>Masquer les retours à la ligne</span>',
         '</label>',
         '<label class="option-item">',
-        '  <input type="checkbox" data-option="show-toc" ' + (sessionStorage.getItem('trans-option-show-toc') === 'true' ? 'checked' : '') + '>',
+        '  <input type="checkbox" data-option="show-toc" ' + (currentState.tocVisible ? 'checked' : '') + '>',
         '  <span>Afficher la table des matières</span>',
         '</label>',
         '<label class="option-item">',
-        '  <input type="checkbox" data-option="show-marginalia" ' + (sessionStorage.getItem('trans-option-show-marginalia') === 'true' ? 'checked' : '') + '>',
+        '  <input type="checkbox" data-option="show-marginalia" ' + (currentState.notesInMargin ? 'checked' : '') + '>',
         '  <span>Afficher les notes en marge</span>',
         '</label>'
       ].join('');
@@ -247,17 +256,20 @@ This copyright notice MUST APPEAR in all copies of the file.
     }
     // Show split-view options
     else if (mode === 'split-view') {
+      // Get current UI state to initialize checkboxes
+      var currentState = getCurrentUIState();
+      
       optionsDropdown.innerHTML = [
         '<label class="option-item">',
-        '  <input type="checkbox" data-option="use-edited-version" ' + (sessionStorage.getItem('trans-option-use-edited-version') === 'true' ? 'checked' : '') + '>',
+        '  <input type="checkbox" data-option="use-edited-version" ' + (!currentState.isDiplomatic ? 'checked' : '') + '>',
         '  <span>Version éditée</span>',
         '</label>',
         '<label class="option-item">',
-        '  <input type="checkbox" data-option="hide-linebreaks" ' + (sessionStorage.getItem('trans-option-hide-linebreaks') === 'true' ? 'checked' : '') + '>',
+        '  <input type="checkbox" data-option="hide-linebreaks" ' + (currentState.linebreaksHidden ? 'checked' : '') + '>',
         '  <span>Masquer les retours à la ligne</span>',
         '</label>',
         '<label class="option-item">',
-        '  <input type="checkbox" data-option="show-toc" ' + (sessionStorage.getItem('trans-option-show-toc') === 'true' ? 'checked' : '') + '>',
+        '  <input type="checkbox" data-option="show-toc" ' + (currentState.tocVisible ? 'checked' : '') + '>',
         '  <span>Afficher la table des matières</span>',
         '</label>'
       ].join('');
@@ -267,6 +279,23 @@ This copyright notice MUST APPEAR in all copies of the file.
     
     // Re-bind checkbox event listeners
     bindOptionCheckboxes();
+  }
+  
+  /**
+   * Get current UI state to initialize checkboxes correctly
+   */
+  function getCurrentUIState() {
+    var transcriptionData = document.querySelector('div.transcription-data');
+    var firstBr = document.querySelector('div.transcription-data br:not(.verse br)');
+    var toc = document.getElementById('transcription-toc');
+    var notesPosition = document.body.getAttribute('data-notes-position') || 'bottom';
+    
+    return {
+      isDiplomatic: transcriptionData ? transcriptionData.getAttribute('data-mode') === 'dipl' : true,
+      linebreaksHidden: firstBr ? firstBr.classList.contains('hidden-br') : false,
+      tocVisible: toc !== null,
+      notesInMargin: notesPosition === 'margin'
+    };
   }
 
   /**
@@ -284,17 +313,75 @@ This copyright notice MUST APPEAR in all copies of the file.
       // Add new listener
       newCheckbox.addEventListener('change', function() {
         var key = 'trans-option-' + this.dataset.option;
-        sessionStorage.setItem(key, this.checked);
-        log('[Options]', this.dataset.option, '=', this.checked);
+        var option = this.dataset.option;
+        var isChecked = this.checked;
         
-        // TODO: Phase 4 - Apply visual changes
-        // Examples:
-        // - Use edited version: show/hide edit marks
-        // - Hide linebreaks: remove <br> visualization
-        // - Show TOC: toggle TOC panel visibility
-        // - Show marginalia: apply margin note styling
+        sessionStorage.setItem(key, isChecked);
+        log('[Options]', option, '=', isChecked);
+        
+        // Apply the corresponding action based on the option
+        applyOptionChange(option, isChecked);
       });
     });
+  }
+  
+  /**
+   * Apply visual changes based on option state
+   */
+  function applyOptionChange(option, isChecked) {
+    switch(option) {
+      case 'hide-linebreaks':
+        // Toggle line breaks visibility
+        if (window.toggleBR) {
+          var currentlyHidden = document.querySelector('div.transcription-data br:not(.verse br)')?.classList.contains('hidden-br') || false;
+          // Only toggle if current state doesn't match desired state
+          if (isChecked !== currentlyHidden) {
+            window.toggleBR();
+          }
+        }
+        break;
+        
+      case 'use-diplomatic-version':
+      case 'use-edited-version':
+        // Toggle between diplomatic and edited versions
+        if (window.toggleView) {
+          var currentMode = document.querySelector('div.transcription-data')?.getAttribute('data-mode');
+          var targetMode = (option === 'use-diplomatic-version' && isChecked) || (option === 'use-edited-version' && !isChecked) ? 'dipl' : 'norm';
+          
+          // Only toggle if mode doesn't match target
+          if (currentMode !== targetMode) {
+            window.toggleView();
+          }
+        }
+        break;
+        
+      case 'show-toc':
+        // Toggle table of contents
+        if (window.toggleTOC) {
+          var tocExists = document.getElementById('transcription-toc') !== null;
+          // Only toggle if state doesn't match desired state
+          if ((isChecked && !tocExists) || (!isChecked && tocExists)) {
+            window.toggleTOC();
+          }
+        }
+        break;
+        
+      case 'show-marginalia':
+        // Toggle marginalia (notes position)
+        if (window.toggleNotesPosition) {
+          var currentPosition = document.body.getAttribute('data-notes-position') || 'bottom';
+          var targetPosition = isChecked ? 'margin' : 'bottom';
+          
+          // Only toggle if position doesn't match target
+          if (currentPosition !== targetPosition) {
+            window.toggleNotesPosition();
+          }
+        }
+        break;
+        
+      default:
+        warn('[Options] Unknown option:', option);
+    }
   }
 
   // Options menu management ------------------------------------------------
