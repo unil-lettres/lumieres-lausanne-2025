@@ -131,6 +131,8 @@
         <p class="info info-noaccess">Vous ne pouvez pas accéder à cette transcription</p>
 	{% else %}
 	
+        <h2 class="transcription">{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 %}</h2>
+	
 		{#<!-- Layout mode toggle buttons -->#}
 		{% if trans.facsimile_iiif_url %}
 		<div id="layout-toggle-buttons" class="layout-toggle-group">
@@ -143,10 +145,14 @@
 			<button type="button" class="layout-btn" data-layout="viewer-only" title="Facsimilé uniquement">
 				Facsimilé
 			</button>
+			<button type="button" class="layout-btn" id="options-menu-btn" title="Options">
+				Options ▼
+			</button>
+			<div id="options-dropdown" class="options-dropdown">
+				<!-- Options menu content will be populated dynamically -->
+			</div>
 		</div>
 		{% endif %}
-
-        <h2 class="transcription">{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 %}</h2>
 		
 		{#<!-- Transcription text with viewer on the right -->#}
 		<div class="transcription-viewer-container">
