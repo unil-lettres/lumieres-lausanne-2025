@@ -51,6 +51,12 @@ This copyright notice MUST APPEAR in all copies of the file.
 
   function init() {
     var cfg = window.TranscriptionConfig || {};
+    
+    // Enable synchronization by default (button was removed from UI)
+    // The sync functionality works automatically in split-view mode
+    window.TranscriptionSyncEnabled = true;
+    log('[Sync] Synchronization initialized as always-enabled');
+    
     setupLayoutToggles(cfg);
     initializeModeAvailability(); // PHASE 3: Check content availability
     setupOptionsMenu();

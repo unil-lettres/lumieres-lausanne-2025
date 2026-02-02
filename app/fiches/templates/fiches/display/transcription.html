@@ -131,44 +131,23 @@
         <p class="info info-noaccess">Vous ne pouvez pas accéder à cette transcription</p>
 	{% else %}
 	
-		<h2 class="transcription">{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 %}</h2>
-		
 		{#<!-- Layout mode toggle buttons -->#}
 		{% if trans.facsimile_iiif_url %}
-	<div id="layout-toggle-buttons" class="layout-toggle-group"
-	     data-has-facsimile="{{ trans.facsimile_iiif_url|yesno:'true,false' }}"
-	     data-has-transcription="true">
-			<button type="button" class="layout-btn text-only-btn" data-layout="text-only" title="Mode texte uniquement">
+		<div id="layout-toggle-buttons" class="layout-toggle-group">
+			<button type="button" class="layout-btn" data-layout="text-only" title="Texte uniquement">
 				Texte
 			</button>
-			<button type="button" class="layout-btn split-view-btn active" data-layout="split-view" title="Mode texte et facsimilé synchronisés">
+			<button type="button" class="layout-btn active" data-layout="split-view" title="Texte et facsimilé">
 				Texte + Facsimilé
 			</button>
-			<button type="button" class="layout-btn viewer-only-btn" data-layout="viewer-only" title="Mode facsimilé uniquement">
+			<button type="button" class="layout-btn" data-layout="viewer-only" title="Facsimilé uniquement">
 				Facsimilé
 			</button>
-			<button type="button" id="options-menu-btn" class="layout-btn options-btn" title="Options d'affichage">
-				Options <span class="dropdown-arrow">▼</span>
-			</button>
-			
-			{#<!-- Options dropdown menu (hidden by default, shown on click) -->#}
-			<div id="options-dropdown" class="options-dropdown">
-				<label class="option-item">
-					<input type="checkbox" name="option-version" value="edited" data-option="use-edited-version">
-					<span>Version éditée</span>
-				</label>
-				<label class="option-item">
-					<input type="checkbox" name="option-linebreaks" value="hide" data-option="hide-linebreaks">
-					<span>Cacher les retours à la ligne</span>
-				</label>
-				<label class="option-item">
-					<input type="checkbox" name="option-toc" value="show" data-option="show-toc">
-					<span>Afficher la table des matières</span>
-				</label>
-			</div>
 		</div>
 		{% endif %}
 
+        <h2 class="transcription">{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 %}</h2>
+		
 		{#<!-- Transcription text with viewer on the right -->#}
 		<div class="transcription-viewer-container">
 			<div class="transcription-content">
