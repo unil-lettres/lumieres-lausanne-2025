@@ -60,6 +60,13 @@ This copyright notice MUST APPEAR in all copies of the file.
     setupLayoutToggles(cfg);
     initializeModeAvailability(); // PHASE 3: Check content availability
     setupOptionsMenu();
+    
+    // Initialize options menu with current layout mode
+    var currentLayout = document.body.getAttribute('data-layout-mode');
+    if (currentLayout) {
+      updateOptionsMenuForMode(currentLayout);
+    }
+    
     if (cfg.hasViewer && cfg.iiifUrl) {
       setupViewer(cfg);
     }
