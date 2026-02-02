@@ -172,7 +172,8 @@ h2.transcription {
 
 .transcription-content {
 	flex: 1;
-	min-width: 0; /* Allow flex item to shrink below content size */
+	min-width: 0;
+	/* Allow flex item to shrink below content size */
 }
 
 .transcription-content #transcription-view-controls {
@@ -200,7 +201,8 @@ h2.transcription {
 	height: 600px;
 	background-color: #000;
 	border: 1px solid #ccc;
-	position: relative; /* allows overlay elements like marker toast */
+	position: relative;
+	/* allows overlay elements like marker toast */
 }
 
 .content .transcription-data {
@@ -263,7 +265,7 @@ h2.transcription {
 	.transcription-viewer-container {
 		flex-direction: column;
 	}
-	
+
 	.viewer-panel {
 		width: 100%;
 		position: static;
@@ -468,7 +470,8 @@ body[data-layout-mode="text-only"] .side-notes-panel .side-note {
 }
 
 .page-tag {
-	color: #0b7a0b; /* make page markers visually distinct */
+	color: #0b7a0b;
+	/* make page markers visually distinct */
 	font-weight: bold;
 }
 
@@ -525,6 +528,7 @@ a.note-ref-link:hover {
 	cursor: not-allowed;
 	background-color: #f0f0f0;
 	color: #999;
+	pointer-events: none;
 }
 
 .layout-btn:disabled:hover,
