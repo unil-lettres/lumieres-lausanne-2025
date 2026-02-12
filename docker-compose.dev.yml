@@ -33,7 +33,9 @@ services:
     command: sleep infinity
     extra_hosts:
       - "host.docker.internal:host-gateway"
-
+    ports:
+      - 8000:8000
+    
   phpmyadmin:
     image: phpmyadmin:latest
     links:
@@ -42,3 +44,5 @@ services:
       - db
     environment:
       PMA_HOST: db
+    ports:
+      - 8001:80

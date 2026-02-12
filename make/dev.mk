@@ -65,7 +65,7 @@ dev/logs: docker/compose/logs
 
 .PHONY: dev/runserver
 dev/runserver:  ## Run the django dev server
-	cd $(APP_PATH) && python manage.py runserver
+	cd $(APP_PATH) && python manage.py runserver 0.0.0.0:8000
 
 .PHONY: dev/shell
 dev/shell:  ## Open a shell with Djangop
