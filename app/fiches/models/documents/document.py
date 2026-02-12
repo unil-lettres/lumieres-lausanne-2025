@@ -141,28 +141,44 @@ class Biblio(models.Model):
     )
 
     title = models.TextField(_("Titre"))
-    short_title = models.CharField(_("Titre court"), max_length=512, blank=True, null=True)
-    litterature_type = models.CharField(_("Type de littérature"), max_length=2, choices=LITTERATURE_TYPE_CHOICES)
-    document_type = models.ForeignKey("DocumentType", verbose_name=_("Type de document"), on_delete=models.CASCADE)
+    short_title = models.CharField(
+        _("Titre court"), max_length=512, blank=True, null=True
+    )
+    litterature_type = models.CharField(
+        _("Type de littérature"), max_length=2, choices=LITTERATURE_TYPE_CHOICES
+    )
+    document_type = models.ForeignKey(
+        "DocumentType", verbose_name=_("Type de document"), on_delete=models.CASCADE
+    )
 
     # Book Type ( Chapitre de Livre )
     book_title = models.CharField(_("Titre du livre"), max_length=512, blank=True)
-    collection = models.CharField(_("Collection et n° du volume"), max_length=512, blank=True)
+    collection = models.CharField(
+        _("Collection et n° du volume"), max_length=512, blank=True
+    )
 
     # Journal Type ( Revue )
     journal_title = models.CharField(_("Titre de la revue"), max_length=512, blank=True)
     journal_num = models.CharField(_("N° de la revue"), max_length=30, blank=True)
-    journal_abr = models.CharField(_("Abréviation de la revue"), max_length=60, blank=True)
+    journal_abr = models.CharField(
+        _("Abréviation de la revue"), max_length=60, blank=True
+    )
     series_title = models.CharField(_("Titre du numéro"), max_length=512, blank=True)
     series_text = models.CharField(_("Texte de la série"), max_length=512, blank=True)
 
     # Dictionary Type ( Dictionnaire )
-    dictionary_title = models.CharField(_("Titre de dictionnaire"), max_length=256, blank=True)
+    dictionary_title = models.CharField(
+        _("Titre de dictionnaire"), max_length=256, blank=True
+    )
 
     # Manuscript type
     inscription = models.CharField(_("Dédicace"), max_length=256, blank=True)
     manuscript_type = models.ForeignKey(
-        "ManuscriptType", verbose_name=_("Type d'écrit"), blank=True, null=True, on_delete=models.SET_NULL
+        "ManuscriptType",
+        verbose_name=_("Type d'écrit"),
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
     )
 
     place = models.CharField(_("Lieu"), max_length=64, blank=True)
@@ -175,20 +191,36 @@ class Biblio(models.Model):
     date2 = models.DateField(_("Date 2"), blank=True, null=True)
     date2_f = models.CharField(max_length=15, blank=True, null=True)
     volume = models.IntegerField(
-        _("Volume"), validators=[MinValueValidator(0), MaxValueValidator(128)], blank=True, null=True, default=None
+        _("Volume"),
+        validators=[MinValueValidator(0), MaxValueValidator(128)],
+        blank=True,
+        null=True,
+        default=None,
     )
-    volume_nb = models.IntegerField(_("Nb de volumes"), blank=True, null=True, default=None)
+    volume_nb = models.IntegerField(
+        _("Nb de volumes"), blank=True, null=True, default=None
+    )
     pages = models.CharField(_("Pages"), max_length=64, blank=True)
 
     urls = models.TextField(_("URLs"), blank=True)
     documentfiles = models.ManyToManyField("DocumentFile", blank=True)
-    abstract = RichTextField(verbose_name=_("Résumé"), config_name="note_ckeditor", blank=True)
+    abstract = RichTextField(
+        verbose_name=_("Résumé"), config_name="note_ckeditor", blank=True
+    )
 
     # Subjects
-    subj_primary_kw = models.ManyToManyField("PrimaryKeyword", verbose_name=_("Mot clé principal"), blank=True)
-    subj_secondary_kw = models.ManyToManyField("SecondaryKeyword", verbose_name=_("Mot clé secondaire"), blank=True)
-    subj_person = models.ManyToManyField("Person", verbose_name=_("Personne"), blank=True)
-    subj_society = models.ManyToManyField("Society", verbose_name=_("Société/Académie"), blank=True)
+    subj_primary_kw = models.ManyToManyField(
+        "PrimaryKeyword", verbose_name=_("Mot clé principal"), blank=True
+    )
+    subj_secondary_kw = models.ManyToManyField(
+        "SecondaryKeyword", verbose_name=_("Mot clé secondaire"), blank=True
+    )
+    subj_person = models.ManyToManyField(
+        "Person", verbose_name=_("Personne"), blank=True
+    )
+    subj_society = models.ManyToManyField(
+        "Society", verbose_name=_("Société/Académie"), blank=True
+    )
 
     isbn = models.CharField(_("ISBN"), max_length=24, blank=True)
     serie = models.CharField(_("Série"), max_length=64, blank=True)
@@ -203,7 +235,9 @@ class Biblio(models.Model):
         Return only the contributions flagged as "author" (code == 0).
         Older templates expect this helper to exclude collaborators, editors, etc.
         """
-        author_filter = Q(contribution_type__code=ContributionType.AUTHOR_CODE) | Q(contribution_type__isnull=True)
+        author_filter = Q(contribution_type__code=ContributionType.AUTHOR_CODE) | Q(
+            contribution_type__isnull=True
+        )
         return (
             ContributionDoc.objects.filter(document=self)
             .filter(author_filter)
@@ -238,14 +272,26 @@ class Biblio(models.Model):
             person = contrib.person
             if not person:
                 continue
-            ctype = (contrib.contribution_type.name or "").lower() if contrib.contribution_type else ""
+            ctype = (
+                (contrib.contribution_type.name or "").lower()
+                if contrib.contribution_type
+                else ""
+            )
 
-            if contrib.contribution_type is None or contrib.contribution_type.code == ContributionType.AUTHOR_CODE:
+            if (
+                contrib.contribution_type is None
+                or contrib.contribution_type.code == ContributionType.AUTHOR_CODE
+            ):
                 # Authors are handled separately via get_authors_contributions()
                 continue
             if "dir" in ctype:  # directeur / directrice
                 buckets["directors"].append(person)
-            elif "édit" in ctype or "editeur" in ctype or "éditeur" in ctype or "editor" in ctype:
+            elif (
+                "édit" in ctype
+                or "editeur" in ctype
+                or "éditeur" in ctype
+                or "editor" in ctype
+            ):
                 buckets["publishers"].append(person)
             elif "trad" in ctype:
                 buckets["translators"].append(person)
@@ -267,11 +313,19 @@ class Biblio(models.Model):
             names = format_names(persons)
             if not names:
                 return ""
-            return format_html('<span class="contributor {}">{} {}</span>', css_class, names, suffix)
+            return format_html(
+                '<span class="contributor {}">{} {}</span>', css_class, names, suffix
+            )
 
-        directors_display = make_label(buckets["directors"], "contrib-director", "(dir.)")
-        publishers_display = make_label(buckets["publishers"], "contrib-publisher", "(éd.)")
-        translators_display = make_label(buckets["translators"], "contrib-translator", "(trad.)")
+        directors_display = make_label(
+            buckets["directors"], "contrib-director", "(dir.)"
+        )
+        publishers_display = make_label(
+            buckets["publishers"], "contrib-publisher", "(éd.)"
+        )
+        translators_display = make_label(
+            buckets["translators"], "contrib-translator", "(trad.)"
+        )
 
         return SimpleNamespace(
             **buckets,
@@ -316,7 +370,11 @@ class Biblio(models.Model):
     extra = models.CharField(_("Extra"), max_length=128, blank=True)
 
     creator = models.ForeignKey(
-        User, verbose_name=_("Auteur de la fiche"), on_delete=models.SET_NULL, null=True, blank=True
+        User,
+        verbose_name=_("Auteur de la fiche"),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
     )
 
     first_author = models.ForeignKey(
@@ -328,7 +386,9 @@ class Biblio(models.Model):
         null=True,
         on_delete=models.SET_NULL,
     )
-    first_author_name = models.CharField(max_length=215, editable=False, blank=True, default="")
+    first_author_name = models.CharField(
+        max_length=215, editable=False, blank=True, default=""
+    )
 
     def __str__(self):
         return self.title
@@ -413,7 +473,9 @@ class ContributionDoc(models.Model):
     def __str__(self):
         # If person or contribution_type is None, avoid error by using safe strings
         person_str = str(self.person) if self.person else _("(Aucun contributeur)")
-        contrib_str = str(self.contribution_type) if self.contribution_type else _("(Aucun type)")
+        contrib_str = (
+            str(self.contribution_type) if self.contribution_type else _("(Aucun type)")
+        )
         return f"{person_str} ({contrib_str})"
 
     class Meta:
@@ -432,11 +494,12 @@ class ContributionDoc(models.Model):
 # ..............................................................................
 class ManuscriptBManager(models.Manager):
     def get_queryset(self):
-        return super(ManuscriptBManager, self).get_queryset().filter(document_type__id=5)
+        return (
+            super(ManuscriptBManager, self).get_queryset().filter(document_type__id=5)
+        )
 
 
 class ManuscriptB(Biblio):
-
     objects = ManuscriptBManager()
 
     class Meta:
@@ -454,6 +517,7 @@ class NoteBiblio(NoteBase):
     """
     Note attached to a Bibliography entry, with access control by user group.
     """
+
     owner = models.ForeignKey(
         Biblio,
         on_delete=models.SET_NULL,  # Prevent deletion of associated notes if Biblio is deleted
@@ -461,10 +525,10 @@ class NoteBiblio(NoteBase):
         related_name="notes",  # Allows accessing notes via `biblio.notes.all()`
     )
     access_groups = models.ManyToManyField(
-        'fiches.UserGroup',
-        verbose_name=_('Groupes d\'accès'),
+        "fiches.UserGroup",
+        verbose_name=_("Groupes d'accès"),
         blank=True,
-        help_text=_('Contrôle d\'accès par groupe utilisateur'),
+        help_text=_("Contrôle d'accès par groupe utilisateur"),
     )
 
     @property
@@ -539,7 +603,9 @@ class Manuscript(models.Model):
     depot = models.CharField(_("Lieu de dépôt"), max_length=128, blank=True)
 
     cote = models.CharField(_("Cote"), max_length=150, blank=True)
-    authorization = models.BooleanField(_("Autorisation"), default=False, null=True, blank=True)
+    authorization = models.BooleanField(
+        _("Autorisation"), default=False, null=True, blank=True
+    )
 
     extra = models.CharField(_("Extra"), max_length=128, blank=True)
 
@@ -549,17 +615,30 @@ class Manuscript(models.Model):
     subj_secondary_kw = models.ManyToManyField(
         SecondaryKeyword, verbose_name=_("Mot clé secondaire"), blank=True
     )  # null=True
-    subj_society = models.ManyToManyField(Society, verbose_name=_("Société"), blank=True)  # null=True
+    subj_society = models.ManyToManyField(
+        Society, verbose_name=_("Société"), blank=True
+    )  # null=True
 
     creator = models.ForeignKey(
-        User, verbose_name=_("Auteur de la fiche"), on_delete=models.SET_NULL, null=True, blank=True
+        User,
+        verbose_name=_("Auteur de la fiche"),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
     )
 
     first_author = models.ForeignKey(
-        Person, verbose_name=_("Premier Auteur"), editable=False, blank=True, null=True, on_delete=models.SET_NULL
+        Person,
+        verbose_name=_("Premier Auteur"),
+        editable=False,
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
     )
 
-    biblio_man = models.ForeignKey(Biblio, blank=True, null=True, on_delete=models.SET_NULL)  # Add on_delete here
+    biblio_man = models.ForeignKey(
+        Biblio, blank=True, null=True, on_delete=models.SET_NULL
+    )  # Add on_delete here
 
     def __str__(self):
         return self.title
@@ -569,7 +648,11 @@ class Manuscript(models.Model):
 
     def save(self, force_insert=False, force_update=False, *args, **kwargs):
         try:
-            first_author_person = self.contributionman_set.filter(contribution_type__code=0).order_by("pk")[0].person
+            first_author_person = (
+                self.contributionman_set.filter(contribution_type__code=0)
+                .order_by("pk")[0]
+                .person
+            )
         except IndexError:
             first_author_person = None
         self.first_author = first_author_person
@@ -578,7 +661,9 @@ class Manuscript(models.Model):
     def getFirstAuthorName(self):
         try:
             first_author_name = (
-                self.contributionman_set.filter(contribution_type__code=0).order_by("pk")[0].person.name
+                self.contributionman_set.filter(contribution_type__code=0)
+                .order_by("pk")[0]
+                .person.name
             )
         except IndexError:
             first_author_name = None
@@ -601,10 +686,10 @@ class Manuscript(models.Model):
 # ------------------------------------------------------------------------------
 class NoteManuscript(NoteBase):
     access_groups = models.ManyToManyField(
-        'fiches.UserGroup',
-        verbose_name=_('Groupes d\'accès'),
+        "fiches.UserGroup",
+        verbose_name=_("Groupes d'accès"),
         blank=True,
-        help_text=_('Contrôle d\'accès par groupe utilisateur'),
+        help_text=_("Contrôle d'accès par groupe utilisateur"),
     )
     owner = models.ForeignKey(Manuscript, on_delete=models.SET_NULL, null=True)
 
@@ -732,15 +817,26 @@ from django.db import models
 
 
 class Transcription(ACModel):
-    manuscript = models.ForeignKey("fiches.Manuscript", blank=True, null=True, on_delete=models.SET_NULL)
-
-    manuscript_b = models.ForeignKey("fiches.Biblio", blank=True, null=True, on_delete=models.SET_NULL)
-
-    author = models.ForeignKey(
-        User, verbose_name=_("Auteur"), related_name="transcriptions", on_delete=models.SET_NULL, null=True, blank=True
+    manuscript = models.ForeignKey(
+        "fiches.Manuscript", blank=True, null=True, on_delete=models.SET_NULL
     )
 
-    cite_author = models.BooleanField(blank=True, default=False, verbose_name=_("Citer l'auteur"))
+    manuscript_b = models.ForeignKey(
+        "fiches.Biblio", blank=True, null=True, on_delete=models.SET_NULL
+    )
+
+    author = models.ForeignKey(
+        User,
+        verbose_name=_("Auteur"),
+        related_name="transcriptions",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+
+    cite_author = models.BooleanField(
+        blank=True, default=False, verbose_name=_("Citer l'auteur")
+    )
     author2 = models.ForeignKey(
         User,
         verbose_name=_("2e auteur"),
@@ -749,13 +845,21 @@ class Transcription(ACModel):
         null=True,
         on_delete=models.SET_NULL,
     )
-    cite_author2 = models.BooleanField(blank=True, default=False, verbose_name=_("Citer le 2e auteur"))
+    cite_author2 = models.BooleanField(
+        blank=True, default=False, verbose_name=_("Citer le 2e auteur")
+    )
 
-    status = models.IntegerField(_("État"), choices=TRANSCRIPTION_CHOICES["status"], default=0)
-    scope = models.IntegerField(_("Transcription"), choices=TRANSCRIPTION_CHOICES["scope"], default=0)
+    status = models.IntegerField(
+        _("État"), choices=TRANSCRIPTION_CHOICES["status"], default=0
+    )
+    scope = models.IntegerField(
+        _("Transcription"), choices=TRANSCRIPTION_CHOICES["scope"], default=0
+    )
 
     text = RichTextField(config_name="transcription_ckeditor", blank=True)
-    envelope = RichTextField(verbose_name=_("Enveloppe"), config_name="envelope_ckeditor", blank=True)
+    envelope = RichTextField(
+        verbose_name=_("Enveloppe"), config_name="envelope_ckeditor", blank=True
+    )
 
     # IIIF facsimile manifest URL (manifest.json or info.json)
     facsimile_iiif_url = models.URLField(
@@ -770,7 +874,15 @@ class Transcription(ACModel):
         null=True,
     )
 
-    access_private = models.BooleanField(blank=True, default=True, verbose_name=_("Privé"))
+    access_private = models.BooleanField(
+        blank=True, default=True, verbose_name=_("Privé")
+    )
+
+    # Publication and modification timestamps
+    published_date = models.DateTimeField(
+        _("Date de mise en ligne"), blank=True, null=True
+    )
+    modified_date = models.DateTimeField(_("Date de modification"), auto_now=True)
 
     objects = TranscriptionManager()
 
@@ -780,7 +892,9 @@ class Transcription(ACModel):
         Dynamically fetch the reviewers associated with this transcription.
         """
         return User.objects.filter(
-            id__in=TranscriptionReviewer.objects.filter(transcription_id=self.id).values_list("user_id", flat=True)
+            id__in=TranscriptionReviewer.objects.filter(
+                transcription_id=self.id
+            ).values_list("user_id", flat=True)
         )
 
     def __str__(self):
@@ -810,7 +924,10 @@ class Transcription(ACModel):
             ("change_any_transcription", "Can change any Transcription"),
             ("delete_any_transcription", "Can delete any Transcription"),
             ("publish_transcription", "Can Publish Transcription"),
-            ("access_unpublished_transcription", "Can Access Unpublished Transcription"),
+            (
+                "access_unpublished_transcription",
+                "Can Access Unpublished Transcription",
+            ),
         )
 
 
@@ -827,10 +944,10 @@ class TranscriptionReviewer(models.Model):
 # ------------------------------------------------------------------------------
 class NoteTranscription(NoteBase):
     access_groups = models.ManyToManyField(
-        'fiches.UserGroup',
-        verbose_name=_('Groupes d\'accès'),
+        "fiches.UserGroup",
+        verbose_name=_("Groupes d'accès"),
         blank=True,
-        help_text=_('Contrôle d\'accès par groupe utilisateur'),
+        help_text=_("Contrôle d'accès par groupe utilisateur"),
     )
     owner = models.ForeignKey(Transcription, on_delete=models.SET_NULL, null=True)
 
