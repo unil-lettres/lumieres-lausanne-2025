@@ -270,7 +270,13 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
         
 		<div class="fieldWrapper">
 			<label>Dernière modification</label>
-			{{ last_activity.date|date:"d M. Y - H:i" }}
+			{% if transcription.modified_date %}
+				{{ transcription.modified_date|date:"j M Y - H:i" }}
+			{% elif last_activity %}
+				{{ last_activity.date|date:"j M Y - H:i" }}
+			{% else %}
+				—
+			{% endif %}
 		</div>
 		<div class="fixclear"></div>
 	<!--/fieldset-->

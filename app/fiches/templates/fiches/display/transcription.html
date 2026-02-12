@@ -207,13 +207,24 @@
 					{% endif %}
 				</div>
 
-				<div class="field_label">{{ trans|field_verbose_name:"status" }}</div>
-				<div class="field_value">{{ trans.get_status_display|lower }}</div>
+			<div class="field_label">{{ trans|field_verbose_name:"status" }}</div>
+			<div class="field_value">{{ trans.get_status_display|lower }}</div>
 
-				<div class="field_label">Dernière modification</div>
-				<div class="field_value last">{{ last_activity.date|date:"d M. Y - H:i" }} ({{ last_activity.user.username }})</div>
+			<div class="field_label">Dernière modification</div>
+			<div class="field_value last">
+				{% if trans.modified_date %}
+					{{ trans.modified_date|date:"j M Y - H:i" }}
+					{% if last_activity and last_activity.user %}
+						({{ last_activity.user.username }})
+					{% endif %}
+				{% elif last_activity %}
+					{{ last_activity.date|date:"j M Y - H:i" }} ({{ last_activity.user.username }})
+				{% else %}
+					—
+				{% endif %}
+			</div>
 
-				<div class="fixclear"></div>
+			<div class="fixclear"></div>
 			</div>
 			{% endif %}
 			<div class="field_wrap">
