@@ -268,6 +268,14 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
         </div>
         <div class="fixclear"></div>
         
+		{% if transcription.published_date %}
+		<div class="fieldWrapper">
+			<label>Date de mise en ligne</label>
+			{{ transcription.published_date|date:"j M Y - H:i" }}
+		</div>
+		<div class="fixclear"></div>
+		{% endif %}
+        
 		<div class="fieldWrapper">
 			<label>Dernière modification</label>
 			{% if transcription.modified_date %}

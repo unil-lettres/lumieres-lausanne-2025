@@ -210,6 +210,11 @@
 			<div class="field_label">{{ trans|field_verbose_name:"status" }}</div>
 			<div class="field_value">{{ trans.get_status_display|lower }}</div>
 
+			{% if trans.published_date %}
+			<div class="field_label">Date de mise en ligne</div>
+			<div class="field_value">{{ trans.published_date|date:"j M Y - H:i" }}</div>
+			{% endif %}
+
 			<div class="field_label">Dernière modification</div>
 			<div class="field_value last">
 				{% if trans.modified_date %}
