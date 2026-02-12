@@ -198,18 +198,22 @@
 	    </div>
 
 		<div class="field_group meta_general" style="margin-bottom: 0 !important;">
-			{% if user.is_authenticated %}
-			<div class="field_wrap">
-				<div class="field_label">Transcrit par</div>
-				<div class="field_value">{{ trans.author.get_full_name|default:trans.author.username }}
-					{% if trans.author2 %}
-					et {{ trans.author2.get_full_name|default:trans.author2 }}
-					{% endif %}
-				</div>
+		{% if user.is_authenticated %}
+		<div class="field_wrap">
+			<div class="field_label">Transcrit par</div>
+			<div class="field_value">{{ trans.author.get_full_name|default:trans.author.username }}
+				{% if trans.author2 %}
+				et {{ trans.author2.get_full_name|default:trans.author2 }}
+				{% endif %}
+			</div>
 
 			<div class="field_label">{{ trans|field_verbose_name:"status" }}</div>
-			<div class="field_value">{{ trans.get_status_display|lower }}</div>
+			<div class="field_value last">{{ trans.get_status_display|lower }}</div>
 
+			<div class="fixclear"></div>
+		</div>
+		
+		<div class="field_wrap">
 			{% if trans.published_date %}
 			<div class="field_label">Date de mise en ligne</div>
 			<div class="field_value">{{ trans.published_date|date:"j M Y - H:i" }}</div>
@@ -230,9 +234,9 @@
 			</div>
 
 			<div class="fixclear"></div>
-			</div>
-			{% endif %}
-			<div class="field_wrap">
+		</div>
+		{% endif %}
+		<div class="field_wrap">
 				{% if user.is_authenticated and trans.reviewers %}
 				<div class="field_label">Relu par</div>
 				<div class="field_value">
