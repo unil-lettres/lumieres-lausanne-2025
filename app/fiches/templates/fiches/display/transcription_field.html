@@ -1,4 +1,10 @@
 <script type="text/javascript">
+// Firefox detection for CSS fix (issue #105): @-moz-document no longer works
+// in author stylesheets, so we detect Firefox via JS and add a class to body.
+if (typeof InstallTrigger !== 'undefined' || navigator.userAgent.indexOf('Firefox') !== -1) {
+	document.body.classList.add('is-firefox');
+}
+
 // Helper function to get current notes position
 function getNotesPosition() {
 	return document.body.getAttribute('data-notes-position') || 'bottom';
@@ -13,10 +19,14 @@ function toggleBR() {
         // Show line breaks
         $('div.transcription-data br').not($('div.transcription-data .verse br')).removeClass('hidden-br');
         $("div.transcription-data .brsep").show();
+        // Add class to body for Firefox CSS fix (issue #105)
+        $('body').addClass('linebreaks-visible');
 	} else {
         // Hide line breaks
         $('div.transcription-data br').not($('div.transcription-data .verse br')).addClass('hidden-br');
         $("div.transcription-data .brsep").hide();
+        // Remove class from body for Firefox CSS fix (issue #105)
+        $('body').removeClass('linebreaks-visible');
 	}
 	
 	// Recalculate note positions if margin notes are displayed
