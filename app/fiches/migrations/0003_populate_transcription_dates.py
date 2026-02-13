@@ -58,7 +58,3 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(populate_transcription_dates, reverse_migration),
     ]
-
-    operations = [
-        migrations.RunPython(populate_transcription_dates, reverse_migration),
-    ]
