@@ -14,7 +14,7 @@
 	// The optional 'workspaceFolder' property is the path VS Code should open by default when
 	// connected. This is typically a file mount in .devcontainer/docker-compose.yml
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-	// Use this environment variable if you need to bind mount your local see to a new container.
+	// Use this environment variable if you need to bind mount your local source code into a new container.
 	// "remoteEnv": {
 	// },
 	"features": {
