@@ -426,6 +426,11 @@ body[data-layout-mode="viewer-only"] #openseadragon-viewer {
 	height: 800px;
 }
 
+/* Hide Repere indicator in viewer-only (facsimile) mode */
+body[data-layout-mode="viewer-only"] .marker-indicator {
+	display: none;
+}
+
 /* Hidden line breaks styling */
 .transcription-data br.hidden-br {
 	display: none;
