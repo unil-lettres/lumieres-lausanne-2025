@@ -24,7 +24,6 @@ from fiches.models.contributiontype import ContributionType
 from fiches.models.misc.notes import NoteBase
 from fiches.models.misc.society import Society
 from fiches.models.person.person import Person
-from utils.utils_coins import get_doc_coins
 
 # ===============================================================================
 # DOCUMENTS
@@ -221,6 +220,7 @@ class Biblio(models.Model):
     serie = models.CharField(_("Série"), max_length=64, blank=True)
     serie_num = models.CharField(_("N° de la série"), max_length=64, blank=True)
 
+    @staticmethod
     def get_default_language():
         return DocumentLanguage.objects.get_or_create(name="Français")[0].id
 

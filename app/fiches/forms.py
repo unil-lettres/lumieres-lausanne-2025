@@ -18,7 +18,6 @@ from .models.documents import (
     ContributionDoc,
     ContributionMan,
     DocumentFile,
-    DocumentLanguage,
     Manuscript,
     ManuscriptType,
     NoteBiblio,
