@@ -227,32 +227,32 @@ This copyright notice MUST APPEAR in all copies of the file.
       optionsBtn.disabled = true;
       log('[Options Menu] Viewer-only mode - no options');
     }
-    // Show text options
-    else if (mode === 'text-only') {
-      // Get current UI state to initialize checkboxes
-      var currentState = getCurrentUIState();
-      
-      optionsDropdown.innerHTML = [
-        '<label class="option-item">',
-        '  <input type="checkbox" data-option="use-diplomatic-version" ' + (currentState.isDiplomatic ? 'checked' : '') + '>',
-        '  <span>Version diplomatique</span>',
-        '</label>',
-        '<label class="option-item">',
-        '  <input type="checkbox" data-option="hide-linebreaks" ' + (currentState.linebreaksHidden ? 'checked' : '') + '>',
-        '  <span>Masquer les retours à la ligne</span>',
-        '</label>',
-        '<label class="option-item">',
-        '  <input type="checkbox" data-option="show-toc" ' + (currentState.tocVisible ? 'checked' : '') + '>',
-        '  <span>Afficher la table des matières</span>',
-        '</label>',
-        '<label class="option-item">',
-        '  <input type="checkbox" data-option="show-marginalia" ' + (currentState.notesInMargin ? 'checked' : '') + '>',
-        '  <span>Afficher les notes en marge</span>',
-        '</label>'
-      ].join('');
-      optionsBtn.disabled = false;
-      log('[Options Menu] Text-only mode options set');
-    }
+     // Show text options
+     else if (mode === 'text-only') {
+       // Get current UI state to initialize checkboxes
+       var currentState = getCurrentUIState();
+       
+       optionsDropdown.innerHTML = [
+         '<label class="option-item">',
+         '  <input type="checkbox" data-option="use-diplomatic-version" ' + (currentState.isDiplomatic ? 'checked' : '') + '>',
+         '  <span>Version diplomatique</span>',
+         '</label>',
+         '<label class="option-item">',
+         '  <input type="checkbox" data-option="hide-linebreaks" ' + (currentState.linebreaksHidden ? 'checked' : '') + '>',
+         '  <span>Retours à la ligne</span>',
+         '</label>',
+         '<label class="option-item">',
+         '  <input type="checkbox" data-option="show-toc" ' + (currentState.tocVisible ? 'checked' : '') + '>',
+         '  <span>Table des matières</span>',
+         '</label>',
+         '<label class="option-item">',
+         '  <input type="checkbox" data-option="show-marginalia" ' + (currentState.notesInMargin ? 'checked' : '') + '>',
+         '  <span>Notes en marge</span>',
+         '</label>'
+       ].join('');
+       optionsBtn.disabled = false;
+       log('[Options Menu] Text-only mode options set');
+     }
     // Show split-view options
     else if (mode === 'split-view') {
       // Get current UI state to initialize checkboxes
@@ -265,11 +265,11 @@ This copyright notice MUST APPEAR in all copies of the file.
         '</label>',
         '<label class="option-item">',
         '  <input type="checkbox" data-option="hide-linebreaks" ' + (currentState.linebreaksHidden ? 'checked' : '') + '>',
-        '  <span>Masquer les retours à la ligne</span>',
+        '  <span>Sans retours à la ligne</span>',
         '</label>',
         '<label class="option-item">',
         '  <input type="checkbox" data-option="show-toc" ' + (currentState.tocVisible ? 'checked' : '') + '>',
-        '  <span>Afficher la table des matières</span>',
+        '  <span>Table des matières</span>',
         '</label>'
       ].join('');
       optionsBtn.disabled = false;
@@ -287,8 +287,23 @@ This copyright notice MUST APPEAR in all copies of the file.
     var transcriptionData = document.querySelector('div.transcription-data');
     var firstBr = document.querySelector('div.transcription-data br:not(.verse br)');
     var toc = document.getElementById('transcription-toc');
-    var notesPosition = document.body.getAttribute('data-notes-position') || 'bottom';
-    
+    var notesPosition = document.body.getAttribute('data-notes-position') || '';
+    var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+
+    // If data-notes-position is not yet set (initializeNotesPosition hasn't
+    // run), predict the value it will compute so the checkbox matches reality.
+    if (!notesPosition) {
+      if (layoutMode === 'text-only') {
+        try {
+          notesPosition = sessionStorage.getItem('transcription-notes-position') || 'margin';
+        } catch (_) {
+          notesPosition = 'margin';
+        }
+      } else {
+        notesPosition = 'bottom';
+      }
+    }
+
     return {
       isDiplomatic: transcriptionData ? transcriptionData.getAttribute('data-mode') === 'dipl' : true,
       linebreaksHidden: firstBr ? firstBr.classList.contains('hidden-br') : false,
