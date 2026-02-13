@@ -218,7 +218,6 @@ This copyright notice MUST APPEAR in all copies of the file.
   function updateOptionsMenuForMode(mode) {
     var optionsDropdown = document.getElementById('options-dropdown');
     var optionsBtn = document.getElementById('options-menu-btn');
-    var hasFacsimile = document.getElementById('layout-toggle-buttons')?.dataset.hasFacsimile === 'true';
     
     if (!optionsDropdown || !optionsBtn) return;
     
