@@ -75,10 +75,22 @@ This copyright notice MUST APPEAR in all copies of the file.
   // Layout toggle logic ----------------------------------------------------
   function setupLayoutToggles(cfg) {
     var hasViewer = !!cfg.hasViewer;
+    var buttons = document.querySelectorAll('.layout-btn');
 
     if (!hasViewer) {
+      // No facsimile: force text-only, disable facsimile-related buttons
       document.body.setAttribute('data-layout-mode', 'text-only');
       try { sessionStorage.removeItem(STORAGE_KEY_LAYOUT); } catch (_) {}
+
+      buttons.forEach(function (btn) {
+        var layout = btn.getAttribute('data-layout');
+        if (layout === 'split-view' || layout === 'viewer-only') {
+          btn.disabled = true;
+        }
+      });
+
+      updateActiveButton(buttons, 'text-only');
+      log('[Layout Toggle] No facsimile – forced text-only, facsimile buttons disabled');
       return;
     }
 
@@ -87,8 +99,6 @@ This copyright notice MUST APPEAR in all copies of the file.
     var initialLayout = savedLayout || DEFAULT_LAYOUT;
 
     document.body.setAttribute('data-layout-mode', initialLayout);
-    
-    var buttons = document.querySelectorAll('.layout-btn');
     updateActiveButton(buttons, initialLayout);
 
     buttons.forEach(function (btn) {
@@ -96,8 +106,8 @@ This copyright notice MUST APPEAR in all copies of the file.
         // Skip options menu button
         if (btn.id === 'options-menu-btn') return;
         
-        // Prevent clicking on already active layout button
-        if (btn.classList.contains('active')) {
+        // Prevent clicking on already active or disabled layout button
+        if (btn.classList.contains('active') || btn.disabled) {
           e.preventDefault();
           return;
         }
@@ -136,7 +146,9 @@ This copyright notice MUST APPEAR in all copies of the file.
 
   // PHASE 3: Mode availability logic -------------------------------------
   /**
-   * Initialize mode availability based on content
+   * Initialize mode availability based on content.
+   * Reads data-has-facsimile from the container (set by the Django template)
+   * and disables buttons accordingly.
    */
   function initializeModeAvailability() {
     var container = document.getElementById('layout-toggle-buttons');
@@ -145,52 +157,37 @@ This copyright notice MUST APPEAR in all copies of the file.
       return;
     }
     
-    var hasFacsimile = container.dataset.hasFacsimile === 'true';
-    var hasTranscription = container.dataset.hasTranscription === 'true';
+    var hasFacsimile = container.getAttribute('data-has-facsimile') === 'true';
     
-    var textBtn = container.querySelector('.text-only-btn');
-    var splitBtn = container.querySelector('.split-view-btn');
-    var viewerBtn = container.querySelector('.viewer-only-btn');
+    var textBtn = container.querySelector('.layout-btn[data-layout="text-only"]');
+    var splitBtn = container.querySelector('.layout-btn[data-layout="split-view"]');
+    var viewerBtn = container.querySelector('.layout-btn[data-layout="viewer-only"]');
     var optionsBtn = document.getElementById('options-menu-btn');
     
     if (!textBtn || !splitBtn || !viewerBtn || !optionsBtn) {
       log('[Mode Availability] Some buttons not found');
       return;
     }
-    
-    // Case 1: Only facsimile
-    if (!hasTranscription && hasFacsimile) {
-      textBtn.disabled = true;
-      splitBtn.disabled = true;
-      viewerBtn.disabled = false;
-      optionsBtn.disabled = true;
-      setLayout('viewer-only'); // Force viewer mode
-      log('[Mode Availability] Only facsimile available - forced viewer-only mode');
-    }
-    
-    // Case 2: Only transcription
-    else if (hasTranscription && !hasFacsimile) {
+
+    if (!hasFacsimile) {
+      // No facsimile: Texte active, split-view and viewer-only disabled
       textBtn.disabled = false;
       splitBtn.disabled = true;
       viewerBtn.disabled = true;
       optionsBtn.disabled = false;
-      setLayout('text-only'); // Force text mode
-      log('[Mode Availability] Only transcription available - forced text-only mode');
-    }
-    
-    // Case 3: Both (normal case)
-    else if (hasTranscription && hasFacsimile) {
+      setLayout('text-only');
+      log('[Mode Availability] No facsimile – forced text-only mode');
+    } else {
+      // Both available (normal case)
       textBtn.disabled = false;
       splitBtn.disabled = false;
       viewerBtn.disabled = false;
       optionsBtn.disabled = false;
-      // Default already set in setupLayoutToggles (split-view active)
       log('[Mode Availability] Both transcription and facsimile available');
     }
     
-    log('[Facsimile Viewer] Availability:', {
+    log('[Mode Availability] State:', {
       hasFacsimile: hasFacsimile,
-      hasTranscription: hasTranscription,
       textEnabled: !textBtn.disabled,
       splitEnabled: !splitBtn.disabled,
       viewerEnabled: !viewerBtn.disabled,

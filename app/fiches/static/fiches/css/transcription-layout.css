@@ -515,19 +515,8 @@ a.note-ref-link:hover {
    ======================================================================== */
 
 /* When no facsimile: disable facsimile-related buttons */
-#layout-toggle-buttons[data-has-facsimile="false"] .split-view-btn,
-#layout-toggle-buttons[data-has-facsimile="false"] .viewer-only-btn,
-#layout-toggle-buttons[data-has-facsimile="false"] #options-menu-btn {
-	opacity: 0.5;
-	cursor: not-allowed;
-	background-color: #f0f0f0;
-	color: #999;
-	pointer-events: none;
-}
-
-/* When no transcription: disable text-only and split-view */
-#layout-toggle-buttons[data-has-transcription="false"] .text-only-btn,
-#layout-toggle-buttons[data-has-transcription="false"] .split-view-btn {
+#layout-toggle-buttons[data-has-facsimile="false"] .layout-btn[data-layout="split-view"],
+#layout-toggle-buttons[data-has-facsimile="false"] .layout-btn[data-layout="viewer-only"] {
 	opacity: 0.5;
 	cursor: not-allowed;
 	background-color: #f0f0f0;

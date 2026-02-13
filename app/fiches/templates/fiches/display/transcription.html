@@ -133,9 +133,9 @@
 	
         <h2 class="transcription">{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 %}</h2>
 	
-		{#<!-- Layout mode toggle buttons -->#}
-		{% if trans.facsimile_iiif_url %}
-		<div id="layout-toggle-buttons" class="layout-toggle-group">
+		{#<!-- Layout mode toggle buttons (always visible; facsimile buttons disabled when no facsimile) -->#}
+		<div id="layout-toggle-buttons" class="layout-toggle-group"
+			 data-has-facsimile="{{ trans.facsimile_iiif_url|yesno:'true,false' }}">
 			<button type="button" class="layout-btn" data-layout="text-only" title="Texte uniquement">
 				Texte
 			</button>
@@ -152,7 +152,6 @@
 				<!-- Options menu content will be populated dynamically -->
 			</div>
 		</div>
-		{% endif %}
 		
 		{#<!-- Transcription text with viewer on the right -->#}
 		<div class="transcription-viewer-container">
