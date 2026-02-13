@@ -194,6 +194,9 @@ h2.transcription {
 	height: fit-content;
 	max-height: calc(100vh - 40px);
 	z-index: 10;
+	/* Hide by default to prevent flicker on page load (issue #98) */
+	/* JavaScript will set data-layout-mode which overrides this */
+	display: none;
 }
 
 #openseadragon-viewer {
@@ -318,6 +321,11 @@ h2.transcription {
 	border-color: #6A5F42;
 }
 
+/* Split-view mode (default) - show viewer panel */
+body[data-layout-mode="split-view"] .viewer-panel {
+	display: block;
+}
+
 /* Text-only mode */
 body[data-layout-mode="text-only"] .viewer-panel {
 	display: none;
@@ -406,20 +414,21 @@ body[data-notes-position="bottom"] .side-notes-panel {
 }
 
 /* Viewer-only mode */
+body[data-layout-mode="viewer-only"] .viewer-panel {
+	display: block;
+	position: static;
+	width: 800px;
+	max-width: 90%;
+	max-height: none;
+	height: auto;
+}
+
 body[data-layout-mode="viewer-only"] .transcription-content {
 	display: none;
 }
 
 body[data-layout-mode="viewer-only"] .transcription-viewer-container {
 	justify-content: center;
-}
-
-body[data-layout-mode="viewer-only"] .viewer-panel {
-	position: static;
-	width: 800px;
-	max-width: 90%;
-	max-height: none;
-	height: auto;
 }
 
 body[data-layout-mode="viewer-only"] #openseadragon-viewer {
