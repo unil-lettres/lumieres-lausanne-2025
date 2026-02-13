@@ -877,7 +877,9 @@ class Transcription(ACModel):
     published_date = models.DateTimeField(
         _("Date de mise en ligne"), blank=True, null=True
     )
-    modified_date = models.DateTimeField(_("Date de modification"), auto_now=True)
+    modified_date = models.DateTimeField(
+        _("Date de modification"), blank=True, null=True
+    )
 
     objects = TranscriptionManager()
 

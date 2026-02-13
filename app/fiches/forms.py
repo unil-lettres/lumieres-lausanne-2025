@@ -34,63 +34,65 @@ from .widgets import DynamicList, PersonWidget, StaticList
 # ===============================
 class NoteFormBase(forms.ModelForm):
     def clean_text(self):
-        data = self.cleaned_data.get('text', '')
+        data = self.cleaned_data.get("text", "")
         return data
 
     class Meta:
         # "abstract" might be omitted, etc.
         fields = []  # or define shared fields here if you want
 
+
 # ===============================
 # BiblioForm Definition
 # ===============================
 class BiblioForm(forms.ModelForm):
     """Form for editing the Biblio model (the main bibliographic record)."""
+
     title = forms.CharField(
         label=Biblio._meta.get_field("title").verbose_name,
-        widget=forms.Textarea(attrs={"cols": "64", "rows": "3"})
+        widget=forms.Textarea(attrs={"cols": "64", "rows": "3"}),
     )
     # Add the "Personne" dynamic M2M field
     subj_person = MultiplePersonField(
         widget=DynamicList(
             rel=Biblio.subj_person,
             add_title="Ajouter une personne",
-            placeholder="nom, prénom"
+            placeholder="nom, prénom",
         ),
         label=_("Personne"),
-        required=False
+        required=False,
     )
 
-        # Add this override
+    # Add this override
     subj_society = forms.ModelMultipleChoiceField(
         queryset=Society.objects.all(),
         widget=StaticList(
             add_title="Ajouter une société",
-            empty_label="[ choisir une société ou académie ]"
+            empty_label="[ choisir une société ou académie ]",
         ),
         required=False,
-        label=_("Société/Académie")
+        label=_("Société/Académie"),
     )
 
     abstract = forms.CharField(
         label=_("Résumé"),
-        widget=CKEditorWidget(config_name='note_ckeditor'),
-        required=False
+        widget=CKEditorWidget(config_name="note_ckeditor"),
+        required=False,
     )
 
     documentfiles = forms.ModelMultipleChoiceField(
         queryset=DocumentFile.objects.all(),
         widget=forms.CheckboxSelectMultiple,
         required=False,
-        label=_("Documents")
+        label=_("Documents"),
     )
 
     class Meta:
         model = Biblio
-        fields = '__all__'  # or list them explicitly
+        fields = "__all__"  # or list them explicitly
         widgets = {
-            'short_title': forms.Textarea(attrs={"cols": "64", "rows": "1"}),
-            'litterature_type': RadioSelect,
+            "short_title": forms.Textarea(attrs={"cols": "64", "rows": "1"}),
+            "litterature_type": RadioSelect,
             # optionally override any other Biblio fields
         }
 
@@ -113,43 +115,46 @@ class BiblioForm(forms.ModelForm):
                 self.data = data_copy
 
         # Example: make "litterature_type" required
-        self.fields['litterature_type'].required = True
+        self.fields["litterature_type"].required = True
 
         # Remove any blank choice inserted by Django for the litterature_type
         choices_without_blank = [
-            choice for choice in self.fields['litterature_type'].choices
-            if choice[0] != ''
+            choice
+            for choice in self.fields["litterature_type"].choices
+            if choice[0] != ""
         ]
-        self.fields['litterature_type'].choices = choices_without_blank
+        self.fields["litterature_type"].choices = choices_without_blank
 
         # Force date format for initial value
-        date_val = self.initial.get('date') or self.data.get('date')
+        date_val = self.initial.get("date") or self.data.get("date")
         if date_val:
             import datetime
+
             if isinstance(date_val, datetime.date):
-                self.initial['date'] = date_val.strftime('%d/%m/%Y')
+                self.initial["date"] = date_val.strftime("%d/%m/%Y")
             else:
                 # Try to parse string with known formats
-                for fmt in ['%Y-%m-%d', '%d-%m-%Y', '%d/%m/%Y', '%d.%m.%Y']:
+                for fmt in ["%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%d.%m.%Y"]:
                     try:
                         d = datetime.datetime.strptime(date_val, fmt)
-                        self.initial['date'] = d.strftime('%d/%m/%Y')
+                        self.initial["date"] = d.strftime("%d/%m/%Y")
                         break
                     except Exception:
                         continue
 
         # Same logic for date2 (date de fin)
-        date2_val = self.initial.get('date2') or self.data.get('date2')
+        date2_val = self.initial.get("date2") or self.data.get("date2")
         if date2_val:
             import datetime
+
             if isinstance(date2_val, datetime.date):
-                self.initial['date2'] = date2_val.strftime('%d/%m/%Y')
+                self.initial["date2"] = date2_val.strftime("%d/%m/%Y")
             else:
                 # Try to parse string with known formats
-                for fmt in ['%Y-%m-%d', '%d-%m-%Y', '%d/%m/%Y', '%d.%m.%Y']:
+                for fmt in ["%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%d.%m.%Y"]:
                     try:
                         d = datetime.datetime.strptime(date2_val, fmt)
-                        self.initial['date2'] = d.strftime('%d/%m/%Y')
+                        self.initial["date2"] = d.strftime("%d/%m/%Y")
                         break
                     except Exception:
                         continue
@@ -175,24 +180,24 @@ class BiblioForm(forms.ModelForm):
                 self.add_error("manuscript_type", msg)
 
         primary_kw_msg = _("Au moins un mot-clé primaire est obligatoire.")
-        if not cleaned_data.get('subj_primary_kw'):
+        if not cleaned_data.get("subj_primary_kw"):
             self.add_error("subj_primary_kw", primary_kw_msg)
 
         return cleaned_data
-    
+
     def clean_subj_person(self):
         """
         Accepts a list of person PKs (as strings or ints) or legacy 'pk|label' strings.
         Returns a list of Person instances for the M2M field.
         """
-        raw_list = self.data.getlist('subj_person')
+        raw_list = self.data.getlist("subj_person")
         persons = []
         for item in raw_list:
             item = item.strip()
             if not item:
                 continue
-            if '|' in item:
-                pk_str, _ = item.split('|', 1)
+            if "|" in item:
+                pk_str, _ = item.split("|", 1)
             else:
                 pk_str = item
             try:
@@ -206,7 +211,6 @@ class BiblioForm(forms.ModelForm):
         return persons
 
 
-
 # ===============================
 # NoteFormBiblio Definition
 # ===============================
@@ -215,13 +219,15 @@ class NoteFormBiblio(NoteFormBase):
     Form for editing the NoteBiblio model (notes referencing a Biblio).
     It should NOT contain fields that belong to Biblio, like subj_person, etc.
     """
-    
+
     # Add virtual rte_type field for template compatibility
-    rte_type = forms.CharField(initial="CKE", widget=forms.HiddenInput(), required=False)
+    rte_type = forms.CharField(
+        initial="CKE", widget=forms.HiddenInput(), required=False
+    )
 
     class Meta(NoteFormBase.Meta):
         model = NoteBiblio
-        fields = '__all__'  # Or just ['text', 'owner'] if that's all you need
+        fields = "__all__"  # Or just ['text', 'owner'] if that's all you need
 
     # If your NoteBiblio model has its own fields, define them or custom widgets here.
     # e.g.
@@ -230,7 +236,6 @@ class NoteFormBiblio(NoteFormBase):
     # def clean_text(self):
     #     # do any special validation
     #     return super().clean_text()
-
 
 
 # ===============================
@@ -243,7 +248,7 @@ class NoteFormTranscription(NoteFormBase):
 
     class Meta(NoteFormBase.Meta):
         model = NoteTranscription
-        fields = '__all__'  # Or just ['text', 'owner'] if that's all you need
+        fields = "__all__"  # Or just ['text', 'owner'] if that's all you need
 
     # If your NoteTranscription model has its own fields, define them or custom widgets here.
     # e.g.
@@ -253,79 +258,96 @@ class NoteFormTranscription(NoteFormBase):
     #     # do any special validation
     #     return super().clean_text()
 
+
 # ===============================
 # Other Form Definitions
 # ===============================
 class ManuscriptForm(forms.ModelForm):
     title = forms.CharField(
         label=Manuscript._meta.get_field("title").verbose_name,
-        widget=forms.Textarea(attrs={"cols": "64", "rows": "3"})
+        widget=forms.Textarea(attrs={"cols": "64", "rows": "3"}),
     )
     manuscript_type = forms.ModelChoiceField(
         label=Manuscript._meta.get_field("manuscript_type").verbose_name,
         queryset=ManuscriptType.objects.all(),
-        initial='1'
+        initial="1",
     )
     date = forms.DateField(
         widget=forms.DateInput(format=DATE_DISPLAY_FORMAT),
         input_formats=DATE_INPUT_FORMATS,
         label=_("Date"),
-        required=False
+        required=False,
     )
     date_f = forms.CharField(
-        widget=forms.HiddenInput(attrs={'class': 'vardateformat'}),
-        required=False
+        widget=forms.HiddenInput(attrs={"class": "vardateformat"}), required=False
     )
     subj_primary_kw = forms.ModelMultipleChoiceField(
         queryset=PrimaryKeyword.objects.all(),
         widget=StaticList(),
         required=False,
-        label=Manuscript._meta.get_field("subj_primary_kw").verbose_name
+        label=Manuscript._meta.get_field("subj_primary_kw").verbose_name,
     )
     subj_secondary_kw = forms.ModelMultipleChoiceField(
         queryset=SecondaryKeyword.objects.all(),
         widget=StaticList(),
         required=False,
-        label=Manuscript._meta.get_field("subj_secondary_kw").verbose_name
+        label=Manuscript._meta.get_field("subj_secondary_kw").verbose_name,
     )
     subj_society = forms.ModelMultipleChoiceField(
         queryset=Society.objects.all(),
         widget=StaticList(),
         required=False,
-        label=Manuscript._meta.get_field("subj_society").verbose_name
+        label=Manuscript._meta.get_field("subj_society").verbose_name,
     )
     access_date = forms.DateField(
         label=Manuscript._meta.get_field("access_date").verbose_name,
         required=False,
         input_formats=DATE_INPUT_FORMATS,
-        widget=forms.DateInput(format="%d/%m/%Y")
+        widget=forms.DateInput(format="%d/%m/%Y"),
     )
 
     class Meta:
         model = Manuscript
-        exclude = ('urls', 'biblio_man')  # Ensure these fields exist and are correctly excluded
+        exclude = (
+            "urls",
+            "biblio_man",
+        )  # Ensure these fields exist and are correctly excluded
 
 
 class TranscriptionForm(forms.ModelForm):
     manuscript = forms.CharField(widget=forms.HiddenInput(), required=False)
     manuscript_b = forms.CharField(widget=forms.HiddenInput(), required=False)
-    author = forms.ModelChoiceField(queryset=User.objects.all().order_by('username'))
-    author2 = forms.ModelChoiceField(queryset=User.objects.all().order_by('username'), required=False)
-    reviewers = forms.ModelMultipleChoiceField(queryset=User.objects.all().order_by('username'), required=False)
+    author = forms.ModelChoiceField(queryset=User.objects.all().order_by("username"))
+    author2 = forms.ModelChoiceField(
+        queryset=User.objects.all().order_by("username"), required=False
+    )
+    reviewers = forms.ModelMultipleChoiceField(
+        queryset=User.objects.all().order_by("username"), required=False
+    )
     status = forms.IntegerField(
-        widget=forms.RadioSelect(choices=TRANSCRIPTION_CHOICES['status']),
+        widget=forms.RadioSelect(choices=TRANSCRIPTION_CHOICES["status"]),
         label=_("État"),
-        initial=0
+        initial=0,
     )
     scope = forms.IntegerField(
-        widget=forms.RadioSelect(choices=TRANSCRIPTION_CHOICES['scope']),
+        widget=forms.RadioSelect(choices=TRANSCRIPTION_CHOICES["scope"]),
         label=_("Transcription"),
-        initial=0
+        initial=0,
+    )
+    published_date = forms.DateTimeField(
+        label=_("Date de mise en ligne"),
+        required=False,
+        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}),
+    )
+    modified_date = forms.DateTimeField(
+        label=_("Date de modification"),
+        required=False,
+        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}),
     )
 
     class Meta:
         model = Transcription
-        fields = '__all__'
+        fields = "__all__"
 
     def clean(self):
         cleaned_data = super().clean()
@@ -358,37 +380,41 @@ class ContributionManForm(forms.ModelForm):
     person = forms.ModelChoiceField(
         queryset=Person.objects.all(),
         widget=PersonWidget(
-            fk_field=ContributionMan._meta.get_field('person'),
-            attrs={'placeholder': 'nom, prénom'}
+            fk_field=ContributionMan._meta.get_field("person"),
+            attrs={"placeholder": "nom, prénom"},
         ),
-        label='',
-        required=False
+        label="",
+        required=False,
     )
     contribution_type = forms.ModelChoiceField(
-        queryset=ContributionType.objects.filter(type__in=('man', 'any')),
-        empty_label=None
+        queryset=ContributionType.objects.filter(type__in=("man", "any")),
+        empty_label=None,
     )
 
     class Meta:
         model = ContributionMan
-        fields = '__all__'
+        fields = "__all__"
 
 
 class ObjectCollectionForm(forms.ModelForm):
     """
     Form for the ObjectCollection model.
     """
+
     def __init__(self, *args, **kwargs):
         self.request_user = kwargs.pop("user", None)
         self.can_edit_details = kwargs.pop("can_edit_details", True)
         super().__init__(*args, **kwargs)
 
         can_change_owner = bool(
-            self.request_user and self.request_user.has_perm("fiches.change_collection_owner")
+            self.request_user
+            and self.request_user.has_perm("fiches.change_collection_owner")
         )
 
         if can_change_owner:
-            owner_queryset = User.objects.order_by("last_name", "first_name", "username")
+            owner_queryset = User.objects.order_by(
+                "last_name", "first_name", "username"
+            )
             self.fields["owner"] = forms.ModelChoiceField(
                 queryset=owner_queryset,
                 label=_("Propriétaire"),
@@ -412,9 +438,9 @@ class ObjectCollectionForm(forms.ModelForm):
     class Meta:
         model = ObjectCollection
         # Exclude the owner field so it won't be rendered or expected in POST data.
-        exclude = ['owner', 'persons', 'bibliographies', 'transcriptions']
+        exclude = ["owner", "persons", "bibliographies", "transcriptions"]
         widgets = {
-            'name': forms.TextInput(attrs={'placeholder': _('Enter collection name')}),
+            "name": forms.TextInput(attrs={"placeholder": _("Enter collection name")}),
             # Add other widgets as needed
         }
 
@@ -449,7 +475,6 @@ class ObjectCollectionForm(forms.ModelForm):
         return collection
 
 
-
 from fiches.models import Biblio, Person, Transcription
 from haystack.forms import ModelSearchForm
 from haystack.query import RelatedSearchQuerySet
@@ -464,31 +489,39 @@ class FichesSearchForm(ModelSearchForm):
         search_models = super().get_models()
         if not search_models:
             # If no models are found, retrieve them from the Haystack unified index
-            search_models = connections['default'].get_unified_index().get_indexed_models()
+            search_models = (
+                connections["default"].get_unified_index().get_indexed_models()
+            )
         return search_models
 
     def search(self):
         if not self.is_valid():
             return self.no_query_found()
 
-        query = self.cleaned_data.get('q')
+        query = self.cleaned_data.get("q")
         if not query:
             return self.no_query_found()
 
         # Restrict results based on user permissions and access
         if self.request and self.request.user.is_authenticated:
-            if not self.request.user.has_perm('fiches.access_unpublished_transcription'):
+            if not self.request.user.has_perm(
+                "fiches.access_unpublished_transcription"
+            ):
                 self.searchqueryset = RelatedSearchQuerySet().load_all_queryset(
                     Transcription,
                     Transcription.objects.filter(
-                        Q(access_public=True) |
-                        Q(author=self.request.user) |
-                        Q(author2=self.request.user) |
-                        Q(access_groups__users=self.request.user) |
-                        Q(access_groups__groups__user=self.request.user) |
-                        Q(project__members=self.request.user) |
-                        Q(access_public=False, access_private=False, access_groups__isnull=True)
-                    )
+                        Q(access_public=True)
+                        | Q(author=self.request.user)
+                        | Q(author2=self.request.user)
+                        | Q(access_groups__users=self.request.user)
+                        | Q(access_groups__groups__user=self.request.user)
+                        | Q(project__members=self.request.user)
+                        | Q(
+                            access_public=False,
+                            access_private=False,
+                            access_groups__isnull=True,
+                        )
+                    ),
                 )
         else:
             self.searchqueryset = RelatedSearchQuerySet()
@@ -509,21 +542,21 @@ class FichesSearchForm(ModelSearchForm):
             result_list.extend(list(model_results))
 
         return result_list
-    
+
 
 class ContributionDocForm(forms.ModelForm):
     # 1) Use a simple CharField, not ModelChoiceField
     person = forms.CharField(
         widget=PersonWidget(
             fk_field=ContributionDoc._meta.get_field("person"),
-            attrs={'class': 'ContributionDoc_person', 'placeholder': 'nom, prénom'}
+            attrs={"class": "ContributionDoc_person", "placeholder": "nom, prénom"},
         ),
-        required=False
+        required=False,
     )
     contribution_type = forms.ModelChoiceField(
-        queryset=ContributionType.objects.filter(type__in=('doc', 'any')),
+        queryset=ContributionType.objects.filter(type__in=("doc", "any")),
         empty_label=None,
-        required=False
+        required=False,
     )
 
     class Meta:
@@ -534,7 +567,9 @@ class ContributionDocForm(forms.ModelForm):
         self.litterature_type = litterature_type
         super().__init__(*args, **kwargs)
         if not self.litterature_type and getattr(self.instance, "document_id", None):
-            self.litterature_type = getattr(self.instance.document, "litterature_type", None)
+            self.litterature_type = getattr(
+                self.instance.document, "litterature_type", None
+            )
         self._person_was_created = False
 
     #
@@ -555,7 +590,9 @@ class ContributionDocForm(forms.ModelForm):
                 person = Person.objects.get(pk=pk)
                 return person
             except (ValueError, Person.DoesNotExist):
-                raise forms.ValidationError("Cette personne est introuvable dans la base.")
+                raise forms.ValidationError(
+                    "Cette personne est introuvable dans la base."
+                )
 
         # If user typed an ID directly
         if raw_value.isdigit():
@@ -613,12 +650,14 @@ class DocumentFileForm(forms.ModelForm):
         """Meta options for DocumentFileForm."""
 
         model = DocumentFile
-        fields = ['title', 'slug', 'file', 'url', 'access_public', 'access_groups']
+        fields = ["title", "slug", "file", "url", "access_public", "access_groups"]
         widgets = {
-            'title': forms.TextInput(attrs={'maxlength': 255, 'placeholder': _('Title')}),
-            'slug': forms.TextInput(attrs={'maxlength': 255, 'placeholder': _('Slug')}),
-            'file': forms.ClearableFileInput(),
-            'url': forms.URLInput(attrs={'placeholder': _('URL')}),
+            "title": forms.TextInput(
+                attrs={"maxlength": 255, "placeholder": _("Title")}
+            ),
+            "slug": forms.TextInput(attrs={"maxlength": 255, "placeholder": _("Slug")}),
+            "file": forms.ClearableFileInput(),
+            "url": forms.URLInput(attrs={"placeholder": _("URL")}),
         }
 
 
@@ -629,8 +668,8 @@ class ContributionDocSecForm(ContributionDocForm):
         """Initialize the form and filter for modern persons if possible."""
         super().__init__(*args, **kwargs)
         # If the Person model has a 'modern' field, filter the queryset for modern persons
-        if hasattr(Person, 'modern'):
-            self.fields['person'].widget.attrs['data-modern'] = 'true'
+        if hasattr(Person, "modern"):
+            self.fields["person"].widget.attrs["data-modern"] = "true"
         # Optionally, you could add logic here to filter choices if using a ModelChoiceField
 
 
@@ -640,24 +679,29 @@ class ContributionDocSecForm(ContributionDocForm):
 class ProjectForm(forms.ModelForm):
     url = forms.SlugField(
         label=_("Url"),
-        help_text=_('ATTENTION, doit être unique. Uniquement caractères non-accentués, tiret et chiffres. Pas d\'espaces ni de ponctuation.'),
+        help_text=_(
+            "ATTENTION, doit être unique. Uniquement caractères non-accentués, tiret et chiffres. Pas d'espaces ni de ponctuation."
+        ),
         required=True,
-        widget=forms.TextInput(attrs={
-            'size': 40,
-            'style': 'width: 60%;',
-            'data-slug-source': 'name',
-            'autocomplete': 'off',
-        })
+        widget=forms.TextInput(
+            attrs={
+                "size": 40,
+                "style": "width: 60%;",
+                "data-slug-source": "name",
+                "autocomplete": "off",
+            }
+        ),
     )
 
     class Meta:
         model = Project
-        fields = '__all__'
+        fields = "__all__"
 
     class Media:
         js = (
-            'js/lib/urlify.js',
-            'js/admin/project_url_tools.js',
+            "js/lib/urlify.js",
+            "js/admin/project_url_tools.js",
         )
+
 
 import re

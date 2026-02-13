@@ -268,32 +268,17 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
         </div>
         <div class="fixclear"></div>
         
-		{% if transcription.published_date %}
 		<div class="fieldWrapper">
-			<label>Date de mise en ligne</label>
-			{{ transcription.published_date|date:"j M Y - H:i" }}
-			{% if transcription.author %}
-				({{ transcription.author.get_full_name|default:transcription.author.username }})
-			{% endif %}
+			<label for="id_published_date">{{ transForm.published_date.label }}</label>
+			{{ transForm.published_date.errors }}
+			{{ transForm.published_date }}
 		</div>
 		<div class="fixclear"></div>
-		{% endif %}
         
 		<div class="fieldWrapper">
-			<label>Dernière modification</label>
-			{% if transcription.modified_date %}
-				{{ transcription.modified_date|date:"j M Y - H:i" }}
-				{% if last_activity and last_activity.user %}
-					({{ last_activity.user.get_full_name|default:last_activity.user.username }})
-				{% endif %}
-			{% elif last_activity %}
-				{{ last_activity.date|date:"j M Y - H:i" }}
-				{% if last_activity.user %}
-					({{ last_activity.user.username }})
-				{% endif %}
-			{% else %}
-				—
-			{% endif %}
+			<label for="id_modified_date">{{ transForm.modified_date.label }}</label>
+			{{ transForm.modified_date.errors }}
+			{{ transForm.modified_date }}
 		</div>
 		<div class="fixclear"></div>
 	<!--/fieldset-->
