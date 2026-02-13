@@ -26,6 +26,15 @@ This copyright notice MUST APPEAR in all copies of the file.
   var STORAGE_KEY_LAYOUT = 'transcription-layout-mode';
   var STORAGE_KEY_SYNC = 'transcription-sync-enabled';
   var DEFAULT_LAYOUT = 'split-view';
+
+  // Mode-scoped storage key helper.
+  // Returns e.g. "trans-option-text-only:show-linebreaks"
+  function optionStorageKey(mode, option) {
+    return 'trans-option-' + mode + ':' + option;
+  }
+  function currentMode() {
+    return document.body.getAttribute('data-layout-mode') || 'split-view';
+  }
   var SCROLL_SYNC_DELAY = 150;
   var SMOOTH_SCROLL_DURATION = 600;
   var PAGE_SYNC_INIT_DELAY = 500;
@@ -59,6 +68,13 @@ This copyright notice MUST APPEAR in all copies of the file.
     
     setupLayoutToggles(cfg);
     initializeModeAvailability(); // PHASE 3: Check content availability
+
+    // Ensure notes position defaults are applied early (fixes #102).
+    if (window.initializeNotesPosition) {
+      window.initializeNotesPosition();
+    }
+    // Line breaks: CSS hides them by default (fixes #101); nothing extra needed here.
+
     setupOptionsMenu();
     
     // Initialize options menu with current layout mode
@@ -67,11 +83,12 @@ This copyright notice MUST APPEAR in all copies of the file.
       updateOptionsMenuForMode(currentLayout);
     }
     
-    // Restore saved options after a short delay to ensure the template's
-    // jQuery ready handler has already applied its defaults (e.g. hiding
-    // line breaks, setting data-mode="norm").  We then override with the
-    // user's persisted preferences from sessionStorage.
-    setTimeout(restoreSavedOptions, 300);
+    // Apply mode defaults and restore saved options immediately.
+    // The toggle functions (toggleView, toggleBR, etc.) are defined at the
+    // top-level of the template script and are available before
+    // DOMContentLoaded.  We no longer need a delay since applyModeDefaults()
+    // sets its own state rather than reading DOM defaults from jQuery ready.
+    restoreSavedOptions();
     
     if (cfg.hasViewer && cfg.iiifUrl) {
       setupViewer(cfg);
@@ -217,7 +234,10 @@ This copyright notice MUST APPEAR in all copies of the file.
   }
 
   /**
-   * Update options menu visibility based on current mode
+   * Update options menu visibility based on current mode.
+   *
+   * All checkboxes are UNCHECKED by default (no `checked` attribute).
+   * Saved user preferences are restored later by restoreSavedOptions().
    */
   function updateOptionsMenuForMode(mode) {
     var optionsDropdown = document.getElementById('options-dropdown');
@@ -231,93 +251,67 @@ This copyright notice MUST APPEAR in all copies of the file.
       optionsBtn.disabled = true;
       log('[Options Menu] Viewer-only mode - no options');
     }
-     // Show text options
-     else if (mode === 'text-only') {
-       // Get current UI state to initialize checkboxes
-       var currentState = getCurrentUIState();
-       
-       optionsDropdown.innerHTML = [
-         '<label class="option-item">',
-         '  <input type="checkbox" data-option="use-diplomatic-version" ' + (currentState.isDiplomatic ? 'checked' : '') + '>',
-         '  <span>Version diplomatique</span>',
-         '</label>',
-         '<label class="option-item">',
-         '  <input type="checkbox" data-option="hide-linebreaks" ' + (currentState.linebreaksHidden ? 'checked' : '') + '>',
-         '  <span>Retours à la ligne</span>',
-         '</label>',
-         '<label class="option-item">',
-         '  <input type="checkbox" data-option="show-toc" ' + (currentState.tocVisible ? 'checked' : '') + '>',
-         '  <span>Table des matières</span>',
-         '</label>',
-         '<label class="option-item">',
-         '  <input type="checkbox" data-option="show-marginalia" ' + (currentState.notesInMargin ? 'checked' : '') + '>',
-         '  <span>Notes en marge</span>',
-         '</label>'
-       ].join('');
-       optionsBtn.disabled = false;
-       log('[Options Menu] Text-only mode options set');
-     }
-    // Show split-view options
-    else if (mode === 'split-view') {
-      // Get current UI state to initialize checkboxes
-      var currentState = getCurrentUIState();
-      
+    // Text-only mode options (all unchecked by default)
+    //   ☐ Version diplomatique   (checked → dipl, unchecked → norm)
+    //   ☐ Retours à la ligne     (checked → BR visible, unchecked → BR hidden)
+    //   ☐ Table des matières     (checked → TOC shown)
+    //   ☐ Notes en marge         (checked → margin, unchecked → bottom)
+    else if (mode === 'text-only') {
       optionsDropdown.innerHTML = [
         '<label class="option-item">',
-        '  <input type="checkbox" data-option="use-edited-version" ' + (!currentState.isDiplomatic ? 'checked' : '') + '>',
+        '  <input type="checkbox" data-option="use-diplomatic-version">',
+        '  <span>Version diplomatique</span>',
+        '</label>',
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="show-linebreaks">',
+        '  <span>Retours à la ligne</span>',
+        '</label>',
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="show-toc">',
+        '  <span>Table des matières</span>',
+        '</label>',
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="show-marginalia">',
+        '  <span>Notes en marge</span>',
+        '</label>'
+      ].join('');
+      optionsBtn.disabled = false;
+      log('[Options Menu] Text-only mode options set (all unchecked)');
+    }
+    // Split-view mode options (all unchecked by default)
+    //   ☐ Version éditée             (checked → norm, unchecked → dipl)
+    //   ☐ Sans retours à la ligne    (checked → BR hidden, unchecked → BR visible)
+    //   ☐ Table des matières         (checked → TOC shown)
+    else if (mode === 'split-view') {
+      optionsDropdown.innerHTML = [
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="use-edited-version">',
         '  <span>Version éditée</span>',
         '</label>',
         '<label class="option-item">',
-        '  <input type="checkbox" data-option="hide-linebreaks" ' + (currentState.linebreaksHidden ? 'checked' : '') + '>',
+        '  <input type="checkbox" data-option="hide-linebreaks">',
         '  <span>Sans retours à la ligne</span>',
         '</label>',
         '<label class="option-item">',
-        '  <input type="checkbox" data-option="show-toc" ' + (currentState.tocVisible ? 'checked' : '') + '>',
+        '  <input type="checkbox" data-option="show-toc">',
         '  <span>Table des matières</span>',
         '</label>'
       ].join('');
       optionsBtn.disabled = false;
-      log('[Options Menu] Split-view mode options set');
+      log('[Options Menu] Split-view mode options set (all unchecked)');
     }
     
     // Re-bind checkbox event listeners
     bindOptionCheckboxes();
   }
   
-  /**
-   * Get current UI state to initialize checkboxes correctly
-   */
-  function getCurrentUIState() {
-    var transcriptionData = document.querySelector('div.transcription-data');
-    var firstBr = document.querySelector('div.transcription-data br:not(.verse br)');
-    var toc = document.getElementById('transcription-toc');
-    var notesPosition = document.body.getAttribute('data-notes-position') || '';
-    var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
-
-    // If data-notes-position is not yet set (initializeNotesPosition hasn't
-    // run), predict the value it will compute so the checkbox matches reality.
-    if (!notesPosition) {
-      if (layoutMode === 'text-only') {
-        try {
-          notesPosition = sessionStorage.getItem('transcription-notes-position') || 'margin';
-        } catch (_) {
-          notesPosition = 'margin';
-        }
-      } else {
-        notesPosition = 'bottom';
-      }
-    }
-
-    return {
-      isDiplomatic: transcriptionData ? transcriptionData.getAttribute('data-mode') === 'dipl' : true,
-      linebreaksHidden: firstBr ? firstBr.classList.contains('hidden-br') : false,
-      tocVisible: toc !== null,
-      notesInMargin: notesPosition === 'margin'
-    };
-  }
+  // (getCurrentUIState removed – checkboxes now start unchecked; defaults are
+  //  applied by applyModeDefaults() and user preferences by restoreSavedOptions())
 
   /**
-   * Bind event listeners to all option checkboxes
+   * Bind event listeners to all option checkboxes.
+   * Storage keys are scoped per mode so that text-only and split-view
+   * preferences are independent.
    */
   function bindOptionCheckboxes() {
     var optionsDropdown = document.getElementById('options-dropdown');
@@ -330,20 +324,13 @@ This copyright notice MUST APPEAR in all copies of the file.
       
       // Add new listener
       newCheckbox.addEventListener('change', function() {
-        var key = 'trans-option-' + this.dataset.option;
+        var mode = currentMode();
         var option = this.dataset.option;
         var isChecked = this.checked;
+        var key = optionStorageKey(mode, option);
         
         sessionStorage.setItem(key, isChecked);
-        log('[Options]', option, '=', isChecked);
-        
-        // Keep the complementary version option in sync:
-        // "use-diplomatic-version" checked ↔ "use-edited-version" unchecked
-        if (option === 'use-diplomatic-version') {
-          sessionStorage.setItem('trans-option-use-edited-version', !isChecked);
-        } else if (option === 'use-edited-version') {
-          sessionStorage.setItem('trans-option-use-diplomatic-version', !isChecked);
-        }
+        log('[Options]', mode + ':' + option, '=', isChecked);
         
         // Apply the corresponding action based on the option
         applyOptionChange(option, isChecked);
@@ -352,30 +339,54 @@ This copyright notice MUST APPEAR in all copies of the file.
   }
   
   /**
-   * Apply visual changes based on option state
+   * Apply visual changes based on option state.
+   *
+   * Linebreak semantics differ per mode:
+   *   text-only   → "show-linebreaks"  (checked = visible)
+   *   split-view  → "hide-linebreaks"  (checked = hidden)
    */
   function applyOptionChange(option, isChecked) {
     switch(option) {
-      case 'hide-linebreaks':
-        // Toggle line breaks visibility
+      case 'show-linebreaks':
+        // text-only: checked = line breaks visible, unchecked = hidden
         if (window.toggleBR) {
-          var currentlyHidden = document.querySelector('div.transcription-data br:not(.verse br)')?.classList.contains('hidden-br') || false;
-          // Only toggle if current state doesn't match desired state
-          if (isChecked !== currentlyHidden) {
+          var wantVisible = isChecked;
+          var currentlyVisible = window.areLinebreaksVisible ? window.areLinebreaksVisible() : document.body.classList.contains('linebreaks-visible');
+          if (wantVisible !== currentlyVisible) {
+            window.toggleBR();
+          }
+        }
+        break;
+
+      case 'hide-linebreaks':
+        // split-view: checked = line breaks hidden, unchecked = visible
+        if (window.toggleBR) {
+          var wantHidden = isChecked;
+          var currentlyVis = window.areLinebreaksVisible ? window.areLinebreaksVisible() : document.body.classList.contains('linebreaks-visible');
+          // wantHidden=true → should NOT be visible; wantHidden=false → should be visible
+          if (wantHidden === currentlyVis) {
             window.toggleBR();
           }
         }
         break;
         
       case 'use-diplomatic-version':
-      case 'use-edited-version':
-        // Toggle between diplomatic and edited versions
+        // text-only: checked → dipl, unchecked → norm
         if (window.toggleView) {
-          var currentMode = document.querySelector('div.transcription-data')?.getAttribute('data-mode');
-          var targetMode = (option === 'use-diplomatic-version' && isChecked) || (option === 'use-edited-version' && !isChecked) ? 'dipl' : 'norm';
-          
-          // Only toggle if mode doesn't match target
-          if (currentMode !== targetMode) {
+          var currentMode2 = document.querySelector('div.transcription-data')?.getAttribute('data-mode');
+          var target = isChecked ? 'dipl' : 'norm';
+          if (currentMode2 !== target) {
+            window.toggleView();
+          }
+        }
+        break;
+
+      case 'use-edited-version':
+        // split-view: checked → norm (edited), unchecked → dipl (diplomatic)
+        if (window.toggleView) {
+          var currentMode3 = document.querySelector('div.transcription-data')?.getAttribute('data-mode');
+          var target2 = isChecked ? 'norm' : 'dipl';
+          if (currentMode3 !== target2) {
             window.toggleView();
           }
         }
@@ -385,7 +396,6 @@ This copyright notice MUST APPEAR in all copies of the file.
         // Toggle table of contents
         if (window.toggleTOC) {
           var tocExists = document.getElementById('transcription-toc') !== null;
-          // Only toggle if state doesn't match desired state
           if ((isChecked && !tocExists) || (!isChecked && tocExists)) {
             window.toggleTOC();
           }
@@ -397,8 +407,6 @@ This copyright notice MUST APPEAR in all copies of the file.
         if (window.toggleNotesPosition) {
           var currentPosition = document.body.getAttribute('data-notes-position') || 'bottom';
           var targetPosition = isChecked ? 'margin' : 'bottom';
-          
-          // Only toggle if position doesn't match target
           if (currentPosition !== targetPosition) {
             window.toggleNotesPosition();
           }
@@ -411,18 +419,72 @@ This copyright notice MUST APPEAR in all copies of the file.
   }
 
   /**
+   * Apply the hard defaults for a given layout mode.
+   *
+   * "All checkboxes unchecked" translates to the following visual defaults:
+   *
+   * text-only:
+   *   use-diplomatic-version  unchecked → norm  (edited version)
+   *   show-linebreaks         unchecked → hidden
+   *   show-toc                unchecked → no TOC
+   *   show-marginalia         unchecked → notes at bottom
+   *
+   * split-view:
+   *   use-edited-version      unchecked → dipl  (diplomatic version)
+   *   hide-linebreaks         unchecked → line breaks visible
+   *   show-toc                unchecked → no TOC
+   */
+  function applyModeDefaults(mode) {
+    log('[Mode Defaults] Applying defaults for', mode);
+
+    if (mode === 'text-only') {
+      // Version: norm (edited) — the template already sets data-mode="norm"
+      applyOptionChange('use-diplomatic-version', false);
+      // Line breaks: hidden — CSS default, just ensure body class is off
+      document.body.classList.remove('linebreaks-visible');
+      // TOC: hidden
+      applyOptionChange('show-toc', false);
+      // Notes: bottom
+      applyOptionChange('show-marginalia', false);
+    }
+    else if (mode === 'split-view') {
+      // Version: diplomatic
+      applyOptionChange('use-edited-version', false);
+      // Line breaks: visible (hide-linebreaks unchecked → NOT hidden)
+      if (!document.body.classList.contains('linebreaks-visible')) {
+        document.body.classList.add('linebreaks-visible');
+      }
+      // TOC: hidden
+      applyOptionChange('show-toc', false);
+      // Notes: always bottom in split-view (margin notes not available).
+      // We set this directly because toggleNotesPosition() guards against
+      // non-text-only mode.
+      document.body.setAttribute('data-notes-position', 'bottom');
+    }
+  }
+
+  /**
    * Restore saved option values from sessionStorage and apply them visually.
-   * Called once on init after a short delay so the template's jQuery ready
-   * handler has already set its defaults.
+   *
+   * Called on init and whenever the user switches mode.  First applies hard
+   * defaults (all unchecked), then overlays any saved per-mode preferences.
+   *
+   * Storage keys are scoped per mode:
+   *   trans-option-text-only:show-linebreaks
+   *   trans-option-split-view:hide-linebreaks
+   *   etc.
    */
   function restoreSavedOptions() {
-    var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+    var layoutMode = currentMode();
     log('[Options Restore] Restoring saved options for mode:', layoutMode);
 
-    // Determine which options are relevant for the current layout mode
+    // 1. Apply hard defaults for this mode (all-unchecked state)
+    applyModeDefaults(layoutMode);
+
+    // 2. Determine which options are relevant
     var optionKeys;
     if (layoutMode === 'text-only') {
-      optionKeys = ['use-diplomatic-version', 'hide-linebreaks', 'show-toc', 'show-marginalia'];
+      optionKeys = ['use-diplomatic-version', 'show-linebreaks', 'show-toc', 'show-marginalia'];
     } else if (layoutMode === 'split-view') {
       optionKeys = ['use-edited-version', 'hide-linebreaks', 'show-toc'];
     } else {
@@ -430,23 +492,24 @@ This copyright notice MUST APPEAR in all copies of the file.
       return;
     }
 
+    // 3. Overlay any saved preferences
     optionKeys.forEach(function (option) {
-      var storageKey = 'trans-option-' + option;
+      var key = optionStorageKey(layoutMode, option);
       var saved;
-      try { saved = sessionStorage.getItem(storageKey); } catch (_) {}
+      try { saved = sessionStorage.getItem(key); } catch (_) {}
 
       if (saved === null || saved === undefined) {
-        log('[Options Restore] No saved value for', option);
-        return; // no saved preference – keep the default
+        log('[Options Restore] No saved value for', layoutMode + ':' + option);
+        return; // keep the default (unchecked)
       }
 
       var isChecked = saved === 'true';
-      log('[Options Restore] Applying', option, '=', isChecked);
+      log('[Options Restore] Applying', layoutMode + ':' + option, '=', isChecked);
 
       // Apply the visual change
       applyOptionChange(option, isChecked);
 
-      // Sync the checkbox in the dropdown so it matches
+      // Sync the checkbox in the dropdown
       var checkbox = document.querySelector(
         '#options-dropdown input[data-option="' + option + '"]'
       );
@@ -461,7 +524,6 @@ This copyright notice MUST APPEAR in all copies of the file.
   // Options menu management ------------------------------------------------
   function setupOptionsMenu() {
     var optionsBtn = document.getElementById('options-menu-btn');
-
     var optionsDropdown = document.getElementById('options-dropdown');
     
     if (!optionsBtn || !optionsDropdown) {
@@ -491,28 +553,6 @@ This copyright notice MUST APPEAR in all copies of the file.
         optionsDropdown.classList.remove('show');
         optionsBtn.classList.remove('active');
       }
-    });
-    
-    // Handle option checkbox changes
-    var checkboxes = optionsDropdown.querySelectorAll('input[type="checkbox"]');
-    checkboxes.forEach(function(checkbox) {
-      // Restore previous state from sessionStorage
-      var optionKey = 'trans-option-' + checkbox.dataset.option;
-      try {
-        var saved = sessionStorage.getItem(optionKey);
-        if (saved === 'true') {
-          checkbox.checked = true;
-        }
-      } catch (_) {}
-      
-      // Save on change
-      checkbox.addEventListener('change', function() {
-        try {
-          sessionStorage.setItem(optionKey, this.checked);
-        } catch (_) {}
-        log('[Options Menu] Option changed:', this.dataset.option, '=', this.checked);
-        // TODO: Phase 3 - Apply visual changes based on option
-      });
     });
   }
 
