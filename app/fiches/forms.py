@@ -337,12 +337,20 @@ class TranscriptionForm(forms.ModelForm):
     published_date = forms.DateTimeField(
         label=_("Date de mise en ligne"),
         required=False,
-        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        input_formats=["%Y-%m-%dT%H:%M"],
+        widget=forms.DateTimeInput(
+            attrs={"type": "datetime-local"},
+            format="%Y-%m-%dT%H:%M",
+        ),
     )
     modified_date = forms.DateTimeField(
         label=_("Date de modification"),
         required=False,
-        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        input_formats=["%Y-%m-%dT%H:%M"],
+        widget=forms.DateTimeInput(
+            attrs={"type": "datetime-local"},
+            format="%Y-%m-%dT%H:%M",
+        ),
     )
 
     class Meta:
