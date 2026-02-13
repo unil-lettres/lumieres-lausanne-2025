@@ -1,4 +1,4 @@
-﻿/*
+/*
 * Plugin for adding Transcription specific buttons
 * Only three component added to illustrate the way things could be done
 * 

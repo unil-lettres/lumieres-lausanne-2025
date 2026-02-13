@@ -1,4 +1,4 @@
-﻿/* Illegible Text v 0.2
+/* Illegible Text v 0.2
  * This button allows the editor to record information about illegible
  * test. This data is currently recored as the content of the 
  * <span class="illeg"></span>. However, once the ultimate aim is to have

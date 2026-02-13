@@ -1,4 +1,4 @@
-﻿/*
+/*
 Copyright © 2012, Florian Steffen. All rights reserved.
 */
 

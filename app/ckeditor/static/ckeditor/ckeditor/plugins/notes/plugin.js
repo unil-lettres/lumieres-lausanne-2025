@@ -1,4 +1,4 @@
-﻿/* Marginal Notes v 0.2
+/* Marginal Notes v 0.2
  * This button allows editors to enter marginal notes into the transcription.
  */
 
