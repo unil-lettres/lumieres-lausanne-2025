@@ -167,6 +167,10 @@ function syncSideNotesMode() {
 }
 
 $(function() {
+	// Hide line breaks by default on page load
+	$('div.transcription-data br').not($('div.transcription-data .verse br')).addClass('hidden-br');
+	$("div.transcription-data .brsep").hide();
+	
 	$("#lb-toggle").click(function() { toggleBR(); });
 	$("#view-toggle").click(function() { toggleView(); });
 	$("#toc-toggle").click(function() { toggleTOC(); });
