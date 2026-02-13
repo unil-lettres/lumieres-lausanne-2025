@@ -11,28 +11,25 @@ function getNotesPosition() {
 }
 
 function toggleBR() {
-	// Check if line breaks are currently hidden by looking at the actual BR elements
-	var firstBr = $('div.transcription-data br').not($('div.transcription-data .verse br')).first();
-	var areHidden = firstBr.hasClass('hidden-br');
-	
-	if (areHidden) {
-        // Show line breaks
-        $('div.transcription-data br').not($('div.transcription-data .verse br')).removeClass('hidden-br');
-        $("div.transcription-data .brsep").show();
-        // Add class to body for Firefox CSS fix (issue #105)
-        $('body').addClass('linebreaks-visible');
+	// Line break visibility is controlled by body.linebreaks-visible.
+	// CSS hides <br> by default; adding the class makes them visible.
+	var isVisible = $('body').hasClass('linebreaks-visible');
+
+	if (isVisible) {
+		$('body').removeClass('linebreaks-visible');
 	} else {
-        // Hide line breaks
-        $('div.transcription-data br').not($('div.transcription-data .verse br')).addClass('hidden-br');
-        $("div.transcription-data .brsep").hide();
-        // Remove class from body for Firefox CSS fix (issue #105)
-        $('body').removeClass('linebreaks-visible');
+		$('body').addClass('linebreaks-visible');
 	}
-	
+
 	// Recalculate note positions if margin notes are displayed
 	if (getNotesPosition() === 'margin' && $('.side-notes-panel').length > 0) {
 		setTimeout(repositionSideNotes, 150);
 	}
+}
+
+// Return whether line breaks are currently visible
+function areLinebreaksVisible() {
+	return document.body.classList.contains('linebreaks-visible');
 }
 
 function toggleView() {
@@ -108,32 +105,12 @@ function toggleTOC() {
 }
 
 // Initialize notes position preference
+// Always defaults to 'bottom' (Notes en marge unchecked).
+// User preferences are restored later by restoreSavedOptions() in transcription-sync.js.
 function initializeNotesPosition() {
-	var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
-	var savedPosition = null;
-	
-	// Only allow saved preference in text-only mode
-	if (layoutMode === 'text-only') {
-		try {
-			savedPosition = sessionStorage.getItem('transcription-notes-position');
-		} catch (e) {
-			// sessionStorage not available
-		}
-	}
-	
-	// Set default based on layout mode if no saved preference
-	if (!savedPosition) {
-		if (layoutMode === 'text-only') {
-			savedPosition = 'margin';
-		} else {
-			// Always use bottom for split-view and viewer-only
-			savedPosition = 'bottom';
-		}
-	}
-	
-	// Store the preference
-	document.body.setAttribute('data-notes-position', savedPosition);
-	updateNotesPositionButton(savedPosition);
+	// Default is always 'bottom' regardless of mode
+	document.body.setAttribute('data-notes-position', 'bottom');
+	updateNotesPositionButton('bottom');
 }
 
 // Toggle notes position between margin and bottom (only in text-only mode)
@@ -177,10 +154,9 @@ function syncSideNotesMode() {
 }
 
 $(function() {
-	// Hide line breaks by default on page load
-	$('div.transcription-data br').not($('div.transcription-data .verse br')).addClass('hidden-br');
-	$("div.transcription-data .brsep").hide();
-	
+	// Line breaks are hidden by default via CSS (issue #101).
+	// No JS hiding needed — CSS rule hides <br> unless body.linebreaks-visible.
+
 	$("#lb-toggle").click(function() { toggleBR(); });
 	$("#view-toggle").click(function() { toggleView(); });
 	$("#toc-toggle").click(function() { toggleTOC(); });
@@ -204,8 +180,8 @@ $(function() {
 	// Also run immediately in case layout mode is already set
 	updateNotesToggleVisibility();
 
-	// Initialize notes position preference from session storage
-	initializeNotesPosition();
+	// Notes position is initialized by transcription-sync.js init() and
+	// restoreSavedOptions().  We only need to build the note DOM here.
 
 	// Process notes for both side panel and bottom display
 	processNotes();
@@ -217,8 +193,10 @@ $(function() {
 			if (mutation.type === 'attributes' && mutation.attributeName === 'data-layout-mode') {
 				// Update button visibility
 				updateNotesToggleVisibility();
-				// Reinitialize notes position based on new layout mode
-				initializeNotesPosition();
+				// Notes position & line-break defaults are now handled by
+				// restoreSavedOptions() (called from the layout button click
+				// handler in transcription-sync.js).  We only need to
+				// re-process notes here so the DOM reflects the new position.
 				processNotes();
 				syncSideNotesMode();
 			}
@@ -587,6 +565,7 @@ function toRoman(num) {
 
 // Make toggle functions globally accessible for options menu
 window.toggleBR = toggleBR;
+window.areLinebreaksVisible = areLinebreaksVisible;
 window.toggleView = toggleView;
 window.toggleTOC = toggleTOC;
 window.toggleNotesPosition = toggleNotesPosition;

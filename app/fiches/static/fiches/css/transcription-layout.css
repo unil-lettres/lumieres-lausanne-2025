@@ -440,9 +440,19 @@ body[data-layout-mode="viewer-only"] .marker-indicator {
 	display: none;
 }
 
-/* Hidden line breaks styling */
-.transcription-data br.hidden-br {
+/* Line breaks hidden by default to prevent flash (issue #101).
+   They become visible only when body has .linebreaks-visible. */
+div.transcription-data br:not(.verse br) {
 	display: none;
+}
+div.transcription-data .brsep {
+	display: none;
+}
+body.linebreaks-visible div.transcription-data br:not(.verse br) {
+	display: inline;
+}
+body.linebreaks-visible div.transcription-data .brsep {
+	display: inline;
 }
 
 /* Side notes styling */
