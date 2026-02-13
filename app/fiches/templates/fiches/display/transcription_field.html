@@ -265,12 +265,12 @@ function processNotes() {
 		// Wrap transcription-data in a flex container for side-by-side layout
 		$('#transcription-data').wrap('<div class="transcription-content-wrapper"></div>');
 		// Create side notes panel
-		setTimeout(createSideNotes, 150); // Small delay to ensure DOM is ready
+		createSideNotes();
 	} else {
 		// Create bottom notes (original behavior)
 		createBottomNotes();
 	}
-	setTimeout(syncSideNotesMode, 200);
+	syncSideNotesMode();
 }
 
 // Create notes in side panel for text-only mode
@@ -283,6 +283,9 @@ function createSideNotes() {
 	
 	if (!hasDocNotes && !hasEdNotes) return;
 	
+	// Hide panel during positioning to prevent flicker
+	sidePanel.css('visibility', 'hidden');
+	
 	// Insert side panel into the wrapper
 	var wrapper = $('#transcription-data').parent('.transcription-content-wrapper');
 	if (wrapper.length === 0) {
@@ -291,10 +294,10 @@ function createSideNotes() {
 	wrapper.append(sidePanel);
 	syncSideNotesMode();
 	
-	// Wait for layout to settle before calculating positions
-	setTimeout(function() {
+	// Use requestAnimationFrame for smooth positioning without flicker
+	requestAnimationFrame(function() {
 		positionSideNotes(sidePanel, trans, hasDocNotes, hasEdNotes);
-	}, 200);
+	});
 }
 
 // Function to reposition existing side notes
@@ -302,71 +305,89 @@ function repositionSideNotes() {
 	var sidePanel = $('.side-notes-panel');
 	if (sidePanel.length === 0) return;
 	
-	var sidePanelTop = sidePanel.offset().top;
-	
-	// Reposition document notes
-	$('.side-note.note-document', sidePanel).each(function(noteIndex) {
-		var noteDiv = $(this);
-		var citeId = 'citedocnote-side-' + noteIndex;
-		var marker = $('a[name="' + citeId + '"]');
+	requestAnimationFrame(function() {
+		// Read phase: collect all position data first
+		var sidePanelTop = sidePanel.offset().top;
+		var positions = [];
 		
-		if (marker.length > 0) {
-			var markerOffset = marker.offset();
-			if (markerOffset) {
-				var relativeTop = markerOffset.top - sidePanelTop;
-				noteDiv.css('top', Math.max(0, relativeTop) + 'px');
+		// Collect document note positions
+		$('.side-note.note-document', sidePanel).each(function(noteIndex) {
+			var noteDiv = $(this);
+			var citeId = 'citedocnote-side-' + noteIndex;
+			var marker = $('a[name="' + citeId + '"]');
+			
+			if (marker.length > 0) {
+				var markerOffset = marker.offset();
+				if (markerOffset) {
+					positions.push({
+						noteDiv: noteDiv,
+						top: Math.max(0, markerOffset.top - sidePanelTop)
+					});
+				}
 			}
-		}
-	});
-	
-	// Reposition editorial notes
-	$('.side-note.note-editorial', sidePanel).each(function(noteIndex) {
-		var noteDiv = $(this);
-		var citeId = 'citeednote-side-' + noteIndex;
-		var marker = $('a[name="' + citeId + '"]');
-		
-		if (marker.length > 0) {
-			var markerOffset = marker.offset();
-			if (markerOffset) {
-				var relativeTop = markerOffset.top - sidePanelTop;
-				noteDiv.css('top', Math.max(0, relativeTop) + 'px');
-			}
-		}
-	});
-	
-	// Prevent note overlaps and recalculate side panel min-height
-	setTimeout(function() {
-		var notes = $('.side-note', sidePanel).toArray().sort(function(a, b) {
-			return (parseInt($(a).css('top')) || 0) - (parseInt($(b).css('top')) || 0);
 		});
 		
-		var lastBottom = 0;
-		var minGap = 5; // Minimum gap between notes
-		
-		$(notes).each(function() {
-			var $note = $(this);
-			var currentTop = parseInt($note.css('top')) || 0;
+		// Collect editorial note positions
+		$('.side-note.note-editorial', sidePanel).each(function(noteIndex) {
+			var noteDiv = $(this);
+			var citeId = 'citeednote-side-' + noteIndex;
+			var marker = $('a[name="' + citeId + '"]');
 			
-			if (currentTop < lastBottom) {
-				$note.css('top', lastBottom + 'px');
-				currentTop = lastBottom;
+			if (marker.length > 0) {
+				var markerOffset = marker.offset();
+				if (markerOffset) {
+					positions.push({
+						noteDiv: noteDiv,
+						top: Math.max(0, markerOffset.top - sidePanelTop)
+					});
+				}
 			}
-			
-			lastBottom = currentTop + $note.outerHeight() + minGap;
 		});
 		
-		// Set minimum height based on actual note positions
-		if (notes.length > 0) {
-			var maxHeight = lastBottom;
-			sidePanel.css('min-height', maxHeight + 'px');
+		// Write phase: apply all positions at once
+		for (var i = 0; i < positions.length; i++) {
+			positions[i].noteDiv.css('top', positions[i].top + 'px');
 		}
-	}, 50);
+		
+		// Prevent note overlaps and recalculate side panel min-height
+		requestAnimationFrame(function() {
+			var notes = $('.side-note', sidePanel).toArray().sort(function(a, b) {
+				return (parseInt($(a).css('top')) || 0) - (parseInt($(b).css('top')) || 0);
+			});
+			
+			var lastBottom = 0;
+			var minGap = 5; // Minimum gap between notes
+			
+			// Read phase: calculate adjustments
+			var adjustments = [];
+			for (var j = 0; j < notes.length; j++) {
+				var $note = $(notes[j]);
+				var currentTop = parseInt($note.css('top')) || 0;
+				
+				if (currentTop < lastBottom) {
+					adjustments.push({ note: $note, top: lastBottom });
+					currentTop = lastBottom;
+				}
+				
+				lastBottom = currentTop + $note.outerHeight() + minGap;
+			}
+			
+			// Write phase: apply adjustments
+			for (var k = 0; k < adjustments.length; k++) {
+				adjustments[k].note.css('top', adjustments[k].top + 'px');
+			}
+			
+			// Set minimum height based on actual note positions
+			if (notes.length > 0) {
+				sidePanel.css('min-height', lastBottom + 'px');
+			}
+		});
+	});
 }
 
 function positionSideNotes(sidePanel, trans, hasDocNotes, hasEdNotes) {
-	// Get the top offset of the transcription-data container
-	var transTop = $('#transcription-data').offset().top;
-	var sidePanelTop = sidePanel.offset().top;
+	// Store note data for batched positioning
+	var notesToPosition = [];
 	
 	// Process document notes
 	if (hasDocNotes) {
@@ -390,14 +411,11 @@ function positionSideNotes(sidePanel, trans, hasDocNotes, hasEdNotes) {
 			
 			sidePanel.append(noteDiv);
 			
-			// Calculate position relative to the marker - wait for DOM update
-			setTimeout(function() {
-				var markerOffset = $this.parent('.note-ref-link').offset();
-				if (markerOffset) {
-					var relativeTop = markerOffset.top - sidePanelTop;
-					noteDiv.css('top', Math.max(0, relativeTop) + 'px');
-				}
-			}, 50);
+			// Store for batched positioning
+			notesToPosition.push({
+				noteDiv: noteDiv,
+				marker: $this.parent('.note-ref-link')
+			});
 		});
 	}
 	
@@ -423,44 +441,72 @@ function positionSideNotes(sidePanel, trans, hasDocNotes, hasEdNotes) {
 			
 			sidePanel.append(noteDiv);
 			
-			// Calculate position relative to the marker - wait for DOM update
-			setTimeout(function() {
-				var markerOffset = $this.parent('.note-ref-link').offset();
-				if (markerOffset) {
-					var relativeTop = markerOffset.top - sidePanelTop;
-					noteDiv.css('top', Math.max(0, relativeTop) + 'px');
-				}
-			}, 50);
+			// Store for batched positioning
+			notesToPosition.push({
+				noteDiv: noteDiv,
+				marker: $this.parent('.note-ref-link')
+			});
 		});
 	}
 	
-	// Prevent note overlaps and ensure proper spacing
-	setTimeout(function() {
-		var notes = $('.side-note', sidePanel).toArray().sort(function(a, b) {
-			return (parseInt($(a).css('top')) || 0) - (parseInt($(b).css('top')) || 0);
-		});
+	// Batch position all notes in one operation to prevent flicker
+	requestAnimationFrame(function() {
+		// Read phase: collect all position data first (avoid layout thrashing)
+		var sidePanelTop = sidePanel.offset().top;
+		var positions = [];
 		
-		var lastBottom = 0;
-		var minGap = 5; // Minimum gap between notes
+		for (var i = 0; i < notesToPosition.length; i++) {
+			var markerOffset = notesToPosition[i].marker.offset();
+			if (markerOffset) {
+				positions.push({
+					noteDiv: notesToPosition[i].noteDiv,
+					top: Math.max(0, markerOffset.top - sidePanelTop)
+				});
+			}
+		}
 		
-		$(notes).each(function() {
-			var $note = $(this);
-			var currentTop = parseInt($note.css('top')) || 0;
+		// Write phase: apply all positions at once
+		for (var j = 0; j < positions.length; j++) {
+			positions[j].noteDiv.css('top', positions[j].top + 'px');
+		}
+		
+		// Prevent note overlaps and ensure proper spacing
+		requestAnimationFrame(function() {
+			var notes = $('.side-note', sidePanel).toArray().sort(function(a, b) {
+				return (parseInt($(a).css('top')) || 0) - (parseInt($(b).css('top')) || 0);
+			});
 			
-			if (currentTop < lastBottom) {
-				$note.css('top', lastBottom + 'px');
-				currentTop = lastBottom;
+			var lastBottom = 0;
+			var minGap = 5; // Minimum gap between notes
+			
+			// Read phase: calculate new positions
+			var adjustments = [];
+			for (var k = 0; k < notes.length; k++) {
+				var $note = $(notes[k]);
+				var currentTop = parseInt($note.css('top')) || 0;
+				
+				if (currentTop < lastBottom) {
+					adjustments.push({ note: $note, top: lastBottom });
+					currentTop = lastBottom;
+				}
+				
+				lastBottom = currentTop + $note.outerHeight() + minGap;
 			}
 			
-			lastBottom = currentTop + $note.outerHeight() + minGap;
+			// Write phase: apply adjustments
+			for (var m = 0; m < adjustments.length; m++) {
+				adjustments[m].note.css('top', adjustments[m].top + 'px');
+			}
+			
+			// Set minimum height and show panel
+			if (notes.length > 0) {
+				sidePanel.css('min-height', lastBottom + 'px');
+			}
+			
+			// Make panel visible after all positioning is complete
+			sidePanel.css('visibility', 'visible');
 		});
-		
-		// Set minimum height based on actual note positions
-		if (notes.length > 0) {
-			var maxHeight = lastBottom;
-			sidePanel.css('min-height', maxHeight + 'px');
-		}
-	}, 300);
+	});
 }
 
 // Create notes at bottom (original behavior) for split-view and viewer-only modes
