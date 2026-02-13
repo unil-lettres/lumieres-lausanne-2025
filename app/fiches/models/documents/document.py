@@ -44,11 +44,6 @@ class Document(models.Model):
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey("content_type", "object_id")
 
-    # def __unicode__(self):
-    #     if self.title:
-    #         return self.title
-    #     return basename(self.file.name)
-
     def __str__(self):
         if self.title:
             return self.title
