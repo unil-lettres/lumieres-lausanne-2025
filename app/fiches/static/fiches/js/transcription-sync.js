@@ -67,6 +67,12 @@ This copyright notice MUST APPEAR in all copies of the file.
       updateOptionsMenuForMode(currentLayout);
     }
     
+    // Restore saved options after a short delay to ensure the template's
+    // jQuery ready handler has already applied its defaults (e.g. hiding
+    // line breaks, setting data-mode="norm").  We then override with the
+    // user's persisted preferences from sessionStorage.
+    setTimeout(restoreSavedOptions, 300);
+    
     if (cfg.hasViewer && cfg.iiifUrl) {
       setupViewer(cfg);
     }
@@ -130,8 +136,9 @@ This copyright notice MUST APPEAR in all copies of the file.
           optionsBtn.classList.remove('active');
         }
 
-        // PHASE 3: Update options menu for this mode
+        // PHASE 3: Update options menu for this mode and restore saved options
         updateOptionsMenuForMode(newLayout);
+        restoreSavedOptions();
         
         resetViewerZoom();
       });
@@ -330,6 +337,14 @@ This copyright notice MUST APPEAR in all copies of the file.
         sessionStorage.setItem(key, isChecked);
         log('[Options]', option, '=', isChecked);
         
+        // Keep the complementary version option in sync:
+        // "use-diplomatic-version" checked ↔ "use-edited-version" unchecked
+        if (option === 'use-diplomatic-version') {
+          sessionStorage.setItem('trans-option-use-edited-version', !isChecked);
+        } else if (option === 'use-edited-version') {
+          sessionStorage.setItem('trans-option-use-diplomatic-version', !isChecked);
+        }
+        
         // Apply the corresponding action based on the option
         applyOptionChange(option, isChecked);
       });
@@ -393,6 +408,54 @@ This copyright notice MUST APPEAR in all copies of the file.
       default:
         warn('[Options] Unknown option:', option);
     }
+  }
+
+  /**
+   * Restore saved option values from sessionStorage and apply them visually.
+   * Called once on init after a short delay so the template's jQuery ready
+   * handler has already set its defaults.
+   */
+  function restoreSavedOptions() {
+    var layoutMode = document.body.getAttribute('data-layout-mode') || 'split-view';
+    log('[Options Restore] Restoring saved options for mode:', layoutMode);
+
+    // Determine which options are relevant for the current layout mode
+    var optionKeys;
+    if (layoutMode === 'text-only') {
+      optionKeys = ['use-diplomatic-version', 'hide-linebreaks', 'show-toc', 'show-marginalia'];
+    } else if (layoutMode === 'split-view') {
+      optionKeys = ['use-edited-version', 'hide-linebreaks', 'show-toc'];
+    } else {
+      // viewer-only: no options to restore
+      return;
+    }
+
+    optionKeys.forEach(function (option) {
+      var storageKey = 'trans-option-' + option;
+      var saved;
+      try { saved = sessionStorage.getItem(storageKey); } catch (_) {}
+
+      if (saved === null || saved === undefined) {
+        log('[Options Restore] No saved value for', option);
+        return; // no saved preference – keep the default
+      }
+
+      var isChecked = saved === 'true';
+      log('[Options Restore] Applying', option, '=', isChecked);
+
+      // Apply the visual change
+      applyOptionChange(option, isChecked);
+
+      // Sync the checkbox in the dropdown so it matches
+      var checkbox = document.querySelector(
+        '#options-dropdown input[data-option="' + option + '"]'
+      );
+      if (checkbox) {
+        checkbox.checked = isChecked;
+      }
+    });
+
+    log('[Options Restore] Done');
   }
 
   // Options menu management ------------------------------------------------
