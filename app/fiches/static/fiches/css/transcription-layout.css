@@ -75,10 +75,16 @@ h2.transcription {
 }
 
 /* Options dropdown menu */
+.options-menu-wrapper {
+	position: relative;
+	display: inline-block;
+}
+
 .options-dropdown {
 	position: absolute;
-	top: 39px;
-	right: 183px;
+	top: calc(100% + 4px);
+	left: 0;
+	right: auto;
 	background-color: white;
 	border: 1px solid #ddd;
 	border-radius: 4px;
@@ -285,7 +291,7 @@ h2.transcription {
 	display: flex;
 	gap: 3px;
 	margin-bottom: 10px;
-	justify-content: center;
+	justify-content: flex-start;
 }
 
 .layout-btn {

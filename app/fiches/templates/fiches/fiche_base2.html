@@ -63,6 +63,15 @@
                 xhr.setRequestHeader('X-CSRFToken', csrftoken);
             }
         });
+
+        // Remove legacy empty toolbars (only right cap), which can render a stray gray artifact.
+        $(function () {
+            $(".toolbar-box .toolbar").each(function () {
+                if ($(this).children().not(".tb_right_cap").length === 0) {
+                    $(this).closest(".toolbar-box").remove();
+                }
+            });
+        });
     </script>    
 {% endblock %}
 
