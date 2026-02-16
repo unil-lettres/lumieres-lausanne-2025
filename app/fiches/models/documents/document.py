@@ -877,8 +877,24 @@ class Transcription(ACModel):
     published_date = models.DateTimeField(
         _("Date de mise en ligne"), blank=True, null=True
     )
+    published_by = models.ForeignKey(
+        User,
+        verbose_name=_("Mise en ligne par"),
+        related_name="published_transcriptions",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
     modified_date = models.DateTimeField(
         _("Date de modification"), blank=True, null=True
+    )
+    modified_by = models.ForeignKey(
+        User,
+        verbose_name=_("Dernière modification par"),
+        related_name="modified_transcriptions",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
     )
 
     objects = TranscriptionManager()

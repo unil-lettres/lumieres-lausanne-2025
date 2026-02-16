@@ -24,6 +24,52 @@
   ALTER TABLE fiches_transcription ADD COLUMN facsimile_iiif_url varchar(200) NULL AFTER envelope;
   -- Facsimile viewer (IIIF) – 1-based start canvas index (optional):
   ALTER TABLE fiches_transcription ADD COLUMN facsimile_start_canvas int NULL AFTER facsimile_iiif_url;
+  -- Transcription citation dates:
+  ALTER TABLE fiches_transcription ADD COLUMN published_date datetime NULL AFTER facsimile_start_canvas;
+  ALTER TABLE fiches_transcription ADD COLUMN published_by_id int NULL AFTER published_date;
+  ALTER TABLE fiches_transcription ADD COLUMN modified_date datetime NULL AFTER published_by_id;
+  ALTER TABLE fiches_transcription ADD COLUMN modified_by_id int NULL AFTER modified_date;
+  -- Backfill transcription dates and users from activity logs (run once after adding fields):
+  UPDATE fiches_transcription t
+  LEFT JOIN (
+    SELECT object_id, MIN(date) AS first_activity_date, MAX(date) AS last_activity_date
+    FROM fiches_activitylog
+    WHERE model_name = 'Transcription'
+    GROUP BY object_id
+  ) a ON a.object_id = t.id
+  SET
+    t.published_date = COALESCE(
+      t.published_date,
+      CASE WHEN t.access_public = 1 THEN a.first_activity_date ELSE NULL END
+    ),
+    t.published_by_id = COALESCE(
+      t.published_by_id,
+      CASE
+        WHEN t.access_public = 1 THEN (
+          SELECT l.user_id
+          FROM fiches_activitylog l
+          WHERE l.model_name = 'Transcription'
+            AND l.object_id = t.id
+            AND l.user_id IS NOT NULL
+          ORDER BY l.date ASC, l.id ASC
+          LIMIT 1
+        )
+        ELSE NULL
+      END
+    ),
+    t.modified_date = COALESCE(t.modified_date, a.last_activity_date),
+    t.modified_by_id = COALESCE(
+      t.modified_by_id,
+      (
+        SELECT l.user_id
+        FROM fiches_activitylog l
+        WHERE l.model_name = 'Transcription'
+          AND l.object_id = t.id
+          AND l.user_id IS NOT NULL
+        ORDER BY l.date DESC, l.id DESC
+        LIMIT 1
+      )
+    );
   ```
   _We do not run Django migrations on restored legacy dumps; normalize the schema with the ALTERs above, then sync roles and rebuild the index._
 - `250715-db-lumieres.sql`: latest imported reference dump (July 15). Keep until replaced.

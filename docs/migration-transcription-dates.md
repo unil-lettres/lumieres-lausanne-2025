@@ -1,83 +1,76 @@
-# Migration of Published and Modified Date Fields on Transcriptions
-
-**File:** docs/migration-transcription-dates.md
-
----
+# Transcription Date Fields: Schema Update and Backfill
 
 ## Summary
-This document outlines the schema migration performed to add two new date fields to the `Transcription` model:
 
-- `published_date`: The datetime when a transcription is first made public.
-- `modified_date`: The datetime of last editorial or technical modification (auto-updated).
+This project tracks two transcription dates:
 
-These fields support auditability and display of publication/modification dates for transcription records.
+- `published_date`: first public availability date ("Date de mise en ligne")
+- `modified_date`: latest technical/editorial date ("Date de modification")
+- `published_by_id`: user who set/edited publication date
+- `modified_by_id`: user who performed latest modification
 
+For restored legacy dumps, we do not rely on Django migrations.
+We apply SQL schema changes and a one-time backfill.
 
-## Details of the Change
-- **Model:** `app/fiches/models/documents/document.py` (`Transcription` class)
-- **Fields introduced:**
-  - `published_date = models.DateTimeField(null=True, blank=True, editable=False)`
-  - `modified_date = models.DateTimeField(auto_now=True)`
+## SQL Schema Update (legacy dump normalization)
 
-  > Only users with the appropriate permission (admin, team, or `publish_transcription` right) can trigger the setting of `published_date` via the platform UI. The field is only set on *first publication*—subsequent unpublishing does not clear it.
+Run on the target database:
 
-- **Historical Data:**
-  - For legacy records, publication dates were backfilled using the `fiches_activitylog.date` field in the database dump (`./backup/20260119_sql-dump-db-staging.sql`).
+```sql
+ALTER TABLE fiches_transcription
+  ADD COLUMN published_date datetime NULL AFTER facsimile_start_canvas;
 
-## Migration Steps
+ALTER TABLE fiches_transcription
+  ADD COLUMN published_by_id int NULL AFTER published_date;
 
-### 1. Prepare the Initial Migration
-If your database already had the tables but was not tracked in Django migrations, **fake** the initial migration:
+ALTER TABLE fiches_transcription
+  ADD COLUMN modified_date datetime NULL AFTER published_by_id;
 
-```sh
-docker compose -f docker-compose.dev.yml -f docker-compose.yml exec --user vscode -w /workspaces/lumieres-lausanne-2025/app devcontainer python manage.py migrate fiches 0001_add_transcription_dates --fake
+ALTER TABLE fiches_transcription
+  ADD COLUMN modified_by_id int NULL AFTER modified_date;
 ```
 
-### 2. Apply Field and Data Migrations
-Run the new migrations to add fields and backfill data:
+## One-time Backfill
 
-```sh
-docker compose -f docker-compose.dev.yml -f docker-compose.yml exec --user vscode -w /workspaces/lumieres-lausanne-2025/app devcontainer python manage.py migrate fiches
+Populate dates from `fiches_activitylog`:
+
+```sql
+UPDATE fiches_transcription t
+LEFT JOIN (
+  SELECT object_id, MIN(date) AS first_activity_date, MAX(date) AS last_activity_date
+  FROM fiches_activitylog
+  WHERE model_name = 'Transcription'
+  GROUP BY object_id
+) a ON a.object_id = t.id
+SET
+  t.published_date = COALESCE(
+    t.published_date,
+    CASE WHEN t.access_public = 1 THEN a.first_activity_date ELSE NULL END
+  ),
+  t.modified_date = COALESCE(t.modified_date, a.last_activity_date);
 ```
 
-Where:
-- `0002_add_transcription_date_fields.py` adds the database fields.
-- `0003_populate_transcription_dates.py` backfills dates using legacy log data.
+Notes:
 
-### 3. Migration Archive
-For reproducibility, the migrations directory is archived here:
+- This preserves existing values (no overwrite when already set).
+- `published_date` is backfilled only for currently public transcriptions.
+- You can manually adjust dates afterward if historical corrections are needed.
 
+## Verification
+
+```sql
+SHOW COLUMNS FROM fiches_transcription LIKE 'published_date';
+SHOW COLUMNS FROM fiches_transcription LIKE 'modified_date';
+
+SELECT
+  COUNT(*) AS total,
+  SUM(access_public = 1) AS public_total,
+  SUM(access_public = 1 AND published_date IS NOT NULL) AS public_with_published_date,
+  SUM(modified_date IS NOT NULL) AS with_modified_date
+FROM fiches_transcription;
 ```
-backup/fiches_migrations.tar.gz
-```
-(This contains all migration scripts relevant to this release and should be preserved.)
 
-## Validating the Migration
+## Related Docs
 
-To check that the new fields are present and populated as expected, run:
-
-```sh
-docker compose -f docker-compose.dev.yml -f docker-compose.yml exec --user vscode -w /workspaces/lumieres-lausanne-2025/app devcontainer python manage.py shell -c "from fiches.models.documents.document import Transcription; trans = Transcription.objects.filter(access_public=True).first(); print(f'ID: {trans.id}'); print(f'Published: {trans.published_date}'); print(f'Modified: {trans.modified_date}'); print(f'Public: {trans.access_public}')"
-```
-
-This should show meaningful values for `published_date` and `modified_date` for published transcriptions.
-
-## Troubleshooting
-- Ensure all migrations are listed as applied:
-  ```sh
-  docker compose -f docker-compose.dev.yml -f docker-compose.yml exec --user vscode -w /workspaces/lumieres-lausanne-2025/app devcontainer python manage.py showmigrations --list
-  ```
-- If you migrate again or in another environment, consider starting with the initial fake migration if needed.
-
-## Related Files
-- **Model:** `app/fiches/models/documents/document.py`
-- **Migrations:** `app/fiches/migrations/`
-- **Archive:** `backup/fiches_migrations.tar.gz`
-
-## See Also
-- [IIIF Facsimile Migration](iiif-facsimile-migration.md)
-- [OpenSeadragon Integration](openseadragon-integration.md)
-
----
-
-**Last updated:** February 13, 2026
+- `descr/deployment.md`
+- `README.md`

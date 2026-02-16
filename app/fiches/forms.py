@@ -347,10 +347,15 @@ class TranscriptionForm(forms.ModelForm):
             format="%d/%m/%Y, %H:%M",
         ),
     )
+    published_by = forms.ModelChoiceField(
+        queryset=User.objects.all().order_by("username"),
+        label=_("Mis en ligne par"),
+        required=False,
+    )
 
     class Meta:
         model = Transcription
-        fields = "__all__"
+        exclude = ("modified_by",)
 
     def clean(self):
         cleaned_data = super().clean()

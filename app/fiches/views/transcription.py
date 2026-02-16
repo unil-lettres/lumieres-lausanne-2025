@@ -190,6 +190,8 @@ def edit(
         or trans.user_access(request.user)
     )
     access_public_original = trans.access_public
+    published_date_original = trans.published_date
+    published_by_original = trans.published_by
 
     # user needs the publish_transcription permission to modify a published transcription
     if trans.access_public and not request.user.has_perm(
@@ -238,6 +240,9 @@ def edit(
             request.POST, instance=trans, queryset=get_notetransformset_qs(trans)
         )
         if trans_form.is_valid():
+            can_publish_transcription = request.user.has_perm(
+                "fiches.publish_transcription"
+            ) or getattr(request.user, "status_equipe", False)
             trans = trans_form.save(commit=False)
             trans.access_owner = trans.author
 
@@ -245,13 +250,29 @@ def edit(
             if (
                 not access_public_original
                 and trans.access_public
-                and (
-                    request.user.has_perm("fiches.publish_transcription")
-                    or getattr(request.user, "status_equipe", False)
-                )
+                and can_publish_transcription
             ):
                 if not trans.published_date:
                     trans.published_date = timezone.now()
+                if not trans.published_by:
+                    trans.published_by = request.user
+
+            # If published_date is edited manually, keep who performed that change.
+            if trans.published_date != published_date_original:
+                if can_publish_transcription:
+                    if not trans.published_by:
+                        trans.published_by = request.user
+                else:
+                    trans.published_date = published_date_original
+                    trans.published_by = published_by_original
+
+            # Prevent unauthorized manual edits of publication metadata.
+            if not can_publish_transcription and trans.published_by != published_by_original:
+                trans.published_by = published_by_original
+
+            # Track who performed the latest transcription update.
+            trans.modified_date = timezone.now()
+            trans.modified_by = request.user
 
             if not request.user.has_perm("fiches.publish_transcription"):
                 trans.access_public = access_public_original

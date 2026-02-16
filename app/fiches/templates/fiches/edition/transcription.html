@@ -274,24 +274,22 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 			{{ transForm.published_date }}
 		</div>
 		<div class="fixclear"></div>
-        
+
 		<div class="fieldWrapper">
-			<label for="id_modified_date">{{ transForm.modified_date.label }}</label>
-			{% if transcription.modified_date %}
-				{{ transcription.modified_date|date:"d/m/Y, H:i" }}
-				{% if last_activity and last_activity.user %}
-					({{ last_activity.user.get_full_name|default:last_activity.user.username }})
-				{% endif %}
-			{% elif last_activity %}
-				{{ last_activity.date|date:"d/m/Y, H:i" }}
-				{% if last_activity.user %}
-					({{ last_activity.user.username }})
-				{% endif %}
+			<label for="id_published_by">{{ transForm.published_by.label }}</label>
+			{% if perms.fiches.publish_transcription %}
+				{{ transForm.published_by.errors }}
+				{{ transForm.published_by }}
 			{% else %}
-				—
+				{% if transcription.published_by %}
+					{{ transcription.published_by.get_full_name|default:transcription.published_by.username }}
+				{% else %}
+					—
+				{% endif %}
 			{% endif %}
 		</div>
 		<div class="fixclear"></div>
+        
 	<!--/fieldset-->
 
 	

@@ -217,8 +217,8 @@
 			<div class="field_label">Date de mise en ligne</div>
 			<div class="field_value">
 				{{ trans.published_date|date:"j M Y - H:i" }}
-				{% if trans.author %}
-					({{ trans.author.get_full_name|default:trans.author.username }})
+				{% if trans.published_by %}
+					({{ trans.published_by.get_full_name|default:trans.published_by.username }})
 				{% endif %}
 			</div>
 			{% endif %}
@@ -227,8 +227,8 @@
 			<div class="field_value last">
 				{% if trans.modified_date %}
 					{{ trans.modified_date|date:"j M Y - H:i" }}
-					{% if last_activity and last_activity.user %}
-						({{ last_activity.user.get_full_name|default:last_activity.user.username }})
+					{% if trans.modified_by %}
+						({{ trans.modified_by.get_full_name|default:trans.modified_by.username }})
 					{% endif %}
 				{% elif last_activity %}
 					{{ last_activity.date|date:"j M Y - H:i" }}
@@ -296,7 +296,7 @@
 					{% endwith %}
 	            	Selon la transcription établie par {{ trans.cite_authors }}Lumières.Lausanne (Université de Lausanne),
 					mise en ligne le {{ trans.published_date|date:"d.m.Y" }}, 
-	            	version du {{ last_activity.date|date:"d.m.Y" }},
+	            	version du {% if trans.modified_date %}{{ trans.modified_date|date:"d.m.Y" }}{% elif last_activity %}{{ last_activity.date|date:"d.m.Y" }}{% else %}—{% endif %},
 	            	url:&nbsp;<a href="{% url 'transcription-display' trans.id %}">
 	            	{% if request.is_secure %}
 	            	<span>https://</span>
