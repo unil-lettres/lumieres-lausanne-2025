@@ -300,7 +300,8 @@
 	            	<span>https://</span>
 	            	{% else %}
 	            	<span>http://</span>
-	            	{% endif %}<span>{{ request.get_host }}{% url 'transcription-display' trans.id %}</span></a>,
+				{% endif %}<span>{{ request.get_host }}{% url 'transcription-display' trans.id %}</span></a>,
+				mise en ligne le {{ trans.published_date|date:"d.m.Y" }}, 
 	            	version du {{ last_activity.date|date:"d.m.Y" }}.
 
 					{% endspaceless %}
