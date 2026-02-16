@@ -279,3 +279,5 @@ form.edit-form textarea#id_short_title { height: 3em; }
 
 
  input:-moz-placeholder { color: #AAA; font-style: italic; }
+
+ input#id_published_date { width: 218px; }

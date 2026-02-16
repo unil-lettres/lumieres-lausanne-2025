@@ -36,12 +36,6 @@
 		.content .transcription-data {
 			padding: 0 40px;
 		}
-		/* Disable sync button when not in split-view mode */
-		body[data-layout-mode="text-only"] #sync-toggle-btn,
-		body[data-layout-mode="viewer-only"] #sync-toggle-btn {
-			opacity: 0.5;
-			cursor: not-allowed;
-		}
 	</style>
 {% endblock head_css %}
 
@@ -137,27 +131,27 @@
         <p class="info info-noaccess">Vous ne pouvez pas accéder à cette transcription</p>
 	{% else %}
 	
-		{#<!-- Layout mode toggle buttons -->#}
-		{% if trans.facsimile_iiif_url %}
-		<div id="layout-toggle-buttons" class="layout-toggle-group">
+        <h2 class="transcription">{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 %}</h2>
+	
+		{#<!-- Layout mode toggle buttons (always visible; facsimile buttons disabled when no facsimile) -->#}
+		<div id="layout-toggle-buttons" class="layout-toggle-group"
+			 data-has-facsimile="{{ trans.facsimile_iiif_url|yesno:'true,false' }}">
 			<button type="button" class="layout-btn" data-layout="text-only" title="Texte uniquement">
 				Texte
 			</button>
-			<button type="button" class="layout-btn active" data-layout="split-view" title="Texte et facsimilé">
+			<button type="button" class="layout-btn" data-layout="split-view" title="Texte et facsimilé">
 				Texte + Facsimilé
 			</button>
 			<button type="button" class="layout-btn" data-layout="viewer-only" title="Facsimilé uniquement">
 				Facsimilé
 			</button>
-			<span id="sync-toggle-wrapper" style="margin-left: 20px; display: inline-block; border-left: 1px solid #ccc; padding-left: 20px;">
-				<button type="button" id="sync-toggle-btn" class="layout-btn active" title="Désactiver/Activer la synchronisation texte-facsimilé">
-					🔗 Synchro
-				</button>
-			</span>
+			<button type="button" class="layout-btn" id="options-menu-btn" title="Options">
+				Options ▼
+			</button>
+			<div id="options-dropdown" class="options-dropdown">
+				<!-- Options menu content will be populated dynamically -->
+			</div>
 		</div>
-		{% endif %}
-
-        <h2 class="transcription">{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 %}</h2>
 		
 		{#<!-- Transcription text with viewer on the right -->#}
 		<div class="transcription-viewer-container">
@@ -203,25 +197,53 @@
 	    </div>
 
 		<div class="field_group meta_general" style="margin-bottom: 0 !important;">
-			{% if user.is_authenticated %}
-			<div class="field_wrap">
-				<div class="field_label">Transcrit par</div>
-				<div class="field_value">{{ trans.author.get_full_name|default:trans.author.username }}
-					{% if trans.author2 %}
-					et {{ trans.author2.get_full_name|default:trans.author2 }}
-					{% endif %}
-				</div>
+		{% if user.is_authenticated %}
+		<div class="field_wrap">
+			<div class="field_label">Transcrit par</div>
+			<div class="field_value">{{ trans.author.get_full_name|default:trans.author.username }}
+				{% if trans.author2 %}
+				et {{ trans.author2.get_full_name|default:trans.author2 }}
+				{% endif %}
+			</div>
 
-				<div class="field_label">{{ trans|field_verbose_name:"status" }}</div>
-				<div class="field_value">{{ trans.get_status_display|lower }}</div>
+			<div class="field_label">{{ trans|field_verbose_name:"status" }}</div>
+			<div class="field_value last">{{ trans.get_status_display|lower }}</div>
 
-				<div class="field_label">Dernière modification</div>
-				<div class="field_value last">{{ last_activity.date|date:"d M. Y - H:i" }} ({{ last_activity.user.username }})</div>
-
-				<div class="fixclear"></div>
+			<div class="fixclear"></div>
+		</div>
+		
+		<div class="field_wrap">
+			{% if trans.published_date %}
+			<div class="field_label">Date de mise en ligne</div>
+			<div class="field_value">
+				{{ trans.published_date|date:"j M Y - H:i" }}
+				{% if trans.published_by %}
+					({{ trans.published_by.get_full_name|default:trans.published_by.username }})
+				{% endif %}
 			</div>
 			{% endif %}
-			<div class="field_wrap">
+
+			<div class="field_label">Dernière modification</div>
+			<div class="field_value last">
+				{% if trans.modified_date %}
+					{{ trans.modified_date|date:"j M Y - H:i" }}
+					{% if trans.modified_by %}
+						({{ trans.modified_by.get_full_name|default:trans.modified_by.username }})
+					{% endif %}
+				{% elif last_activity %}
+					{{ last_activity.date|date:"j M Y - H:i" }}
+					{% if last_activity.user %}
+						({{ last_activity.user.get_full_name|default:last_activity.user.username }})
+					{% endif %}
+				{% else %}
+					—
+				{% endif %}
+			</div>
+
+			<div class="fixclear"></div>
+		</div>
+		{% endif %}
+		<div class="field_wrap">
 				{% if user.is_authenticated and trans.reviewers %}
 				<div class="field_label">Relu par</div>
 				<div class="field_value">
@@ -273,13 +295,14 @@
 						<span>.</span>
 					{% endwith %}
 	            	Selon la transcription établie par {{ trans.cite_authors }}Lumières.Lausanne (Université de Lausanne),
+					mise en ligne le {{ trans.published_date|date:"d.m.Y" }}, 
+	            	version du {% if trans.modified_date %}{{ trans.modified_date|date:"d.m.Y" }}{% elif last_activity %}{{ last_activity.date|date:"d.m.Y" }}{% else %}—{% endif %},
 	            	url:&nbsp;<a href="{% url 'transcription-display' trans.id %}">
 	            	{% if request.is_secure %}
 	            	<span>https://</span>
 	            	{% else %}
 	            	<span>http://</span>
-	            	{% endif %}<span>{{ request.get_host }}{% url 'transcription-display' trans.id %}</span></a>,
-	            	version du {{ last_activity.date|date:"d.m.Y" }}.
+					{% endif %}<span>{{ request.get_host }}{% url 'transcription-display' trans.id %}</span></a>.
 
 					{% endspaceless %}
 	            </div>

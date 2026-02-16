@@ -1,4 +1,4 @@
-﻿/* Footnote Plugin for CKEDITOR v0.1
+/* Footnote Plugin for CKEDITOR v0.1
  * This plugin stores the footnote contents (escaped) in the @data-note.
  * The automatic numbering is taken care of using the CSS counter directive.
  * The CSS stylesheet rules are defined in tinyMCE_transcripts.css

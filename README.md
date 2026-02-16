@@ -84,22 +84,49 @@ ALTER TABLE lumieres_lausanne.fiches_notebiblio        MODIFY owner_id int NULL;
 ALTER TABLE lumieres_lausanne.fiches_notemanuscript    MODIFY owner_id int NULL;
 -- Facsimile viewer (IIIF) – nullable, safe for rollback:
 ALTER TABLE lumieres_lausanne.fiches_transcription ADD COLUMN facsimile_iiif_url varchar(200) NULL AFTER envelope;
+-- Facsimile viewer (IIIF) – 1-based start canvas index (optional):
+ALTER TABLE lumieres_lausanne.fiches_transcription ADD COLUMN facsimile_start_canvas int NULL AFTER facsimile_iiif_url;
+-- Transcription citation dates:
+ALTER TABLE lumieres_lausanne.fiches_transcription ADD COLUMN published_date datetime NULL AFTER facsimile_start_canvas;
+ALTER TABLE lumieres_lausanne.fiches_transcription ADD COLUMN published_by_id int NULL AFTER published_date;
+ALTER TABLE lumieres_lausanne.fiches_transcription ADD COLUMN modified_date datetime NULL AFTER published_by_id;
+ALTER TABLE lumieres_lausanne.fiches_transcription ADD COLUMN modified_by_id int NULL AFTER modified_date;
 "
 ```
 
-4) Create a Django superuser (optional):
+4) Backfill transcription dates (one-time after adding columns):
+
+```bash
+docker compose exec -T db mysql -uroot -ptoor -e "
+UPDATE lumieres_lausanne.fiches_transcription t
+LEFT JOIN (
+  SELECT object_id, MIN(date) AS first_activity_date, MAX(date) AS last_activity_date
+  FROM lumieres_lausanne.fiches_activitylog
+  WHERE model_name = 'Transcription'
+  GROUP BY object_id
+) a ON a.object_id = t.id
+SET
+  t.published_date = COALESCE(
+    t.published_date,
+    CASE WHEN t.access_public = 1 THEN a.first_activity_date ELSE NULL END
+  ),
+  t.modified_date = COALESCE(t.modified_date, a.last_activity_date);
+"
+```
+
+5) Create a Django superuser (optional):
 
 ```bash
 docker compose exec -T app python manage.py createsuperuser
 ```
 
-5) Refresh roles/permissions after importing a dump (cleans up the legacy “assistants” group and reassigns custom perms):
+6) Refresh roles/permissions after importing a dump (cleans up the legacy “assistants” group and reassigns custom perms):
 
 ```bash
 docker compose exec -T app python manage.py sync_status_roles --apply
 ```
 
-6) Rebuild the search index (Solr / Haystack) if needed (see section below).
+7) Rebuild the search index (Solr / Haystack) if needed (see section below).
 
 ---
 

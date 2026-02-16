@@ -26,6 +26,15 @@ This copyright notice MUST APPEAR in all copies of the file.
   var STORAGE_KEY_LAYOUT = 'transcription-layout-mode';
   var STORAGE_KEY_SYNC = 'transcription-sync-enabled';
   var DEFAULT_LAYOUT = 'split-view';
+
+  // Mode-scoped storage key helper.
+  // Returns e.g. "trans-option-text-only:show-linebreaks"
+  function optionStorageKey(mode, option) {
+    return 'trans-option-' + mode + ':' + option;
+  }
+  function currentMode() {
+    return document.body.getAttribute('data-layout-mode') || 'split-view';
+  }
   var SCROLL_SYNC_DELAY = 150;
   var SMOOTH_SCROLL_DURATION = 600;
   var PAGE_SYNC_INIT_DELAY = 500;
@@ -51,7 +60,36 @@ This copyright notice MUST APPEAR in all copies of the file.
 
   function init() {
     var cfg = window.TranscriptionConfig || {};
+    
+    // Enable synchronization by default (button was removed from UI)
+    // The sync functionality works automatically in split-view mode
+    window.TranscriptionSyncEnabled = true;
+    log('[Sync] Synchronization initialized as always-enabled');
+    
     setupLayoutToggles(cfg);
+    initializeModeAvailability(); // PHASE 3: Check content availability
+
+    // Ensure notes position defaults are applied early (fixes #102).
+    if (window.initializeNotesPosition) {
+      window.initializeNotesPosition();
+    }
+    // Line breaks: CSS hides them by default (fixes #101); nothing extra needed here.
+
+    setupOptionsMenu();
+    
+    // Initialize options menu with current layout mode
+    var currentLayout = document.body.getAttribute('data-layout-mode');
+    if (currentLayout) {
+      updateOptionsMenuForMode(currentLayout);
+    }
+    
+    // Apply mode defaults and restore saved options immediately.
+    // The toggle functions (toggleView, toggleBR, etc.) are defined at the
+    // top-level of the template script and are available before
+    // DOMContentLoaded.  We no longer need a delay since applyModeDefaults()
+    // sets its own state rather than reading DOM defaults from jQuery ready.
+    restoreSavedOptions();
+    
     if (cfg.hasViewer && cfg.iiifUrl) {
       setupViewer(cfg);
     }
@@ -60,10 +98,22 @@ This copyright notice MUST APPEAR in all copies of the file.
   // Layout toggle logic ----------------------------------------------------
   function setupLayoutToggles(cfg) {
     var hasViewer = !!cfg.hasViewer;
+    var buttons = document.querySelectorAll('.layout-btn');
 
     if (!hasViewer) {
+      // No facsimile: force text-only, disable facsimile-related buttons
       document.body.setAttribute('data-layout-mode', 'text-only');
       try { sessionStorage.removeItem(STORAGE_KEY_LAYOUT); } catch (_) {}
+
+      buttons.forEach(function (btn) {
+        var layout = btn.getAttribute('data-layout');
+        if (layout === 'split-view' || layout === 'viewer-only') {
+          btn.disabled = true;
+        }
+      });
+
+      updateActiveButton(buttons, 'text-only');
+      log('[Layout Toggle] No facsimile – forced text-only, facsimile buttons disabled');
       return;
     }
 
@@ -72,14 +122,18 @@ This copyright notice MUST APPEAR in all copies of the file.
     var initialLayout = savedLayout || DEFAULT_LAYOUT;
 
     document.body.setAttribute('data-layout-mode', initialLayout);
-    
-    var buttons = document.querySelectorAll('.layout-btn');
     updateActiveButton(buttons, initialLayout);
 
     buttons.forEach(function (btn) {
       btn.addEventListener('click', function (e) {
-        // Skip sync toggle button
-        if (btn.id === 'sync-toggle-btn') return;
+        // Skip options menu button
+        if (btn.id === 'options-menu-btn') return;
+        
+        // Prevent clicking on already active or disabled layout button
+        if (btn.classList.contains('active') || btn.disabled) {
+          e.preventDefault();
+          return;
+        }
         
         var newLayout = btn.getAttribute('data-layout');
         
@@ -91,16 +145,21 @@ This copyright notice MUST APPEAR in all copies of the file.
         
         try { sessionStorage.setItem(STORAGE_KEY_LAYOUT, newLayout); } catch (_) {}
 
-        // Disable sync when switching away from split-view
-        if (newLayout !== DEFAULT_LAYOUT) {
-          disableSyncIfActive();
+        // Close options dropdown when switching modes
+        var optionsDropdown = document.getElementById('options-dropdown');
+        var optionsBtn = document.getElementById('options-menu-btn');
+        if (optionsDropdown && optionsBtn) {
+          optionsDropdown.classList.remove('show');
+          optionsBtn.classList.remove('active');
         }
 
+        // PHASE 3: Update options menu for this mode and restore saved options
+        updateOptionsMenuForMode(newLayout);
+        restoreSavedOptions();
+        
         resetViewerZoom();
       });
     });
-
-    setupSyncToggleButton();
   }
 
   function updateActiveButton(buttons, layoutName) {
@@ -109,16 +168,392 @@ This copyright notice MUST APPEAR in all copies of the file.
     if (activeBtn) activeBtn.classList.add('active');
   }
 
-  function disableSyncIfActive() {
-    if (window.TranscriptionSyncEnabled) {
-      window.TranscriptionSyncEnabled = false;
-      var syncToggleBtn = document.getElementById('sync-toggle-btn');
-      if (syncToggleBtn) {
-        updateSyncButtonState(syncToggleBtn, false);
-        try { sessionStorage.setItem(STORAGE_KEY_SYNC, false); } catch (_) {}
-        log('[Layout Toggle] Sync automatically disabled - not in split-view mode');
-      }
+  // PHASE 3: Mode availability logic -------------------------------------
+  /**
+   * Initialize mode availability based on content.
+   * Reads data-has-facsimile from the container (set by the Django template)
+   * and disables buttons accordingly.
+   */
+  function initializeModeAvailability() {
+    var container = document.getElementById('layout-toggle-buttons');
+    if (!container) {
+      log('[Mode Availability] Container not found');
+      return;
     }
+    
+    var hasFacsimile = container.getAttribute('data-has-facsimile') === 'true';
+    
+    var textBtn = container.querySelector('.layout-btn[data-layout="text-only"]');
+    var splitBtn = container.querySelector('.layout-btn[data-layout="split-view"]');
+    var viewerBtn = container.querySelector('.layout-btn[data-layout="viewer-only"]');
+    var optionsBtn = document.getElementById('options-menu-btn');
+    
+    if (!textBtn || !splitBtn || !viewerBtn || !optionsBtn) {
+      log('[Mode Availability] Some buttons not found');
+      return;
+    }
+
+    if (!hasFacsimile) {
+      // No facsimile: Texte active, split-view and viewer-only disabled
+      textBtn.disabled = false;
+      splitBtn.disabled = true;
+      viewerBtn.disabled = true;
+      optionsBtn.disabled = false;
+      setLayout('text-only');
+      log('[Mode Availability] No facsimile – forced text-only mode');
+    } else {
+      // Both available (normal case)
+      textBtn.disabled = false;
+      splitBtn.disabled = false;
+      viewerBtn.disabled = false;
+      optionsBtn.disabled = false;
+      log('[Mode Availability] Both transcription and facsimile available');
+    }
+    
+    log('[Mode Availability] State:', {
+      hasFacsimile: hasFacsimile,
+      textEnabled: !textBtn.disabled,
+      splitEnabled: !splitBtn.disabled,
+      viewerEnabled: !viewerBtn.disabled,
+      optionsEnabled: !optionsBtn.disabled
+    });
+  }
+
+  /**
+   * Helper to set layout mode (used by initializeModeAvailability)
+   */
+  function setLayout(layoutMode) {
+    document.body.setAttribute('data-layout-mode', layoutMode);
+    var buttons = document.querySelectorAll('.layout-btn');
+    updateActiveButton(buttons, layoutMode);
+    
+    try { sessionStorage.setItem(STORAGE_KEY_LAYOUT, layoutMode); } catch (_) {}
+    
+    // Update options menu for this mode
+    updateOptionsMenuForMode(layoutMode);
+  }
+
+  /**
+   * Update options menu visibility based on current mode.
+   *
+   * All checkboxes are UNCHECKED by default (no `checked` attribute).
+   * Saved user preferences are restored later by restoreSavedOptions().
+   */
+  function updateOptionsMenuForMode(mode) {
+    var optionsDropdown = document.getElementById('options-dropdown');
+    var optionsBtn = document.getElementById('options-menu-btn');
+    
+    if (!optionsDropdown || !optionsBtn) return;
+    
+    // Hide options menu if in viewer-only mode
+    if (mode === 'viewer-only') {
+      optionsDropdown.innerHTML = '<div style="padding: 8px; color: #999;">Aucune option disponible</div>';
+      optionsBtn.disabled = true;
+      log('[Options Menu] Viewer-only mode - no options');
+    }
+    // Text-only mode options (all unchecked by default)
+    //   ☐ Version diplomatique   (checked → dipl, unchecked → norm)
+    //   ☐ Retours à la ligne     (checked → BR visible, unchecked → BR hidden)
+    //   ☐ Table des matières     (checked → TOC shown)
+    //   ☐ Notes en marge         (checked → margin, unchecked → bottom)
+    else if (mode === 'text-only') {
+      optionsDropdown.innerHTML = [
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="use-diplomatic-version">',
+        '  <span>Version diplomatique</span>',
+        '</label>',
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="show-linebreaks">',
+        '  <span>Retours à la ligne</span>',
+        '</label>',
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="show-toc">',
+        '  <span>Table des matières</span>',
+        '</label>',
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="show-marginalia">',
+        '  <span>Notes en marge</span>',
+        '</label>'
+      ].join('');
+      optionsBtn.disabled = false;
+      log('[Options Menu] Text-only mode options set (all unchecked)');
+    }
+    // Split-view mode options (all unchecked by default)
+    //   ☐ Version éditée             (checked → norm, unchecked → dipl)
+    //   ☐ Sans retours à la ligne    (checked → BR hidden, unchecked → BR visible)
+    //   ☐ Table des matières         (checked → TOC shown)
+    else if (mode === 'split-view') {
+      optionsDropdown.innerHTML = [
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="use-edited-version">',
+        '  <span>Version éditée</span>',
+        '</label>',
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="hide-linebreaks">',
+        '  <span>Sans retours à la ligne</span>',
+        '</label>',
+        '<label class="option-item">',
+        '  <input type="checkbox" data-option="show-toc">',
+        '  <span>Table des matières</span>',
+        '</label>'
+      ].join('');
+      optionsBtn.disabled = false;
+      log('[Options Menu] Split-view mode options set (all unchecked)');
+    }
+    
+    // Re-bind checkbox event listeners
+    bindOptionCheckboxes();
+  }
+  
+  // (getCurrentUIState removed – checkboxes now start unchecked; defaults are
+  //  applied by applyModeDefaults() and user preferences by restoreSavedOptions())
+
+  /**
+   * Bind event listeners to all option checkboxes.
+   * Storage keys are scoped per mode so that text-only and split-view
+   * preferences are independent.
+   */
+  function bindOptionCheckboxes() {
+    var optionsDropdown = document.getElementById('options-dropdown');
+    var checkboxes = optionsDropdown?.querySelectorAll('input[type="checkbox"]') || [];
+    
+    checkboxes.forEach(function(checkbox) {
+      // Remove old listeners by cloning
+      var newCheckbox = checkbox.cloneNode(true);
+      checkbox.parentNode.replaceChild(newCheckbox, checkbox);
+      
+      // Add new listener
+      newCheckbox.addEventListener('change', function() {
+        var mode = currentMode();
+        var option = this.dataset.option;
+        var isChecked = this.checked;
+        var key = optionStorageKey(mode, option);
+        
+        sessionStorage.setItem(key, isChecked);
+        log('[Options]', mode + ':' + option, '=', isChecked);
+        
+        // Apply the corresponding action based on the option
+        applyOptionChange(option, isChecked);
+      });
+    });
+  }
+  
+  /**
+   * Apply visual changes based on option state.
+   *
+   * Linebreak semantics differ per mode:
+   *   text-only   → "show-linebreaks"  (checked = visible)
+   *   split-view  → "hide-linebreaks"  (checked = hidden)
+   */
+  function applyOptionChange(option, isChecked) {
+    switch(option) {
+      case 'show-linebreaks':
+        // text-only: checked = line breaks visible, unchecked = hidden
+        if (window.toggleBR) {
+          var wantVisible = isChecked;
+          var currentlyVisible = window.areLinebreaksVisible ? window.areLinebreaksVisible() : document.body.classList.contains('linebreaks-visible');
+          if (wantVisible !== currentlyVisible) {
+            window.toggleBR();
+          }
+        }
+        break;
+
+      case 'hide-linebreaks':
+        // split-view: checked = line breaks hidden, unchecked = visible
+        if (window.toggleBR) {
+          var wantHidden = isChecked;
+          var currentlyVis = window.areLinebreaksVisible ? window.areLinebreaksVisible() : document.body.classList.contains('linebreaks-visible');
+          // wantHidden=true → should NOT be visible; wantHidden=false → should be visible
+          if (wantHidden === currentlyVis) {
+            window.toggleBR();
+          }
+        }
+        break;
+        
+      case 'use-diplomatic-version':
+        // text-only: checked → dipl, unchecked → norm
+        if (window.toggleView) {
+          var currentMode2 = document.querySelector('div.transcription-data')?.getAttribute('data-mode');
+          var target = isChecked ? 'dipl' : 'norm';
+          if (currentMode2 !== target) {
+            window.toggleView();
+          }
+        }
+        break;
+
+      case 'use-edited-version':
+        // split-view: checked → norm (edited), unchecked → dipl (diplomatic)
+        if (window.toggleView) {
+          var currentMode3 = document.querySelector('div.transcription-data')?.getAttribute('data-mode');
+          var target2 = isChecked ? 'norm' : 'dipl';
+          if (currentMode3 !== target2) {
+            window.toggleView();
+          }
+        }
+        break;
+        
+      case 'show-toc':
+        // Toggle table of contents
+        if (window.toggleTOC) {
+          var tocExists = document.getElementById('transcription-toc') !== null;
+          if ((isChecked && !tocExists) || (!isChecked && tocExists)) {
+            window.toggleTOC();
+          }
+        }
+        break;
+        
+      case 'show-marginalia':
+        // Toggle marginalia (notes position)
+        if (window.toggleNotesPosition) {
+          var currentPosition = document.body.getAttribute('data-notes-position') || 'bottom';
+          var targetPosition = isChecked ? 'margin' : 'bottom';
+          if (currentPosition !== targetPosition) {
+            window.toggleNotesPosition();
+          }
+        }
+        break;
+        
+      default:
+        warn('[Options] Unknown option:', option);
+    }
+  }
+
+  /**
+   * Apply the hard defaults for a given layout mode.
+   *
+   * "All checkboxes unchecked" translates to the following visual defaults:
+   *
+   * text-only:
+   *   use-diplomatic-version  unchecked → norm  (edited version)
+   *   show-linebreaks         unchecked → hidden
+   *   show-toc                unchecked → no TOC
+   *   show-marginalia         unchecked → notes at bottom
+   *
+   * split-view:
+   *   use-edited-version      unchecked → dipl  (diplomatic version)
+   *   hide-linebreaks         unchecked → line breaks visible
+   *   show-toc                unchecked → no TOC
+   */
+  function applyModeDefaults(mode) {
+    log('[Mode Defaults] Applying defaults for', mode);
+
+    if (mode === 'text-only') {
+      // Version: norm (edited) — the template already sets data-mode="norm"
+      applyOptionChange('use-diplomatic-version', false);
+      // Line breaks: hidden — CSS default, just ensure body class is off
+      document.body.classList.remove('linebreaks-visible');
+      // TOC: hidden
+      applyOptionChange('show-toc', false);
+      // Notes: bottom
+      applyOptionChange('show-marginalia', false);
+    }
+    else if (mode === 'split-view') {
+      // Version: diplomatic
+      applyOptionChange('use-edited-version', false);
+      // Line breaks: visible (hide-linebreaks unchecked → NOT hidden)
+      if (!document.body.classList.contains('linebreaks-visible')) {
+        document.body.classList.add('linebreaks-visible');
+      }
+      // TOC: hidden
+      applyOptionChange('show-toc', false);
+      // Notes: always bottom in split-view (margin notes not available).
+      // We set this directly because toggleNotesPosition() guards against
+      // non-text-only mode.
+      document.body.setAttribute('data-notes-position', 'bottom');
+    }
+  }
+
+  /**
+   * Restore saved option values from sessionStorage and apply them visually.
+   *
+   * Called on init and whenever the user switches mode.  First applies hard
+   * defaults (all unchecked), then overlays any saved per-mode preferences.
+   *
+   * Storage keys are scoped per mode:
+   *   trans-option-text-only:show-linebreaks
+   *   trans-option-split-view:hide-linebreaks
+   *   etc.
+   */
+  function restoreSavedOptions() {
+    var layoutMode = currentMode();
+    log('[Options Restore] Restoring saved options for mode:', layoutMode);
+
+    // 1. Apply hard defaults for this mode (all-unchecked state)
+    applyModeDefaults(layoutMode);
+
+    // 2. Determine which options are relevant
+    var optionKeys;
+    if (layoutMode === 'text-only') {
+      optionKeys = ['use-diplomatic-version', 'show-linebreaks', 'show-toc', 'show-marginalia'];
+    } else if (layoutMode === 'split-view') {
+      optionKeys = ['use-edited-version', 'hide-linebreaks', 'show-toc'];
+    } else {
+      // viewer-only: no options to restore
+      return;
+    }
+
+    // 3. Overlay any saved preferences
+    optionKeys.forEach(function (option) {
+      var key = optionStorageKey(layoutMode, option);
+      var saved;
+      try { saved = sessionStorage.getItem(key); } catch (_) {}
+
+      if (saved === null || saved === undefined) {
+        log('[Options Restore] No saved value for', layoutMode + ':' + option);
+        return; // keep the default (unchecked)
+      }
+
+      var isChecked = saved === 'true';
+      log('[Options Restore] Applying', layoutMode + ':' + option, '=', isChecked);
+
+      // Apply the visual change
+      applyOptionChange(option, isChecked);
+
+      // Sync the checkbox in the dropdown
+      var checkbox = document.querySelector(
+        '#options-dropdown input[data-option="' + option + '"]'
+      );
+      if (checkbox) {
+        checkbox.checked = isChecked;
+      }
+    });
+
+    log('[Options Restore] Done');
+  }
+
+  // Options menu management ------------------------------------------------
+  function setupOptionsMenu() {
+    var optionsBtn = document.getElementById('options-menu-btn');
+    var optionsDropdown = document.getElementById('options-dropdown');
+    
+    if (!optionsBtn || !optionsDropdown) {
+      log('[Options Menu] Elements not found, skipping setup');
+      return;
+    }
+    
+    // Toggle menu on button click
+    optionsBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var isShowing = optionsDropdown.classList.contains('show');
+      
+      if (isShowing) {
+        optionsDropdown.classList.remove('show');
+        optionsBtn.classList.remove('active');
+      } else {
+        optionsDropdown.classList.add('show');
+        optionsBtn.classList.add('active');
+      }
+      
+      log('[Options Menu] Dropdown', isShowing ? 'closed' : 'opened');
+    });
+    
+    // Close menu on outside click
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('#layout-toggle-buttons')) {
+        optionsDropdown.classList.remove('show');
+        optionsBtn.classList.remove('active');
+      }
+    });
   }
 
   function resetViewerZoom() {
@@ -132,55 +567,6 @@ This copyright notice MUST APPEAR in all copies of the file.
       });
     } else {
       log('[Layout Toggle] WARNING: lumiereViewer or viewport not available!');
-    }
-  }
-
-  function setupSyncToggleButton() {
-    var syncToggleBtn = document.getElementById('sync-toggle-btn');
-    if (!syncToggleBtn) return;
-
-    var savedSyncState = true;
-    try { 
-      var syncStateStr = sessionStorage.getItem(STORAGE_KEY_SYNC);
-      savedSyncState = syncStateStr !== 'false';
-    } catch (_) { 
-      // Default to enabled
-    }
-    
-    window.TranscriptionSyncEnabled = savedSyncState;
-    updateSyncButtonState(syncToggleBtn, savedSyncState);
-    
-    syncToggleBtn.addEventListener('click', function (e) {
-      e.preventDefault();
-      
-      var currentLayout = document.body.getAttribute('data-layout-mode');
-      if (currentLayout !== DEFAULT_LAYOUT) {
-        log('[Sync Toggle] Cannot toggle sync - not in split-view mode');
-        return;
-      }
-      
-      var newState = !window.TranscriptionSyncEnabled;
-      window.TranscriptionSyncEnabled = newState;
-      updateSyncButtonState(syncToggleBtn, newState);
-      try { sessionStorage.setItem(STORAGE_KEY_SYNC, newState); } catch (_) {}
-      log('[Sync Toggle] Synchronization', newState ? 'enabled' : 'disabled');
-
-      // If sync is being turned on, immediately align viewer to the current text position
-      if (newState && typeof window.lumiereSyncViewerToScroll === 'function') {
-        window.lumiereSyncViewerToScroll();
-      }
-    });
-  }
-
-  function updateSyncButtonState(btn, isEnabled) {
-    if (isEnabled) {
-      btn.classList.add('active');
-      btn.title = 'Désactiver la synchronisation texte-facsimilé';
-      btn.innerHTML = '🔗 Synchroniser la navigation';
-    } else {
-      btn.classList.remove('active');
-      btn.title = 'Activer la synchronisation texte-facsimilé';
-      btn.innerHTML = '🔌 Synchroniser la navigation';
     }
   }
 
