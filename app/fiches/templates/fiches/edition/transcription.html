@@ -687,16 +687,15 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 		// Initialize datetimepicker
 		$('.datetimepicker-fr').each(function() {
 			var $input = $(this);
-			var $wrapper = $('<div class="datetime-picker-wrapper" style="display: inline-block; position: relative;"></div>');
-			$input.wrap($wrapper);
 			
-			// Add calendar icon button
-			var $calendarBtn = $('<button type="button" class="ui-datepicker-trigger" style="margin-left: 5px; vertical-align: middle;" title="Choisir une date">📅</button>');
-			$input.after($calendarBtn);
+			// Make input readonly
+			$input.prop('readonly', true).css('cursor', 'pointer');
 			
-			// Parse existing value if present
+			// Parse existing value if present (keep time internally but don't show it)
 			var initialDate = null;
-			var initialTime = '';
+			var currentHour = new Date().getHours();
+			var currentMinute = 0;
+			
 			if ($input.val()) {
 				var match = $input.val().match(/^(\d{2})\/(\d{2})\/(\d{4}),?\s*(\d{2}):(\d{2})$/);
 				if (match) {
@@ -704,11 +703,17 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 					var month = parseInt(match[2], 10) - 1; // JS months are 0-based
 					var year = parseInt(match[3], 10);
 					initialDate = new Date(year, month, day);
-					initialTime = match[4] + ':' + match[5];
+					currentHour = parseInt(match[4], 10);
+					currentMinute = parseInt(match[5], 10);
 				}
 			}
 			
-			// Initialize datepicker
+			// Create hidden field to store the full datetime
+			var $hiddenInput = $('<input type="hidden" name="' + $input.attr('name') + '" />');
+			$input.after($hiddenInput);
+			$input.removeAttr('name'); // Remove name from visible input
+			
+			// Initialize datepicker (no time controls)
 			$input.datepicker({
 				dateFormat: 'dd/mm/yy',
 				showButtonPanel: true,
@@ -716,79 +721,28 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 				changeYear: true,
 				yearRange: '1700:2100',
 				onSelect: function(dateText) {
-					// Get current time from input or use current time
-					var timeMatch = $input.val().match(/(\d{2}):(\d{2})/);
-					var time = timeMatch ? timeMatch[0] : new Date().toTimeString().substr(0, 5);
-					$input.val(dateText + ', ' + time);
+					// Display only date in visible input
+					$input.val(dateText);
+					// Store full datetime in hidden input
+					var time = ('0' + currentHour).slice(-2) + ':' + ('0' + currentMinute).slice(-2);
+					$hiddenInput.val(dateText + ', ' + time);
 				}
 			});
 			
 			// Set initial date if available
 			if (initialDate) {
 				$input.datepicker('setDate', initialDate);
-				if (initialTime) {
-					var dateText = $input.val();
-					$input.val(dateText + ', ' + initialTime);
+				var dateText = $input.datepicker('getDate') ? 
+					$.datepicker.formatDate('dd/mm/yy', $input.datepicker('getDate')) : '';
+				if (dateText) {
+					$input.val(dateText); // Show only date
+					$hiddenInput.val(dateText + ', ' + ('0' + currentHour).slice(-2) + ':' + ('0' + currentMinute).slice(-2)); // Store full datetime
 				}
 			}
 			
-			// Handle calendar button click
-			$calendarBtn.on('click', function(e) {
-				e.preventDefault();
-				$input.datepicker('show');
-			});
-			
-			// Add time picker functionality
-			var $timeInput = $('<input type="text" class="time-picker" placeholder="HH:MM" maxlength="5" style="width: 50px; margin-left: 5px;" title="Format: HH:MM (24h)"/>');
-			$calendarBtn.after($timeInput);
-			
-			// Initialize time from existing value
-			if (initialTime) {
-				$timeInput.val(initialTime);
-			}
-			
-			// Time input validation and sync
-			$timeInput.on('blur', function() {
-				var timeVal = $(this).val().trim();
-				if (timeVal) {
-					// Validate time format
-					var timeMatch = timeVal.match(/^(\d{1,2}):?(\d{2})$/);
-					if (timeMatch) {
-						var hours = parseInt(timeMatch[1], 10);
-						var minutes = parseInt(timeMatch[2], 10);
-						if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
-							var formattedTime = ('0' + hours).slice(-2) + ':' + ('0' + minutes).slice(-2);
-							$(this).val(formattedTime);
-							
-							// Update main input
-							var dateMatch = $input.val().match(/^(\d{2}\/\d{2}\/\d{4})/);
-							if (dateMatch) {
-								$input.val(dateMatch[1] + ', ' + formattedTime);
-							}
-						} else {
-							alert('Heure invalide. Utilisez le format HH:MM (00:00 - 23:59)');
-							$(this).val('');
-						}
-					} else if (timeVal.length > 0) {
-						alert('Format invalide. Utilisez HH:MM (ex: 14:30)');
-						$(this).val('');
-					}
-				}
-			});
-			
-			// Sync time changes to main input
-			$timeInput.on('keyup', function(e) {
-				if (e.keyCode === 13) { // Enter key
-					$(this).blur();
-				}
-			});
-			
-			// Update time input when date changes
-			$input.on('change', function() {
-				var match = $(this).val().match(/(\d{2}):(\d{2})/);
-				if (match) {
-					$timeInput.val(match[0]);
-				}
+			// Open datepicker on input click
+			$input.on('click', function() {
+				$(this).datepicker('show');
 			});
 		});
 	});

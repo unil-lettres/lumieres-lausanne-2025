@@ -295,14 +295,14 @@
 						<span>.</span>
 					{% endwith %}
 	            	Selon la transcription établie par {{ trans.cite_authors }}Lumières.Lausanne (Université de Lausanne),
+					mise en ligne le {{ trans.published_date|date:"d.m.Y" }}, 
+	            	version du {{ last_activity.date|date:"d.m.Y" }},
 	            	url:&nbsp;<a href="{% url 'transcription-display' trans.id %}">
 	            	{% if request.is_secure %}
 	            	<span>https://</span>
 	            	{% else %}
 	            	<span>http://</span>
-				{% endif %}<span>{{ request.get_host }}{% url 'transcription-display' trans.id %}</span></a>,
-				mise en ligne le {{ trans.published_date|date:"d.m.Y" }}, 
-	            	version du {{ last_activity.date|date:"d.m.Y" }}.
+					{% endif %}<span>{{ request.get_host }}{% url 'transcription-display' trans.id %}</span></a>.
 
 					{% endspaceless %}
 	            </div>
