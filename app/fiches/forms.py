@@ -337,19 +337,14 @@ class TranscriptionForm(forms.ModelForm):
     published_date = forms.DateTimeField(
         label=_("Date de mise en ligne"),
         required=False,
-        input_formats=["%Y-%m-%dT%H:%M"],
+        input_formats=["%d/%m/%Y, %H:%M", "%d/%m/%Y %H:%M", "%Y-%m-%dT%H:%M"],
         widget=forms.DateTimeInput(
-            attrs={"type": "datetime-local"},
-            format="%Y-%m-%dT%H:%M",
-        ),
-    )
-    modified_date = forms.DateTimeField(
-        label=_("Date de modification"),
-        required=False,
-        input_formats=["%Y-%m-%dT%H:%M"],
-        widget=forms.DateTimeInput(
-            attrs={"type": "datetime-local"},
-            format="%Y-%m-%dT%H:%M",
+            attrs={
+                "type": "text",
+                "placeholder": "jj/mm/aaaa, HH:MM",
+                "class": "datetimepicker-fr",
+            },
+            format="%d/%m/%Y, %H:%M",
         ),
     )
 

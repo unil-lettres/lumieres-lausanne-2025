@@ -277,8 +277,19 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
         
 		<div class="fieldWrapper">
 			<label for="id_modified_date">{{ transForm.modified_date.label }}</label>
-			{{ transForm.modified_date.errors }}
-			{{ transForm.modified_date }}
+			{% if transcription.modified_date %}
+				{{ transcription.modified_date|date:"d/m/Y, H:i" }}
+				{% if last_activity and last_activity.user %}
+					({{ last_activity.user.get_full_name|default:last_activity.user.username }})
+				{% endif %}
+			{% elif last_activity %}
+				{{ last_activity.date|date:"d/m/Y, H:i" }}
+				{% if last_activity.user %}
+					({{ last_activity.user.username }})
+				{% endif %}
+			{% else %}
+				—
+			{% endif %}
 		</div>
 		<div class="fixclear"></div>
 	<!--/fieldset-->
@@ -419,7 +430,6 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 	</fieldset>
 	</form>
 	</div>
-	
     
 </div>
 <script type="text/javascript">
@@ -646,6 +656,141 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 				window.viewerControls = window.initViewerControls(facsimileViewer);
 			});
 		}
+	});
+})(jQuery);
+
+// Initialize French datetimepicker for published_date field
+(function($){
+	$(document).ready(function(){
+		// Configure French localization for datepicker
+		$.datepicker.regional['fr'] = {
+			closeText: 'Fermer',
+			prevText: 'Précédent',
+			nextText: 'Suivant',
+			currentText: 'Aujourd\'hui',
+			monthNames: ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+				'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],
+			monthNamesShort: ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+				'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'],
+			dayNames: ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'],
+			dayNamesShort: ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'],
+			dayNamesMin: ['D', 'L', 'M', 'M', 'J', 'V', 'S'],
+			weekHeader: 'Sem.',
+			dateFormat: 'dd/mm/yy',
+			firstDay: 1,
+			isRTL: false,
+			showMonthAfterYear: false,
+			yearSuffix: ''
+		};
+		$.datepicker.setDefaults($.datepicker.regional['fr']);
+		
+		// Initialize datetimepicker
+		$('.datetimepicker-fr').each(function() {
+			var $input = $(this);
+			var $wrapper = $('<div class="datetime-picker-wrapper" style="display: inline-block; position: relative;"></div>');
+			$input.wrap($wrapper);
+			
+			// Add calendar icon button
+			var $calendarBtn = $('<button type="button" class="ui-datepicker-trigger" style="margin-left: 5px; vertical-align: middle;" title="Choisir une date">📅</button>');
+			$input.after($calendarBtn);
+			
+			// Parse existing value if present
+			var initialDate = null;
+			var initialTime = '';
+			if ($input.val()) {
+				var match = $input.val().match(/^(\d{2})\/(\d{2})\/(\d{4}),?\s*(\d{2}):(\d{2})$/);
+				if (match) {
+					var day = parseInt(match[1], 10);
+					var month = parseInt(match[2], 10) - 1; // JS months are 0-based
+					var year = parseInt(match[3], 10);
+					initialDate = new Date(year, month, day);
+					initialTime = match[4] + ':' + match[5];
+				}
+			}
+			
+			// Initialize datepicker
+			$input.datepicker({
+				dateFormat: 'dd/mm/yy',
+				showButtonPanel: true,
+				changeMonth: true,
+				changeYear: true,
+				yearRange: '1700:2100',
+				onSelect: function(dateText) {
+					// Get current time from input or use current time
+					var timeMatch = $input.val().match(/(\d{2}):(\d{2})/);
+					var time = timeMatch ? timeMatch[0] : new Date().toTimeString().substr(0, 5);
+					$input.val(dateText + ', ' + time);
+				}
+			});
+			
+			// Set initial date if available
+			if (initialDate) {
+				$input.datepicker('setDate', initialDate);
+				if (initialTime) {
+					var dateText = $input.val();
+					$input.val(dateText + ', ' + initialTime);
+				}
+			}
+			
+			// Handle calendar button click
+			$calendarBtn.on('click', function(e) {
+				e.preventDefault();
+				$input.datepicker('show');
+			});
+			
+			// Add time picker functionality
+			var $timeInput = $('<input type="text" class="time-picker" placeholder="HH:MM" maxlength="5" style="width: 50px; margin-left: 5px;" title="Format: HH:MM (24h)"/>');
+			$calendarBtn.after($timeInput);
+			
+			// Initialize time from existing value
+			if (initialTime) {
+				$timeInput.val(initialTime);
+			}
+			
+			// Time input validation and sync
+			$timeInput.on('blur', function() {
+				var timeVal = $(this).val().trim();
+				if (timeVal) {
+					// Validate time format
+					var timeMatch = timeVal.match(/^(\d{1,2}):?(\d{2})$/);
+					if (timeMatch) {
+						var hours = parseInt(timeMatch[1], 10);
+						var minutes = parseInt(timeMatch[2], 10);
+						if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
+							var formattedTime = ('0' + hours).slice(-2) + ':' + ('0' + minutes).slice(-2);
+							$(this).val(formattedTime);
+							
+							// Update main input
+							var dateMatch = $input.val().match(/^(\d{2}\/\d{2}\/\d{4})/);
+							if (dateMatch) {
+								$input.val(dateMatch[1] + ', ' + formattedTime);
+							}
+						} else {
+							alert('Heure invalide. Utilisez le format HH:MM (00:00 - 23:59)');
+							$(this).val('');
+						}
+					} else if (timeVal.length > 0) {
+						alert('Format invalide. Utilisez HH:MM (ex: 14:30)');
+						$(this).val('');
+					}
+				}
+			});
+			
+			// Sync time changes to main input
+			$timeInput.on('keyup', function(e) {
+				if (e.keyCode === 13) { // Enter key
+					$(this).blur();
+				}
+			});
+			
+			// Update time input when date changes
+			$input.on('change', function() {
+				var match = $(this).val().match(/(\d{2}):(\d{2})/);
+				if (match) {
+					$timeInput.val(match[0]);
+				}
+			});
+		});
 	});
 })(jQuery);
 </script>
