@@ -1,0 +1,17 @@
+/*
+ * Follow-up Firefox spacing alignment for transcription display.
+ *
+ * Context:
+ * - Base styles add extra spacing for visible <br> markers in transcription text.
+ * - Firefox still renders a slightly taller interline than Chrome when
+ *   "Retours a la ligne" is enabled.
+ *
+ * Scope:
+ * - Only applies on Firefox (body.is-firefox) and only when line breaks are
+ *   visible (body.linebreaks-visible).
+ * - Loaded after tinyMCE_transcripts.css as a targeted override.
+ */
+
+body.is-firefox.linebreaks-visible .transcription-data br {
+  margin-bottom: 0.52em;
+}
