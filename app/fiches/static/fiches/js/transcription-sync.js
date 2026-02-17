@@ -716,6 +716,12 @@ This copyright notice MUST APPEAR in all copies of the file.
 
     var seqCount = viewer.lumiereSequenceCount || viewer.tileSources?.length || 0;
     var startCanvasIndex0 = computeStartCanvasIndex(seqCount, cfg?.facsimileStartCanvas);
+
+    // Page synchronization is only active in split-view.
+    // In viewer-only mode, the facsimile must remain freely browsable.
+    function isSyncActive() {
+      return !!window.TranscriptionSyncEnabled && currentMode() === 'split-view';
+    }
     
     log('[Page Sync] Found sequence with', seqCount, 'page(s).');
 
@@ -729,7 +735,7 @@ This copyright notice MUST APPEAR in all copies of the file.
     function updateMarkerIndicator(canvasIndex) {
       var el = document.getElementById('viewer-marker-indicator');
       var tag = (!isBeforeFirstMarker && typeof canvasIndex === 'number') ? findPageTagByCanvasIndex(transcriptionBox, canvasIndex) : null;
-      if (window.TranscriptionSyncEnabled && tag && isBlankPageTag(tag)) {
+      if (isSyncActive() && tag && isBlankPageTag(tag)) {
         tag = findNonBlankTagForCanvasIndex(transcriptionBox, canvasIndex);
       }
       var folio = tag ? (tag.getAttribute('data-folio') || '') : '';
@@ -774,11 +780,11 @@ This copyright notice MUST APPEAR in all copies of the file.
 
         if (isProgrammaticBlankSkip) {
           isProgrammaticBlankSkip = false;
-        } else if (window.TranscriptionSyncEnabled && maybeSkipBlankCanvas(ev.page)) {
+        } else if (isSyncActive() && maybeSkipBlankCanvas(ev.page)) {
           return;
         }
 
-        if (window.TranscriptionSyncEnabled && !isProgrammaticScrollSync && !isUserScrolling && ev.page !== lastSyncedPage) {
+        if (isSyncActive() && !isProgrammaticScrollSync && !isUserScrolling && ev.page !== lastSyncedPage) {
           log('[Page Sync] Viewer page changed by user → syncing transcription to page', ev.page);
           syncTranscriptionToViewer(ev.page, transcriptionBox);
         }
@@ -792,13 +798,13 @@ This copyright notice MUST APPEAR in all copies of the file.
 
     // Sync transcription scroll to viewer page
     function syncTranscriptionToViewer(canvasIndex) {
-      if (!window.TranscriptionSyncEnabled) {
+      if (!isSyncActive()) {
         log('[Page Sync] Sync disabled - skipping transcription scroll');
         return;
       }
 
       var targetTag = findPageTagByCanvasIndex(transcriptionBox, canvasIndex);
-      if (window.TranscriptionSyncEnabled && targetTag && isBlankPageTag(targetTag)) {
+      if (isSyncActive() && targetTag && isBlankPageTag(targetTag)) {
         targetTag = findNonBlankTagForCanvasIndex(transcriptionBox, canvasIndex);
       }
       if (!targetTag) {
@@ -829,7 +835,7 @@ This copyright notice MUST APPEAR in all copies of the file.
 
     // Sync viewer page from transcription scroll
     function syncViewerToScroll() {
-      if (!window.TranscriptionSyncEnabled) {
+      if (!isSyncActive()) {
         log('[Page Sync] Sync disabled - skipping viewer scroll');
         return;
       }
@@ -843,7 +849,7 @@ This copyright notice MUST APPEAR in all copies of the file.
       var thresholdTop = containerRect.top + SCROLL_THRESHOLD_OFFSET;
 
       var visible = findVisiblePageTag(transcriptionBox, thresholdTop, transcriptionBox.scrollTop || 0);
-      if (window.TranscriptionSyncEnabled && visible && isBlankPageTag(visible)) {
+      if (isSyncActive() && visible && isBlankPageTag(visible)) {
         var nonBlankVisible = findNextNonBlankTag(transcriptionBox, visible);
         visible = nonBlankVisible || visible;
       }
@@ -899,10 +905,10 @@ This copyright notice MUST APPEAR in all copies of the file.
     // Initial alignment: only if current viewer page has a matching tag
     setTimeout(function () {
       var current = (viewer && typeof viewer.currentPage === 'function') ? viewer.currentPage() : null;
-      if (current !== null && window.TranscriptionSyncEnabled && maybeSkipBlankCanvas(current)) {
+      if (current !== null && isSyncActive() && maybeSkipBlankCanvas(current)) {
         return;
       }
-      if (current !== null && findPageTagByCanvasIndex(transcriptionBox, current)) {
+      if (isSyncActive() && current !== null && findPageTagByCanvasIndex(transcriptionBox, current)) {
         syncViewerToScroll();
       } else {
         log('[Page Sync] Initial alignment skipped (no matching tag for current viewer page)');
