@@ -200,7 +200,6 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Additional directories to search for static files (in dev)
 STATICFILES_DIRS = [
     BASE_DIR.parent / "static",  # /app/lumieres/static
-    BASE_DIR.parent / "ckeditor/static",
 ]
 
 # ------------------------------
