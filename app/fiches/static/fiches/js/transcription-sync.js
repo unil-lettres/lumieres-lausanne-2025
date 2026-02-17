@@ -35,6 +35,12 @@ This copyright notice MUST APPEAR in all copies of the file.
   function currentMode() {
     return document.body.getAttribute('data-layout-mode') || 'split-view';
   }
+  function hasTranscriptionText() {
+    var box = document.getElementById('transcription-data');
+    if (!box) return false;
+    var text = (box.textContent || '').replace(/\u00A0/g, ' ').trim();
+    return text.length > 0;
+  }
   var SCROLL_SYNC_DELAY = 150;
   var SMOOTH_SCROLL_DURATION = 600;
   var PAGE_SYNC_INIT_DELAY = 500;
@@ -98,6 +104,7 @@ This copyright notice MUST APPEAR in all copies of the file.
   // Layout toggle logic ----------------------------------------------------
   function setupLayoutToggles(cfg) {
     var hasViewer = !!cfg.hasViewer;
+    var hasText = hasTranscriptionText();
     var buttons = document.querySelectorAll('.layout-btn');
 
     if (!hasViewer) {
@@ -119,7 +126,13 @@ This copyright notice MUST APPEAR in all copies of the file.
 
     var savedLayout = null;
     try { savedLayout = sessionStorage.getItem(STORAGE_KEY_LAYOUT); } catch (_) {}
-    var initialLayout = savedLayout || DEFAULT_LAYOUT;
+    var defaultLayout = hasText ? DEFAULT_LAYOUT : 'viewer-only';
+    var initialLayout = savedLayout || defaultLayout;
+
+    if (!hasText && hasViewer) {
+      initialLayout = 'viewer-only';
+      try { sessionStorage.setItem(STORAGE_KEY_LAYOUT, initialLayout); } catch (_) {}
+    }
 
     document.body.setAttribute('data-layout-mode', initialLayout);
     updateActiveButton(buttons, initialLayout);
@@ -182,6 +195,7 @@ This copyright notice MUST APPEAR in all copies of the file.
     }
     
     var hasFacsimile = container.getAttribute('data-has-facsimile') === 'true';
+    var hasText = hasTranscriptionText();
     
     var textBtn = container.querySelector('.layout-btn[data-layout="text-only"]');
     var splitBtn = container.querySelector('.layout-btn[data-layout="split-view"]');
@@ -201,6 +215,14 @@ This copyright notice MUST APPEAR in all copies of the file.
       optionsBtn.disabled = false;
       setLayout('text-only');
       log('[Mode Availability] No facsimile – forced text-only mode');
+    } else if (!hasText) {
+      // Facsimile available but no transcription text: force viewer-only.
+      textBtn.disabled = true;
+      splitBtn.disabled = true;
+      viewerBtn.disabled = false;
+      optionsBtn.disabled = true;
+      setLayout('viewer-only');
+      log('[Mode Availability] No transcription text – forced viewer-only mode');
     } else {
       // Both available (normal case)
       textBtn.disabled = false;
