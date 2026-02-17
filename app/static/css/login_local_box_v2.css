@@ -1,0 +1,78 @@
+/*
+ * Login local box visual refresh (reversible).
+ *
+ * Rollback:
+ * - Remove the link to this file in registration/login_base2.html.
+ */
+
+.login-local-only .login-local-column {
+  float: none;
+  margin: 0 auto;
+}
+
+.login-local-only .login-local-card {
+  float: none;
+  width: 360px;
+  min-height: 230px;
+  margin: 0 auto;
+  padding: 20px 22px;
+}
+
+.login-local-only .aai_header p.aai {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.login-local-only .login-local-intro {
+  margin: 12px 0 18px;
+  line-height: 1.4;
+}
+
+.login-local-only .local-login-form form {
+  margin: 0;
+}
+
+.login-local-only .local-login-form .login-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 6px;
+  margin-bottom: 10px;
+}
+
+.login-local-only .local-login-form .login-label label {
+  display: inline-block;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.login-local-only .local-login-form .login-field input[type="text"],
+.login-local-only .local-login-form .login-field input[type="password"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 7px;
+}
+
+.login-local-only .local-login-form .login-local-submit {
+  text-align: right;
+  margin-top: 6px;
+}
+
+.login-local-only .local-login-form .login-forgot-link {
+  display: inline-block;
+  margin-top: 10px;
+}
+
+@media (max-width: 860px) {
+  .login-local-only .login-local-card {
+    width: auto;
+    max-width: 420px;
+  }
+
+  .login-local-only .local-login-form .login-row {
+    grid-template-columns: 1fr;
+    margin-bottom: 12px;
+  }
+}
