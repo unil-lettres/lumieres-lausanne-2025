@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from fiches.models.misc.project import Project
 
 from .constants import DATE_DISPLAY_FORMAT, DATE_INPUT_FORMATS
-from .fields import MultiplePersonField
+from .fields import MultiplePersonField, MultipleUserField
 from .models.contributions import PrimaryKeyword, SecondaryKeyword
 from .models.contributiontype import ContributionType
 from .models.documents import (
@@ -27,6 +27,8 @@ from .models.documents import (
 from .models.misc import ObjectCollection, Society
 from .models.person import Person
 from .widgets import DynamicList, PersonWidget, StaticList
+from .models.documents.document import TranscriptionReviewer
+from .utils import get_default_publisher_user
 
 
 # ===============================
@@ -321,8 +323,14 @@ class TranscriptionForm(forms.ModelForm):
     author2 = forms.ModelChoiceField(
         queryset=User.objects.all().order_by("username"), required=False
     )
-    reviewers = forms.ModelMultipleChoiceField(
-        queryset=User.objects.all().order_by("username"), required=False
+    reviewers = MultipleUserField(
+        queryset=User.objects.all().order_by("username"),
+        widget=DynamicList(
+            rel=TranscriptionReviewer.user,
+            add_title="Ajouter un relecteur",
+            placeholder="nom d'utilisateur",
+        ),
+        required=False,
     )
     status = forms.IntegerField(
         widget=forms.RadioSelect(choices=TRANSCRIPTION_CHOICES["status"]),
@@ -356,6 +364,53 @@ class TranscriptionForm(forms.ModelForm):
     class Meta:
         model = Transcription
         exclude = ("modified_by",)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and not self.is_bound:
+            reviewer_ids = list(
+                TranscriptionReviewer.objects.filter(
+                    transcription_id=self.instance.pk
+                ).values_list("user_id", flat=True)
+            )
+            self.initial.setdefault("reviewers", reviewer_ids)
+
+            # Legacy rows can be public and dated but still miss "published_by".
+            # Prefill with the default publisher in the form UI without mutating DB.
+            if (
+                self.instance.access_public
+                and self.instance.published_date
+                and not self.instance.published_by_id
+            ):
+                default_publisher = get_default_publisher_user()
+                if default_publisher:
+                    if not self.initial.get("published_by"):
+                        self.initial["published_by"] = default_publisher.pk
+
+    def save_reviewers(self, transcription):
+        """
+        Persist the explicit reviewers selection in the through table.
+        """
+        selected_reviewers = self.cleaned_data.get("reviewers")
+        if selected_reviewers is None:
+            return
+
+        selected_ids = set(selected_reviewers.values_list("id", flat=True))
+        TranscriptionReviewer.objects.filter(transcription=transcription).exclude(
+            user_id__in=selected_ids
+        ).delete()
+        existing_ids = set(
+            TranscriptionReviewer.objects.filter(
+                transcription=transcription
+            ).values_list("user_id", flat=True)
+        )
+        missing_ids = selected_ids - existing_ids
+        TranscriptionReviewer.objects.bulk_create(
+            [
+                TranscriptionReviewer(transcription=transcription, user_id=user_id)
+                for user_id in missing_ids
+            ]
+        )
 
     def clean(self):
         cleaned_data = super().clean()

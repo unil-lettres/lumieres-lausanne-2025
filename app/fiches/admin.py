@@ -12,6 +12,7 @@ from django.contrib.sites.admin import SiteAdmin
 from django.forms import ModelForm, TextInput, CharField
 from django.contrib import admin
 from django.contrib import messages
+from django.contrib.admin.sites import NotRegistered
 from fiches.forms import ProjectForm
 
 from fiches.models.content.free_content import FreeContent
@@ -537,7 +538,12 @@ class UserProfileInline(admin.StackedInline):
     model = UserProfile
     can_delete = False
     verbose_name_plural = "Informations supplémentaires"
-    fields = ("field_of_research", "shib_uniqueID")
+    fieldsets = (
+        (
+            "Informations supplémentaires",
+            {"fields": ("field_of_research", "shib_uniqueID")},
+        ),
+    )
 
 
 class FichesUserAdmin(UserAdmin):
@@ -584,3 +590,10 @@ fiches_admin.register(Site, SiteAdmin)
 # Unregister and re-register User with the custom admin
 fiches_admin.unregister(User)
 fiches_admin.register(User, CustomUserAdmin)
+
+# Keep the default Django admin aligned with the custom fiches admin for User profile fields.
+try:
+    admin.site.unregister(User)
+except NotRegistered:
+    pass
+admin.site.register(User, CustomUserAdmin)

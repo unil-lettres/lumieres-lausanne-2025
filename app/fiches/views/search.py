@@ -24,6 +24,7 @@ from django.urls import reverse
 from django.core.paginator import Paginator, InvalidPage
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import permission_required
+from django.utils import timezone
 
 # Project utils
 from utils import dbg_logger
@@ -31,6 +32,7 @@ from utils import dbg_logger
 # Domain models
 from fiches.models.documents.document import Biblio, Transcription, DocumentType
 from fiches.models import UserGroup, ActivityLog, Person, Project, Society, RelationType
+from fiches.utils import get_default_publisher_user
 
 # Forms / search models
 from fiches.models.search.search import (
@@ -707,13 +709,25 @@ def transcriptions_change_access(request):
     public = "access_public" in request.POST
     private = "access_private" in request.POST
     groups = UserGroup.objects.filter(id__in=request.POST.getlist("access_groups"))
+    default_publisher = get_default_publisher_user()
+    now = timezone.now()
     for biblio in Biblio.objects.filter(id__in=request.POST.getlist("transcriptions")):
         for transcription in biblio.transcription_set.all():
+            was_public = transcription.access_public
             transcription.access_public = public
             transcription.access_private = private
-            transcription.access_groups.clear()
-            transcription.access_groups.add(*groups)
+
+            if public:
+                if not transcription.published_date:
+                    transcription.published_date = now
+                if not transcription.published_by:
+                    if was_public:
+                        transcription.published_by = default_publisher or request.user
+                    else:
+                        transcription.published_by = request.user
+
             transcription.save()
+            transcription.access_groups.set(groups)
     return HttpResponseRedirect(reverse("search-biblio") + "?" + request.POST.get("searchparams", ""))
 
 

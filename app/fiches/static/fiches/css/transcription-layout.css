@@ -500,8 +500,8 @@ body[data-layout-mode="text-only"] .side-notes-panel .side-note {
 }
 
 .page-tag {
-	color: #0b7a0b;
-	/* make page markers visually distinct */
+	color: #111;
+	/* keep markers readable but aligned with normal text color */
 	font-weight: bold;
 }
 

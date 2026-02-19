@@ -141,11 +141,13 @@
                     panel.promise().done(function () {
                         $('.ia-content', panel).html(description);
 
-                        // Initialize jCarousel if it’s present in the loaded snippet
-                        if ($.fn.jcarousel) {
-                            $('.jcarousel', panel)
-                                .jcarousel({ wrap: 'both' })
-                                .jcarousel('scroll', 0, false);
+                        // Re-run shared carousel/lightbox initializers on ajax-injected content.
+                        // This is what binds the inline orange prev/next arrows reliably.
+                        if (window.LL && typeof LL.initCarousel === 'function') {
+                            LL.initCarousel(panel);
+                        }
+                        if (window.LL && typeof LL.initLightbox === 'function') {
+                            LL.initLightbox();
                         }
 
                         showProjectPanel(showEffect);

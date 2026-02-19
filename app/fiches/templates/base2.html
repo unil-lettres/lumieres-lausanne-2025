@@ -82,9 +82,17 @@
             $carousel.jcarousel({ wrap: 'both' }).jcarousel('scroll', 0, false);
             $carousel.data('llCarouselInitialized', true);
 
+            // Some templates place arrows inside `.jcarousel`, others as siblings.
+            // Support both layouts.
             var $wrapper = $carousel.parent();
-            var $prev = $wrapper.find('> .prev');
-            var $next = $wrapper.find('> .next');
+            var $prev = $carousel.find('> .prev');
+            var $next = $carousel.find('> .next');
+            if (!$prev.length) {
+                $prev = $wrapper.find('> .prev');
+            }
+            if (!$next.length) {
+                $next = $wrapper.find('> .next');
+            }
 
             $prev.off('.llCarousel').on('click.llCarousel', function(event) {
                 event.preventDefault();
@@ -232,7 +240,7 @@
 
     <div class="ia-menu-outer">
         <div class="ia-menu-inner">
-            {% url 'home' as home_url %}
+            {% url 'lumieres-home' as home_url %}
             {% url 'project-index' as proj_url %}
             {% url 'news-index' as news_url %}
             <ul class="ia">

@@ -48,6 +48,7 @@ from fiches.utils import (
     get_last_model_activity,
     log_model_activity,
     update_object_index,
+    get_default_publisher_user,
 )
 from utils import dbg_logger
 
@@ -245,30 +246,31 @@ def edit(
             ) or getattr(request.user, "status_equipe", False)
             trans = trans_form.save(commit=False)
             trans.access_owner = trans.author
+            default_publisher = get_default_publisher_user()
 
-            # Handle publish transition: set published_date if publishing for the first time
-            if (
-                not access_public_original
-                and trans.access_public
-                and can_publish_transcription
-            ):
-                if not trans.published_date:
-                    trans.published_date = timezone.now()
-                if not trans.published_by:
-                    trans.published_by = request.user
-
-            # If published_date is edited manually, keep who performed that change.
-            if trans.published_date != published_date_original:
-                if can_publish_transcription:
-                    if not trans.published_by:
-                        trans.published_by = request.user
-                else:
-                    trans.published_date = published_date_original
-                    trans.published_by = published_by_original
-
-            # Prevent unauthorized manual edits of publication metadata.
-            if not can_publish_transcription and trans.published_by != published_by_original:
+            # Publication metadata rules:
+            # - when transcription is not public, keep publication metadata unchanged
+            # - when it is public, ensure legacy rows have a default publisher
+            # - preserve existing publication date across public/off/public toggles
+            if not can_publish_transcription:
+                trans.published_date = published_date_original
                 trans.published_by = published_by_original
+            elif not trans.access_public:
+                trans.published_date = published_date_original
+                trans.published_by = published_by_original
+            else:
+                # Transition to public: set initial publication date if absent.
+                if not access_public_original and not trans.published_date:
+                    trans.published_date = timezone.now()
+
+                # Legacy fallback for missing publisher on already-published records.
+                if trans.published_date and not trans.published_by:
+                    if published_date_original and not published_by_original:
+                        trans.published_by = default_publisher or request.user
+                    elif not access_public_original:
+                        trans.published_by = request.user
+                    else:
+                        trans.published_by = default_publisher or request.user
 
             # Track who performed the latest transcription update.
             trans.modified_date = timezone.now()
@@ -278,6 +280,7 @@ def edit(
                 trans.access_public = access_public_original
             trans.save()
             trans_form.save_m2m()
+            trans_form.save_reviewers(trans)
 
             # Write to the activity log
             log_model_activity(trans, request.user)
