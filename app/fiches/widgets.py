@@ -237,10 +237,9 @@ class DynamicList(forms.SelectMultiple):
     def __init__(self, rel=None, attrs=None, choices=(), add_title="Add", placeholder=None):
         # Handle ForeignKey or ManyToManyField (if provided)
         if rel is not None:
-            if isinstance(rel, models.ForeignKey):
-                self.rel = rel.related_model
-            elif isinstance(rel, models.ManyToManyField):
-                self.rel = rel.related_model
+            rel_field = getattr(rel, "field", rel)
+            if isinstance(rel_field, (models.ForeignKey, models.ManyToManyField)):
+                self.rel = rel_field.related_model
             else:
                 self.rel = None
         else:
@@ -358,4 +357,3 @@ class DynamicList(forms.SelectMultiple):
         )
 
         return mark_safe('\n'.join(output))
-

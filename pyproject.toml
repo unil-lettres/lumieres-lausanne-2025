@@ -19,6 +19,7 @@ dependencies = [
     "pysolr>=3.9.0",
     "sorl-thumbnail>=12.7.0",
     "gunicorn>=20.1,<21.0",
+    "setuptools>=70,<81",
 ]
 dynamic = ["version"]
 

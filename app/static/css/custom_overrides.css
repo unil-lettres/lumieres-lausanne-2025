@@ -39,3 +39,10 @@
     font-size: 11px;
     line-height: 1.2;
 }
+
+/* Footer partners: slightly enlarge UNIL mark for better visual parity. */
+.ia-footer-upper-inner .ia-logo img.ia.ia-logo-unil {
+    height: 58px;
+    width: auto;
+    margin-top: 11px;
+}

@@ -119,3 +119,22 @@ def user_can_delete_documentfile(user, docfile):
     if not docfile.user_access(user, any_login=True):
         return False
     return user.has_perm("fiches.delete_documentfile")
+
+
+def get_default_publisher_user():
+    """
+    Return the preferred fallback user for legacy publication attribution.
+    Current business rule: default to Béatrice (username: blovis) when present.
+    """
+    User = apps.get_model("auth", "User")
+
+    preferred_usernames = ["blovis"]
+    user = User.objects.filter(username__in=preferred_usernames).order_by("id").first()
+    if user:
+        return user
+
+    return (
+        User.objects.filter(first_name__icontains="bea")
+        .order_by("id")
+        .first()
+    )

@@ -9,9 +9,23 @@ dev/init:  ## Initialize the development environment
 
 .PHONY: dev/install
 dev/install:  ## Install dependencies
-dev/install:
 	pip install -e .[dev,tools,docs]
 	
+# Install the latest Node.js using nvm
+.PHONY: dev/node-install
+dev/node-install:
+	# Install nvm if not present
+	if ! command -v nvm >/dev/null 2>&1; then \
+	  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash; \
+	  export NVM_DIR="$$HOME/.nvm"; \
+	  [ -s "$$NVM_DIR/nvm.sh" ] && \. "$$NVM_DIR/nvm.sh"; \
+	fi; \
+	export NVM_DIR="$$HOME/.nvm"; \
+	[ -s "$$NVM_DIR/nvm.sh" ] && \. "$$NVM_DIR/nvm.sh"; \
+	nvm install node; \
+	nvm use node; \
+	node -v; \
+	npm -v
 
 $(APP_PATH):  ## Create a app basics
 	$(MKDIR) $(APP_PATH)
@@ -51,7 +65,7 @@ dev/logs: docker/compose/logs
 
 .PHONY: dev/runserver
 dev/runserver:  ## Run the django dev server
-	cd $(APP_PATH) && python manage.py runserver
+	cd $(APP_PATH) && python manage.py runserver 0.0.0.0:8000
 
 .PHONY: dev/shell
 dev/shell:  ## Open a shell with Djangop

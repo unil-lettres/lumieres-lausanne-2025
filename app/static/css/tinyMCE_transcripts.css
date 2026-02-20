@@ -13,6 +13,19 @@
 .cked-content, .transcription-data {font-size:11pt !important; line-height:1.5;}
 span[style], font[face] {font-size:inherit !important; line-height:inherit !important;}
 
+/* Firefox-specific fix: reduce line-height to prevent excessive spacing (issue #105)
+ * Firefox renders line-height: 1.5 with more visual space than other browsers when
+ * <br> elements are visible. We detect Firefox via JS (adding .is-firefox to body)
+ * and only apply when line breaks are visible (.linebreaks-visible on body).
+ */
+body.is-firefox.linebreaks-visible .transcription-data {
+	line-height: 1;
+}
+/* Add spacing between paragraphs in Firefox to compensate for reduced line-height */
+body.is-firefox.linebreaks-visible #transcription-data > p {
+	margin-bottom: 0.8em;
+}
+
 /* Increase line spacing for visible line breaks (br elements) */
 .transcription-data br {
 	display: block;

@@ -19,6 +19,154 @@
    This copyright notice MUST APPEAR in all copies of the file.
 */
 
+/* Transcription title styling */
+h2.transcription {
+	margin-bottom: 0px;
+}
+
+/* Layout toggle button bar */
+.layout-toggle-group {
+	display: flex;
+	gap: 0;
+	align-items: center;
+	padding: 8px 12px;
+	border-radius: 4px;
+	border: 1px solid #ddd;
+	margin-bottom: 15px;
+	position: relative;
+}
+
+/* Mode buttons (no gaps, separated by light border) */
+.layout-btn {
+	flex: 0 0 auto;
+	padding: 6px 12px;
+	background-color: #f5f5f5;
+	border: 1px solid #ddd;
+	border-radius: 0;
+	cursor: pointer;
+	font-size: 14px;
+	transition: all 0.2s ease;
+}
+
+.layout-btn:first-child {
+	border-radius: 3px 0 0 3px;
+}
+
+.layout-btn:nth-child(3) {
+	border-radius: 0;
+}
+
+/* Options button styling */
+.options-btn {
+	margin-left: auto;
+	border-radius: 0 3px 3px 0;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.dropdown-arrow {
+	font-size: 10px;
+	transition: transform 0.2s ease;
+}
+
+.options-btn.active .dropdown-arrow {
+	transform: rotate(180deg);
+}
+
+/* Options dropdown menu */
+.options-menu-wrapper {
+	position: relative;
+	display: inline-block;
+}
+
+.options-dropdown {
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	right: auto;
+	background-color: white;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+	z-index: 1000;
+	min-width: 220px;
+	display: none;
+	margin-top: 4px;
+}
+
+.options-dropdown.show {
+	display: block;
+}
+
+.option-item {
+	display: flex;
+	align-items: center;
+	padding: 8px 12px;
+	cursor: pointer;
+	user-select: none;
+	border-bottom: 1px solid #f0f0f0;
+}
+
+.option-item:last-child {
+	border-bottom: none;
+}
+
+.option-item:hover {
+	background-color: #f9f9f9;
+}
+
+.option-item input[type="checkbox"] {
+	margin-right: 8px;
+	cursor: pointer;
+	width: 16px;
+	height: 16px;
+	appearance: none;
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	background-color: #fff;
+	border: 2px solid #ddd;
+	border-radius: 3px;
+	position: relative;
+	transition: all 0.2s ease;
+}
+
+.option-item input[type="checkbox"]:hover {
+	border-color: #f0750b;
+}
+
+.option-item input[type="checkbox"]:checked {
+	background-color: #f0750b;
+	border-color: #f0750b;
+}
+
+.option-item input[type="checkbox"]:checked::after {
+	content: '';
+	position: absolute;
+	left: 3px;
+	top: 0px;
+	width: 4px;
+	height: 8px;
+	border: solid white;
+	border-width: 0 2px 2px 0;
+	transform: rotate(45deg);
+}
+
+.option-item span {
+	flex: 1;
+}
+
+/* Active button state */
+.layout-btn.active {
+	background-color: #e8e8e8;
+	font-weight: 600;
+	border-color: #999;
+}
+
+.layout-btn:hover:not(.active) {
+	background-color: #fafafa;
+}
+
 /* Two-column layout: transcription on left, viewer on right */
 .transcription-viewer-container {
 	display: flex;
@@ -30,7 +178,8 @@
 
 .transcription-content {
 	flex: 1;
-	min-width: 0; /* Allow flex item to shrink below content size */
+	min-width: 0;
+	/* Allow flex item to shrink below content size */
 }
 
 .transcription-content #transcription-view-controls {
@@ -38,7 +187,7 @@
 }
 
 .transcription-content #transcription-data {
-	max-height: 600px;
+	max-height: 655px;
 	overflow-y: auto;
 	overflow-x: hidden;
 }
@@ -51,6 +200,9 @@
 	height: fit-content;
 	max-height: calc(100vh - 40px);
 	z-index: 10;
+	/* Hide by default to prevent flicker on page load (issue #98) */
+	/* JavaScript will set data-layout-mode which overrides this */
+	display: none;
 }
 
 #openseadragon-viewer {
@@ -58,7 +210,8 @@
 	height: 600px;
 	background-color: #000;
 	border: 1px solid #ccc;
-	position: relative; /* allows overlay elements like marker toast */
+	position: relative;
+	/* allows overlay elements like marker toast */
 }
 
 .content .transcription-data {
@@ -121,7 +274,7 @@
 	.transcription-viewer-container {
 		flex-direction: column;
 	}
-	
+
 	.viewer-panel {
 		width: 100%;
 		position: static;
@@ -138,7 +291,7 @@
 	display: flex;
 	gap: 3px;
 	margin-bottom: 10px;
-	justify-content: center;
+	justify-content: flex-start;
 }
 
 .layout-btn {
@@ -172,6 +325,11 @@
 .layout-btn.active:hover {
 	background-color: #6A5F42;
 	border-color: #6A5F42;
+}
+
+/* Split-view mode (default) - show viewer panel */
+body[data-layout-mode="split-view"] .viewer-panel {
+	display: block;
 }
 
 /* Text-only mode */
@@ -262,6 +420,15 @@ body[data-notes-position="bottom"] .side-notes-panel {
 }
 
 /* Viewer-only mode */
+body[data-layout-mode="viewer-only"] .viewer-panel {
+	display: block;
+	position: static;
+	width: 800px;
+	max-width: 90%;
+	max-height: none;
+	height: auto;
+}
+
 body[data-layout-mode="viewer-only"] .transcription-content {
 	display: none;
 }
@@ -270,21 +437,28 @@ body[data-layout-mode="viewer-only"] .transcription-viewer-container {
 	justify-content: center;
 }
 
-body[data-layout-mode="viewer-only"] .viewer-panel {
-	position: static;
-	width: 800px;
-	max-width: 90%;
-	max-height: none;
-	height: auto;
-}
-
 body[data-layout-mode="viewer-only"] #openseadragon-viewer {
 	height: 800px;
 }
 
-/* Hidden line breaks styling */
-.transcription-data br.hidden-br {
+/* Hide Repere indicator in viewer-only (facsimile) mode */
+body[data-layout-mode="viewer-only"] .marker-indicator {
 	display: none;
+}
+
+/* Line breaks hidden by default to prevent flash (issue #101).
+   They become visible only when body has .linebreaks-visible. */
+div.transcription-data br:not(.verse br) {
+	display: none;
+}
+div.transcription-data .brsep {
+	display: none;
+}
+body.linebreaks-visible div.transcription-data br:not(.verse br) {
+	display: inline;
+}
+body.linebreaks-visible div.transcription-data .brsep {
+	display: inline;
 }
 
 /* Side notes styling */
@@ -326,7 +500,8 @@ body[data-layout-mode="text-only"] .side-notes-panel .side-note {
 }
 
 .page-tag {
-	color: #0b7a0b; /* make page markers visually distinct */
+	color: #111;
+	/* keep markers readable but aligned with normal text color */
 	font-weight: bold;
 }
 
@@ -349,4 +524,33 @@ a.note-ref-link {
 
 a.note-ref-link:hover {
 	background-color: #ffffcc;
+}
+
+/* ========================================================================
+   PHASE 3: Conditional Logic - Mode Availability States
+   ======================================================================== */
+
+/* When no facsimile: disable facsimile-related buttons */
+#layout-toggle-buttons[data-has-facsimile="false"] .layout-btn[data-layout="split-view"],
+#layout-toggle-buttons[data-has-facsimile="false"] .layout-btn[data-layout="viewer-only"] {
+	opacity: 0.5;
+	cursor: not-allowed;
+	background-color: #f0f0f0;
+	color: #999;
+	pointer-events: none;
+}
+
+/* Disabled state styling (for button[disabled] attribute) */
+.layout-btn:disabled,
+.layout-btn[disabled] {
+	opacity: 0.5;
+	cursor: not-allowed;
+	background-color: #f0f0f0;
+	color: #999;
+	pointer-events: none;
+}
+
+.layout-btn:disabled:hover,
+.layout-btn[disabled]:hover {
+	background-color: #f0f0f0;
 }

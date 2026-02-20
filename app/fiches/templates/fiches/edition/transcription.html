@@ -30,14 +30,54 @@
 
 {% block head_js %}
 	{{ block.super }}
+	<script src="{% static 'js/lib/jquery/jquery.bgiframe.min.js' %}"></script>
+	<script src="{% static 'js/lib/jquery/jquery.ajaxQueue.js' %}"></script>
+	<script src="{% static 'js/lib/jquery/jquery.autocomplete.min.js' %}"></script>
+	<script type="text/javascript" src="{% static 'js/list_widget.js' %}"></script>
 	<!-- OpenSeadragon -->
 	<script src="{% static 'js/lib/openseadragon/openseadragon.min.js' %}"></script>
 	<!-- Viewer Controls -->
 	<script src="{% static 'fiches/js/viewer-controls.js' %}"></script>
+	<script type="text/javascript">
+		function reviewers_dynamic_autocomplete(selector) {
+			$(selector).autocomplete("{% url 'ajax-search' %}", {
+				extraParams: {
+					search_field: "username",
+					app_label: "auth",
+					model_name: "User"
+				}
+			})
+			.result(function(event, data, formatted) {
+				var $this = $(this);
+				if (data) {
+					if (isNaN(parseInt(data[0], 10))) {
+						data.reverse();
+					}
+					$this.siblings('.helper_input_value').val(data[0]);
+				}
+				$this.parents(".dynamiclist_container")
+					.find(".helper_addbut")
+					.removeAttr("disabled");
+			})
+			.blur(function(){
+				$(this).search();
+			});
+		}
+
+		$(document).ready(function(){
+			$(".reviewers .dynamiclist_container")
+				.find(".dynamiclist_value_entry")
+				.each(function(){
+					dynamiclist_widget.appendDeleteButton(this);
+				});
+			reviewers_dynamic_autocomplete($(".reviewers .dynamiclist_helper_input"));
+		});
+	</script>
 {% endblock head_js %}
 
 {% block head_css %}
 	{{ block.super }}
+	<link rel="stylesheet" href="{% static 'css/jquery.autocomplete.css' %}" />
 	<link rel="stylesheet" href="{% static 'fiches/css/viewer-controls.css' %}" />
 	<style type="text/css">
 		form.transcription .text textarea { height: 670px; width: 800px; }
@@ -77,6 +117,64 @@
 		}
 /*		form.transcription fieldset.access { border-left: 0; } */
 		form.transcription .author_name { font-size: 120%; }
+		form.transcription .fieldWrapper.reviewers {
+			display: grid;
+			grid-template-columns: 150px 1fr;
+			align-items: start;
+			column-gap: 12px;
+		}
+		form.transcription .fieldWrapper.reviewers > label {
+			margin-top: 0;
+		}
+		form.transcription .fieldWrapper.reviewers .dynamiclist_container {
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+		}
+		form.transcription .fieldWrapper.reviewers .dynamiclist_addbox {
+			order: 1;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			background: transparent !important;
+			border: 0 !important;
+			padding: 0 !important;
+			box-shadow: none !important;
+		}
+		form.transcription .fieldWrapper.reviewers .dynamiclist_helper_input {
+			width: 222px;
+			max-width: 100%;
+		}
+		form.transcription .fieldWrapper.reviewers .dynamiclist_values {
+			order: 2;
+			display: flex;
+			flex-wrap: nowrap;
+			align-items: center;
+			gap: 8px;
+			overflow-x: auto;
+			white-space: nowrap;
+			padding-bottom: 2px;
+		}
+		form.transcription .fieldWrapper.reviewers .dynamiclist_value_entry {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			margin: 0;
+		}
+		form.transcription .fieldWrapper.reviewers .dynamiclist-delete-item.ui-button {
+			height: 22px !important;
+			min-height: 22px !important;
+			width: 22px !important;
+			min-width: 22px !important;
+			padding: 0 !important;
+		}
+		form.transcription .fieldWrapper.reviewers .dynamiclist-delete-item .ui-button-text {
+			padding: 0 !important;
+			line-height: 1 !important;
+		}
+		form.transcription .fieldWrapper.reviewers .dynamiclist_add_info {
+			display: none;
+		}
 
 		/* Facsimile viewer styles */
 		.transcription-edit-container {
@@ -268,11 +366,6 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
         </div>
         <div class="fixclear"></div>
         
-		<div class="fieldWrapper">
-			<label>Dernière modification</label>
-			{{ last_activity.date|date:"d M. Y - H:i" }}
-		</div>
-		<div class="fixclear"></div>
 	<!--/fieldset-->
 
 	
@@ -364,21 +457,71 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
             {% endif %}
         </div>
         <div class="fixclear"></div>
+
+		<div class="fieldWrapper">
+			<label for="id_published_date">{{ transForm.published_date.label }}</label>
+			{{ transForm.published_date.errors }}
+			{{ transForm.published_date }}
+		</div>
+		<div class="fixclear"></div>
+
+		<div class="fieldWrapper">
+			<label for="id_published_by">{{ transForm.published_by.label }}</label>
+			{% if perms.fiches.publish_transcription %}
+				{{ transForm.published_by.errors }}
+				{{ transForm.published_by }}
+			{% else %}
+				{% if transcription.published_by %}
+					{{ transcription.published_by.get_full_name|default:transcription.published_by.username }}
+				{% else %}
+					—
+				{% endif %}
+			{% endif %}
+		</div>
+		<div class="fixclear"></div>
         
         <script>
         	$(function () {
-        		$('.access :checkbox').click(function() {
-        			$('.access :checkbox').prop("checked", false);
-        			$('.access select').prop("selectedIndex", -1);
-        			this.checked = true;
-        		});
-        		$('.access select').change(function() {
-        			if ( this.selectedIndex >= 0 ) {
-            			$('.access :checkbox').prop("checked", false);
-        			} else {
-            			$('.access #id_access_private').prop("checked", true);
+        		var $accessCheckboxes = $('.access :checkbox');
+        		var $accessGroups = $('.access #id_access_groups');
+        		var $accessUsers = $('.access #id_access_users');
+
+        		function syncPublicationDateLock() {
+        			var $public = $('.access #id_access_public');
+        			var $pubDate = $('#id_published_date');
+        			if (!$public.length || !$pubDate.length) return;
+        			var editable = $public.is(':checked') && !$public.is(':disabled');
+        			$pubDate.prop('disabled', !editable);
+        			$pubDate.prop('readonly', !editable);
+        			$pubDate.toggleClass('ui-state-disabled', !editable);
+        		}
+
+        		$accessCheckboxes.on('change', function() {
+        			var $current = $(this);
+        			var isNowChecked = $current.is(':checked');
+
+        			if (isNowChecked) {
+        				$accessCheckboxes.not($current).prop('checked', false);
+        				$accessGroups.prop('selectedIndex', -1);
+        			} else if ($current.attr('id') === 'id_access_public') {
+        				// Public can be turned off: fallback to "Accès Utilisateurs".
+        				$accessCheckboxes.prop('checked', false);
+        				$accessGroups.prop('selectedIndex', -1);
+        				$accessUsers.prop('checked', true);
         			}
+
+        			syncPublicationDateLock();
         		});
+
+        		$accessGroups.on('change', function() {
+        			if (this.selectedIndex >= 0) {
+        				$accessCheckboxes.prop('checked', false);
+        			} else {
+        				$accessUsers.prop('checked', true);
+        			}
+        			syncPublicationDateLock();
+        		});
+        		syncPublicationDateLock();
                 {# // handle collapsible fieldset #}
            		$(".collapse_btn")
            		    .append(function () {
@@ -411,7 +554,6 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 	</fieldset>
 	</form>
 	</div>
-	
     
 </div>
 <script type="text/javascript">
@@ -638,6 +780,95 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 				window.viewerControls = window.initViewerControls(facsimileViewer);
 			});
 		}
+	});
+})(jQuery);
+
+// Initialize French datetimepicker for published_date field
+(function($){
+	$(document).ready(function(){
+		// Configure French localization for datepicker
+		$.datepicker.regional['fr'] = {
+			closeText: 'Fermer',
+			prevText: 'Précédent',
+			nextText: 'Suivant',
+			currentText: 'Aujourd\'hui',
+			monthNames: ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+				'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],
+			monthNamesShort: ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+				'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'],
+			dayNames: ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'],
+			dayNamesShort: ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'],
+			dayNamesMin: ['D', 'L', 'M', 'M', 'J', 'V', 'S'],
+			weekHeader: 'Sem.',
+			dateFormat: 'dd/mm/yy',
+			firstDay: 1,
+			isRTL: false,
+			showMonthAfterYear: false,
+			yearSuffix: ''
+		};
+		$.datepicker.setDefaults($.datepicker.regional['fr']);
+		
+		// Initialize datetimepicker
+		$('.datetimepicker-fr').each(function() {
+			var $input = $(this);
+			
+			// Make input readonly
+			$input.prop('readonly', true).css('cursor', 'pointer');
+			
+			// Parse existing value if present (keep time internally but don't show it)
+			var initialDate = null;
+			var currentHour = new Date().getHours();
+			var currentMinute = 0;
+			
+			if ($input.val()) {
+				var match = $input.val().match(/^(\d{2})\/(\d{2})\/(\d{4}),?\s*(\d{2}):(\d{2})$/);
+				if (match) {
+					var day = parseInt(match[1], 10);
+					var month = parseInt(match[2], 10) - 1; // JS months are 0-based
+					var year = parseInt(match[3], 10);
+					initialDate = new Date(year, month, day);
+					currentHour = parseInt(match[4], 10);
+					currentMinute = parseInt(match[5], 10);
+				}
+			}
+			
+			// Create hidden field to store the full datetime
+			var $hiddenInput = $('<input type="hidden" name="' + $input.attr('name') + '" />');
+			$input.after($hiddenInput);
+			$input.removeAttr('name'); // Remove name from visible input
+			
+			// Initialize datepicker (no time controls)
+			$input.datepicker({
+				dateFormat: 'dd/mm/yy',
+				showButtonPanel: true,
+				changeMonth: true,
+				changeYear: true,
+				yearRange: '1700:2100',
+				onSelect: function(dateText) {
+					// Display only date in visible input
+					$input.val(dateText);
+					// Store full datetime in hidden input
+					var time = ('0' + currentHour).slice(-2) + ':' + ('0' + currentMinute).slice(-2);
+					$hiddenInput.val(dateText + ', ' + time);
+				}
+			});
+			
+			// Set initial date if available
+			if (initialDate) {
+				$input.datepicker('setDate', initialDate);
+				var dateText = $input.datepicker('getDate') ? 
+					$.datepicker.formatDate('dd/mm/yy', $input.datepicker('getDate')) : '';
+				if (dateText) {
+					$input.val(dateText); // Show only date
+					$hiddenInput.val(dateText + ', ' + ('0' + currentHour).slice(-2) + ':' + ('0' + currentMinute).slice(-2)); // Store full datetime
+				}
+			}
+			
+			// Open datepicker on input click
+			$input.on('click', function() {
+				$(this).datepicker('show');
+			});
+		});
 	});
 })(jQuery);
 </script>
