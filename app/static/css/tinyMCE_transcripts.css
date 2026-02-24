@@ -145,6 +145,13 @@ div.cked-content p, div.transcription-data p {padding-bottom:0.25em;padding-top:
 .norm ins {vertical-align: -moz-initial; vertical-align: initial;} /* too bad for IE users... */
 /*.norm .illeg-short, */.norm .corr{display:inline;}
 
+/* Keep adapted words visible in notes even in edited mode. */
+.norm .transcription-doc-notes .sic,
+.norm .transcription-ed-notes .sic,
+.norm .side-notes-panel .sic {
+	display: inline;
+}
+
 /* These declarations affect the display of notes.*/
 .transcription-doc-notes,.transcription-ed-notes {border: black 1px solid; border-style: solid none none none;margin:2em 0; }
 .transcription-doc-notes p.title,.transcription-ed-notes p.title {text-align: center; font-weight:bold;margin: 0.5em 0}
