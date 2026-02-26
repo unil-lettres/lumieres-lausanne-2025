@@ -806,6 +806,12 @@ class TranscriptionManager(models.Manager):
             "ORDER BY MAX(l.date) DESC"
         )[:count]
 
+    def latest_published_by_date(self, count=5):
+        return self.filter(
+            access_public=True,
+            published_date__isnull=False,
+        ).order_by("-published_date", "-id")[:count]
+
 
 from django.contrib.auth.models import User
 from django.db import models

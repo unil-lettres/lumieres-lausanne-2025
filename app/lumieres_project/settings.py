@@ -41,8 +41,8 @@ DEBUG = os.getenv("DJANGO_DEBUG", DEBUG_DEFAULT).lower() in ("1", "true", "yes")
 
 # Allowed hosts & CSRF trusted origins per environment
 if ENV == "production":
-    ALLOWED_HOSTS = ["lumieres.unil.ch"]
-    CSRF_TRUSTED_ORIGINS = ["https://lumieres.unil.ch"]
+    ALLOWED_HOSTS = ["lumieres.unil.ch", "www.lumieres.unil.ch"]
+    CSRF_TRUSTED_ORIGINS = ["https://lumieres.unil.ch", "https://www.lumieres.unil.ch"]
 
 elif ENV == "staging":
     # Toggle ngrok access in staging via env var (off by default)

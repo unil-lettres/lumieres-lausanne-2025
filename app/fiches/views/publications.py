@@ -58,7 +58,7 @@ def last_transcriptions(request):
     """
 
     content = FreeContent.objects.get_content("publications>last_transcriptions")
-    transcriptions = Transcription.objects.last_published(15)
+    transcriptions = Transcription.objects.latest_published_by_date(50)
 
     context = { "content": content, "last_transcriptions": transcriptions }
     return render(request, "fiches/publications/last_transcriptions.html", context)

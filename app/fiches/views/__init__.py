@@ -72,7 +72,7 @@ def main_index(request):
     news = News.objects.filter(published=True)[:3]
     findings = Finding.objects.filter(published=True)[:3]
     # XXX: issue #9 Error placeholders
-    transcriptions = Transcription.objects.last_published(3)
+    transcriptions = Transcription.objects.latest_published_by_date(3)
 
     context = {"text": text, "last_findings": findings, "last_news": news, "last_transcriptions": transcriptions}
 
