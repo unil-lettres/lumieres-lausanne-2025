@@ -204,17 +204,36 @@
             return $('.ia-btn-text[data-show=' + contentName + ']', panel).data('url');
         }
 
+        function getListState(contentDiv) {
+            var header = contentDiv.find('.panel_header');
+            return {
+                nbitem: header.find('select[name=nbItem]').val() || 20,
+                orderby: header.find('select[name=ordering]').val() || ''
+            };
+        }
+
         $("#project-panel").on("change", ".panel_header select[name=nbItem]", function () {
             var contentDiv = $(this).closest('.ia-content-center');
-            contentDiv.load(findListUrl(contentDiv) + '?nbitem=' + this.value + '&showTitle=1');
+            var state = getListState(contentDiv);
+            var query = { nbitem: state.nbitem, showTitle: 1 };
+            if (state.orderby) {
+                query.orderby = state.orderby;
+            }
+            contentDiv.load(findListUrl(contentDiv) + '?' + $.param(query));
         });
 
         $("#project-panel").on("click", ".pagination a", function (evt) {
             evt.preventDefault();
             var contentDiv = $(this).closest('.ia-content-center');
             var query = this.href.split('?')[1];
-            var pageNum = /page=(\d+)/.exec(query)[1];
-            contentDiv.load(findListUrl(contentDiv) + '?page=' + pageNum + '&showTitle=1');
+            var pageMatch = /page=(\d+)/.exec(query);
+            var pageNum = pageMatch ? pageMatch[1] : 1;
+            var state = getListState(contentDiv);
+            var params = { page: pageNum, nbitem: state.nbitem, showTitle: 1 };
+            if (state.orderby) {
+                params.orderby = state.orderby;
+            }
+            contentDiv.load(findListUrl(contentDiv) + '?' + $.param(params));
             return false;
         });
 
