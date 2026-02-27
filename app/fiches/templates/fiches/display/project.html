@@ -235,9 +235,12 @@
                     evt.preventDefault();
                     try {
                         var search   = this.href.split('?')[1],
-                            pageNum  = /page=(\d+)/.exec(search)[1],
+                            pageNumMatch = /page=(\d+)/.exec(search),
+                            pageNum  = pageNumMatch ? pageNumMatch[1] : 1,
                             nbItem   = $(this).closest(".panel_body").find(".panel_header .nbItem :selected").val(),
                             orderby  = $(this).closest(".panel_body").find(".panel_header .ordering :selected").val();
+                        nbItem = parseInt(nbItem, 10) || 20;
+                        orderby = (orderby === 'd' || orderby === 'a') ? orderby : 'd';
                         loaderCallback(pageNum, nbItem, orderby);
                     } catch(e) {}
                     return false;
