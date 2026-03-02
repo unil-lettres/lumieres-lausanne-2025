@@ -63,7 +63,7 @@ fiches_admin = FichesAdminSite(name="fiches_admin")
 class ImageInlineForm(ModelForm):
     """Form for inline image editing in admin."""
 
-    legend = CharField(label="Légende", widget=TextInput(attrs={"size": 150}))
+    legend = CharField(label="Légende", required=False, widget=TextInput(attrs={"size": 150}))
 
     class Meta:
         """Meta options for ImageInlineForm."""
@@ -316,6 +316,15 @@ class NewsAdmin(admin.ModelAdmin):
     list_display = ("title", "created_on", "modified_on", "published")
     search_fields = ("title", "content")
     inlines = [ImageInline, DocumentInline]
+
+    def save_model(self, request, obj, form, change):
+        """
+        Keep compatibility with DB schemas where news.author_id is NOT NULL.
+        If author is not set in the form, default to the current admin user.
+        """
+        if not getattr(obj, "author_id", None) and getattr(request.user, "id", None):
+            obj.author_id = request.user.id
+        super().save_model(request, obj, form, change)
 
 
 class ObjectCollectionAdmin(admin.ModelAdmin):
