@@ -14,6 +14,18 @@ class ImageInlineFormTest(SimpleTestCase):
 
 
 class NewsAdminSaveModelTest(SimpleTestCase):
+    def test_initial_data_defaults_author_to_request_user(self):
+        class UserStub:
+            id = 42
+
+        request = RequestFactory().get("/fiches_admin/fiches/news/add/")
+        request.user = UserStub()
+
+        admin_obj = NewsAdmin(News, AdminSite())
+        initial = admin_obj.get_changeform_initial_data(request)
+
+        self.assertEqual(initial.get("author"), 42)
+
     def test_save_model_sets_author_from_request_user_when_missing(self):
         class UserStub:
             id = 42

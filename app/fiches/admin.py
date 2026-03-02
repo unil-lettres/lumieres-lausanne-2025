@@ -317,6 +317,15 @@ class NewsAdmin(admin.ModelAdmin):
     search_fields = ("title", "content")
     inlines = [ImageInline, DocumentInline]
 
+    def get_changeform_initial_data(self, request):
+        """
+        Default Auteur to the current admin user on add form.
+        """
+        initial = super().get_changeform_initial_data(request)
+        if getattr(request.user, "id", None):
+            initial.setdefault("author", request.user.id)
+        return initial
+
     def save_model(self, request, obj, form, change):
         """
         Keep compatibility with DB schemas where news.author_id is NOT NULL.
