@@ -293,12 +293,12 @@ def remove_object(request):
 
     # Get the model and the object, given by item_type and item_id
     try:
-        model = models.get_model("fiches", item_type)
-    except:
+        model = apps.get_model("fiches", item_type)
+    except LookupError:
         return return_error("item type error")
     try:
         obj = model._default_manager.get(pk=item_id)
-    except:
+    except model.DoesNotExist:
         return return_error("object error")
 
     # Get the project
