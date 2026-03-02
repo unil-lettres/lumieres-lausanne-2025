@@ -265,6 +265,20 @@ function processNotes() {
 	syncSideNotesMode();
 }
 
+function parseAndNormalizeNoteHtml(rawNoteHtml) {
+	var html = $($.parseHTML(rawNoteHtml.replace(/&quot;/igm, '"')
+		.replace(/&gt;/igm, '>').replace(/&lt;/igm, '<')));
+
+	$('.sic', html).each(function() {
+		var corr = $(this).attr('data-corr');
+		if (corr) {
+			$(this).after('<span class="corr">' + corr + '</span>');
+		}
+	});
+
+	return html;
+}
+
 // Create notes in side panel for text-only mode
 function createSideNotes() {
 	var trans = $('.transcription-data').first();
@@ -394,8 +408,7 @@ function positionSideNotes(sidePanel, trans, hasDocNotes, hasEdNotes) {
 			}
 			
 			// Create side note
-			var noteHtml = $($.parseHTML($this.attr('data-note').replace(/&quot;/igm, '"')
-												  .replace(/&gt;/igm, '>').replace(/&lt;/igm, '<')));
+			var noteHtml = parseAndNormalizeNoteHtml($this.attr('data-note'));
 			var noteDiv = $('<div class="side-note note-document"></div>');
 			noteDiv.append('<span class="note-number">' + toRoman(noteIndex + 1).toLowerCase() + '</span>');
 			noteDiv.append('<a href="#' + citeId + '" name="' + noteId + '" class="note-back-link">↑</a> ');
@@ -424,8 +437,7 @@ function positionSideNotes(sidePanel, trans, hasDocNotes, hasEdNotes) {
 			}
 			
 			// Create side note
-			var noteHtml = $($.parseHTML($this.attr('data-note').replace(/&quot;/igm, '"')
-												  .replace(/&gt;/igm, '>').replace(/&lt;/igm, '<')));
+			var noteHtml = parseAndNormalizeNoteHtml($this.attr('data-note'));
 			var noteDiv = $('<div class="side-note note-editorial"></div>');
 			noteDiv.append('<span class="note-number">' + (noteIndex + 1) + '</span>');
 			noteDiv.append('<a href="#' + citeId + '" name="' + noteId + '" class="note-back-link">↑</a> ');
@@ -512,8 +524,7 @@ function createBottomNotes() {
 			}
 			$this.wrap('<a href="#docnote-' + transIndex + '-' + noteIndex +
 					   '" name="citedocnote-' + transIndex + '-' + noteIndex + '" />');
-			var html = $($.parseHTML($(this).attr('data-note').replace(/&quot;/igm, '"')
-												  .replace(/&gt;/igm, '>').replace(/&lt;/igm, '<')))
+			var html = parseAndNormalizeNoteHtml($(this).attr('data-note'))
 				, className = $this.attr('class')
 				, noteLink = '<a href="#citedocnote-' + transIndex + '-' + noteIndex
 							 + '" name="docnote-' + transIndex + '-' + noteIndex + '">↑</a> ';
@@ -535,8 +546,7 @@ function createBottomNotes() {
 			}
 			$this.wrap('<a href="#ednote-' + transIndex + '-' + noteIndex
 					+ '" name="citeednote-' + transIndex + '-' + noteIndex + '" />');
-			var html = $($.parseHTML($(this).attr('data-note').replace(/&quot;/igm, '"')
-									 .replace(/&gt;/igm, '>').replace(/&lt;/igm, '<')))
+			var html = parseAndNormalizeNoteHtml($(this).attr('data-note'))
 				, className = $(this).attr('class')
 				, noteLink = '<a href="#citeednote-' + transIndex + '-' + noteIndex
 							 + '" name="ednote-' + transIndex + '-' + noteIndex + '">↑</a> ';
