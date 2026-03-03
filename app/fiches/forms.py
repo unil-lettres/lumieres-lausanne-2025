@@ -349,7 +349,7 @@ class TranscriptionForm(forms.ModelForm):
         widget=forms.DateTimeInput(
             attrs={
                 "type": "text",
-                "placeholder": "jj/mm/aaaa, HH:MM",
+                "placeholder": "jj/mm/aaaa",
                 "class": "datetimepicker-fr",
             },
             format="%d/%m/%Y, %H:%M",
@@ -386,6 +386,12 @@ class TranscriptionForm(forms.ModelForm):
                 if default_publisher:
                     if not self.initial.get("published_by"):
                         self.initial["published_by"] = default_publisher.pk
+
+        if not self.is_bound and not self.initial.get("published_by"):
+            if not getattr(self.instance, "published_by_id", None):
+                default_publisher = get_default_publisher_user()
+                if default_publisher:
+                    self.initial["published_by"] = default_publisher.pk
 
     def save_reviewers(self, transcription):
         """
