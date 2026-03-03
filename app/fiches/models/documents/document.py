@@ -7,6 +7,7 @@
 # fiches/models/documents/document.py
 
 import re
+from os.path import basename
 from ckeditor.fields import RichTextField
 from types import SimpleNamespace
 
