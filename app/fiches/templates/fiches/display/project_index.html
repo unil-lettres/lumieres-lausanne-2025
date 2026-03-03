@@ -238,11 +238,24 @@
         });
 
         function remove_item(item) {
-            var idrec = item.find("a.collectable").attr("id").split('__');
+            var itemType = item.data("item-type"),
+                itemId = item.data("item-id"),
+                collectable = item.find("a.collectable"),
+                collectableId = collectable.length ? collectable.attr("id") : null,
+                idrec = collectableId ? collectableId.split("__") : null;
+
+            if (!itemType || !itemId) {
+                if (!idrec || idrec.length < 2) {
+                    return;
+                }
+                itemType = idrec[0];
+                itemId = idrec[1];
+            }
+
             var p = {
                 obj:       item,
-                item_type: idrec[0],
-                item_id:   idrec[1],
+                item_type: itemType,
+                item_id:   itemId,
                 item_title: item.text().trim()
             };
             var projectId = /(\d+)/.exec(findListUrl(item.closest('.ia-content-center')))[1];

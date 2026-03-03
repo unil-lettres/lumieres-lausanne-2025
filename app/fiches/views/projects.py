@@ -310,4 +310,10 @@ def remove_object(request):
 
     project.remove_object(obj)
 
+    # Keep project.transcriptions and project.bibliographies in sync for
+    # transcription entries shown in the transcriptions tab.
+    if model == apps.get_model("fiches", "Transcription"):
+        if hasattr(obj, "manuscript_b"):
+            project.remove_object(obj.manuscript_b)
+
     return HttpResponse("ok", content_type="text/plain")

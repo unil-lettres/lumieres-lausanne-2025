@@ -66,7 +66,9 @@
  
 	 <ul>
 	 {% for trans in transcription_list %}
-		 <li class="list_item panel-list-item {% if forloop.counter|divisibleby:2 %}row2{% else %}row1{% endif %}">
+		 <li class="list_item panel-list-item {% if forloop.counter|divisibleby:2 %}row2{% else %}row1{% endif %}"
+		     data-item-type="Transcription"
+		     data-item-id="{{ trans.id }}">
 			 {% if perms.fiches.change_project %}
 				 <span title="Retirer de la liste" class="ui-icon ui-icon-minus remove_item_but"></span>
 			 {% endif %}
