@@ -24,6 +24,13 @@ dynamic = ["version"]
 
 [project.optional-dependencies]
 tools = ["scrapy", "flask"]
+test = [
+    "playwright>=1.40.0",
+    "pytest",
+    "pytest-cov",
+    "pytest-django",
+    "pytest-playwright>=0.4.0",
+]
 dev = [
     "black",
     "flake8",
@@ -35,9 +42,6 @@ dev = [
     "isort",
     "mypy",
     "pep8-naming",
-    "pytest",
-    "pytest-cov",
-    "pytest-django",
 ]
 docs = ["mkdocs"]
 
@@ -73,5 +77,24 @@ ignore = [
 # pyproject.toml
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-ra -q"
-testpaths = ["tests"]
+testpaths = ["app/fiches/tests"]
+addopts = "-ra -q -v --tb=short"
+log_cli = false
+log_level = "INFO"
+
+# Test markers
+markers = [
+    "phase2: Phase 2 - Navigation Bar Layout tests",
+    "phase3: Phase 3 - Mode Conditional Logic tests",
+    "phase4: Phase 4 - Options Persistence tests",
+    "accessibility: Accessibility tests",
+    "responsive: Responsive design tests",
+    "chromium: Chromium browser tests",
+    "firefox: Firefox browser tests",
+    "webkit: WebKit (Safari) browser tests",
+]
+
+# Python files to collect
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
