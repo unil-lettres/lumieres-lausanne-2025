@@ -25,6 +25,11 @@ Includes display, creation, editing, and deletion of transcriptions,
 as well as handling related notes and permissions.
 """
 
+import json
+import re
+from functools import lru_cache
+from html.parser import HTMLParser
+from urllib.parse import quote, unquote, urlparse
 from urllib.parse import quote as urlquote
 
 from django.contrib.auth.decorators import permission_required
@@ -50,6 +55,7 @@ from fiches.utils import (
     update_object_index,
     get_default_publisher_user,
 )
+import requests
 from utils import dbg_logger
 
 # ==============================================================================#
@@ -58,6 +64,95 @@ from utils import dbg_logger
 FICHE_TYPE_NAME = "Transcription"
 
 DISPLAY_COLLECTOR = True
+
+
+PATRINUM_MANIFEST_RE = re.compile(
+    r"^https://patrinum\.ch/record/(?P<record_id>\d+)/export/iiif_manifest/?$"
+)
+
+
+class PatrinumOpenGraphImageParser(HTMLParser):
+    """Collect Patrinum preview images from record-page Open Graph metadata."""
+
+    def __init__(self, record_id):
+        super().__init__()
+        self.record_id = str(record_id)
+        self.image_urls = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag.lower() != "meta":
+            return
+
+        attr_dict = dict(attrs)
+        if attr_dict.get("property") != "og:image":
+            return
+
+        content = attr_dict.get("content", "")
+        if f"/record/{self.record_id}/files/" in content:
+            self.image_urls.append(content)
+
+
+def patrinum_image_url_to_info_json(image_url, record_id):
+    path = urlparse(image_url).path
+    marker = f"/record/{record_id}/files/"
+    if marker not in path:
+        return None
+
+    filename = path.split(marker, 1)[1]
+    if not filename:
+        return None
+
+    filename = quote(unquote(filename), safe="")
+    return (
+        "https://patrinum.ch/nanna/api/multimedia/image/v2/"
+        f"recid:{record_id}-{filename}/info.json"
+    )
+
+
+@lru_cache(maxsize=128)
+def get_patrinum_tile_sources(iiif_url):
+    """
+    Build IIIF Image API info.json URLs when Patrinum blocks manifest export.
+
+    Patrinum record pages expose one Open Graph image per page and their image
+    API endpoints are CORS-enabled. The manifest export endpoint may return
+    403, so display pages can preload the same sequence from the record page.
+    """
+    match = PATRINUM_MANIFEST_RE.match(iiif_url or "")
+    if not match:
+        return []
+
+    record_id = match.group("record_id")
+    response = requests.get(
+        f"https://patrinum.ch/record/{record_id}",
+        headers={"User-Agent": "Mozilla/5.0"},
+        timeout=8,
+    )
+    response.raise_for_status()
+
+    parser = PatrinumOpenGraphImageParser(record_id)
+    parser.feed(response.text)
+
+    tile_sources = []
+    seen = set()
+    for image_url in parser.image_urls:
+        info_url = patrinum_image_url_to_info_json(image_url, record_id)
+        if info_url and info_url not in seen:
+            tile_sources.append(info_url)
+            seen.add(info_url)
+
+    return tile_sources
+
+
+def get_facsimile_tile_sources(iiif_url):
+    if not iiif_url:
+        return []
+
+    try:
+        return get_patrinum_tile_sources(iiif_url)
+    except requests.RequestException:
+        dbg_logger.exception("Unable to derive Patrinum facsimile tile sources")
+        return []
 
 
 def index(request):
@@ -83,6 +178,7 @@ def display(request, trans_id):
         "fiches.access_unpublished_transcription"
     ) or trans.user_access(request.user)
     last_activity = get_last_model_activity(trans)
+    facsimile_tile_sources = get_facsimile_tile_sources(trans.facsimile_iiif_url)
 
     note_qs = NoteTranscription.objects.filter(owner=trans)
     if request.user.is_authenticated and not request.user.is_staff:
@@ -103,6 +199,7 @@ def display(request, trans_id):
         "trans_user_access": trans_user_access,
         "display_collector": DISPLAY_COLLECTOR,
         "note_qs": note_qs,
+        "facsimile_tile_sources_json": json.dumps(facsimile_tile_sources),
     }
 
     ext_template = (
