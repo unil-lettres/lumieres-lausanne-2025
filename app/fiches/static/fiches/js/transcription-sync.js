@@ -602,6 +602,15 @@ This copyright notice MUST APPEAR in all copies of the file.
     var iiifUrl = cfg?.iiifUrl;
     if (!iiifUrl || !iiifUrl.trim()) return;
 
+    var preloadedTileSources = Array.isArray(cfg.tileSources)
+      ? cfg.tileSources.filter(function (source) { return !!source; })
+      : [];
+    if (preloadedTileSources.length) {
+      log('[IIIF] Using preloaded tile sources:', preloadedTileSources.length);
+      initViewer(preloadedTileSources, cfg);
+      return;
+    }
+
     if (iiifUrl.indexOf('manifest') !== -1) {
       fetch(iiifUrl)
         .then(function (r) {
