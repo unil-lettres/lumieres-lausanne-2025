@@ -213,11 +213,10 @@ class BiblioForm(forms.ModelForm):
                     raise forms.ValidationError(
                         f"La personne «{label}» n'existe pas dans la base."
                     )
-                litterature_type = self.cleaned_data.get("litterature_type") or self.data.get("litterature_type")
                 person, _created = Person.objects.get_or_create(
                     name=label,
                     defaults={
-                        "modern": litterature_type == "s",
+                        "modern": False,
                         "may_have_biography": False,
                     },
                 )

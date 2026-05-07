@@ -441,7 +441,9 @@
         {% if doc.abstract %}
         <div class="field_wrap">
             <div class="field_label">Résumé</div>
-            <div class="field_value rich-text-content">{{ doc.abstract|safe }}</div>
+            <div class="field_value rich-text-content">
+                <div class="rich-text-body">{{ doc.abstract|safe }}</div>
+            </div>
             <div class="fixclear"></div>
         </div>
         {% endif %}
@@ -579,7 +581,7 @@
 				{% with access_public=note.access_public access_groups=note.access_groups.all %}{% include "fiches/edition/access_status.html" %}{% endwith %}
             </div>
             <div class="field_value note-content">
-            	{{ note.text|safe }}
+            	<div class="rich-text-body">{{ note.text|safe }}</div>
             </div>
             <div class="fixclear"></div>
         </div>
