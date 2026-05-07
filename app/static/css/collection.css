@@ -44,6 +44,25 @@
  */
 .ajax-loader { display: none; text-align: center; font-size: 80%; color: #444; margin-top: 30px; }
 .collector-list-add-button { background: url(images/tag_yellow.png) no-repeat 0 0; width: 16px; height: 16px; position: absolute; }
+.note-content .collector-list-add-button,
+.rich-text-content .collector-list-add-button {
+    background: none;
+    cursor: auto;
+    float: none;
+    font-size: 0;
+    height: auto;
+    line-height: 0;
+    margin: 0;
+    position: static;
+    visibility: visible;
+    width: auto;
+}
+
+.note-content .collector-list-add-button > *,
+.rich-text-content .collector-list-add-button > * {
+    font-size: 13px;
+    line-height: 1.3em;
+}
 #ll-collector-dialog { overflow: hidden; }
 #ll-collector-dialog p { margin-bottom: 10px; }
 #ll-collector-dialog-add-but { font-size: 11px; }
