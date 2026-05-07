@@ -349,9 +349,9 @@
 	   <div class="field_wrap">
             <div class="field_label">Date</div>
             <div class="field_value">
-                {{ doc.date|date:doc.date_f|default:"[s.d.]" }}
+                {{ doc|date_biblio:"date" }}
                 {% if doc.date2 %}
-                    - {{ doc.date2|date:doc.date2_f|default:"[s.d.]" }}
+                    - {{ doc|date_biblio:"date2" }}
                 {% endif %}
             </div>
             <div class="fixclear"></div>

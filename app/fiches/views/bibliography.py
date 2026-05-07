@@ -242,25 +242,6 @@ def display(request, doc_id):
     doc = get_object_or_404(Biblio, pk=doc_id)
     contributions = doc.contributiondoc_set.all()
 
-    # Format the document date(s)
-    if doc.date:
-        date_format = ""
-        if 'd' in doc.date_f:
-            date_format += "d"
-        if 'm' in doc.date_f:
-            date_format += " F"
-        if 'Y' in doc.date_f:
-            date_format += " Y"
-        doc.date_f = date_format
-    if doc.date2:
-        date2_format = ""
-        if 'd' in doc.date2_f:
-            date2_format += "d"
-        if 'm' in doc.date2_f:
-            date2_format += " F"
-        if 'Y' in doc.date2_f:
-            date2_format += " Y"
-        doc.date2_f = date2_format
     last_activity = get_last_model_activity(doc)
 
     referer = request.META.get("HTTP_REFERER")
