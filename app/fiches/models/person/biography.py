@@ -110,9 +110,7 @@ class Biography(models.Model):
         _("Séjours à l'étranger"), help_text=_("NE PAS REMPLIR CE CHAMP!"), blank=True, null=True
     )
 
-    archive = RichTextField(
-        verbose_name=_("Fonds d'archives"), config_name="note_ckeditor", max_length=512, blank=True
-    )
+    archive = RichTextField(verbose_name=_("Fonds d'archives"), config_name="note_ckeditor", blank=True)
 
     modification_date = models.DateTimeField(_("Dernière modification"), auto_now=True)
 
