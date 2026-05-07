@@ -242,25 +242,6 @@ def display(request, doc_id):
     doc = get_object_or_404(Biblio, pk=doc_id)
     contributions = doc.contributiondoc_set.all()
 
-    # Format the document date(s)
-    if doc.date:
-        date_format = ""
-        if 'd' in doc.date_f:
-            date_format += "d"
-        if 'm' in doc.date_f:
-            date_format += " F"
-        if 'Y' in doc.date_f:
-            date_format += " Y"
-        doc.date_f = date_format
-    if doc.date2:
-        date2_format = ""
-        if 'd' in doc.date2_f:
-            date2_format += "d"
-        if 'm' in doc.date2_f:
-            date2_format += " F"
-        if 'Y' in doc.date2_f:
-            date2_format += " Y"
-        doc.date2_f = date2_format
     last_activity = get_last_model_activity(doc)
 
     referer = request.META.get("HTTP_REFERER")
@@ -447,7 +428,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
         date2_f_val = req_post.get("date2_f")
         if date2_f_val is not None:
             req_post["date2_f"] = date2_f_val.replace("/", "-")
-        biblioForm = BiblioForm(req_post, instance=doc)
+        biblioForm = BiblioForm(req_post, instance=doc, user=request.user)
 
         if biblioForm.is_valid():
             doc = biblioForm.save(commit=False)
@@ -501,7 +482,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
 
     else:
         # Initialize forms for GET requests
-        biblioForm = BiblioForm(instance=doc)
+        biblioForm = BiblioForm(instance=doc, user=request.user)
         noteFormset = NoteFormset(instance=doc, queryset=note_qs)
         current_lit_type = getattr(doc, "litterature_type", None)
         contributionFormset = ContributionFormset(instance=doc, form_kwargs={"litterature_type": current_lit_type})

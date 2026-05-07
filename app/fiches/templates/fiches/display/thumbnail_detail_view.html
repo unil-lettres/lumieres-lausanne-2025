@@ -137,6 +137,10 @@
         $("#detail-panel").on("click", ".ia-btn-close", function () {
             $(this).parents(".ia-panel").removeData("detailUrl").slideUp();
         });
+
+        {% if opened_element %}
+            $('.ia-thumbnail[data-detail-url="{% url 'finding-description' finding_id=opened_element %}"]').click();
+        {% endif %}
     });
     </script>
 {% endblock head_js %}

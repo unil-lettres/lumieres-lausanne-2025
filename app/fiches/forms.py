@@ -99,6 +99,7 @@ class BiblioForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
 
         # When the "volume" field is rendered twice in the edit form (Recueil block + general block),
@@ -189,7 +190,8 @@ class BiblioForm(forms.ModelForm):
 
     def clean_subj_person(self):
         """
-        Accepts a list of person PKs (as strings or ints) or legacy 'pk|label' strings.
+        Accepts a list of person PKs, legacy 'pk|label' strings, or '|label'
+        strings submitted by the DynamicList widget for newly typed people.
         Returns a list of Person instances for the M2M field.
         """
         raw_list = self.data.getlist("subj_person")
@@ -199,16 +201,37 @@ class BiblioForm(forms.ModelForm):
             if not item:
                 continue
             if "|" in item:
-                pk_str, _ = item.split("|", 1)
+                pk_str, label = item.split("|", 1)
+                pk_str = pk_str.strip()
+                label = label.strip().lstrip("|").strip()
             else:
                 pk_str = item
+                label = ""
+
+            if not pk_str and label:
+                if not (self.user and self.user.has_perm("fiches.can_add_listitem")):
+                    raise forms.ValidationError(
+                        f"La personne «{label}» n'existe pas dans la base."
+                    )
+                litterature_type = self.cleaned_data.get("litterature_type") or self.data.get("litterature_type")
+                person, _created = Person.objects.get_or_create(
+                    name=label,
+                    defaults={
+                        "modern": litterature_type == "s",
+                        "may_have_biography": False,
+                    },
+                )
+                persons.append(person)
+                continue
+
             try:
                 pk = int(pk_str)
                 p = Person.objects.get(pk=pk)
                 persons.append(p)
             except (ValueError, Person.DoesNotExist):
+                label = label or item
                 raise forms.ValidationError(
-                    f"La personne «{item}» n'existe pas dans la base."
+                    f"La personne «{label}» n'existe pas dans la base."
                 )
         return persons
 

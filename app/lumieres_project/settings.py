@@ -26,6 +26,7 @@ SECRET_KEY = "django-insecure-#+_qt^k0$c5sw@ry!r$*^dyw6$zvf(s8jb6_6jtcryb=cnmozb
 
 # X-Frame-Options
 X_FRAME_OPTIONS = "SAMEORIGIN"
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
 # ---------------------------------
 # Environment & host/origin settings

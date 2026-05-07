@@ -1,0 +1,63 @@
+from django.contrib.auth.models import Permission, User
+from django.test import TestCase
+
+from fiches.forms import BiblioForm
+from fiches.models.contributions import PrimaryKeyword
+from fiches.models.documents import Biblio, DocumentLanguage
+from fiches.models.person import Person
+
+
+class BiblioSubjectPersonFormTest(TestCase):
+    def setUp(self):
+        self.keyword = PrimaryKeyword.objects.create(word="Test keyword")
+        self.language = DocumentLanguage.objects.create(name="Français", ordering=1)
+
+    def _post_data(self, subj_person):
+        return {
+            "title": "Test Biblio",
+            "document_type": "1",
+            "litterature_type": "p",
+            "language": str(self.language.pk),
+            "subj_primary_kw": str(self.keyword.pk),
+            "subj_person": subj_person,
+        }
+
+    def test_new_subject_person_is_created_for_listitem_users(self):
+        user = User.objects.create_user("editor")
+        user.user_permissions.add(Permission.objects.get(codename="can_add_listitem"))
+        form = BiblioForm(
+            data=self._post_data("|ZZZ Test Personne Inconnue 20260507"),
+            instance=Biblio(),
+            user=user,
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+
+        person = Person.objects.get(name="ZZZ Test Personne Inconnue 20260507")
+        self.assertIn(person, form.cleaned_data["subj_person"])
+        self.assertFalse(person.modern)
+        self.assertFalse(person.may_have_biography)
+
+    def test_new_subject_person_is_rejected_without_permission(self):
+        user = User.objects.create_user("viewer")
+        form = BiblioForm(
+            data=self._post_data("|ZZZ Test Personne Refusee"),
+            instance=Biblio(),
+            user=user,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("ZZZ Test Personne Refusee", str(form.errors["subj_person"]))
+
+    def test_double_pipe_subject_person_is_normalized(self):
+        user = User.objects.create_user("editor")
+        user.user_permissions.add(Permission.objects.get(codename="can_add_listitem"))
+        form = BiblioForm(
+            data=self._post_data("||ZZZ Test Personne Double Pipe"),
+            instance=Biblio(),
+            user=user,
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertTrue(Person.objects.filter(name="ZZZ Test Personne Double Pipe").exists())
+        self.assertFalse(Person.objects.filter(name="|ZZZ Test Personne Double Pipe").exists())

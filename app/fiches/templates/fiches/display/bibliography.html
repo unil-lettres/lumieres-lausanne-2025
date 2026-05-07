@@ -349,9 +349,9 @@
 	   <div class="field_wrap">
             <div class="field_label">Date</div>
             <div class="field_value">
-                {{ doc.date|date:doc.date_f|default:"[s.d.]" }}
+                {{ doc|date_biblio:"date" }}
                 {% if doc.date2 %}
-                    - {{ doc.date2|date:doc.date2_f|default:"[s.d.]" }}
+                    - {{ doc|date_biblio:"date2" }}
                 {% endif %}
             </div>
             <div class="fixclear"></div>
@@ -441,7 +441,7 @@
         {% if doc.abstract %}
         <div class="field_wrap">
             <div class="field_label">Résumé</div>
-            <div class="field_value">{{ doc.abstract|safe }}</div>
+            <div class="field_value rich-text-content">{{ doc.abstract|safe }}</div>
             <div class="fixclear"></div>
         </div>
         {% endif %}

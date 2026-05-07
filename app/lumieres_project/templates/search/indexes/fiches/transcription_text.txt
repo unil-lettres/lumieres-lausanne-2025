@@ -1,3 +1,4 @@
+{% load fiches_extras %}{% filter decodeHtmlEntities %}
 {{ object.manuscript_b.title|safe }}
 {{ object.text|safe }}
 
@@ -7,3 +8,4 @@
 {% for note in object.notetranscription_set.all %}
 {{ note.text|safe }}
 {% endfor %}
+{% endfilter %}

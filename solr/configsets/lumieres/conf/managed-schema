@@ -433,6 +433,7 @@
     <fieldType name="text_en" class="solr.TextField" positionIncrementGap="100">
         <analyzer type="index">
             <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
             <!-- in this example, we will only use synonyms at query time
             <filter class="solr.SynonymFilterFactory" synonyms="index_synonyms.txt" ignoreCase="true" expand="false"/>
             -->
@@ -443,6 +444,7 @@
                     words="lang/stopwords_en.txt"
             />
             <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.ASCIIFoldingFilterFactory" preserveOriginal="true"/>
             <filter class="solr.EnglishPossessiveFilterFactory"/>
             <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
             <!-- Optionally you may want to use this less aggressive stemmer instead of PorterStemFilterFactory:
@@ -452,6 +454,7 @@
         </analyzer>
         <analyzer type="query">
             <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.WordDelimiterGraphFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="0" catenateNumbers="0" catenateAll="0" splitOnCaseChange="1"/>
             <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt"
              format="solr" ignoreCase="false" expand="true"
              tokenizerFactory="solr.WhitespaceTokenizerFactory"/>
@@ -460,6 +463,7 @@
                     words="lang/stopwords_en.txt"
             />
             <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.ASCIIFoldingFilterFactory" preserveOriginal="true"/>
             <filter class="solr.EnglishPossessiveFilterFactory"/>
             <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
             <!-- Optionally you may want to use this less aggressive stemmer instead of PorterStemFilterFactory:
