@@ -33,7 +33,9 @@ class MultiplePersonField(forms.ModelMultipleChoiceField):
 
     def clean(self, value):
         """
-        Accept legacy DynamicList payload entries like ``\"123|Doe, John\"``.
+        Accept legacy DynamicList payload entries like ``\"123|Doe, John\"`` and
+        free-text entries like ``\"|Doe, John\"``. The latter are resolved by
+        form-specific cleaning, where request-user permissions are available.
         The widget stores this format in hidden inputs, while ModelMultipleChoiceField
         expects plain primary-key values.
         """
@@ -41,6 +43,7 @@ class MultiplePersonField(forms.ModelMultipleChoiceField):
             return super().clean(value)
 
         normalized = []
+        unresolved = []
         for item in value:
             if isinstance(item, Person):
                 normalized.append(str(item.pk))
@@ -50,10 +53,17 @@ class MultiplePersonField(forms.ModelMultipleChoiceField):
             if not text:
                 continue
             if "|" in text:
-                text = text.split("|", 1)[0].strip()
+                pk_text, label = text.split("|", 1)
+                text = pk_text.strip()
+                label = label.strip().lstrip("|").strip()
+                if not text and label:
+                    unresolved.append(f"|{label}")
+                    continue
             normalized.append(text)
 
-        return super().clean(normalized)
+        cleaned = list(super().clean(normalized)) if normalized else []
+        cleaned.extend(unresolved)
+        return cleaned
 
 
 class MultipleUserField(forms.ModelMultipleChoiceField):
