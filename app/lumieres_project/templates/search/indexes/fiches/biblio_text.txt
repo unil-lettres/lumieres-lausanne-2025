@@ -1,3 +1,4 @@
+{% load fiches_extras %}{% filter decodeHtmlEntities %}
 {# ---------- Titles ----------- #}
 {{ object.title|safe }}
 {{ object.short_title|safe }}
@@ -37,3 +38,4 @@
 {{ object.depot|safe }}
 {{ object.manuscript_type.name|safe }}
 {{ object.cote|safe }}
+{% endfilter %}
