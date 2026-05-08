@@ -48,20 +48,24 @@
 .rich-text-content .collector-list-add-button {
     background: none;
     cursor: auto;
+    display: inline;
     float: none;
-    font-size: 0;
+    font-size: inherit;
     height: auto;
-    line-height: 0;
+    line-height: inherit;
     margin: 0;
     position: static;
     visibility: visible;
     width: auto;
 }
 
-.note-content .collector-list-add-button > *,
-.rich-text-content .collector-list-add-button > * {
-    font-size: 13px;
-    line-height: 1.3em;
+.note-content .rich-text-body,
+.rich-text-content .rich-text-body {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
 }
 #ll-collector-dialog { overflow: hidden; }
 #ll-collector-dialog p { margin-bottom: 10px; }

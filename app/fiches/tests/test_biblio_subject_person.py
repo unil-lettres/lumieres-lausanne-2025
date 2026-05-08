@@ -12,11 +12,11 @@ class BiblioSubjectPersonFormTest(TestCase):
         self.keyword = PrimaryKeyword.objects.create(word="Test keyword")
         self.language = DocumentLanguage.objects.create(name="Français", ordering=1)
 
-    def _post_data(self, subj_person):
+    def _post_data(self, subj_person, litterature_type="p"):
         return {
             "title": "Test Biblio",
             "document_type": "1",
-            "litterature_type": "p",
+            "litterature_type": litterature_type,
             "language": str(self.language.pk),
             "subj_primary_kw": str(self.keyword.pk),
             "subj_person": subj_person,
@@ -34,6 +34,25 @@ class BiblioSubjectPersonFormTest(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
 
         person = Person.objects.get(name="ZZZ Test Personne Inconnue 20260507")
+        self.assertIn(person, form.cleaned_data["subj_person"])
+        self.assertFalse(person.modern)
+        self.assertFalse(person.may_have_biography)
+
+    def test_new_subject_person_is_not_secondary_for_secondary_literature(self):
+        user = User.objects.create_user("editor")
+        user.user_permissions.add(Permission.objects.get(codename="can_add_listitem"))
+        form = BiblioForm(
+            data=self._post_data(
+                "|ZZZ Test Sujet Non Secondaire 20260507",
+                litterature_type="s",
+            ),
+            instance=Biblio(),
+            user=user,
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+
+        person = Person.objects.get(name="ZZZ Test Sujet Non Secondaire 20260507")
         self.assertIn(person, form.cleaned_data["subj_person"])
         self.assertFalse(person.modern)
         self.assertFalse(person.may_have_biography)
