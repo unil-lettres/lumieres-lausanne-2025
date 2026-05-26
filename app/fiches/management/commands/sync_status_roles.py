@@ -6,6 +6,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Q
 
+from fiches.models.core.user_profile import UserProfile
 from fiches.models.documents.document_file import DocumentFile
 from fiches.models.misc.object_collection import ObjectCollection
 
@@ -15,11 +16,18 @@ class Command(BaseCommand):
         "Synchronise Lumières status groups with the latest permission policy:\n"
         " - doctorants gain the ability to manage bibliography attachments\n"
         " - directeurs may reassign collection owners\n"
+        " - directeurs may manage user profile extra information\n"
         " - assistants status is retired\n"
         "Run without --apply for a dry-run preview."
     )
 
     DOCFILE_PERMS = ("add_documentfile", "change_documentfile", "delete_documentfile")
+    DIRECTOR_USER_PROFILE_PERMS = (
+        "add_userprofile",
+        "change_userprofile",
+        "delete_userprofile",
+        "view_userprofile",
+    )
     ASSISTANT_NAMES = ("assistants", "assistant")
     DOCTORANT_NAME = "doctorants"
     DIRECTEUR_NAME = "directeurs"
@@ -44,7 +52,9 @@ class Command(BaseCommand):
             self._update_doctorant_permissions(docfile_perms, apply_changes)
             collection_owner_perm = self._ensure_collection_owner_permission(apply_changes)
             if collection_owner_perm is not None:
-                self._update_director_permissions(collection_owner_perm, apply_changes)
+                self._update_director_permissions([collection_owner_perm], apply_changes)
+            user_profile_perms = self._ensure_user_profile_permissions()
+            self._update_director_permissions(user_profile_perms, apply_changes)
             self._retire_assistant_group(apply_changes)
 
         self.stdout.write(self.style.SUCCESS("Status synchronisation complete."))
@@ -70,6 +80,29 @@ class Command(BaseCommand):
             )
             self.stdout.write(self.style.WARNING(warning))
         return perms
+
+    def _ensure_user_profile_permissions(self):
+        """Fetch UserProfile permissions required by the user admin inline."""
+        ct = ContentType.objects.get_for_model(UserProfile)
+        perms = {
+            perm.codename: perm
+            for perm in Permission.objects.filter(
+                content_type=ct,
+                codename__in=self.DIRECTOR_USER_PROFILE_PERMS,
+            )
+        }
+        missing = sorted(set(self.DIRECTOR_USER_PROFILE_PERMS) - set(perms))
+        if missing:
+            warning = (
+                "Missing UserProfile permissions: "
+                f"{', '.join(missing)}. Please run migrations before applying changes."
+            )
+            self.stdout.write(self.style.WARNING(warning))
+        return [
+            perms[codename]
+            for codename in self.DIRECTOR_USER_PROFILE_PERMS
+            if codename in perms
+        ]
 
     def _update_doctorant_permissions(self, docfile_perms, apply_changes):
         """Grant document-file management to doctorants."""
@@ -142,8 +175,8 @@ class Command(BaseCommand):
                 )
                 return None
 
-    def _update_director_permissions(self, permission, apply_changes):
-        """Ensure directors can change collection ownership."""
+    def _update_director_permissions(self, permissions, apply_changes):
+        """Ensure directors hold the required administrative permissions."""
         group = self._get_group(self.DIRECTEUR_NAME)
         if not group:
             message = f"Group '{self.DIRECTEUR_NAME}' not found."
@@ -154,25 +187,29 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f"{message} Would create it in apply mode."))
                 return
 
-        if permission in group.permissions.all():
+        existing_ids = set(group.permissions.values_list("id", flat=True))
+        missing_permissions = [permission for permission in permissions if permission.id not in existing_ids]
+
+        if not missing_permissions:
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"'{group.name}' already holds permission '{permission.codename}'."
+                    f"'{group.name}' already holds required director permissions."
                 )
             )
             return
 
+        perm_labels = ", ".join(permission.codename for permission in missing_permissions)
         if apply_changes:
-            group.permissions.add(permission)
+            group.permissions.add(*missing_permissions)
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Granted '{permission.codename}' permission to '{group.name}'."
+                    f"Granted director permissions to '{group.name}': {perm_labels}"
                 )
             )
         else:
             self.stdout.write(
                 self.style.WARNING(
-                    f"Would grant '{permission.codename}' permission to '{group.name}'."
+                    f"Would grant director permissions to '{group.name}': {perm_labels}"
                 )
             )
 

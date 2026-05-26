@@ -28,10 +28,10 @@
 
 ## Adding/Checking the custom permissions
 - The same `sync_status_roles` command also ensures doctorants receive document attachment permissions (`add/change/delete_documentfile`).
-- Run the command after importing a database dump from production so groups stay aligned.
+- Run the command after an exceptional DB restore, auth-table refresh, or environment rebuild so groups stay aligned.
 
 ## Allowing staff to manage user profiles
-Some staff accounts (e.g., those who create new users) must see and edit the “Informations supplémentaires” inline in the Django admin. After each database refresh from production:
+Some staff accounts (e.g., those who create new users) must see and edit the “Informations supplémentaires” inline in the Django admin. After an exceptional database restore or auth-table overwrite:
 
 1. Open the user in **Django admin → Utilisateurs**.
 2. In the **Permissions** section grant:
@@ -43,4 +43,4 @@ Some staff accounts (e.g., those who create new users) must see and edit the “
    - `fiches | Informations supplémentaires | Can view informations supplémentaires`
 3. Save the user; the “Domaine de recherche / Historique” field reappears for that account.
 
-Repeat these assignments any time a fresh production dump overwrites the auth tables, otherwise the inline disappears for non-superusers.
+Repeat these assignments any time a restore overwrites the auth tables, otherwise the inline disappears for non-superusers.
