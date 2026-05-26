@@ -1,7 +1,7 @@
 # Lumières Lausanne
 
 Lumières Lausanne is a Django-based website (UNIL) dedicated to the Swiss Enlightenment.  
-This repo contains the application code and the Docker setup for development, CI, and staging.
+This repo contains the application code and the Docker setup for local development, CI, staging, and production releases.
 
 ## Requirements
 
@@ -52,87 +52,27 @@ docker compose ps
 
 ---
 
-## Importing the database from a dump
+## Database notes
 
-> Works for large .sql files. Replace the dump filename with yours.
+Production is now running on the migrated, current schema. Routine local setup and routine deployments do not require importing a legacy database dump or applying one-off schema normalization SQL.
 
-1) Put your dump at the repo root, e.g. `lumieres-prod-20250812.sql`.
+If you need an exceptional restore or archival import, use the historical recovery notes in [`descr/deployment.md`](descr/deployment.md). Treat that path as migration/recovery work, not normal project setup.
 
-2) Create (or recreate) the DB, then import:
-
-```bash
-# Create DB (if not already present)
-docker compose exec -T db sh -lc \
-  'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS \`$MYSQL_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"'
-
-# Import (reads from the host file via STDIN)
-docker compose exec -T db sh -lc \
-  'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" "$MYSQL_DATABASE"' \
-  < lumieres-prod-20250812.sql
-```
-
-3) (Only if your dump comes from the historical Django v1 schema) apply these small fixes (we do not run Django migrations on restored legacy dumps—normalize the schema with these ALTERs):
+Useful post-restore commands:
 
 ```bash
-docker compose exec -T db mysql -uroot -ptoor -e "
-ALTER TABLE lumieres_lausanne.fiches_biblio            MODIFY depot varchar(128) NULL DEFAULT NULL;
-ALTER TABLE lumieres_lausanne.fiches_manuscript        MODIFY depot varchar(128) NULL DEFAULT NULL;
-ALTER TABLE lumieres_lausanne.auth_user                MODIFY last_login datetime NULL;
-ALTER TABLE lumieres_lausanne.fiches_contributiondoc   MODIFY document_id int NULL;
-ALTER TABLE lumieres_lausanne.fiches_contributionman   MODIFY document_id int NULL;
-ALTER TABLE lumieres_lausanne.fiches_notebiblio        MODIFY owner_id int NULL;
-ALTER TABLE lumieres_lausanne.fiches_notemanuscript    MODIFY owner_id int NULL;
--- Facsimile viewer (IIIF) – nullable, safe for rollback:
-ALTER TABLE lumieres_lausanne.fiches_transcription ADD COLUMN facsimile_iiif_url varchar(200) NULL AFTER envelope;
--- Facsimile viewer (IIIF) – 1-based start canvas index (optional):
-ALTER TABLE lumieres_lausanne.fiches_transcription ADD COLUMN facsimile_start_canvas int NULL AFTER facsimile_iiif_url;
--- Transcription citation dates:
-ALTER TABLE lumieres_lausanne.fiches_transcription ADD COLUMN published_date datetime NULL AFTER facsimile_start_canvas;
-ALTER TABLE lumieres_lausanne.fiches_transcription ADD COLUMN published_by_id int NULL AFTER published_date;
-ALTER TABLE lumieres_lausanne.fiches_transcription ADD COLUMN modified_date datetime NULL AFTER published_by_id;
-ALTER TABLE lumieres_lausanne.fiches_transcription ADD COLUMN modified_by_id int NULL AFTER modified_date;
-"
-```
-
-4) Backfill transcription dates (one-time after adding columns):
-
-```bash
-docker compose exec -T db mysql -uroot -ptoor -e "
-UPDATE lumieres_lausanne.fiches_transcription t
-LEFT JOIN (
-  SELECT object_id, MIN(date) AS first_activity_date, MAX(date) AS last_activity_date
-  FROM lumieres_lausanne.fiches_activitylog
-  WHERE model_name = 'Transcription'
-  GROUP BY object_id
-) a ON a.object_id = t.id
-SET
-  t.published_date = COALESCE(
-    t.published_date,
-    CASE WHEN t.access_public = 1 THEN a.first_activity_date ELSE NULL END
-  ),
-  t.modified_date = COALESCE(t.modified_date, a.last_activity_date);
-"
-```
-
-5) Create a Django superuser (optional):
-
-```bash
+# Create a Django superuser (optional)
 docker compose exec -T app python manage.py createsuperuser
-```
 
-6) Refresh roles/permissions after importing a dump (cleans up the legacy “assistants” group and reassigns custom perms):
-
-```bash
+# Refresh roles/permissions after a restore or auth-table refresh
 docker compose exec -T app python manage.py sync_status_roles --apply
 ```
-
-7) Rebuild the search index (Solr / Haystack) if needed (see section below).
 
 ---
 
 ## Rebuild the search index (Solr / Haystack)
 
-If search returns no results after an import:
+If search returns no results after a restore, import, or deploy:
 
 ```bash
 # Ensure Solr core exists (no-op if already there)
@@ -225,9 +165,34 @@ docker compose up -d web
 
 ---
 
+## Production (notes)
+
+Production runs from `/u01/projects/dockerized/lumieres2-prod` on `lumieres-srv2.unil.ch`. The prod `.env` is expected to include:
+
+```env
+COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
+COMPOSE_PROJECT_NAME=lumieres-prod
+LUMIERES_IMAGE=unillett/lumieres:vYYYY.MM.DD
+```
+
+With those defaults in place, production operations use plain Compose commands from the prod directory:
+
+```bash
+docker compose pull web
+docker compose up -d --no-deps web
+docker compose exec -T web python manage.py collectstatic --noinput
+docker compose exec -T web python manage.py sync_status_roles --apply
+docker compose exec -T web python manage.py update_index
+docker compose ps
+```
+
+Keep `LUMIERES_IMAGE` pinned to an explicit release tag; do not use `latest` for prod.
+
+---
+
 ## Troubleshooting
 
-- **Can’t connect to MySQL:** make sure the DB container is healthy (`docker compose ps`) and the DB name matches the one you imported (`MYSQL_DATABASE`).
+- **Can’t connect to MySQL:** make sure the DB container is healthy (`docker compose ps`) and the DB name matches your environment configuration (`MYSQL_DATABASE`).
 - **Search empty:** re-run `rebuild_index`.
 - **Solr core missing:** (re)create it, as shown above.
 - **Thumbnail errors / missing media:** copy needed media files into `app/media/`.

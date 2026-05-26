@@ -175,6 +175,7 @@ cython_debug/
 
 temp/
 backup/
+local-refresh-backups/
 app/media/
 logging/
 
