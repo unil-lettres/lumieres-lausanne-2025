@@ -201,6 +201,7 @@ Docker.raw
 
 # Local secrets (keep out of repo)
 descr/private/
+descr/devis/
 
 # Backups
 *.bak
