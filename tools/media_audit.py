@@ -251,7 +251,9 @@ def clean_media_path(raw_path: str) -> str | None:
     return canonical_path(normalized)
 
 
-def add_ref(refs: dict[str, MediaRef], path: str | None, source: str, kind: str) -> None:
+def add_ref(
+    refs: dict[str, MediaRef], path: str | None, source: str, kind: str
+) -> None:
     clean = clean_media_path(path or "")
     if not clean:
         return
@@ -301,7 +303,9 @@ def walk_json_media(value, refs: dict[str, MediaRef], source: str) -> None:
             add_ref(refs, path, source, "json")
 
 
-def collect_references(sql_dump: Path, schemas: dict[str, list[Column]]) -> dict[str, MediaRef]:
+def collect_references(
+    sql_dump: Path, schemas: dict[str, list[Column]]
+) -> dict[str, MediaRef]:
     refs: dict[str, MediaRef] = defaultdict(MediaRef)
 
     with open_text(sql_dump) as handle:
@@ -338,8 +342,9 @@ def collect_references(sql_dump: Path, schemas: dict[str, list[Column]]) -> dict
                             for path in extract_paths_from_text(value):
                                 add_ref(refs, path, source, "json")
 
-                    if column.name not in DIRECT_MEDIA_COLUMNS and column.sql_type.startswith(
-                        TEXT_TYPES
+                    if (
+                        column.name not in DIRECT_MEDIA_COLUMNS
+                        and column.sql_type.startswith(TEXT_TYPES)
                     ):
                         for path in extract_paths_from_text(value):
                             add_ref(refs, path, source, "text")
@@ -404,7 +409,9 @@ def format_bytes(value: int) -> str:
     return f"{value} B"
 
 
-def audit(sql_dump: Path, media_root: Path, output_dir: Path, hash_min_size: int) -> None:
+def audit(
+    sql_dump: Path, media_root: Path, output_dir: Path, hash_min_size: int
+) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     schemas = parse_schema(sql_dump)
@@ -533,7 +540,9 @@ def audit(sql_dump: Path, media_root: Path, output_dir: Path, hash_min_size: int
         handle.write("| Top directory | Files | Size |\n")
         handle.write("| --- | ---: | ---: |\n")
         for top_dir, count in sorted(top_counts.items()):
-            handle.write(f"| {top_dir} | {count} | {format_bytes(top_sizes[top_dir])} |\n")
+            handle.write(
+                f"| {top_dir} | {count} | {format_bytes(top_sizes[top_dir])} |\n"
+            )
 
         handle.write("\n## Largest orphan candidates\n\n")
         handle.write("| Size | Path |\n")
