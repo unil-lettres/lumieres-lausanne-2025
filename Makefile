@@ -30,6 +30,10 @@ include $(MAKE_SUB)/helpers.mk
 # Dev part
 include $(MAKE_SUB)/dev.mk
 
+# Devcontainer part
+PRESET ?= tmux-neovim
+include $(MAKE_SUB)/devcontainer.mk
+
 # Docker Compose part
 SERVICES ?=
 include $(MAKE_SUB)/docker-compose.mk

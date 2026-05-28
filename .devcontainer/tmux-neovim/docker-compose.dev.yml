@@ -1,0 +1,47 @@
+# Dev container service — Neovim + Tmux configuration
+name: ll-dev
+
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/python:3.13
+    environment:
+      DJANGO_ENV: ${DJANGO_ENV:-development}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-lumieres_project.settings}
+      MYSQL_HOST: ${MYSQL_HOST:-db}
+      MYSQL_PORT: ${MYSQL_PORT:-3306}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-lumieres_lausanne}
+      MYSQL_USER: ${MYSQL_USER:-lluser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-lluser-password}
+      HAYSTACK_URL: ${HAYSTACK_URL:-http://solr:8983/solr/lumieres}
+      MEDIA_FOLDER: ${MEDIA_FOLDER:-./media}
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../../..:/workspaces:cached
+      - ${HOME}/.config/nvim:/home/vscode/.config/nvim:cached
+      - ${HOME}/.config/.tmux.conf:/home/vscode/.config/.tmux.conf:cached
+
+    command: sleep infinity
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - 8000:8000
+
+  db:
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-lumieres_lausanne}
+      MYSQL_USER: ${MYSQL_USER:-lluser}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-lluser-password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-toor}
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    links:
+      - db
+    depends_on:
+      - db
+    environment:
+      PMA_HOST: db
+    ports:
+      - 8001:80

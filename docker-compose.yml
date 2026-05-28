@@ -3,7 +3,9 @@ name: LumieresLausanne
 services:
   db:
     image: mysql:9.3
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
     restart: unless-stopped
     volumes:
       - db_data:/var/lib/mysql
@@ -17,7 +19,9 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.app
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
     depends_on:
       db:
         condition: service_healthy
