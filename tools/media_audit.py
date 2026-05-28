@@ -33,7 +33,6 @@ import csv
 import gzip
 import hashlib
 import html
-from html.parser import HTMLParser
 import json
 import os
 import re
@@ -41,6 +40,7 @@ import unicodedata
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Iterable
 from urllib.parse import unquote, urlsplit
