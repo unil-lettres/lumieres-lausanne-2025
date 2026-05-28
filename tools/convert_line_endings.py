@@ -22,7 +22,6 @@
 
 """Convert CRLF to LF in all text files recursively."""
 
-import os
 import sys
 from pathlib import Path
 
