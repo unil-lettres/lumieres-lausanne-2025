@@ -248,7 +248,7 @@ def analyze_patterns():
     print(f"Transcriptions starting at page > 1: {starts_after_1}")
 
     if first_pages:
-        print(f"\nFirst page statistics:")
+        print("\nFirst page statistics:")
         print(f"  Min: {min(first_pages)}")
         print(f"  Max: {max(first_pages)}")
         print(f"  Average: {sum(first_pages) / len(first_pages):.1f}")
@@ -260,7 +260,7 @@ def analyze_patterns():
         if item["first_page"] and item["first_page"] > 50
     ]
     if high_starters:
-        print(f"\nExamples starting at high page numbers:")
+        print("\nExamples starting at high page numbers:")
         for item in sorted(high_starters, key=lambda x: x["first_page"], reverse=True)[
             :5
         ]:
@@ -301,7 +301,7 @@ def analyze_patterns():
     print(f"Unique pattern types: {len(type_counts)}")
 
     if trans_without_markers[:10]:
-        print(f"\nExample transcription IDs without markers:")
+        print("\nExample transcription IDs without markers:")
         print(f"  {trans_without_markers[:10]}")
 
     return trans_with_markers, all_markers
