@@ -103,5 +103,7 @@ if __name__ == "__main__":
     tables = ["fiches_freecontent", "fiches_news"]
     for table in tables:
         update_table(db, table, "content", 'href="https://lumieres.unil.ch', 'href="')
-    update_table(db, "fiches_project", "description", 'href="https://lumieres.unil.ch', 'href="')
+    update_table(
+        db, "fiches_project", "description", 'href="https://lumieres.unil.ch', 'href="'
+    )
     update_table(db, "fiches_image", "link", "https://lumieres.unil.ch", "")
