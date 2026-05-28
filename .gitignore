@@ -183,7 +183,6 @@ logging/
 
 # Ignore Django collected static files
 staticfiles/
-migrations/
 
 # Solr
 solr/data/
