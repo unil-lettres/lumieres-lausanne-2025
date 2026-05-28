@@ -19,6 +19,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.app
+      target: runtime
     env_file:
       - path: .env
         required: false
@@ -28,7 +29,6 @@ services:
       solr:
         condition: service_healthy
     volumes:
-      - ./app:/app
       - ./app/media:/app/media
       - ./logging:/app/logging
     ports:

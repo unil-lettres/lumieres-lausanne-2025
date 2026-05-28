@@ -1,0 +1,38 @@
+# Override dev: builds the dev stage (runserver + dev deps) and adds phpmyadmin.
+# Usage: docker compose -f docker-compose.yml -f docker/docker-compose.dev.yml watch
+
+services:
+  app:
+    build:
+      target: dev
+    environment:
+      DJANGO_ENV: ${DJANGO_ENV:-development}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-lumieres_project.settings}
+    develop:
+      watch:
+        - action: sync
+          path: ./app
+          target: /app
+          ignore:
+            - __pycache__/
+            - "*.pyc"
+            - "*.pyo"
+            - .pytest_cache/
+            - .mypy_cache/
+            - media/
+            - staticfiles/
+        - action: rebuild
+          path: ./pyproject.toml
+        - action: rebuild
+          path: ./uv.lock
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PMA_HOST: db
+    ports:
+      - 8001:80
