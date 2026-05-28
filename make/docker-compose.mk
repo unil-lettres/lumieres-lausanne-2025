@@ -1,34 +1,43 @@
-# docker-compose.mk is sub makefile about docker compose commands.
+# docker-compose.mk: low-level wrappers around `docker compose`.
 #
-# Authors:
-#   - Xavier Beheydt <xavier.beheydt@gmail.com>
+# COMPOSE points to the dev stack (main file + dev override with watch).
+# COMPOSE_BASE only loads the main file (use it for prod-like local runs).
 
-.PHONY: up docker/compose/up
-up: docker/compose/up
-docker/compose/up:  ## bring up the docker compose services
-	docker-compose up -d ${SERVICES}
+COMPOSE_BASE = docker compose -f docker-compose.yml
+COMPOSE      = $(COMPOSE_BASE) -f docker/docker-compose.dev.yml
 
-.PHONY: down docker/compose/down
-down: docker/compose/down
-docker/compose/down:  ## bring down the docker compose services
-	docker-compose down ${SERVICES}
+SERVICES ?=
 
-.PHONY: start docker/compose/start
-start: docker/compose/start
-docker/compose/start:  ## start the docker compose services
-	docker-compose start ${SERVICES}
+.PHONY: docker/compose/up docker/compose/down docker/compose/start docker/compose/stop
+.PHONY: docker/compose/restart docker/compose/logs docker/compose/build docker/compose/watch
+.PHONY: docker/compose/ps docker/compose/config
 
-.PHONY: stop docker/compose/stop
-stop: docker/compose/stop
-docker/compose/stop:  ## stop the docker compose services
-	docker-compose stop ${SERVICES}
-	
-.PHONY: restart docker/compose/restart
-restart: docker/compose/restart
-docker/compose/restart:  ## restart the docker compose services
-	docker-compose restart ${SERVICES}
+docker/compose/up:  ## Bring up the dev stack (SERVICES=... to scope)
+	$(COMPOSE) up -d $(SERVICES)
 
-.PHONY: logs docker/compose/logs
-logs: docker/compose/logs
-docker/compose/logs:  ## show the logs of the docker compose services
-	docker-compose logs -f ${SERVICES}
+docker/compose/down:  ## Bring down the dev stack
+	$(COMPOSE) down $(SERVICES)
+
+docker/compose/start:  ## Start existing containers
+	$(COMPOSE) start $(SERVICES)
+
+docker/compose/stop:  ## Stop containers without removing
+	$(COMPOSE) stop $(SERVICES)
+
+docker/compose/restart:  ## Restart containers
+	$(COMPOSE) restart $(SERVICES)
+
+docker/compose/logs:  ## Follow logs (SERVICES=app to scope)
+	$(COMPOSE) logs -f $(SERVICES)
+
+docker/compose/build:  ## Build images
+	$(COMPOSE) build $(SERVICES)
+
+docker/compose/watch:  ## Run with develop.watch (hot reload)
+	$(COMPOSE) watch
+
+docker/compose/ps:  ## List running services
+	$(COMPOSE) ps
+
+docker/compose/config:  ## Show the merged compose configuration
+	$(COMPOSE) config

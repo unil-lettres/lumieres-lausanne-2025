@@ -15,7 +15,6 @@ V2024_DOCKER ?= docker compose \
 $(V2024_PATH):
 	git clone https://github.com/XavierBeheydt/lumieres-lausanne-2024 ${V2024_PATH}
 	rm -rf ${V2024_PATH}/.git
-	rm -rf ${V2024_PATH}/.devcontainer
 	rm -rf ${V2024_PATH}/.vscode
 	cp -r  $(CURDIR)/app/media ${V2024_PATH}/app/backend/media
 v2024/download: $(V2024_PATH)

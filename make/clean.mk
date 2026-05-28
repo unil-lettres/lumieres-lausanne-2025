@@ -1,44 +1,46 @@
-# clean.mk is sub makefile about cleaning commands.
+# clean.mk: cleanup recipes.
 #
 # Authors:
 #   - Xavier Beheydt <xavier.beheydt@gmail.com>
 
-.PHONY: clean
-clean:  ## clean the project
+.PHONY: clean clean/pyc clean/tests clean/build clean/caches clean/venv clean/uv-cache
+
+clean:  ## Clean the project (everything except venv and uv cache)
 clean: clean/build clean/pyc clean/tests clean/caches docs/clean
 
-clean/pyc:  ## remove Python file artifacts
+clean/pyc:  ## Remove Python file artifacts
 	@echo "Cleaning up Python artifacts..."
-	find . -name '*.pyc' -exec rm -f {} +
-	find . -name '*.pyo' -exec rm -f {} +
-	find . -name '*~' -exec rm -f {} +
-	find . -name '__pycache__' -exec rm -fr {} +
-	find . -name '.mypy_cache' -exec rm -fr {} +
-	
-.PHONY: clean/tests
-clean/tests:  ## remove tests and coverage artifacts
+	find . -name '*.pyc' -not -path './.venv/*' -exec rm -f {} +
+	find . -name '*.pyo' -not -path './.venv/*' -exec rm -f {} +
+	find . -name '*~' -not -path './.venv/*' -exec rm -f {} +
+	find . -name '__pycache__' -not -path './.venv/*' -exec rm -fr {} +
+
+clean/tests:  ## Remove tests and coverage artifacts
 	@echo "Cleaning up test and coverage artifacts..."
 	$(RM) .tox/
 	$(RM) .coverage
 	$(RM) htmlcov/
-	find . -name '.pytest_cache' -exec rm -fr {} +
-	
-.PHONY: clean/build
-clean/build:  ## remove build artifacts
+	find . -name '.pytest_cache' -not -path './.venv/*' -exec rm -fr {} +
+
+clean/build:  ## Remove build artifacts
 	@echo "Cleaning up build artifacts..."
 	$(RM) build/
 	$(RM) dist/
 	$(RM) .eggs/
-	find . -name '*.egg-info' -exec rm -fr {} +
-	find . -name '*.egg' -exec rm -f {} +
-	
-.PHONY: clean/caches
-clean/caches:  ## remove caches
+	find . -name '*.egg-info' -not -path './.venv/*' -exec rm -fr {} +
+	find . -name '*.egg' -not -path './.venv/*' -exec rm -f {} +
+
+clean/caches:  ## Remove tool caches
 	@echo "Cleaning up caches..."
 	$(RM) .cache/
 	$(RM) .mypy_cache/
 	$(RM) .pytest_cache/
-	$(RM) .tox/
-	$(RM) .coverage
-	$(RM) htmlcov/
 	$(RM) .ruff_cache/
+
+clean/venv:  ## Remove the local virtualenv (re-run `make dev/install`)
+	@echo "Removing .venv..."
+	$(RM) .venv
+
+clean/uv-cache:  ## Remove the uv global cache
+	@echo "Pruning uv cache..."
+	uv cache prune

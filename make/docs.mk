@@ -1,17 +1,15 @@
-# docs.mk is sub makefile abouty documentation generation.
+# docs.mk: documentation generation (mkdocs via uv).
 #
 # Authors:
 #   - Xavier Beheydt <xavier.beheydt@gmail.com>
 
-.PHONY: docs/build
-docs/build:  ## Building the documentation
-	mkdocs build
+.PHONY: docs/build docs/serve docs/clean
 
-.PHONY: docs/serve
-docs/serve:  ## Serving the documentation
-docs/serve: docs/build
-	mkdocs serve
+docs/build:  ## Build the documentation site
+	uv run mkdocs build
 
-.PHONY: docs/clean
-docs/clean:  ## Cleaning the documentation
+docs/serve:  ## Serve the documentation locally (auto-reload)
+	uv run mkdocs serve
+
+docs/clean:  ## Remove the built documentation
 	$(RM) site
