@@ -36,8 +36,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg62-turbo zlib1g \
  && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app/app
-COPY app/ /app/app/
+WORKDIR /app
+COPY app/ /app/
 COPY --from=builder /wheels /wheels
 COPY --from=builder /tmp/requirements.txt /tmp/requirements.txt
 

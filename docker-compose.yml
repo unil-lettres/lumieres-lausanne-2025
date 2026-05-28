@@ -28,8 +28,8 @@ services:
       solr:
         condition: service_healthy
     volumes:
-      - ./app:/app/app
-      - ./app/media:/app/app/media
+      - ./app:/app
+      - ./app/media:/app/media
       - ./logging:/app/logging
     ports:
       - "8000:8000"
