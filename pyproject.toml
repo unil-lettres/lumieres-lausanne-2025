@@ -8,36 +8,34 @@ authors = [
   { name = "Xavier Beheydt", email = "xavier.beheydt@gmail.com" },
 ]
 dependencies = [
-    "django>=5.2.13,<6.0",
-    "django-ckeditor>=6.7.2",
-    "django-haystack>=3.0",
-    "django-js-asset>=2.2.0",
-    "gunicorn>=23.0,<24.0",
-    "mysqlclient>=2.2.7",
-    "pillow>=11.0",
-    "pysolr>=3.9.0",
-    "sorl-thumbnail>=12.7.0",
+  "django>=5.2.13,<6.0",
+  "django-ckeditor>=6.7.2",
+  "django-haystack>=3.0",
+  "django-js-asset>=2.2.0",
+  "gunicorn>=23.0,<24.0",
+  "mysqlclient>=2.2.7",
+  "pillow>=11.0",
+  "pysolr>=3.9.0",
+  "sorl-thumbnail>=12.7.0",
 ]
 
 [dependency-groups]
 dev = [
-    "black>=26.5.1",
-    "flake8>=6.1.0",
-    "flake8-bugbear>=24.12.12",
-    "flake8-comprehensions>=3.17.0",
-    "flake8-django>=1.4",
-    "flake8-docstrings>=1.7.0",
-    "flake8-pyproject>=1.2.4",
-    "isort>=8.0.1",
-    "mypy>=2.1.0",
-    "pep8-naming>=0.15.1",
-    "pytest>=9.0.3",
-    "pytest-cov>=7.1.0",
-    "pytest-django>=4.12.0",
+  "black>=26.5.1",
+  "flake8>=6.1.0",
+  "flake8-bugbear>=24.12.12",
+  "flake8-comprehensions>=3.17.0",
+  "flake8-django>=1.4",
+  "flake8-docstrings>=1.7.0",
+  "flake8-pyproject>=1.2.4",
+  "isort>=8.0.1",
+  "mypy>=2.1.0",
+  "pep8-naming>=0.15.1",
+  "pytest>=9.0.3",
+  "pytest-cov>=7.1.0",
+  "pytest-django>=4.12.0",
 ]
-docs = [
-    "mkdocs>=1.6.1",
-]
+docs = ["mkdocs>=1.6.1"]
 
 [tool.uv]
 package = false
@@ -50,7 +48,12 @@ extend-exclude = "app/(media|static|uploads|staticfiles)/"
 profile = "black"
 line_length = 119
 known_third_party = ["django", "requests"]
-skip_glob = ["app/media/*", "app/static/*", "app/uploads/*", "app/staticfiles/*"]
+skip_glob = [
+  "app/media/*",
+  "app/static/*",
+  "app/uploads/*",
+  "app/staticfiles/*",
+]
 
 [tool.flake8]
 max-line-length = 119
