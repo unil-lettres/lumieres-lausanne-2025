@@ -45,7 +45,6 @@ from pathlib import Path
 from typing import Iterable
 from urllib.parse import unquote, urlsplit
 
-
 KNOWN_TOP_DIRS = ("cache", "documents", "files", "images", "user_uploads")
 DIRECT_MEDIA_COLUMNS = {"file", "image", "thumbnail"}
 TEXT_TYPES = (
