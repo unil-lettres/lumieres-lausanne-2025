@@ -52,26 +52,23 @@ higher — clean that first so the number means something.
 Verified by whole-repo reference search + empirical import/instantiation. Remove
 one file per commit; run the suite after each. ~446 stmts total.
 
-- [ ] Remove `fiches/management/commands/sync_perms.py` (16) — **broken**:
+- [x] Remove `fiches/management/commands/sync_perms.py` (16) — **broken**:
       `ImportError` on `get_models`/`get_app` (removed since Django 1.9);
       superseded by `sync_status_roles`; no references
-- [ ] Remove `pagination/paginator.py` (77) — **broken**: `AttributeError`
-      (`del self._num_pages`) on instantiation; `InfinitePaginator`/
-      `FinitePaginator` referenced nowhere
-- [ ] Remove `pagination/middleware.py` (19) — unused, not in `MIDDLEWARE`
-- [ ] Remove `utils/aggregates.py` (11) — `Concatenate`/`ConcatenateSQL`
+- [ ] **On hold (decide: fix/revive vs remove)** — `pagination/paginator.py`
+      (77) — **broken**: `AttributeError` (`del self._num_pages`) on
+      instantiation; `InfinitePaginator`/`FinitePaginator` referenced nowhere
+- [x] Remove `pagination/middleware.py` (19) — unused, not in `MIDDLEWARE`
+- [x] Remove `utils/aggregates.py` (11) — `Concatenate`/`ConcatenateSQL`
       referenced nowhere
-- [ ] Remove `fiches/context_processors.py` (5) — not wired in `TEMPLATES`;
+- [x] Remove `fiches/context_processors.py` (5) — not wired in `TEMPLATES`;
       its outputs (`DOCTYPE`, `display_collector`) are set per-view, so removal
       is runtime-safe
-- [ ] Remove `fiches/dev/__init__.py` (197) — dev-only data script, imports OK
+- [x] Remove `fiches/dev/__init__.py` (197) — dev-only data script, imports OK
       but zero references (code/templates/docs/CI)
-- [ ] **Decision needed** — COinS/Zotero (closed cluster, 127): revive or remove
-      `utils/coins.py` (89), `utils/utils_coins.py` (24), `fiches/utils_coin.py`
-      (14). Disabled: template usages commented, no `coins` model property, no
-      external callers
-- [ ] Add `[tool.coverage.run] omit` only for anything intentionally
-      kept-but-excluded (none expected if all the above are removed)
+- [x] Remove COinS/Zotero cluster (127): `utils/coins.py` (89),
+      `utils/utils_coins.py` (24), `fiches/utils_coin.py` (14) — disabled
+      feature, no external callers
 
 > Keep (NOT dead — test gaps, do not remove): `utils/fields.py` `DictField`
 > (used by `search.py` + migration 0001), `utils/__init__.py` `dbg_logger`
