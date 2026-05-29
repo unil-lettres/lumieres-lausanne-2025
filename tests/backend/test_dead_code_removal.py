@@ -29,20 +29,24 @@ from pathlib import Path
 
 import pytest
 
+# tests/backend/<file> -> repo root -> the fiches app static source files.
+REPO_ROOT = Path(__file__).resolve().parents[2]
+FICHES_STATIC = REPO_ROOT / "app" / "fiches" / "static" / "fiches"
+
 
 @pytest.fixture
 def js_file():
     """Read the viewer-controls.js file."""
-    js_path = Path(__file__).parent.parent / 'static' / 'fiches' / 'js' / 'viewer-controls.js'
-    with open(js_path, 'r', encoding='utf-8') as f:
+    js_path = FICHES_STATIC / "js" / "viewer-controls.js"
+    with open(js_path, "r", encoding="utf-8") as f:
         return f.read()
 
 
 @pytest.fixture
 def css_file():
     """Read the viewer-controls.css file."""
-    css_path = Path(__file__).parent.parent / 'static' / 'fiches' / 'css' / 'viewer-controls.css'
-    with open(css_path, 'r', encoding='utf-8') as f:
+    css_path = FICHES_STATIC / "css" / "viewer-controls.css"
+    with open(css_path, "r", encoding="utf-8") as f:
         return f.read()
 
 
