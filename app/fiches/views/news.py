@@ -18,9 +18,10 @@
 #
 #    This copyright notice MUST APPEAR in all copies of the file.
 #
-from django.shortcuts import render, get_object_or_404
-from fiches.models import News
 from django.http import HttpResponseForbidden
+from django.shortcuts import get_object_or_404, render
+
+from fiches.models import News
 
 
 def index(request):
@@ -35,12 +36,12 @@ def index(request):
 
     context = {'news': news }
     return render(request, 'fiches/news/index.html', context)
-    
+
 def display_news(request, news_id):
     news = get_object_or_404(News, pk=news_id)
-    
+
     if not news.published and (not request.user.is_authenticated or not request.user.has_perm('fiches.change_news')):
         return HttpResponseForbidden("Access denied")
-        
+
     context = {'news': news }
     return render(request, 'fiches/news/display.html', context)

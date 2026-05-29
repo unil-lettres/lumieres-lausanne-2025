@@ -1,5 +1,6 @@
 from django.apps import apps
 
+
 # Lazy loading of ContributionDoc and ContributionMan to prevent circular imports
 def get_contribution_doc_model():
     return apps.get_model('fiches', 'ContributionDoc')

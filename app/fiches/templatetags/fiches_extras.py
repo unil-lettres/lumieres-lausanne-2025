@@ -19,10 +19,10 @@
 #
 #    This copyright notice MUST APPEAR in all copies of the file.
 #
+import datetime
 import logging  # XXX: delete it
 import re
 import time
-import datetime
 import urllib.parse as urlparse
 
 from django import template
@@ -36,6 +36,7 @@ from django.utils.dateformat import format
 from django.utils.encoding import force_str, smart_str
 from django.utils.html import urlize
 from django.utils.safestring import mark_safe
+
 from fiches.models import UserGroup
 
 # from django.conf import settings
@@ -319,7 +320,8 @@ def truncatechars(value, token):
 def truncate_chars(s, num, end_text="..."):
     """Truncates a string after a certain number of characters but don't truncate words.
     Takes an optional argument of what should be used to notify that the string has been
-    truncated, defaults to ellipsis (...)"""
+    truncated, defaults to ellipsis (...)
+    """
     s = force_str(s)
     length = int(num)
     if len(s.strip()) <= length:
@@ -359,7 +361,6 @@ def access_strict(df, token, any_login=False):
     Return True if ACModel.user_acces is strictly validated. Always TRUE for staff members (user.is_staff == True )
     i.e access_public == True | access_owner == user | access_groups IN user.usergroups
     """
-
     if not isinstance(token, User) and not isinstance(token, AnonymousUser):
         raise TemplateSyntaxError("argument should be a User")
     user = token

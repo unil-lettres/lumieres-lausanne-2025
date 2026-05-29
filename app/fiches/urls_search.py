@@ -1,14 +1,15 @@
 from django.urls import path
+
 from fiches.views.search import (
-    quick_search,                 # ← add this
+    biblio_extended_search,
+    do_search,
     filter_builder,
     list_persons,
-    do_search,
-    save_settings,
+    quick_search,  # ← add this
     relations,
+    req_search_view,  # keep temporarily for compatibility
+    save_settings,
     transcriptions_change_access,
-    biblio_extended_search,
-    req_search_view,              # keep temporarily for compatibility
 )
 
 urlpatterns = [

@@ -6,6 +6,7 @@ from django import forms
 from django.contrib.auth.models import User
 from django.forms.widgets import RadioSelect
 from django.utils.translation import gettext_lazy as _
+
 from fiches.models.misc.project import Project
 
 from .constants import DATE_DISPLAY_FORMAT, DATE_INPUT_FORMATS
@@ -24,11 +25,11 @@ from .models.documents import (
     NoteTranscription,
     Transcription,
 )
+from .models.documents.document import TranscriptionReviewer
 from .models.misc import ObjectCollection, Society
 from .models.person import Person
-from .widgets import DynamicList, PersonWidget, StaticList
-from .models.documents.document import TranscriptionReviewer
 from .utils import get_default_publisher_user
+from .widgets import DynamicList, PersonWidget, StaticList
 
 
 # ===============================
@@ -566,9 +567,10 @@ class ObjectCollectionForm(forms.ModelForm):
         return collection
 
 
-from fiches.models import Biblio, Person, Transcription
 from haystack.forms import ModelSearchForm
 from haystack.query import RelatedSearchQuerySet
+
+from fiches.models import Biblio, Person, Transcription
 
 
 class FichesSearchForm(ModelSearchForm):
@@ -795,4 +797,3 @@ class ProjectForm(forms.ModelForm):
         )
 
 
-import re

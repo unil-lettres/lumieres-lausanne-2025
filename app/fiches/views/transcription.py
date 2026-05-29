@@ -32,6 +32,7 @@ from html.parser import HTMLParser
 from urllib.parse import quote, unquote, urlparse
 from urllib.parse import quote as urlquote
 
+import requests
 from django.contrib.auth.decorators import permission_required
 from django.db.models import Q
 from django.forms.models import inlineformset_factory
@@ -46,17 +47,17 @@ from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
+from utils import dbg_logger
+
 from fiches.forms import NoteFormTranscription, TranscriptionForm
 from fiches.models import Transcription
 from fiches.models.documents import Biblio, NoteTranscription
 from fiches.utils import (
+    get_default_publisher_user,
     get_last_model_activity,
     log_model_activity,
     update_object_index,
-    get_default_publisher_user,
 )
-import requests
-from utils import dbg_logger
 
 # ==============================================================================#
 # ----------- TRANSCRIPTION ----------------------------------------------------#

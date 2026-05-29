@@ -1,14 +1,15 @@
 # fiches/models/finding.py
 
-from django.db import models
-from django.contrib.auth.models import User
-from django.utils.translation import gettext_lazy as _
-from django.contrib.contenttypes.fields import GenericRelation
-from sorl.thumbnail import ImageField  # Ensure sorl-thumbnail is installed
 from ckeditor.fields import RichTextField
+from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericRelation
+from django.db import models
+from django.utils.translation import gettext_lazy as _
+from sorl.thumbnail import ImageField  # Ensure sorl-thumbnail is installed
 
 from fiches.models.content.image import Image
 from fiches.models.documents.document import Document
+
 
 class Finding(models.Model):
     title = models.CharField(_("Titre"), max_length=200)

@@ -166,7 +166,7 @@ CKEDITOR_CONFIGS = {
             ('ὗ', 'ὗ')
         ),
     },
-    
+
     'note_ckeditor': {
         'skin': 'v2',
         'contentsCss': f"{settings.STATIC_URL}css/main2.css",

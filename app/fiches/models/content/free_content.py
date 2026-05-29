@@ -1,13 +1,14 @@
 # models/free_content.py
 
-from django.db import models
-from django.contrib.auth.models import User
-from django.utils.translation import gettext_lazy as _
-from django.contrib.contenttypes.fields import GenericRelation
 from ckeditor.fields import RichTextField
+from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericRelation
+from django.db import models
+from django.utils.translation import gettext_lazy as _
 
 from fiches.models.content.image import Image
 from fiches.models.documents.document import Document
+
 
 class FreeContentManager(models.Manager):
     def get_content(self, name):

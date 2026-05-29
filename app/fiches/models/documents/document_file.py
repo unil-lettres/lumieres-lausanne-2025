@@ -21,6 +21,7 @@ class DocumentFile(ACModel):
 
     class Meta:
         """Meta options for DocumentFile."""
+
         db_table = "fiches_documentfile"
         verbose_name = "Fichier"
         verbose_name_plural = "Fichiers"

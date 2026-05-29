@@ -18,13 +18,13 @@
 #    This copyright notice MUST APPEAR in all copies of the file.
 #
 
-from ckeditor.fields import RichTextField, RichTextFormField
+from ckeditor.fields import RichTextField
 from django import forms
-from django.apps import apps
 from django.db import models
 from django.forms import ModelForm
 from django.utils.dateformat import format
 from django.utils.translation import gettext_lazy as _
+
 from fiches.base_forms import NoteFormBase
 from fiches.constants import DATE_DISPLAY_FORMAT, DATE_INPUT_FORMATS
 from fiches.models.misc.notes import NoteBase
@@ -196,7 +196,7 @@ class BiographyForm(ModelForm):
 # ------------------------------------------------------------------------------
 class NoteBiography(NoteBase):
     owner = models.ForeignKey("fiches.Biography", on_delete=models.CASCADE)
-    
+
     @property
     def rte_type(self):
         """Return CKE to be compatible with note_formset.html template."""
@@ -209,7 +209,7 @@ class NoteBiography(NoteBase):
 class NoteFormBiography(NoteFormBase):
     # Add virtual rte_type field for template compatibility
     rte_type = forms.CharField(initial="CKE", widget=forms.HiddenInput(), required=False)
-    
+
     class Meta:
         model = NoteBiography
         fields = "__all__"

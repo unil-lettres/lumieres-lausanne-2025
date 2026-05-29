@@ -20,15 +20,16 @@
 #    This copyright notice MUST APPEAR in all copies of the file.
 #
 
-from django.urls import re_path, include
+from django.urls import re_path
+
 from fiches.views.projects import (
-    index_project,
-    display_project,
     add_object,
-    remove_object,
+    display_project,
+    get_project_bibliography,
     get_project_description,
     get_project_transcription,
-    get_project_bibliography,
+    index_project,
+    remove_object,
 )
 
 urlpatterns = [

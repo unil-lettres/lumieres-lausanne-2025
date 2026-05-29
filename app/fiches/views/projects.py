@@ -20,7 +20,6 @@
 #    This copyright notice MUST APPEAR in all copies of the file.
 #
 import logging  # XXX: delete it
-
 import re
 
 from django.apps import apps
@@ -29,8 +28,8 @@ from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.csrf import csrf_exempt
+
 from fiches.models import *
-from fiches.templatetags.collector import editable_projects
 
 logger = logging.getLogger(__name__)  # XXX: delete it
 
@@ -130,7 +129,7 @@ def get_project_description(request, proj_id=None):
         "lit_prim": lit_prim,
         "lit_sec": lit_sec,
         "transcriptions": transcriptions,
-    }   
+    }
     logger.debug(f"{__file__}.get_project_description() : {context}")
     return render(request, "fiches/ajax/project_description.html", context)
 
@@ -209,7 +208,6 @@ def add_object(request):
     Add an object to a project,
     object and project specifications (id and type) are passed by POST variables
     """
-
     if not request.user.has_perm("fiches.change_project"):
         return
 
@@ -273,7 +271,6 @@ def remove_object(request):
     Remove an object from a project,
     object and collection specifications (id and type) are passed by POST variables
     """
-
     if not request.user.has_perm("fiches.change_project"):
         return
 

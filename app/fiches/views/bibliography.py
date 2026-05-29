@@ -22,23 +22,30 @@ from base64 import b64decode
 from functools import reduce
 from itertools import chain
 
-from django.db import connection, IntegrityError, transaction
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import IntegrityError, connection, transaction
 from django.db.models import Q
 from django.forms.models import inlineformset_factory
-from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect, HttpResponseServerError, JsonResponse
-from django.core.exceptions import ObjectDoesNotExist
+from django.http import (
+    Http404,
+    HttpResponse,
+    HttpResponseForbidden,
+    HttpResponseRedirect,
+    HttpResponseServerError,
+    JsonResponse,
+)
 from django.shortcuts import get_object_or_404, render
 from django.template.context_processors import csrf
 from django.urls import reverse
-from django.utils.dateformat import format
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
+
 from fiches.forms import BiblioForm, ContributionDocForm, ContributionDocSecForm, NoteFormBiblio
 from fiches.models import Biblio, ContributionDoc, DocumentType, PrimaryKeyword, SecondaryKeyword
-from fiches.models.documents import DocumentFile, NoteBiblio, Manuscript
+from fiches.models.documents import DocumentFile, Manuscript, NoteBiblio
 from fiches.utils import (
     get_last_model_activity,
     log_model_activity,
@@ -197,7 +204,6 @@ def get_person_biblio(
     These parameters can be passed as obects (contribution_type and document_type) or
     only the id's of the objetcs. In some situation it is preferable to pass the id, so we can avoid some DB hits
     """
-
     cd = ContributionDoc.objects.select_related().filter(person=person)
 
     # ----- Filter on litterature type
@@ -330,7 +336,6 @@ def create(request, doctype=1):
 @never_cache
 def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     """Handles creation and modification of bibliography records (fiches bibliographiques)."""
-
     # -------------------------------
     # Permission Checks
     # -------------------------------
@@ -580,7 +585,6 @@ def delete(request, doc_id):
     Handles errors gracefully if the redirect URL cannot be resolved.
     Redirects to the main index page after deletion.
     """
-
     if not request.user.has_perm("fiches.delete_biblio"):
         return HttpResponseForbidden("Accès non autorisé")
 

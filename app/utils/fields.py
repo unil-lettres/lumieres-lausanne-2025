@@ -19,9 +19,11 @@
 #
 #    This copyright notice MUST APPEAR in all copies of the file.
 #
+import pickle
+
 from django.db import models
 from django.utils.encoding import smart_str
-import pickle
+
 
 class DictField(models.Field):
     """DictField is a TextField that contains pickled dictionaries."""
@@ -29,7 +31,7 @@ class DictField(models.Field):
     # Use the Python 3 style for defining metaclasses.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-    
+
     def from_db_value(self, value, expression, connection):
         """Convert the database value to a Python dictionary."""
         if value is None:
@@ -42,11 +44,10 @@ class DictField(models.Field):
             return pickle.loads(value.encode('latin1'))  # Using bytes directly
         except (pickle.PickleError, ValueError):
             return value
-    
+
     def to_python(self, value):
         #"""Convert the value to a Python dictionary."""
         """Unpickle our string value to Dict after we load it from the DB."""
-
         if value == "":
             return None
 
@@ -77,9 +78,9 @@ class DictField(models.Field):
             value = pickle.dumps(value)
         else:
             return None
-        
+
         return super(DictField, self).get_db_prep_save(value, connection)
-    
+
     # def get_prep_value(self, value):
     #     """Prepare the value for saving to the database."""
     #     print ("get_prep_value called")
@@ -100,10 +101,10 @@ class DictField(models.Field):
 
 # class DictField(models.TextField):
 #     """DictField is a textfield that contains pickled dictionaries."""
-    
+
 #     # Used so to_python() is called
 #     __metaclass__ = models.SubfieldBase
-    
+
 #     def to_python(self, value):
 #         """Unpickle our string value to Dict after we load it from the DB"""
 #         if value == "":
@@ -116,7 +117,7 @@ class DictField(models.Field):
 #             return value
 
 #         return value
-    
+
 #     def get_db_prep_save(self, value, connection):
 #         """Pickle our Dict object to a string before we save"""
 #         #assert isinstance(value, dict)
@@ -124,5 +125,5 @@ class DictField(models.Field):
 #             value = pickle.dumps(value)
 #         else:
 #             return None
-        
+
 #         return super(DictField, self).get_db_prep_save(value, connection)

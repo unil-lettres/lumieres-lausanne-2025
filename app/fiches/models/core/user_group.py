@@ -1,9 +1,10 @@
 # models/user_group.py
 
+from django.contrib.auth.models import Group, User
 from django.db import models
-from django.contrib.auth.models import User, Group
 from django.utils.translation import gettext_lazy as _
-  
+
+
 class UserGroup(models.Model):
     name        = models.CharField(_("Nom"), max_length=125)
     description = models.TextField(_("Description"), blank=True)

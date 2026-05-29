@@ -6,11 +6,10 @@
 
 # fiches/models/documents/document.py
 
-import re
 from os.path import basename
-from ckeditor.fields import RichTextField
 from types import SimpleNamespace
 
+from ckeditor.fields import RichTextField
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -19,6 +18,7 @@ from django.db.models import Q
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+
 from fiches.models.contributions.ac_model import ACModel
 from fiches.models.contributions.keyword import PrimaryKeyword, SecondaryKeyword
 from fiches.models.contributiontype import ContributionType
@@ -34,6 +34,7 @@ LITTERATURE_TYPE_CHOICES = (("p", _("Primaire")), ("s", _("Secondaire")))
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+
 from fiches.models.documents.document_file import DocumentFile
 
 

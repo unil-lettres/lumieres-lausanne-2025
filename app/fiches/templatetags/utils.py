@@ -1,5 +1,4 @@
-from django import template
-from django import get_version
+from django import get_version, template
 
 register = template.Library()
 

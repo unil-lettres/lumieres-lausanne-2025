@@ -3,6 +3,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+
 class Society(models.Model):
     name = models.CharField(_("Société/Académie"), max_length=128)
 

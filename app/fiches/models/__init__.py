@@ -3,50 +3,50 @@
 # Content Models
 from .content import *
 
-# Contributions Models
-from .contributions.ac_model import ACModel
-from .contributions.keyword import PrimaryKeyword, SecondaryKeyword
-
-# Core Models
-from .core.user_profile import UserProfile
-from .core.user_group import UserGroup
-
-# Document Models
-from .documents.document import (
-    Document,
-    DocumentType,
-    DocumentLanguage,
-    Biblio,
-    Manuscript,
-    Transcription,
-    ContributionDoc,
-    ContributionMan,
-    ManuscriptType,
-    ContributionType,
-    Depot,
-)
-from .documents.document_file import DocumentFile
-
 # Finding Models
 from .content.finding import Finding
 
+# Contributions Models
+from .contributions.ac_model import ACModel
+from .contributions.keyword import PrimaryKeyword, SecondaryKeyword
+from .core.user_group import UserGroup
+
+# Core Models
+from .core.user_profile import UserProfile
+
+# Document Models
+from .documents.document import (
+    Biblio,
+    ContributionDoc,
+    ContributionMan,
+    ContributionType,
+    Depot,
+    Document,
+    DocumentLanguage,
+    DocumentType,
+    Manuscript,
+    ManuscriptType,
+    Transcription,
+)
+from .documents.document_file import DocumentFile
+
 # Logging Models
 from .logging.activity_log import ActivityLog
+
+# Notes Models
+from .misc.notes import NoteBase
 
 # Miscellaneous Models
 from .misc.object_collection import ObjectCollection
 from .misc.project import Project
 from .misc.society import Society
-
-# Notes Models
-from .misc.notes import NoteBase
+from .person.biography import Biography, Nationality, Relation, RelationType, Religion
 
 # Person Models
 from .person.person import Person
-from .person.biography import Biography, RelationType, Relation, Nationality, Religion
 
 # Search Models
-from .search.search import PlaceView, JournaltitleView
+from .search.search import JournaltitleView, PlaceView
 
 # Add any additional imports as needed
 

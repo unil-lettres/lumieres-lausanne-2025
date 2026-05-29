@@ -1,5 +1,6 @@
 #from django.utils.log import getLogger
 import logging
+
 from django.conf import settings
 
 if not settings.DEBUG:
@@ -15,14 +16,14 @@ else:
 # ## Taken from http://www.djangosnippets.org/snippets/1282/
 # from django.db.models.query import CollectedObjects
 # from django.db.models.fields.related import ForeignKey
-# 
+#
 # def duplicate(obj, value=None, field=None, exclude_models=[]):
 #     """
-#     Duplicate all related objects of `obj`. 
+#     Duplicate all related objects of `obj`.
 #     If one of the duplicate
 #     objects has an FK to another duplicate object
 #     update that as well. Return the duplicate copy
-#     of `obj`.  
+#     of `obj`.
 #     """
 #     collected_objs = CollectedObjects()
 #     obj._collect_sub_objects(collected_objs)
@@ -31,7 +32,7 @@ else:
 #     # Traverse the related models in reverse deletion order.
 #     for model in reversed(related_models):
 #         if model.__name__ in exclude_models: break
-#         
+#
 #         # Find all FKs on `model` that point to a `related_model`.
 #         fks = []
 #         for f in model._meta.fields:

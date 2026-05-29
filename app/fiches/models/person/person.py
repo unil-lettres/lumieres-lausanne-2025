@@ -1,13 +1,12 @@
 # models/person.py
 
 import re
+
 from django.conf import LazySettings
 from django.db import models
-from django.utils.translation import gettext_lazy as _
-from django.urls import reverse
-
 from django.db.models import Q
-from collections import OrderedDict
+from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
 
 from fiches.models.person.relation import Relation
 

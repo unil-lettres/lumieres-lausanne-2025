@@ -4,9 +4,9 @@
 #     from sets import Set as set
 
 from django import template
-from django.http import Http404
-from django.core.paginator import Paginator, InvalidPage
 from django.conf import settings
+from django.core.paginator import InvalidPage, Paginator
+from django.http import Http404
 
 register = template.Library()
 
@@ -37,7 +37,7 @@ def do_autopaginate(parser, token):
     if len(split) == 2:
         return AutoPaginateNode(split[1])
     elif len(split) == 3:
-        return AutoPaginateNode(split[1], paginate_by=split[2], 
+        return AutoPaginateNode(split[1], paginate_by=split[2],
             context_var=context_var)
     elif len(split) == 4:
         try:
@@ -68,6 +68,7 @@ class AutoPaginateNode(template.Node):
         tag.  If you choose not to use *{% paginate %}*, make sure to display the
         list of available pages, or else the application may seem to be buggy.
     """
+
     def __init__(self, queryset_var, paginate_by=DEFAULT_PAGINATION,
         orphans=DEFAULT_ORPHANS, context_var=None):
         self.queryset_var = template.Variable(queryset_var)
@@ -129,7 +130,7 @@ def paginate(context, window=DEFAULT_WINDOW):
         A dictionary of all of the **GET** parameters in the current request.
         This is useful to maintain certain types of state, even when requesting
         a different page.
-        """
+    """
     try:
         paginator = context['paginator']
         page_obj = context['page_obj']
@@ -182,7 +183,7 @@ def paginate(context, window=DEFAULT_WINDOW):
             second_list.sort()
             diff = second_list[0] - pages[-1]
             # If there is a gap of two, between the last page of the current
-            # set and the first page of the last set, then we're missing a 
+            # set and the first page of the last set, then we're missing a
             # page.
             if diff == 2:
                 pages.append(second_list[0] - 1)

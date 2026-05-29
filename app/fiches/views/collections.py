@@ -33,9 +33,9 @@ from django.http import (
     HttpResponseServerError,
 )
 from django.shortcuts import get_object_or_404, render
-from django.template import RequestContext
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
+
 from fiches.forms import ObjectCollectionForm
 from fiches.models import *
 from fiches.templatetags.collector import editable_projects
@@ -192,7 +192,6 @@ def tab_index(request, coll_id=None, coll_slug=None, no_cache=False):
     """
     Collection Index to be used inside a tab. For the workspace collection's tab
     """
-
     print("DEBUG: tab_index was called with coll_id =", coll_id)
 
     if request.GET.get("w", None) is not None:

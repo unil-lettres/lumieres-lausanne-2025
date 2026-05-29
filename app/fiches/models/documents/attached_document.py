@@ -1,9 +1,11 @@
 # models/attached_document.py
+from os.path import basename
+
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes.fields import GenericForeignKey
-from os.path import basename
+
 
 class AttachedDocument(models.Model):  # Renamed from Document
     title = models.CharField(_("Titre"), max_length=250, blank=True)

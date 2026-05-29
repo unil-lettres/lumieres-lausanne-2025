@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
-import sys
-from django.apps import apps
-from django.utils.encoding import smart_str
-from itertools import groupby
-from django.db import models
-from django.utils.safestring import mark_safe
-
 # Logging utility
 import logging
+from itertools import groupby
+
+from django.apps import apps
+from django.db import models
+from django.utils.encoding import smart_str
+
 dbg_logger = logging.getLogger(__name__)
 
 def log_model_activity(obj, user):
@@ -48,8 +47,10 @@ def remove_object_index(obj):
     return False
 
 import unicodedata
+
+
 def supprime_accent(ligne):
-    """ Remove accents from the text """
+    """Remove accents from the text"""
     ligne = smart_str(ligne)
     return ''.join((c for c in unicodedata.normalize('NFD', ligne) if unicodedata.category(c) != 'Mn'))
 

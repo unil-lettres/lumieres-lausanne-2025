@@ -1,11 +1,11 @@
-from django.db import models
-from django.contrib.auth.models import User
-from django.utils.translation import gettext_lazy as _
-from django.contrib.contenttypes.fields import GenericRelation
 from ckeditor.fields import RichTextField
+from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericRelation
+from django.db import models
+from django.utils.translation import gettext_lazy as _
 
-from fiches.models.core.user_group import UserGroup
 from fiches.models.content.image import Image
+from fiches.models.core.user_group import UserGroup
 
 
 class Project(models.Model):

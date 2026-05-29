@@ -19,12 +19,13 @@
 #    This copyright notice MUST APPEAR in all copies of the file.
 #
 from django.urls import path
-from fiches.views.news import index, display_news
+
+from fiches.views.news import display_news, index
 
 urlpatterns = [
     # URL principal pour les News
     path('', index, name='news-index'),
-    
+
     # Afficher une News sépécifique par ID
     path('<int:news_id>/', display_news, name='news-display'),
 ]

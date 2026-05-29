@@ -4,47 +4,47 @@
 #
 
 # stdlib
+import calendar
 import copy
 import datetime
-import calendar
 import json
 import shlex
 from base64 import b64decode
 
+from django.apps import apps
+
 # Django
 from django.conf import settings
-from django.apps import apps
-from django.db import models
-from django.db.models import Q
-from django.http import (
-    HttpResponse, Http404, HttpResponseRedirect, HttpResponseNotFound, JsonResponse
-)
-from django.shortcuts import render, get_object_or_404
-from django.urls import reverse
-from django.core.paginator import Paginator, InvalidPage
-from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import permission_required
+from django.core.paginator import InvalidPage, Paginator
+from django.db import models
+from django.http import Http404, HttpResponseNotFound, HttpResponseRedirect, JsonResponse
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
+from haystack.inputs import AutoQuery
+
+# Haystack (Solr) for quick search
+from haystack.query import SearchQuerySet
 
 # Project utils
 from utils import dbg_logger
 
+from fiches.models import ActivityLog, Person, Project, RelationType, Society, UserGroup
+
 # Domain models
-from fiches.models.documents.document import Biblio, Transcription, DocumentType
-from fiches.models import UserGroup, ActivityLog, Person, Project, Society, RelationType
-from fiches.utils import get_default_publisher_user
+from fiches.models.documents.document import Biblio, DocumentType, Transcription
 
 # Forms / search models
 from fiches.models.search.search import (
-    QuickSearchForm,
     BiblioExtendedSearchForm,
-    JournaltitleView,   # used by filter_builder()
-    SearchFilters,      # used by save_filters()
+    JournaltitleView,  # used by filter_builder()
+    QuickSearchForm,
+    SearchFilters,  # used by save_filters()
 )
+from fiches.utils import get_default_publisher_user
 
-# Haystack (Solr) for quick search
-from haystack.query import SearchQuerySet
-from haystack.inputs import AutoQuery
 
 # ---------------------------------------------------------------------
 # Helpers

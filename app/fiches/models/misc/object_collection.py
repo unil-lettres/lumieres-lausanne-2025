@@ -1,10 +1,8 @@
-from django.db import models
 from django.contrib.auth.models import User
-from django.utils.translation import gettext_lazy as _
-from django.utils.text import slugify
-from django.forms import ModelForm, Textarea
+from django.db import models
 from django.db.models.fields.related import ManyToManyField
-from django.apps import apps  # For lazy imports
+from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 
 from fiches.models.contributions.ac_model import ACModel
 from fiches.models.core.user_group import UserGroup

@@ -4,11 +4,12 @@ import ckeditor.fields
 import django.core.validators
 import django.db.models.deletion
 import django.db.models.manager
-import fiches.models.documents.document
 import sorl.thumbnail.fields
 import utils.fields
 from django.conf import settings
 from django.db import migrations, models
+
+import fiches.models.documents.document
 
 
 class Migration(migrations.Migration):

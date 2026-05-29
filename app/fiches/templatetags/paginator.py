@@ -33,8 +33,8 @@ def paginator(context, adjacent_pages=2, query_vars_str=""):
         qs = "&".join([""] + [ "%s=%s" % (query_var, context.get(query_var))
                for query_var in query_vars if context.get(query_var)
         ])
-    
-    
+
+
     return {
         'page_obj': page_obj,
         'paginator': paginator,

@@ -19,38 +19,39 @@
 #    This copyright notice MUST APPEAR in all copies of the file.
 #
 from django.urls import path, re_path
+
 from fiches.views.publications import (
+    conference_proceedings,
     finding_index,
     get_finding_description,
     last_transcriptions,
-    conference_proceedings,
-    studies_ll,
     seminars_and_memoirs,
+    studies_ll,
     videos,
 )
 
 urlpatterns = [
     # Trouvailles with optional finding_id
     re_path(r'^trouvailles/(?:(?P<finding_id>\d+)/)?$', finding_index, name='finding-index'),
-    
+
     # Trouvailles with specific finding_id
     path('trouvailles/<int:finding_id>/', finding_index, name='finding-display'),
-    
+
     # Finding description
     path('trouvailles/<int:finding_id>/description/', get_finding_description, name="finding-description"),
-    
+
     # Last transcriptions
     path('dernieres-transcriptions/', last_transcriptions, name="last-transcriptions"),
-    
+
     # Conference proceedings
     path('actes-colloques/', conference_proceedings, name="conference-proceedings"),
-    
+
     # Studies
     path('etudes/', studies_ll, name="studies-ll"),
-    
+
     # Seminars and memoirs
     path('seminaires-memoires/', seminars_and_memoirs, name="seminars-and-memoirs"),
-    
+
     # Videos
     path('videos/', videos, name="videos"),
 ]

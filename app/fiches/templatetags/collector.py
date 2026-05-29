@@ -20,10 +20,8 @@
 #    This copyright notice MUST APPEAR in all copies of the file.
 #
 from django import template
-from django.template import TemplateSyntaxError
-from django.db import models
+from django.contrib.auth.models import AnonymousUser, User
 
-from django.contrib.auth.models import User, AnonymousUser
 #from django.template.loader import get_template, render_to_string
 #from urlparse import urlparse
 #from django.core.urlresolvers import resolve, Resolver404
@@ -46,7 +44,7 @@ register = template.Library()
 #     from django.contrib.auth.models import User, AnonymousUser
 #     if not isinstance(user, User) and not isinstance(user, AnonymousUser):
 #         raise template.TemplateSyntaxError("argument should be a User")
-    
+
 #     projs = set()
 #     #for g in user.get_profile().get_usergroups():
 #     for g in user.profile.get_usergroups():
@@ -61,12 +59,12 @@ def editable_projects(user):
     """
     if not isinstance(user, (User, AnonymousUser)):
         raise template.TemplateSyntaxError("argument should be a User")
-    
+
     if isinstance(user, AnonymousUser) or not hasattr(user, 'profile'):
         return set()
-    
+
     projs = set()
     for g in user.profile.get_usergroups():
         projs |= set(g.group_projects.all())
-    
+
     return set(user.member_projects.all()) | set(user.project_set.all()) | projs

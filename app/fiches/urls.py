@@ -1,18 +1,19 @@
 # fiches/urls.py
 
 from django.urls import path, re_path
-from fiches.views import ajax_search
-from fiches.views import collections as views_collections
+
 from fiches.views import (
+    ajax_search,
     documentfile_frame_create,
     documentfile_frame_edit,
     documentfile_frame_list,
     last_activities,
     main_index,
     serve_documentfile,
+    workspace_collections,
 )
+from fiches.views import collections as views_collections
 from fiches.views import transcription as views_transcription
-from fiches.views import workspace_collections
 from fiches.views.bibliography import cancel_new_bibliography as bibliography_cancel
 from fiches.views.bibliography import create as bibliography_create
 from fiches.views.bibliography import delete as bibliography_delete
@@ -34,7 +35,6 @@ from fiches.views.biography import relations_list as biography_relations_list
 from fiches.views.biography import to_be_validated as biography_to_be_validated
 from fiches.views.biography import validate as biography_validate
 from fiches.views.search import biblio_extended_search, filter_builder
-
 
 urlpatterns = [
     # Home Page (relative to 'fiches/' prefix)

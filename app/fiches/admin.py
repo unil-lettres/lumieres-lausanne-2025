@@ -1,47 +1,45 @@
 """Admin configuration for the fiches app in Lumières.Lausanne."""
 
-from django.utils.html import format_html
-from django.urls import reverse as reverse_url
-from django.utils.translation import gettext_lazy as _
+from django.contrib import admin, messages
 from django.contrib.admin import AdminSite
-from django.contrib.auth.admin import UserAdmin, GroupAdmin
-from django.contrib.auth.models import User, Group
-from django.contrib.contenttypes.admin import GenericStackedInline
-from django.contrib.sites.models import Site
-from django.contrib.sites.admin import SiteAdmin
-from django.forms import ModelForm, TextInput, CharField
-from django.contrib import admin
-from django.contrib import messages
 from django.contrib.admin.sites import NotRegistered
-from fiches.forms import ProjectForm
+from django.contrib.auth.admin import GroupAdmin, UserAdmin
+from django.contrib.auth.models import Group, User
+from django.contrib.contenttypes.admin import GenericStackedInline
+from django.contrib.sites.admin import SiteAdmin
+from django.contrib.sites.models import Site
+from django.forms import CharField, ModelForm, TextInput
+from django.urls import reverse as reverse_url
+from django.utils.html import format_html
+from django.utils.translation import gettext_lazy as _
 
-from fiches.models.content.free_content import FreeContent
-from fiches.models.content.news import News
-from fiches.models.content.image import Image
-from fiches.models.misc.project import Project
-from fiches.models.content.finding import Finding
+from fiches.forms import BiblioForm, ProjectForm
 from fiches.models import (
-    UserProfile,
-    Person,
-    PrimaryKeyword,
-    SecondaryKeyword,
-    Society,
+    ActivityLog,
     Biography,
-    DocumentType,
-    DocumentLanguage,
+    Depot,
+    Document,
     DocumentFile,
-    PlaceView,
+    DocumentLanguage,
+    DocumentType,
     JournaltitleView,
-    UserGroup,
+    ManuscriptType,
     Nationality,
+    Person,
+    PlaceView,
+    PrimaryKeyword,
     RelationType,
     Religion,
-    ManuscriptType,
-    ActivityLog,
-    Document,
-    Depot,
+    SecondaryKeyword,
+    Society,
+    UserGroup,
+    UserProfile,
 )
-from fiches.forms import BiblioForm
+from fiches.models.content.finding import Finding
+from fiches.models.content.free_content import FreeContent
+from fiches.models.content.image import Image
+from fiches.models.content.news import News
+from fiches.models.misc.project import Project
 
 
 class FichesAdminSite(AdminSite):
@@ -478,11 +476,11 @@ class ActivityLogAdmin(admin.ModelAdmin):
         """Return the user's full name (or username) as a clickable link to the user admin page."""
         if not obj.user:
             return "-"
-        
+
         # Get user's full name or fallback to username
         full_name = obj.user.get_full_name()
         display_name = full_name if full_name.strip() else obj.user.username
-        
+
         # Create link to user admin page
         try:
             url = reverse_url("admin:auth_user_change", args=[obj.user.pk])

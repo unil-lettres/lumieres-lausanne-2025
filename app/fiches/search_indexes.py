@@ -2,11 +2,13 @@
 #
 #    Copyright (C) ...
 #
-from haystack.indexes import *
-from haystack import indexes
 import datetime
 import unicodedata
+
 from django.apps import apps  # ← use the app registry (robust to module path changes)
+from haystack import indexes
+from haystack.indexes import *
+
 # from django.db.models import Q  # (unused here)
 
 # No direct model imports; they may have moved.

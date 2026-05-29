@@ -1,19 +1,19 @@
 from .attached_document import AttachedDocument
-from .document_file import DocumentFile
 from .document import (
-    Biblio,
-    Manuscript,
-    ManuscriptType,
-    Transcription,
     TRANSCRIPTION_CHOICES,
+    Biblio,
+    ContributionDoc,
     ContributionMan,
     ContributionType,
-    ContributionDoc,
+    Depot,
+    DocumentLanguage,
+    Manuscript,
+    ManuscriptType,
     NoteBiblio,
     NoteTranscription,
-    DocumentLanguage,
-    Depot,
+    Transcription,
 )
+from .document_file import DocumentFile
 
 __all__ = [
     "AttachedDocument",

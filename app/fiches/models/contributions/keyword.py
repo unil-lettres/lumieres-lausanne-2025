@@ -3,9 +3,10 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+
 class PrimaryKeyword(models.Model):
     """Primary keyword model for categorizing content."""
-    
+
     word = models.CharField(_("Mot"), max_length=100, unique=True)
 
     def __str__(self):
@@ -14,7 +15,7 @@ class PrimaryKeyword(models.Model):
 
     class Meta:
         """Meta configuration for PrimaryKeyword model."""
-        
+
         verbose_name = _("Mot clé principal")
         verbose_name_plural = _("Mots clés principaux")
         ordering = ("word",)
@@ -22,7 +23,7 @@ class PrimaryKeyword(models.Model):
 
 class SecondaryKeyword(models.Model):
     """Secondary keyword model that belongs to a primary keyword."""
-    
+
     word = models.CharField(_("Mot"), max_length=100, unique=True)
     primary_keyword = models.ForeignKey(
         PrimaryKeyword,
@@ -38,7 +39,7 @@ class SecondaryKeyword(models.Model):
 
     class Meta:
         """Meta configuration for SecondaryKeyword model."""
-        
+
         verbose_name = _("Mot clé secondaire")
         verbose_name_plural = _("Mots clés secondaires")
         managed = False

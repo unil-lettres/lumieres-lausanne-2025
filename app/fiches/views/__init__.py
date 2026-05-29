@@ -54,11 +54,12 @@ from django.utils.encoding import smart_str
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.cache import cache_page, never_cache
 from django.views.decorators.vary import vary_on_headers
+from utils import dbg_logger
+
+from fiches.forms import DocumentFileForm
 
 # from lumieres_project.urls import MyPasswordChangeForm
 from fiches.models import ACModel, ActivityLog, Finding, FreeContent, News, Transcription
-from utils import dbg_logger
-from fiches.forms import DocumentFileForm
 from fiches.utils import user_can_change_documentfile
 
 logger = logging.getLogger(__name__)  # XXX: delete it
@@ -470,8 +471,6 @@ def workspace_collections(request, coll_id=None, coll_slug=None):
     Typically, you load this partial into main.html via an AJAX call or a tab click
     (not by directly rendering main.html itself).
     """
-    from django.contrib.auth.forms import PasswordChangeForm
-    from django.http import Http404
     from fiches.models import ObjectCollection
     from fiches.views.collections import get_coll, get_user_coll_list  # Reuse your old helpers
 

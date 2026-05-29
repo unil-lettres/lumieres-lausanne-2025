@@ -3,6 +3,7 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+
 # ===============================================================================
 # RELATIONS
 # ===============================================================================
@@ -26,6 +27,7 @@ class Relation(models.Model):
     Pour obtenir les relations d'une personne p:
     rs = Relation.objects.filter(bio__person=p).extra(where=["1 GROUP BY related_person_id,relation_type_id"])
     """
+
     bio = models.ForeignKey(
         "fiches.Biography",
         on_delete=models.CASCADE

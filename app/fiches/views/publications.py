@@ -18,15 +18,12 @@
 #
 #    This copyright notice MUST APPEAR in all copies of the file.
 #
-from django.db import models
-from django.shortcuts import render, get_object_or_404
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, render
+
 from fiches.models import Finding, FreeContent
 from fiches.models.documents import Transcription
 
-
-from django.shortcuts import render
-from django.db.models import Q
-from fiches.models import Finding
 
 def finding_index(request, finding_id=None):
     # Check if the user is authenticated and has the required permission
@@ -40,7 +37,7 @@ def finding_index(request, finding_id=None):
 
     # Prepare the context for the template
     context = {'elements': findings, 'opened_element': finding_id}
-    
+
     # Render the template with the context
     return render(request, 'fiches/display/thumbnail_detail_view.html', context)
 
@@ -56,7 +53,6 @@ def last_transcriptions(request):
     """
     Last published transcriptions page
     """
-
     content = FreeContent.objects.get_content("publications>last_transcriptions")
     transcriptions = Transcription.objects.latest_published_by_date(50)
 

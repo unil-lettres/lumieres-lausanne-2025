@@ -17,17 +17,12 @@
 #
 #    This copyright notice MUST APPEAR in all copies of the file.
 #
-import json
-import pprint
 import re
-import time
-from base64 import b64decode
 from itertools import groupby
 
-from django.conf import settings
 from django.contrib.auth.decorators import permission_required
 from django.db.models import Q
-from django.forms.models import inlineformset_factory, modelformset_factory
+from django.forms.models import inlineformset_factory
 from django.http import (
     Http404,
     HttpResponse,
@@ -36,16 +31,15 @@ from django.http import (
     JsonResponse,
 )
 from django.shortcuts import get_object_or_404, render
-from django.template import RequestContext
-from django.views.decorators.http import require_POST
 
 # from django.core.urlresolvers import reverse
 from django.urls import reverse
 
 # from django.utils.encoding import smart_str, smart_unicode
-from django.utils.html import escape
-from django.utils.safestring import mark_safe
 from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
+from utils import dbg_logger
+
 from fiches.models import *
 from fiches.models.person.biography import (
     BiographyForm,
@@ -60,12 +54,8 @@ from fiches.models.person.biography import (
 from fiches.utils import (
     get_grouped_objet_activities,
     log_model_activity,
-    query_fiche,
-    remove_object_index,
-    supprime_accent,
     update_object_index,
 )
-from utils import dbg_logger
 
 # ===============================================================================
 # BIOGRAPHY
@@ -280,7 +270,6 @@ def build_person_biblio_dict(person):
     }
 
 
-from fiches.views.bibliography import get_person_biblio
 
 
 def display(request, person_id, version=0):
@@ -301,7 +290,7 @@ def display(request, person_id, version=0):
     if referer:
         edit_url = reverse("biography-edit", args=[person_id])
         display_url = reverse("biography-display", args=[person_id])
-        if not edit_url in referer and not display_url in referer:
+        if edit_url not in referer and display_url not in referer:
             request.session["bio_from"] = request.META.get("HTTP_REFERER")
 
     # Version informations
@@ -385,7 +374,7 @@ def edit(request, person_id, version=0, create_bio=False):
         if not getattr(bio, "pk", None):
             return NoteBiography.objects.none()
         note_qs = NoteBiography.objects.filter(owner_id=bio.pk)
-        
+
         if not request.user.is_staff:
             note_qs = note_qs.filter(
                 Q(access_owner=request.user)

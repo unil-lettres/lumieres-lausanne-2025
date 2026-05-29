@@ -19,17 +19,14 @@
 #
 #    This copyright notice MUST APPEAR in all copies of the file.
 
-from django import forms
-from django.utils.safestring import mark_safe
-from django.utils.encoding import smart_str, force_str
-from django.utils.text import Truncator
-from django.forms.models import modelformset_factory
 from itertools import chain
-from django.apps import apps
-from fiches.utils import dbg_logger
+
+from django import forms
 
 # Import models to use the fields correctly
 from django.db import models  # <-- Add this import
+from django.utils.encoding import force_str
+from django.utils.safestring import mark_safe
 
 # TODO: to delete
 # def get_lookup_class(field):
@@ -233,7 +230,7 @@ class StaticList(forms.SelectMultiple):
 class DynamicList(forms.SelectMultiple):
     class_prefix = 'dynamiclist'
     jsvarname    = 'dynamiclist_widget'
-    
+
     def __init__(self, rel=None, attrs=None, choices=(), add_title="Add", placeholder=None):
         # Handle ForeignKey or ManyToManyField (if provided)
         if rel is not None:

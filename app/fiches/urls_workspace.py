@@ -20,6 +20,7 @@
 #    This copyright notice MUST APPEAR in all copies of the file.
 #
 from django.urls import path, re_path
+
 from fiches.views import workspace, workspace_collections
 
 urlpatterns = [

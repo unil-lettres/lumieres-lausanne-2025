@@ -3,24 +3,23 @@
 #    [License and copyright information]
 #
 
-from django.db import models
-from django.contrib.auth.models import User, Group
-from django.utils.translation import gettext_lazy as _
 from django import forms
-
-from utils.fields import DictField
+from django.contrib.auth.models import Group, User
+from django.db import models
+from django.utils.translation import gettext_lazy as _
+from fiches.models import Project
+from fiches.models.contributions.keyword import PrimaryKeyword, SecondaryKeyword
 
 # Domain models
 from fiches.models.documents.document import (
+    LITTERATURE_TYPE_CHOICES,
+    Depot,
+    DocumentLanguage,
     DocumentType,
     ManuscriptType,
-    Depot,
-    LITTERATURE_TYPE_CHOICES,
-    DocumentLanguage,
 )
-from fiches.models.contributions.keyword import PrimaryKeyword, SecondaryKeyword
 from fiches.models.misc.society import Society
-from fiches.models import Project
+from utils.fields import DictField
 
 
 # ------------------------------------------------------------
@@ -49,6 +48,7 @@ class SearchFilters(models.Model):
 # ------------------------------------------------------------
 class PlaceView(models.Model):
     """Mapping to SQL view fiches_placeview (read-only)."""
+
     biblio_id = models.IntegerField(null=True, blank=True, verbose_name=_("Biblio ID"))
     place_name = models.CharField(max_length=255, verbose_name=_("Place Name"))
 

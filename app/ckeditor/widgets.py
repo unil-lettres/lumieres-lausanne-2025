@@ -1,13 +1,13 @@
-from django import forms
-from django.conf import settings
-from django.urls import reverse
-from django.utils.safestring import mark_safe
-from django.utils.html import conditional_escape
-from django.utils.encoding import force_str  # ✅ FIXED
 import json
 
+from django import forms
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.forms.utils import flatatt
+from django.urls import reverse
+from django.utils.encoding import force_str  # ✅ FIXED
+from django.utils.html import conditional_escape
+from django.utils.safestring import mark_safe
 
 json_encode = json.JSONEncoder().encode
 
@@ -25,6 +25,7 @@ class CKEditorWidget(forms.Textarea):
     Widget providing CKEditor for Rich Text Editing.
     Supports direct image uploads and embed.
     """
+
     class Media:
         try:
             js = (
