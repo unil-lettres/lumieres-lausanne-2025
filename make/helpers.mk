@@ -1,4 +1,4 @@
-# functions.mk is sub makefile for helper functions
+# helpers.mk is sub makefile for helper functions
 #
 # Authors:
 #   - Xavier Beheydt <xavier.beheydt@gmail.com>
