@@ -81,7 +81,7 @@ dev/watch:    dev/compose/watch     ## Start with hot reload (develop.watch)
 
 .PHONY: dev/local/runserver dev/local/shell dev/local/createsuperuser
 .PHONY: dev/local/makemigrations dev/local/migrate dev/local/showmigrations
-.PHONY: dev/local/collectstatic dev/local/test dev/local/cov
+.PHONY: dev/local/collectstatic
 .PHONY: dev/local/rebuild-index dev/local/import dev/local/thumbnail-cleanup
 .PHONY: dev/local/manage
 
@@ -106,11 +106,7 @@ dev/local/showmigrations:  ## Show migrations on the host (ARGS=app_name)
 dev/local/collectstatic:  ## Collect static files on the host
 	$(LOCAL_MANAGE) collectstatic --noinput
 
-dev/local/test:  ## Run pytest on the host (ARGS=...)
-	uv run pytest $(ARGS)
-
-dev/local/cov:  ## Run pytest with coverage on the host
-	uv run pytest --cov=app --cov-report=term-missing $(ARGS)
+# Backend tests: see dev/tests/* (make/tests.mk) for host and container recipes.
 
 dev/local/rebuild-index:  ## Rebuild the Solr index from the host
 	$(LOCAL_MANAGE) rebuild_index --noinput --verbosity 2
@@ -128,7 +124,7 @@ dev/local/manage:  ## Run an arbitrary manage.py command on the host (ARGS=...)
 
 .PHONY: dev/docker/shell dev/docker/createsuperuser dev/docker/makemigrations
 .PHONY: dev/docker/migrate dev/docker/showmigrations dev/docker/collectstatic
-.PHONY: dev/docker/test dev/docker/rebuild-index dev/docker/import
+.PHONY: dev/docker/rebuild-index dev/docker/import
 .PHONY: dev/docker/thumbnail-cleanup dev/docker/manage dev/docker/exec dev/docker/bash
 
 dev/docker/shell:  ## Open a Django shell in the container
@@ -149,8 +145,7 @@ dev/docker/showmigrations:  ## Show migrations in the container (ARGS=app_name)
 dev/docker/collectstatic:  ## Collect static files in the container
 	$(DOCKER_MANAGE) collectstatic --noinput
 
-dev/docker/test:  ## Run Django tests in the container (ARGS=...)
-	$(DOCKER_MANAGE) test $(ARGS)
+# Backend tests: see dev/tests/* (make/tests.mk) for host and container recipes.
 
 dev/docker/rebuild-index:  ## Rebuild the Solr index in the container
 	$(DOCKER_MANAGE) rebuild_index --noinput --verbosity 2
