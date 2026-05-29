@@ -60,7 +60,7 @@ from fiches.utils import (
 # ===============================================================================
 
 
-def get_bio_formDef(bioForm):
+def get_bio_form_def(bioForm):
     flst = {}
     for i, f in enumerate(bioForm.visible_fields()):
         flst[f.html_name] = i
@@ -479,7 +479,7 @@ def edit(request, person_id, version=0, create_bio=False):
         societyFormset = SocietyFormset(instance=bio)
         professionFormset = ProfessionFormset(instance=bio)
 
-    bio_formdef = get_bio_formDef(bioForm)
+    bio_formdef = get_bio_form_def(bioForm)
 
     public_notes = None
     if getattr(bio, "pk", None) and not request.user.has_perm("fiches.can_publish_note"):

@@ -61,7 +61,7 @@ from fiches.utils import (
 # ===============================================================================
 
 
-def get_biblio_formDef(biblioForm):
+def get_biblio_form_def(biblioForm):
     flst = {}
     # Build mapping for visible fields
     for i, f in enumerate(biblioForm.visible_fields()):
@@ -540,7 +540,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
             "form": biblioForm,
             "model": Biblio,
             "new_object": new_doc,
-            "biblio_formdef": get_biblio_formDef(biblioForm),
+            "biblio_formdef": get_biblio_form_def(biblioForm),
             "noteFormset": noteFormset,
             "publicNotes": public_notes,
             "contributionFormset": contributionFormset,

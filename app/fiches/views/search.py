@@ -539,7 +539,7 @@ def filter_builder(request, model_name="Person", sfid=None):
 
 
 def do_search(request):
-    def get_Q(params):
+    def get_q(params):
         q = models.Q()
         for p in params:
             if p["type"] == "date" and p["op"] in ("lt", "gt"):
@@ -606,7 +606,7 @@ def do_search(request):
 
     for f_def in query_def["filters"]:
         dbg_logger.debug(f_def)
-        f_q = get_Q(f_def["params"])
+        f_q = get_q(f_def["params"])
         dbg_logger.debug(f_q)
         if result_qs is None:
             result_qs = model.objects.filter(f_q)
