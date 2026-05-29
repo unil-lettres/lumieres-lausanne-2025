@@ -29,8 +29,8 @@
 
 ## Solr
 
-- [ ] Move solr configuration to settings folder
-  - [ ] Identify solr data/config location
-  - [ ] Move to settings/solr
-  - [ ] Update docker-compose references
+- [x] Move solr configuration to settings folder
+  - [x] Identify solr data/config location
+  - [x] Move to settings/solr
+  - [x] Update docker-compose references
   - [ ] Update Django settings if needed

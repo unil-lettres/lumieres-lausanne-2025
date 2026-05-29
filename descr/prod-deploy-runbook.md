@@ -210,7 +210,7 @@ Use a temporary nginx container with the same Traefik Host rule:
 - New stack uses DockerHub image (prod tag or digest).
 
 ## Resolved Decisions
-- **Solr configset path**: copy repo `solr/configsets/lumieres` to
+- **Solr configset path**: copy repo `settings/solr/configsets/lumieres` to
   `/u01/projects/dockerized/lumieres2-prod/solr/configsets/lumieres`.
   Core name stays `lumieres`, created via
   `solr-precreate lumieres /var/solr/configsets/lumieres`.

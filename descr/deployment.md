@@ -74,7 +74,7 @@
   ```
   _Use this only for exceptional legacy restores. We do not run Django migrations on restored legacy dumps; normalize the schema with the ALTERs above, then sync roles and rebuild the index._
 - `250715-db-lumieres.sql`: archived reference dump from the migration period. Keep only as an explicit recovery artifact.
-- Runtime directories bind-mounted into containers: `logging/`, `media/`, `static/`, `staticfiles/`, `solr/`.
+- Runtime directories bind-mounted into containers: `logging/`, `media/`, `static/`, `staticfiles/`.
 
 ## Day-to-day Operations
 - Commands inherit both compose files because `.env` sets `COMPOSE_FILE`.

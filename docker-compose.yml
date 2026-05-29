@@ -37,7 +37,7 @@ services:
   solr:
     image: solr:8
     volumes:
-      - ./solr/configsets/lumieres:/var/solr/configsets/lumieres:ro
+      - ./settings/solr/configsets/lumieres:/var/solr/configsets/lumieres:ro
       - solr_data:/var/solr/data
     command: >
       bash -lc "
