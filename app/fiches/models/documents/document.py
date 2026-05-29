@@ -313,10 +313,6 @@ class Biblio(models.Model):
         verbose_name="Lieu de dépôt",
     )
 
-    # legacy_depot = models.CharField(
-    #     max_length=128, blank=True, null=True, verbose_name=_("Lieu de dépôt (texte)")
-    # )
-
     cote = models.CharField(_("Cote"), max_length=150, blank=True)
 
     authorization = models.BooleanField(_("Autorisation"), default=False, blank=True)
@@ -433,8 +429,6 @@ class ContributionDoc(models.Model):
         verbose_name = _("Contribution pour Document")
         verbose_name_plural = _("Contributions pour Document")
         ordering = ("contribution_type", "person")
-        # If the old project had unique constraints, e.g.:
-        # unique_together = (("person", "document", "contribution_type"),)
 
 
 # .............................................................................
@@ -636,52 +630,6 @@ class NoteManuscript(NoteBase):
 # ===============================================================================
 # CONTRIBUTIONS
 # ===============================================================================
-
-# class ContributionDoc(models.Model):
-#     person = models.ForeignKey(
-#         'fiches.Person',
-#         verbose_name=_("Contributeur"),
-#         null=True,
-#         blank=True,
-#         on_delete=models.SET_NULL,
-#         related_name='contribution_docs'  # Prevents reverse accessor clashes
-#     )
-#     document = models.ForeignKey(
-#         'fiches.Document',
-#         verbose_name=_("Document"),
-#         null=True,
-#         blank=True,
-#         on_delete=models.SET_NULL,
-#         related_name='contribution_docs_documents'  # Unique related_name
-#     )
-#     contribution_type = models.ForeignKey(
-#         'fiches.ContributionType',
-#         verbose_name=_("Type de contribution"),
-#         limit_choices_to={'type__in': ['doc', 'any']},
-#         null=True,
-#         blank=True,
-#         on_delete=models.SET_NULL,
-#         related_name='contribution_docs_types'  # Unique related_name
-#     )
-#     biblio = models.ForeignKey(
-#         'fiches.Biblio',  # Reference to 'fiches.Biblio'
-#         verbose_name=_("Biblio"),
-#         null=True,
-#         blank=True,
-#         on_delete=models.SET_NULL,
-#         related_name='contribution_docs_biblio'  # Unique related_name
-#     )
-#     in_brackets = models.BooleanField(_("Entre crochets"), default=False)
-
-#     def __str__(self):
-#         return f"{self.person} ({self.contribution_type})"
-
-#     class Meta:
-#         app_label = "fiches"
-#         verbose_name = _("Contribution pour Document")
-#         verbose_name_plural = _("Contributions pour Document")
-#         ordering = ('contribution_type', 'person')
-#         unique_together = ('person', 'document', 'contribution_type', 'biblio')
 
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\\

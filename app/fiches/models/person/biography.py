@@ -31,11 +31,7 @@ from fiches.models.misc.notes import NoteBase
 from fiches.models.person import Person
 from fiches.models.person.relation import Relation, RelationType
 
-# from fiches.fields import PersonField, PersonWidget
 from fiches.widgets import PersonWidget
-
-# Import Relation & RelationType from the new file:
-# from fiches.models.person.relation import Relation, RelationType
 
 
 # ===============================================================================

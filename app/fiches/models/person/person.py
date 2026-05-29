@@ -39,11 +39,7 @@ class Person(models.Model):
         i = 0
         for b in self.biography_set.all().order_by("pk"):
             i += 1
-            if settings.DEBUG:
-                old_vers = b.version
             b.version = nb_bio - i
-            # if settings.DEBUG:
-            #     dbg_logger.debug("bio.id <%s>: old<%s> -> <new>%s" % (b.id, old_vers, b.version))
             if not dry_run:
                 b.save()
 

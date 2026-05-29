@@ -5,14 +5,16 @@ from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
 from django.apps import apps
 
+
 class ObjectActivities(models.Manager):
     """
     Add a Manager method to filter the activities related to a specific object.
     """
+
     def activities(self, **kwargs):
         qs = super().get_queryset()
-        if 'object' in kwargs:
-            obj = kwargs['object']
+        if "object" in kwargs:
+            obj = kwargs["object"]
             try:
                 qs = qs.filter(model_name=obj.__class__.__name__, object_id=obj.id)
             except:
@@ -21,33 +23,28 @@ class ObjectActivities(models.Manager):
 
 
 class ActivityLog(models.Model):
-    object_id  = models.IntegerField()
+    object_id = models.IntegerField()
     model_name = models.CharField(verbose_name=_("Type d'objet"), max_length=256)
-    user       = models.ForeignKey(User, verbose_name=_("Utilisateur"), on_delete=models.CASCADE)
-    date       = models.DateTimeField(auto_now_add=True)
-    p_orphan   = models.BooleanField(default=False, blank=True, editable=False)
+    user = models.ForeignKey(User, verbose_name=_("Utilisateur"), on_delete=models.CASCADE)
+    date = models.DateTimeField(auto_now_add=True)
+    p_orphan = models.BooleanField(default=False, blank=True, editable=False)
 
-    objects    = ObjectActivities()
+    objects = ObjectActivities()
 
     @property
     def object_info(self):
         try:
-            model = apps.get_model('fiches', self.model_name)
+            model = apps.get_model("fiches", self.model_name)
             obj = model.objects.get(pk=self.object_id)
             model_name = model._meta.verbose_name
-            # If old code changed model_name for Person objects to Biography’s verbose name,
-            # reintroduce that logic here if Biography still exists:
-            # from fiches.models.biography import Biography
-            # if self.model_name == 'Person':
-            #     model_name = Biography._meta.verbose_name
 
-            return {'model_name': model_name, 'object_name': str(obj), 'object': obj }
+            return {"model_name": model_name, "object_name": str(obj), "object": obj}
         except:
             return None
 
     def get_object(self):
         try:
-            model = apps.get_model('fiches', self.model_name)
+            model = apps.get_model("fiches", self.model_name)
             return model.objects.get(pk=self.object_id)
         except:
             return None
@@ -59,10 +56,10 @@ class ActivityLog(models.Model):
         and set p_orphan = True where objects no longer exist.
         """
         cursor = connection.cursor()
-        model_names = [m['model_name'] for m in ActivityLog.objects.values('model_name').distinct()]
+        model_names = [m["model_name"] for m in ActivityLog.objects.values("model_name").distinct()]
 
         for model_name in model_names:
-            model = apps.get_model('fiches', model_name)
+            model = apps.get_model("fiches", model_name)
             object_table = model._meta.db_table
             activity_table = ActivityLog._meta.db_table
             query = f"""
