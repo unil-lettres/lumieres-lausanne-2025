@@ -22,9 +22,7 @@ from django.db import models
 
 
 class BaseModel(models.Model):
-    """
-    Abstract base model for shared functionality.
-    """
+    """Abstract base model for shared functionality."""
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -34,9 +32,7 @@ class BaseModel(models.Model):
 
 
 def get_usergroups_for_user(user):
-    """
-    Utility function to retrieve user groups for a given user.
-    """
+    """Utility function to retrieve user groups for a given user."""
     from django.db.models import Q
 
     from fiches.models.core.user_group import UserGroup  # Lazy import to avoid circular imports
