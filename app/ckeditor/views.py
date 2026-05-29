@@ -165,5 +165,4 @@ def browse(request):
             "images": get_image_browse_urls(request.user),
         },
     )
-    # return render_to_response('browse.html', context)
     return render(request, "browse.html", context)

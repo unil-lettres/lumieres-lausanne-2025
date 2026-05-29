@@ -3,22 +3,6 @@ from django.contrib.auth.models import User
 
 from .models.person import Person
 
-# class PersonField(forms.Field):
-#     """
-#     A stub for PersonField. Extend this as needed.
-#     """
-#     pass
-
-# class PersonWidget(forms.Widget):
-#     """
-#     A stub for PersonWidget. Extend this as needed.
-#     """
-#     def render(self, name, value, attrs=None, renderer=None):
-#         return super().render(name, value, attrs, renderer)
-
-# from django import forms
-# #from .models import Person  # Assuming Person is the model you want to reference
-
 
 class MultiplePersonField(forms.ModelMultipleChoiceField):
     """

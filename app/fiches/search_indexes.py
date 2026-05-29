@@ -9,12 +9,6 @@ from django.apps import apps  # ← use the app registry (robust to module path 
 from haystack import indexes
 from haystack.indexes import *
 
-# from django.db.models import Q  # (unused here)
-
-# No direct model imports; they may have moved.
-# from fiches.models import DocumentFile, PrimaryKeyword, SecondaryKeyword, Person, Society, NoteBase, ACModel
-# from fiches.models.document import Biblio, Manuscript, Transcription
-
 
 # Migrating from haystack 1.x to 2.x
 # https://django-haystack.readthedocs.io/en/master/migration_from_1_to_2.html
@@ -120,15 +114,6 @@ class BiblioIndex(indexes.SearchIndex, indexes.Indexable):
     def index_queryset(self, using=None):
         """Used when the entire index for model is updated."""
         return self.get_model().objects.all()
-
-
-# class ManuscriptIndex(SearchIndex):
-#     text = CharField(document=True, use_template=True, template_name='search/indexes/fiches/biblio_text.txt')
-#     title = CharField(model_attr='title')
-#     modelSort = CharField(default="CCC")
-#     def get_queryset(self):
-#         return ManuscriptB.objects.all()
-# site.register(ManuscriptB, ManuscriptIndex)
 
 
 class PersonIndex(indexes.SearchIndex, indexes.Indexable):

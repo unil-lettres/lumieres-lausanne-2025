@@ -244,14 +244,6 @@ class NoteFormBiblio(NoteFormBase):
         model = NoteBiblio
         fields = "__all__"  # Or just ['text', 'owner'] if that's all you need
 
-    # If your NoteBiblio model has its own fields, define them or custom widgets here.
-    # e.g.
-    # text = forms.CharField(widget=forms.Textarea, label="Contenu de la note", required=True)
-    #
-    # def clean_text(self):
-    #     # do any special validation
-    #     return super().clean_text()
-
 
 # ===============================
 # NoteFormTranscription Definition
@@ -264,14 +256,6 @@ class NoteFormTranscription(NoteFormBase):
     class Meta(NoteFormBase.Meta):
         model = NoteTranscription
         fields = "__all__"  # Or just ['text', 'owner'] if that's all you need
-
-    # If your NoteTranscription model has its own fields, define them or custom widgets here.
-    # e.g.
-    # text = forms.CharField(widget=forms.Textarea, label="Contenu de la note", required=True)
-    #
-    # def clean_text(self):
-    #     # do any special validation
-    #     return super().clean_text()
 
 
 # ===============================
@@ -508,11 +492,6 @@ class ObjectCollectionForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        # Remove or update the following if not needed:
-        # person = cleaned_data.get("person")
-        # contribution_type = cleaned_data.get("contribution_type")
-        # if person is None:
-        #     cleaned_data["contribution_type"] = None
         return cleaned_data
 
     def save(self, commit=True):

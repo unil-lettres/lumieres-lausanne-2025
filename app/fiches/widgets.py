@@ -28,14 +28,6 @@ from django.db import models  # <-- Add this import
 from django.utils.encoding import force_str
 from django.utils.safestring import mark_safe
 
-# TODO: to delete
-# def get_lookup_class(field):
-#     try:
-#         return f"{field.remote_field.model.__name__}_{field.name}"
-#     except Exception as e:
-#         dbg_logger.debug(f"Error setting lookup_class: {e}")
-#         return ""
-
 
 class PersonWidget(forms.TextInput):
     """
