@@ -138,13 +138,13 @@ def ajax_search(request):
     if and_queries is not None:
         try:
             and_queries = json.loads(and_queries)
-        except:
+        except json.JSONDecodeError:
             and_queries = None
 
     if not_queries is not None:
         try:
             not_queries = json.loads(not_queries)
-        except:
+        except json.JSONDecodeError:
             not_queries = None
 
     if search_field and app_label and model_name:
@@ -178,19 +178,15 @@ def ajax_search(request):
 
         q = models.Q()
         for bit in query.split():
-            q = q | models.Q(
-                **{construct_search(smart_str(search_field)): smart_str(bit)}
-            )
+            q = q | models.Q(**{construct_search(smart_str(search_field)): smart_str(bit)})
 
         if and_queries is not None:
             for and_q in and_queries:
                 if and_q["field"].startswith("_null_"):
                     and_q["value"] = bool(and_q["value"] == "true")
                 try:
-                    q = q & models.Q(
-                        **{construct_search(smart_str(and_q["field"])): and_q["value"]}
-                    )
-                except:
+                    q = q & models.Q(**{construct_search(smart_str(and_q["field"])): and_q["value"]})
+                except Exception:
                     if settings.DEBUG:
                         raise
                     pass
@@ -199,10 +195,8 @@ def ajax_search(request):
         if not_queries is not None:
             for not_q in not_queries:
                 try:
-                    nq = nq & models.Q(
-                        **{construct_search(smart_str(not_q["field"])): not_q["value"]}
-                    )
-                except:
+                    nq = nq & models.Q(**{construct_search(smart_str(not_q["field"])): not_q["value"]})
+                except Exception:
                     pass
 
         if query is None:
@@ -280,11 +274,7 @@ def serve_documentfile(request, documentfile_key, attachment=True):
     if attachment:
         # Normalize the filename to ASCII
         filename = os.path.basename(path_to_file)
-        ascii_filename = (
-            unicodedata.normalize("NFKD", filename)
-            .encode("ascii", "ignore")
-            .decode("ascii")
-        )
+        ascii_filename = unicodedata.normalize("NFKD", filename).encode("ascii", "ignore").decode("ascii")
 
         # Set the Content-Disposition header
         response["Content-Disposition"] = f'attachment; filename="{ascii_filename}"'
@@ -309,9 +299,7 @@ def documentfile_frame_list(request):
 
     if not request.user.is_staff:
         q_nogroup = models.Q(access_groups__exact=None)
-        q_usergroups = models.Q(
-            access_groups__in=[g.id for g in request.user.groups.all()]
-        )
+        q_usergroups = models.Q(access_groups__in=[g.id for g in request.user.groups.all()])
         docfiles = docfiles.filter(q_nogroup | q_usergroups).distinct()
 
     field_id = request.GET.get("field_id", "id_urls")
@@ -343,16 +331,12 @@ def documentfile_frame_list(request):
         "has_next": docfiles.has_next(),
         "has_previous": docfiles.has_previous(),
         "next": docfiles.next_page_number() if docfiles.has_next() else None,
-        "previous": docfiles.previous_page_number()
-        if docfiles.has_previous()
-        else None,
+        "previous": docfiles.previous_page_number() if docfiles.has_previous() else None,
         "hits": docfiles.paginator.count,
         "results_per_page": docfiles.paginator.per_page,
     }
 
-    return render(
-        request, "fiches/edition/document/documentfile_frame_list.html", context
-    )
+    return render(request, "fiches/edition/document/documentfile_frame_list.html", context)
 
 
 def documentfile_frame_create(request, doc_id=None, docfile_id=None, create_done=False):
@@ -368,9 +352,7 @@ def documentfile_frame_create(request, doc_id=None, docfile_id=None, create_done
                 docfile.access_owner = request.user
             docfile.save()
             form.save_m2m()
-            return HttpResponseRedirect(
-                reverse("docfile-frame-create-done", kwargs={"docfile_id": docfile.id})
-            )
+            return HttpResponseRedirect(reverse("docfile-frame-create-done", kwargs={"docfile_id": docfile.id}))
     else:
         form = DocumentFileForm()
 
@@ -381,9 +363,7 @@ def documentfile_frame_create(request, doc_id=None, docfile_id=None, create_done
         "docfile_id": docfile_id,
     }
 
-    response = render(
-        request, "fiches/edition/document/documentfile_frame_form.html", context
-    )
+    response = render(request, "fiches/edition/document/documentfile_frame_form.html", context)
     response["Cache-Control"] = "no-cache"
     return response
 
@@ -402,9 +382,7 @@ def documentfile_frame_edit(request, docfile_id, edit_done=False):
         if form.is_valid():
             form.save()
             # Redirige vers l'URL de succès (iframe JS s'en occupe)
-            return HttpResponseRedirect(
-                reverse("docfile-frame-edit-done", args=[docfile_id])
-            )
+            return HttpResponseRedirect(reverse("docfile-frame-edit-done", args=[docfile_id]))
     else:
         form = DocumentFileForm(instance=docfile)
 
@@ -416,9 +394,7 @@ def documentfile_frame_edit(request, docfile_id, edit_done=False):
         "docfile": docfile,
     }
 
-    response = render(
-        request, "fiches/edition/document/documentfile_frame_form.html", context
-    )
+    response = render(request, "fiches/edition/document/documentfile_frame_form.html", context)
     response["Cache-Control"] = "no-cache"
     return response
 
@@ -498,11 +474,7 @@ def workspace_collections(request, coll_id=None, coll_slug=None):
 
     # 3) Compute shared or contributed collections
     user_groups = request.user.profile.get_usergroups()
-    shared_coll = (
-        ObjectCollection.objects.exclude(owner=request.user)
-        .filter(access_groups__in=user_groups)
-        .distinct()
-    )
+    shared_coll = ObjectCollection.objects.exclude(owner=request.user).filter(access_groups__in=user_groups).distinct()
 
     contrib_coll = (
         ObjectCollection.objects.exclude(owner=request.user)
@@ -512,9 +484,7 @@ def workspace_collections(request, coll_id=None, coll_slug=None):
     )
 
     # 4) If you want to replicate old "coll_access"/"coll_change" logic, do so:
-    coll_change = (coll.owner == request.user) or bool(
-        set(user_groups) & set(coll.change_groups.all())
-    )
+    coll_change = (coll.owner == request.user) or bool(set(user_groups) & set(coll.change_groups.all()))
     coll_access = coll.user_access(request.user) or coll_change
 
     # 5) Render ONLY the partial template "fiches/workspace/collection.html"
