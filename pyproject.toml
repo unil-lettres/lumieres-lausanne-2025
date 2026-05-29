@@ -73,9 +73,15 @@ strict_optional = true
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-ra -q"
+# --no-migrations: build the schema from the models (syncdb-style). The legacy
+#   fiches migrations are not replayable from scratch (faked 0001-0004), so this
+#   is the only reliable way to create the test DB.
+# --ds: pin the test settings even when DJANGO_SETTINGS_MODULE is set to the
+#   runtime settings in the environment (e.g. via compose env_file).
+# --import-mode=importlib: avoid sys.path insertion / basename collisions.
+addopts = "-ra -q --no-migrations --ds=lumieres_project.settings_test --import-mode=importlib"
 pythonpath = ["app"]
-DJANGO_SETTINGS_MODULE = "lumieres_project.settings"
-python_files = ["tests.py", "test_*.py", "*_tests.py"]
-testpaths = ["app"]
+DJANGO_SETTINGS_MODULE = "lumieres_project.settings_test"
+python_files = ["test_*.py", "*_tests.py"]
+testpaths = ["tests/backend"]
 norecursedirs = ["media", "static", "uploads", "staticfiles", "__pycache__"]
