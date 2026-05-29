@@ -9,6 +9,12 @@ services:
       DJANGO_ENV: ${DJANGO_ENV:-development}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
       DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-lumieres_project.settings}
+    volumes:
+      # Backend tests live at the repo root (tests/backend). Bind-mounting them
+      # makes edits live inside the container immediately, so `pytest tests/...`
+      # always sees the current files — no watch/sync rule needed (unlike ./app,
+      # which is baked into the image and synced via develop.watch below).
+      - ./tests:/app/tests
     develop:
       watch:
         - action: sync
