@@ -71,6 +71,20 @@ exclude = ["app/media/", "app/static/", "app/uploads/", "app/staticfiles/"]
 ignore_missing_imports = true
 strict_optional = true
 
+[tool.coverage.run]
+# Measure the project's Python packages by name so coverage works both on the
+# host (code under app/, on sys.path via pytest pythonpath) and in the
+# container (code at /app). Recipes pass a bare --cov which uses this source.
+source_pkgs = ["ckeditor", "fiches", "lumieres_project", "pagination", "utils"]
+omit = [
+  "*/migrations/*",
+  "*/tests/*",
+  "*/staticfiles/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+
 [tool.pytest.ini_options]
 minversion = "6.0"
 # --no-migrations: build the schema from the models (syncdb-style). The legacy
