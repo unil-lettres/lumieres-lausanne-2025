@@ -53,7 +53,7 @@ make dev/docker/migrate ARGS=fiches
 # or: docker compose exec app python manage.py migrate fiches
 
 # Staging
-docker compose -f docker-compose.yml -f docker-compose.staging.yml exec web \
+docker compose -f docker-compose.yml -f docker/docker-compose.staging.yml exec web \
   bash -lc 'python /app/app/manage.py migrate fiches'
 
 # Prod  (cd /u01/projects/dockerized/lumieres2-prod first)

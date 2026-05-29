@@ -5,10 +5,10 @@
 - **Compose project root**: `/var/www/lumieres2`
   - `docker-compose.yml`
     Base stack with `db` (MySQL 9.3) and `web` (Django `unillett/lumieres:latest`). No Solr or health checks here.
-  - `docker-compose.staging.yml`
+  - `docker/docker-compose.staging.yml`
     Override used in staging. Adds Solr, health checks, timeouts, and pins the staging image (`unillett/lumieres:stage-latest` or any tag you set).
 - `.env`
-  Used by the Compose CLI only—sets `COMPOSE_FILE=docker-compose.yml:docker-compose.staging.yml` and `COMPOSE_PROJECT_NAME=lumieres-staging`.
+  Used by the Compose CLI only—sets `COMPOSE_FILE=docker-compose.yml:docker/docker-compose.staging.yml` and `COMPOSE_PROJECT_NAME=lumieres-staging`.
 - `.env.staging`
   Injected into containers. Holds Django env, MySQL creds, and Solr URL.
 - Routine staging and production deploys now use the migrated, current database schema. No legacy dump import or schema normalization is required for standard releases.
@@ -80,11 +80,11 @@
 - Commands inherit both compose files because `.env` sets `COMPOSE_FILE`.
 - Check container status:
   ```bash
-  docker compose -f docker-compose.yml -f docker-compose.staging.yml ps
+  docker compose -f docker-compose.yml -f docker/docker-compose.staging.yml ps
   ```
 - Restart all services (full rebuild):
   ```bash
-  docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --build
+  docker compose -f docker-compose.yml -f docker/docker-compose.staging.yml up -d --build
   ```
 - Tail logs for the web app:
   ```bash
@@ -110,21 +110,21 @@
 2. **Pull and swap only the `web` image**
    (Use when DB/Solr remain unchanged and the same tag is pushed.)
    ```bash
-   docker compose -f docker-compose.yml -f docker-compose.staging.yml pull web
-   docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --no-deps web
-   docker compose -f docker-compose.yml -f docker-compose.staging.yml logs -f web
+   docker compose -f docker-compose.yml -f docker/docker-compose.staging.yml pull web
+   docker compose -f docker-compose.yml -f docker/docker-compose.staging.yml up -d --no-deps web
+   docker compose -f docker-compose.yml -f docker/docker-compose.staging.yml logs -f web
    ```
    If `COMPOSE_FILE` is set on the host (recommended), you can run `docker compose` without `-f`.
 3. **Post-deploy checks**
    ```bash
    curl -I http://127.0.0.1:8000/
-   docker compose -f docker-compose.yml -f docker-compose.staging.yml exec web \
+   docker compose -f docker-compose.yml -f docker/docker-compose.staging.yml exec web \
      bash -lc 'python /app/app/manage.py collectstatic --noinput'
    ```
    _Static files are stored on the host via `/var/www/lumieres2/static`, so `collectstatic` must run after every deploy to refresh the bind-mounted tree._
 4. **Search index refresh**
    ```bash
-  docker compose -f docker-compose.yml -f docker-compose.staging.yml exec web \
+  docker compose -f docker-compose.yml -f docker/docker-compose.staging.yml exec web \
     bash -lc 'python /app/app/manage.py rebuild_index --noinput'
    ```
    Use `update_index` instead of `rebuild_index` when the schema didn’t change.
@@ -133,7 +133,7 @@
 - [ ] Rebuild/run the index command above.
 - [ ] Sync roles (see `descr/roles.md`):
   ```bash
-  docker compose -f docker-compose.yml -f docker-compose.staging.yml exec web \
+  docker compose -f docker-compose.yml -f docker/docker-compose.staging.yml exec web \
     bash -lc 'python /app/app/manage.py sync_status_roles --apply'
   ```
 - [ ] UI checks
@@ -152,7 +152,7 @@
 - Production runs from `/u01/projects/dockerized/lumieres2-prod`.
 - Prod `.env` should set:
   ```env
-  COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
+  COMPOSE_FILE=docker-compose.yml:docker/docker-compose.prod.yml
   COMPOSE_PROJECT_NAME=lumieres-prod
   LUMIERES_IMAGE=unillett/lumieres:vYYYY.MM.DD
   ```
@@ -187,7 +187,7 @@ Use this only on staging (`plt-tst-2.unil.ch`) to validate Béatrice’s rule be
 
 ### Guardrails (staging)
 - Work only in `/var/www/lumieres2`.
-- Use staging compose files only: `docker-compose.yml` + `docker-compose.staging.yml`.
+- Use staging compose files only: `docker-compose.yml` + `docker/docker-compose.staging.yml`.
 - Snapshot publication fields before update for quick rollback.
 - Do not run this on prod unless explicitly approved.
 
@@ -196,12 +196,12 @@ Use this only on staging (`plt-tst-2.unil.ch`) to validate Béatrice’s rule be
 ssh <user>@plt-tst-2.unil.ch
 cd /var/www/lumieres2
 
-docker compose -f docker-compose.yml -f docker-compose.staging.yml ps
+docker compose -f docker-compose.yml -f docker/docker-compose.staging.yml ps
 ```
 
 ### 2) Preview impact (read-only)
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.staging.yml exec -T db \
+docker compose -f docker-compose.yml -f docker/docker-compose.staging.yml exec -T db \
   bash -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "
     WITH last_event AS (
       SELECT
@@ -258,7 +258,7 @@ docker compose -f docker-compose.yml -f docker-compose.staging.yml exec -T db \
 ```bash
 TS="$(date +%Y%m%d_%H%M%S)"
 
-docker compose -f docker-compose.yml -f docker-compose.staging.yml exec -T db \
+docker compose -f docker-compose.yml -f docker/docker-compose.staging.yml exec -T db \
   bash -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "
     CREATE TABLE backup_transcription_pub_realign_${TS} AS
     SELECT id, published_date, published_by_id
@@ -291,7 +291,7 @@ docker compose -f docker-compose.yml -f docker-compose.staging.yml exec -T db \
 
 ### 4) Post-update verification
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.staging.yml exec -T db \
+docker compose -f docker-compose.yml -f docker/docker-compose.staging.yml exec -T db \
   bash -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "
     SELECT COUNT(*) AS public_total
     FROM fiches_transcription
@@ -309,7 +309,7 @@ docker compose -f docker-compose.yml -f docker-compose.staging.yml exec -T db \
 
 ### 5) Rollback (if needed)
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.staging.yml exec -T db \
+docker compose -f docker-compose.yml -f docker/docker-compose.staging.yml exec -T db \
   bash -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "
     UPDATE fiches_transcription t
     JOIN backup_transcription_pub_realign_${TS} b ON b.id = t.id
@@ -368,7 +368,7 @@ cd /u01/projects/dockerized/lumieres2-prod
 TS="$(date +%Y%m%d_%H%M%S)"
 
 mkdir -p backups/${TS}
-cp -a docker-compose.yml docker-compose.prod.yml .env backups/${TS}/
+cp -a docker-compose.yml docker/docker-compose.prod.yml .env backups/${TS}/
 test -f .env.prod && cp -a .env.prod backups/${TS}/
 
 # Full DB backup (required before schema/data writes)
@@ -581,8 +581,8 @@ docker compose exec -T db \
   - Verification counts: `public_total=1125`, `published_date_filled=1125`, `published_by_filled=1125`
   - Safety checks: `non_public_with_published_date=0`, `non_public_with_published_by=0`
 - Deploy/post-deploy completed:
-  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml pull web`
-  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps web`
+  - `docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml pull web`
+  - `docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml up -d --no-deps web`
   - `collectstatic --noinput` (`1420` files copied)
   - `sync_status_roles --apply`
   - `update_index`
@@ -599,8 +599,8 @@ docker compose exec -T db \
   - `backups/20260227_153309/` (compose/env snapshot)
   - `.env.bak-20260227_153309-before-v2026.02.27`
 - Deploy/post-deploy completed:
-  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml pull web`
-  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps web`
+  - `docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml pull web`
+  - `docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml up -d --no-deps web`
   - `collectstatic --noinput` (`1420` files copied)
   - `sync_status_roles --apply`
   - `update_index`
@@ -610,9 +610,9 @@ docker compose exec -T db \
 
 Process notes from deployment:
 - Compose filename drift on prod host:
-  - In practice, prod runs with `docker-compose.yml` + `docker-compose.prod.yml`.
-  - Since 2026-05-05, prod `.env` sets `COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml`, so plain `docker compose ...` from `/u01/projects/dockerized/lumieres2-prod` is the current procedure.
-  - Some older historical records still mention `docker-compose.prod.base.yml`; verify files present on host before following archived commands.
+  - In practice, prod runs with `docker-compose.yml` + `docker/docker-compose.prod.yml`.
+  - Since 2026-05-05, prod `.env` sets `COMPOSE_FILE=docker-compose.yml:docker/docker-compose.prod.yml`, so plain `docker compose ...` from `/u01/projects/dockerized/lumieres2-prod` is the current procedure.
+  - Some older historical records still mention `docker/docker-compose.prod.base.yml`; verify files present on host before following archived commands.
 - CI sequencing nuance:
   - Pushing `master` and then pushing the release tag triggers two `docker-prod` workflow runs for the same commit.
   - For release deploys, wait for the tag-triggered run and confirm `unillett/lumieres:vYYYY.MM.DD` is published before pulling on prod.
@@ -647,8 +647,8 @@ Process notes from deployment:
 - Image pin changed:
   - `.env`: `LUMIERES_IMAGE=unillett/lumieres:latest`
 - Deploy/post-deploy completed:
-  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml pull web`
-  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps web`
+  - `docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml pull web`
+  - `docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml up -d --no-deps web`
   - `collectstatic --noinput` (`1420` files copied)
   - `sync_status_roles --apply`
   - `update_index`
@@ -676,20 +676,20 @@ Process notes from deployment:
   - Cut and pushed release tag `v2026.03.19` from `master` commit `aff6006`
   - Waited for successful `docker-prod` workflow completion and verified DockerHub publication
 - Deploy/post-deploy completed:
-  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml pull web`
-  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps web`
+  - `docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml pull web`
+  - `docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml up -d --no-deps web`
   - `collectstatic --noinput` (`1420` files copied)
   - `sync_status_roles --apply`
   - `update_index`
 - Live checks:
-  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml ps` shows `web` on `unillett/lumieres:v2026.03.19`
+  - `docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml ps` shows `web` on `unillett/lumieres:v2026.03.19`
   - `docker inspect lumieres-prod-web-1 --format "{{.Config.Image}}|{{index .Config.Labels \"org.opencontainers.image.revision\"}}|{{index .Config.Labels \"org.opencontainers.image.version\"}}"` confirms revision `aff6006` and version `v2026.03.19`
   - `curl -I https://lumieres.unil.ch/` => `HTTP/2 200`
   - `curl -I https://lumieres.unil.ch/projets/` => `HTTP/2 200`
 - Prevention rule:
   - Keep prod pinned to explicit release tags only.
   - After every prod deploy or restart investigation, verify both `.env` and the running container image/labels; `docker compose ps` alone is not sufficient when recovering from drift incidents.
-  - 2026-05-05 update: prod `.env` now sets `COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml`; plain compose is acceptable after confirming `docker compose config --images` resolves to the pinned release image.
+  - 2026-05-05 update: prod `.env` now sets `COMPOSE_FILE=docker-compose.yml:docker/docker-compose.prod.yml`; plain compose is acceptable after confirming `docker compose config --images` resolves to the pinned release image.
 
 ### Reboot Automation Fix (2026-03-19, prod)
 - Forensic finding:
@@ -711,7 +711,7 @@ Process notes from deployment:
 
 ### Compose Default Simplification (2026-05-05, prod)
 - Prod `.env` now sets:
-  - `COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml`
+  - `COMPOSE_FILE=docker-compose.yml:docker/docker-compose.prod.yml`
   - `COMPOSE_PROJECT_NAME=lumieres-prod`
   - `LUMIERES_IMAGE=unillett/lumieres:v2026.05.05`
 - Backup before edit:

@@ -9,7 +9,7 @@ Scope: routine production releases for the Dockerized Lumieres stack on lumieres
 - Production DB schema is stabilized; routine releases do not require legacy DB import or schema normalization.
 - Standard production updates are image-based redeploys of the existing compose project under `/u01/projects/dockerized/lumieres2-prod`.
 - Prod `.env` sets Compose defaults so commands can be run without repeated `-f` flags:
-  - `COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml`
+  - `COMPOSE_FILE=docker-compose.yml:docker/docker-compose.prod.yml`
   - `COMPOSE_PROJECT_NAME=lumieres-prod`
   - `LUMIERES_IMAGE=unillett/lumieres:vYYYY.MM.DD`
 
@@ -110,8 +110,8 @@ Target: https://plt-tst-2.unil.ch (host alias: `plett-stage`)
 ```
 ssh plett-stage
 cd /var/www/lumieres2
-docker compose -f docker-compose.staging.yml pull web
-docker compose -f docker-compose.staging.yml up -d --force-recreate web
+docker compose -f docker/docker-compose.staging.yml pull web
+docker compose -f docker/docker-compose.staging.yml up -d --force-recreate web
 ```
 
 ### Static Files (Required After Web Update)
@@ -119,7 +119,7 @@ If logos or CSS don’t change after a deploy, run collectstatic:
 ```
 ssh plett-stage
 cd /var/www/lumieres2
-docker compose -f docker-compose.staging.yml exec -T web python manage.py collectstatic --noinput
+docker compose -f docker/docker-compose.staging.yml exec -T web python manage.py collectstatic --noinput
 ```
 Then hard refresh the browser (Ctrl/Cmd+Shift+R).
 
@@ -131,11 +131,11 @@ Then hard refresh the browser (Ctrl/Cmd+Shift+R).
 ## Preflight (No Downtime)
 1) Confirm production image tags/digests on DockerHub.
 2) Prepare new compose files and env on the VM (no service start yet):
-   - Canonical prod compose is `docker-compose.yml` plus `docker-compose.prod.yml` on the VM.
-   - The VM `docker-compose.yml` was originally copied from the repo base template (`docker-compose.prod.base.yml`).
-   - Keep `docker-compose.prod.yml` alongside it as the prod override.
+   - Canonical prod compose is `docker-compose.yml` plus `docker/docker-compose.prod.yml` on the VM.
+   - The VM `docker-compose.yml` was originally copied from the repo base template (`docker/docker-compose.prod.base.yml`).
+   - Keep `docker/docker-compose.prod.yml` alongside it as the prod override.
    - The base mirrors staging (`web` + `db` + `solr`); the override pins the prod image.
-   - `/u01/projects/dockerized/lumieres2-prod/.env` should set `COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml`.
+   - `/u01/projects/dockerized/lumieres2-prod/.env` should set `COMPOSE_FILE=docker-compose.yml:docker/docker-compose.prod.yml`.
 3) Ensure bind mounts exist:
    - /u01/projects/dockerized/media (reuse)
    - /u01/projects/dockerized/lumieres2-prod/logging
@@ -232,7 +232,7 @@ Use a temporary nginx container with the same Traefik Host rule:
 
 ## Compose Default Simplification (2026-05-05)
 - Prod `.env` now carries the Compose file selection and project name:
-  - `COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml`
+  - `COMPOSE_FILE=docker-compose.yml:docker/docker-compose.prod.yml`
   - `COMPOSE_PROJECT_NAME=lumieres-prod`
   - `LUMIERES_IMAGE=unillett/lumieres:v2026.05.05`
 - This removes the old footgun where plain `docker compose up -d` could read only `docker-compose.yml` and select the legacy `v2026.01.21` image.
@@ -258,8 +258,8 @@ Actions performed for prod update:
 - Updated `.env` pin:
   - `LUMIERES_IMAGE=unillett/lumieres:v2026.03.19`
 - Redeployed `web` only:
-  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml pull web`
-  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps web`
+  - `docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml pull web`
+  - `docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml up -d --no-deps web`
 - Ran post-deploy tasks:
   - `collectstatic --noinput` (`1420` static files copied)
   - `sync_status_roles --apply`
@@ -275,7 +275,7 @@ Incident note / root cause:
 - Forensics on 2026-03-19 identified the specific trigger chain:
   - host reboot at `2026-03-19 05:09 CET`
   - two `lmradm` crontab `@reboot` entries ran plain `docker compose up -d` in `/u01/projects/dockerized/lumieres2-prod`
-  - plain compose resolution in that directory used the legacy `docker-compose.yml` hard pin `unillett/lumieres:v2026.01.21` because `docker-compose.prod.yml` was not included
+  - plain compose resolution in that directory used the legacy `docker-compose.yml` hard pin `unillett/lumieres:v2026.01.21` because `docker/docker-compose.prod.yml` was not included
 - Root cause was incorrect reboot automation plus prior drift away from the explicit release-tag workflow.
 - Preventive rule: after every prod deploy, verify both the compose-reported image and the container label metadata, and keep `.env` pinned to a release tag rather than `latest`.
 - Remediation applied on 2026-03-19:
@@ -295,8 +295,8 @@ Actions performed for prod update:
 - Updated `.env` pin:
   - `LUMIERES_IMAGE=unillett/lumieres:v2026.02.27`
 - Redeployed `web` only:
-  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml pull web`
-  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps web`
+  - `docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml pull web`
+  - `docker compose -f docker-compose.yml -f docker/docker-compose.prod.yml up -d --no-deps web`
 - Ran post-deploy tasks:
   - `collectstatic --noinput` (`1420` static files copied)
   - `sync_status_roles --apply`
@@ -307,7 +307,7 @@ Actions performed for prod update:
   - `curl -I https://lumieres.unil.ch/projets/` returned `HTTP/2 200`
 
 Process notes (to smooth next deploy):
-- Prod host uses `docker-compose.yml` + `docker-compose.prod.yml`; since 2026-05-05, `.env` sets `COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml`, so plain `docker compose ...` from `/u01/projects/dockerized/lumieres2-prod` is the current procedure.
+- Prod host uses `docker-compose.yml` + `docker/docker-compose.prod.yml`; since 2026-05-05, `.env` sets `COMPOSE_FILE=docker-compose.yml:docker/docker-compose.prod.yml`, so plain `docker compose ...` from `/u01/projects/dockerized/lumieres2-prod` is the current procedure.
 - Pushing `master` then pushing a release tag can trigger two `docker-prod` runs for the same SHA.
   For release deployments, wait for the tag-triggered run and verify the release tag exists on DockerHub before pulling on prod.
 
