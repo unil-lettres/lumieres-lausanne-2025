@@ -3,7 +3,7 @@ from datetime import datetime
 
 from django.conf import settings
 from django.http import HttpResponse
-from django.shortcuts import render_to_response, render
+from django.shortcuts import render
 from django.template import RequestContext
             
 try: 
