@@ -26,7 +26,6 @@ See docs/copyright.md
 from django.contrib.auth.models import Permission, User
 from django.test import TestCase
 from django.urls import reverse
-
 from fiches.models.documents.document import (
     Biblio,
     ContributionDoc,

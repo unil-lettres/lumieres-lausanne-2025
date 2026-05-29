@@ -31,10 +31,9 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 
+from ckeditor import views
 from django.apps import apps
 from django.conf import settings
-
-from ckeditor import views
 
 # Static fixtures shipped with the ckeditor app (dummy.jpg + dummy_thumb.jpg).
 # Resolved via the Django app path so it works on the host and in the container.
@@ -56,9 +55,7 @@ class ViewsTestCase(unittest.TestCase):
         settings.CKEDITOR_UPLOAD_PATH = os.path.join(settings.MEDIA_ROOT, "uploads")
         settings.MEDIA_URL = "/media/"
 
-        self.test_path = os.path.join(
-            settings.CKEDITOR_UPLOAD_PATH, "arbitrary", "path", "and", "filename.ext"
-        )
+        self.test_path = os.path.join(settings.CKEDITOR_UPLOAD_PATH, "arbitrary", "path", "and", "filename.ext")
 
         # Mock user object (no DB needed).
         self.mock_user = type("User", (object,), dict(username="test_user", is_superuser=False))
@@ -125,16 +122,12 @@ class ViewsTestCase(unittest.TestCase):
             # No user-specific path when RESTRICT_BY_USER is False.
             settings.CKEDITOR_RESTRICT_BY_USER = False
             filename = views.get_upload_filename("test.jpg", self.mock_user)
-            self.assertFalse(
-                filename.replace("/%s/test.jpg" % date_path, "").endswith(self.mock_user.username)
-            )
+            self.assertFalse(filename.replace("/%s/test.jpg" % date_path, "").endswith(self.mock_user.username))
 
             # User-specific path when RESTRICT_BY_USER is True.
             settings.CKEDITOR_RESTRICT_BY_USER = True
             filename = views.get_upload_filename("test.jpg", self.mock_user)
-            self.assertTrue(
-                filename.replace("/%s/test.jpg" % date_path, "").endswith(self.mock_user.username)
-            )
+            self.assertTrue(filename.replace("/%s/test.jpg" % date_path, "").endswith(self.mock_user.username))
 
             # Upload path ends in the current date structure.
             filename = views.get_upload_filename("test.jpg", self.mock_user)

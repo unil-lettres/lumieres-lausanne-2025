@@ -19,7 +19,6 @@
 # This copyright notice MUST APPEAR in all copies of the file.
 
 from django.test import RequestFactory, SimpleTestCase
-
 from fiches.views import server_error
 
 

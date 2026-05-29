@@ -18,12 +18,11 @@
 #
 # This copyright notice MUST APPEAR in all copies of the file.
 
-from django.contrib.admin.sites import AdminSite
-from django.test import RequestFactory, SimpleTestCase
 from unittest.mock import patch
 
-from fiches.admin import ImageInlineForm
-from fiches.admin import NewsAdmin
+from django.contrib.admin.sites import AdminSite
+from django.test import RequestFactory, SimpleTestCase
+from fiches.admin import ImageInlineForm, NewsAdmin
 from fiches.models.content.news import News
 
 

@@ -21,7 +21,6 @@
 from unittest.mock import Mock, patch
 
 from django.test import SimpleTestCase
-
 from fiches.views.transcription import (
     get_patrinum_tile_sources,
     patrinum_image_url_to_info_json,
@@ -40,8 +39,7 @@ class PatrinumFacsimileSourcesTest(SimpleTestCase):
 
         self.assertEqual(
             info_url,
-            "https://patrinum.ch/nanna/api/multimedia/image/v2/"
-            "recid:255692-BCUL-PREVIEW-296578_0001.jpg/info.json",
+            "https://patrinum.ch/nanna/api/multimedia/image/v2/recid:255692-BCUL-PREVIEW-296578_0001.jpg/info.json",
         )
 
     @patch("fiches.views.transcription.requests.get")
@@ -58,9 +56,7 @@ class PatrinumFacsimileSourcesTest(SimpleTestCase):
         response.raise_for_status.return_value = None
         get_mock.return_value = response
 
-        tile_sources = get_patrinum_tile_sources(
-            "https://patrinum.ch/record/255692/export/iiif_manifest"
-        )
+        tile_sources = get_patrinum_tile_sources("https://patrinum.ch/record/255692/export/iiif_manifest")
 
         self.assertEqual(
             tile_sources,

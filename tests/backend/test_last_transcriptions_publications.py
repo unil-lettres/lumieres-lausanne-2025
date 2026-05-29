@@ -27,7 +27,6 @@ from datetime import timedelta
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
-
 from fiches.models.documents.document import (
     Biblio,
     DocumentLanguage,
@@ -62,9 +61,7 @@ class LastTranscriptionsPublicationsTest(TestCase):
         t3 = self._create_public_transcription(3, now - timedelta(days=2))
         self._create_public_transcription(4, None)
 
-        ordered_ids = list(
-            Transcription.objects.latest_published_by_date(10).values_list("id", flat=True)
-        )
+        ordered_ids = list(Transcription.objects.latest_published_by_date(10).values_list("id", flat=True))
         self.assertEqual(ordered_ids, [t2.id, t3.id, t1.id])
 
     def test_last_transcriptions_page_uses_50_items_max(self):

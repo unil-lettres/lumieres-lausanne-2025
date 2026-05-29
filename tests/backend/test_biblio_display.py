@@ -22,7 +22,6 @@ import datetime
 from types import SimpleNamespace
 
 from django.test import SimpleTestCase
-
 from fiches.templatetags.fiches_extras import date_biblio
 
 

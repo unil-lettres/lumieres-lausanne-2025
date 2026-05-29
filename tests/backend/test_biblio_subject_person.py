@@ -21,7 +21,6 @@
 from django.contrib.auth.models import Permission, User
 from django.http import QueryDict
 from django.test import TestCase
-
 from fiches.forms import BiblioForm
 from fiches.models.contributions import PrimaryKeyword
 from fiches.models.documents import Biblio, DocumentLanguage

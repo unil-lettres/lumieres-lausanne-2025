@@ -22,7 +22,6 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.test import SimpleTestCase
-
 from fiches.forms import TranscriptionForm
 from fiches.models.documents.document import Transcription
 
