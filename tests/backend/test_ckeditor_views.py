@@ -11,12 +11,14 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 
+from django.apps import apps
 from django.conf import settings
 
 from ckeditor import views
 
 # Static fixtures shipped with the ckeditor app (dummy.jpg + dummy_thumb.jpg).
-CKEDITOR_STATIC = Path(__file__).resolve().parents[2] / "app" / "ckeditor" / "static"
+# Resolved via the Django app path so it works on the host and in the container.
+CKEDITOR_STATIC = Path(apps.get_app_config("ckeditor").path) / "static"
 
 
 class ViewsTestCase(unittest.TestCase):
