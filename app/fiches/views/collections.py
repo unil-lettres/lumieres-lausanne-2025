@@ -36,7 +36,7 @@ from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 
 from fiches.forms import ObjectCollectionForm
-from fiches.models import *
+from fiches.models import ObjectCollection, Project
 from fiches.templatetags.collector import editable_projects
 
 

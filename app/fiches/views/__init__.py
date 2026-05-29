@@ -52,6 +52,7 @@ from fiches.forms import DocumentFileForm
 from fiches.models import (
     ACModel,
     ActivityLog,
+    DocumentFile,
     Finding,
     FreeContent,
     News,
@@ -538,8 +539,3 @@ def debug_test(request):
     Pour test et debug
     """
     raise AssertionError("Pour tester")
-
-
-from .bibliography import *
-from .biography import *
-from .transcription import *

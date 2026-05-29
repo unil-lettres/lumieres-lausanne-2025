@@ -55,3 +55,12 @@ def test_get_all_relations_has_no_mutable_default_args():
     from fiches.views.biography import _get_all_relations
 
     assert not any(isinstance(d, (list, dict, set)) for d in _get_all_relations.__defaults__)
+
+
+def test_biography_view_imports_httpresponseservererror():
+    """`HttpResponseServerError` was only reachable via a `from fiches.models
+    import *` that never provided it (ruff F405 masking a missing django.http
+    import) — a latent NameError on the error path."""
+    import fiches.views.biography as biography_views
+
+    assert hasattr(biography_views, "HttpResponseServerError")

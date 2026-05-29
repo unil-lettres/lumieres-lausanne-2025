@@ -21,7 +21,7 @@
 # fiches/models/__init__.py
 
 # Content Models
-from .content import *
+from .content import FreeContent, Image, News, Publication
 
 # Finding Models
 from .content.finding import Finding

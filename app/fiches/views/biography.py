@@ -29,6 +29,7 @@ from django.http import (
     HttpResponse,
     HttpResponseForbidden,
     HttpResponseRedirect,
+    HttpResponseServerError,
     JsonResponse,
 )
 from django.shortcuts import get_object_or_404, render
@@ -37,7 +38,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from utils import dbg_logger
 
-from fiches.models import *
+from fiches.models import Biblio, Biography, ContributionDoc, Person, Relation
 from fiches.models.person.biography import (
     BiographyForm,
     NoteBiography,

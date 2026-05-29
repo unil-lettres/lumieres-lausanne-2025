@@ -23,7 +23,6 @@ import unicodedata
 
 from django.apps import apps  # ← use the app registry (robust to module path changes)
 from haystack import indexes
-from haystack.indexes import *
 
 
 # Migrating from haystack 1.x to 2.x

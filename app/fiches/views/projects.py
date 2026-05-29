@@ -27,7 +27,7 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbid
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.csrf import csrf_exempt
 
-from fiches.models import *
+from fiches.models import Project
 
 
 def index_project(request, proj_slug=None):
