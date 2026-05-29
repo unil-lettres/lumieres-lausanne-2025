@@ -20,7 +20,6 @@
 
 import datetime
 import re
-import time
 import urllib.parse as urlparse
 
 from django import template
@@ -390,7 +389,6 @@ class TimestampNode(template.Node):
         self.token = token
 
     def render(self, context):
-        val = "timestamp %s: %s" % (str(self.token).ljust(40), time.time())
         return ""
 
 

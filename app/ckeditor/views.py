@@ -124,7 +124,6 @@ def upload(request):
     """
     # Get the uploaded file from request.
     upload = request.FILES["upload"]
-    upload_ext = os.path.splitext(upload.name)[1]
 
     # Open output file in which to store upload.
     upload_filename = get_upload_filename(upload.name, request.user)

@@ -27,9 +27,8 @@ from wsgiref.util import FileWrapper
 
 from django.apps import apps
 from django.conf import settings
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import permission_required
 from django.contrib.auth.forms import PasswordChangeForm
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import models
 from django.http import (
@@ -41,12 +40,10 @@ from django.http import (
     HttpResponseServerError,
 )
 from django.shortcuts import get_object_or_404, render
-from django.template import Context, RequestContext, loader
+from django.template import loader
 from django.urls import reverse
 from django.utils.encoding import smart_str
 from django.utils.translation import gettext_lazy as _
-from django.views.decorators.cache import cache_page, never_cache
-from django.views.decorators.vary import vary_on_headers
 from utils import dbg_logger
 
 from fiches.forms import DocumentFileForm

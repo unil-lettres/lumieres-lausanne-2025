@@ -178,10 +178,7 @@ def quick_search(request):
 
     # Normalize facet list/tuples to dict
     # Solr returns list of (value, count) tuples with Haystack.
-    if isinstance(raw, list):
-        ct_counts = dict(raw)
-    else:
-        ct_counts = raw  # already a dict
+    ct_counts = dict(raw) if isinstance(raw, list) else raw  # already a dict
 
     counts = {
         "biblio": int(ct_counts.get(ct_map["biblio"], 0)),
@@ -676,9 +673,9 @@ def save_settings(request):
 
 def save_filters(request):
     q = request.GET.get("q", "")
-    query_def = json.loads(q)
+    query_def = json.loads(q)  # noqa: F841
     sf_id = request.GET.get("sfid")
-    sf = SearchFilters.objects.get_or_create(pk=sf_id)
+    SearchFilters.objects.get_or_create(pk=sf_id)
     # TODO: persist query_def to the model (left as legacy placeholder)
 
 

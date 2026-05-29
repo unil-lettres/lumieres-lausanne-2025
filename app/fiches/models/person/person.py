@@ -56,9 +56,7 @@ class Person(models.Model):
         The higher id value ( the last biography version created ) has a version number of '0'
         """
         nb_bio = self.biography_set.all().count()
-        i = 0
-        for b in self.biography_set.all().order_by("pk"):
-            i += 1
+        for i, b in enumerate(self.biography_set.all().order_by("pk"), start=1):
             b.version = nb_bio - i
             if not dry_run:
                 b.save()

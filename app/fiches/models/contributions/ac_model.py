@@ -79,9 +79,5 @@ class ACModel(models.Model):
         if self.access_groups.filter(groups__in=user.groups.all()).exists():
             return True
 
-        # If `any_login` is True and no access_groups are defined
-        if any_login and not self.access_groups.exists():
-            return True
-
-        # No access granted
-        return False
+        # Granted if any_login is set and no access_groups restrict this object.
+        return any_login and not self.access_groups.exists()

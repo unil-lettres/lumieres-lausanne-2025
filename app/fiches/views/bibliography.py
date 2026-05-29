@@ -62,17 +62,13 @@ from fiches.utils import (
 
 
 def get_biblio_formDef(biblioForm):
-    i = 0
     flst = {}
     # Build mapping for visible fields
-    for f in biblioForm.visible_fields():
+    for i, f in enumerate(biblioForm.visible_fields()):
         flst[f.html_name] = i
-        i += 1
-    i = 0
     # Build mapping for hidden fields
-    for f in biblioForm.hidden_fields():
+    for i, f in enumerate(biblioForm.hidden_fields()):
         flst[f.html_name] = i
-        i += 1
 
     formdef = {
         "fieldsets": (
@@ -661,15 +657,18 @@ def documentfile_remove(request, doc_id, docfile_id):
     # Number of Biblio objects linked to this documentfile
     nb_ref = docfile.biblio_set.count()
 
-    if request.method == "POST":
-        if request.POST.get("doc_id", "") == str(doc_id) and request.POST.get("docfile_id") == str(docfile_id):
-            doc.documentfiles.remove(docfile)
-            if request.POST.get("docfile_delete") and docfile.biblio_set.count() == 0:
-                if not user_can_delete_documentfile(request.user, docfile):
-                    return HttpResponseForbidden(_("Accès non autorisé"))
-                docfile.delete()
-            doc.save()
-            remove_done = True
+    if (
+        request.method == "POST"
+        and request.POST.get("doc_id", "") == str(doc_id)
+        and request.POST.get("docfile_id") == str(docfile_id)
+    ):
+        doc.documentfiles.remove(docfile)
+        if request.POST.get("docfile_delete") and docfile.biblio_set.count() == 0:
+            if not user_can_delete_documentfile(request.user, docfile):
+                return HttpResponseForbidden(_("Accès non autorisé"))
+            docfile.delete()
+        doc.save()
+        remove_done = True
 
     # c.update({
     #    'doc': doc,

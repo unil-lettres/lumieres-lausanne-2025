@@ -248,9 +248,12 @@ def add_object(request):
         project.add_object(obj)
 
     # Special case for Transcription
-    if model == apps.get_model("fiches", "Transcription") and hasattr(project, "add_object"):
-        if hasattr(obj, "manuscript_b"):
-            project.add_object(obj.manuscript_b)
+    if (
+        model == apps.get_model("fiches", "Transcription")
+        and hasattr(project, "add_object")
+        and hasattr(obj, "manuscript_b")
+    ):
+        project.add_object(obj.manuscript_b)
 
     return HttpResponse("ok", content_type="text/plain")
 

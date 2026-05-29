@@ -61,11 +61,9 @@ from fiches.utils import (
 
 
 def get_bio_formDef(bioForm):
-    i = 0
     flst = {}
-    for f in bioForm.visible_fields():
+    for i, f in enumerate(bioForm.visible_fields()):
         flst[f.html_name] = i
-        i += 1
 
     formdef = {
         "fieldsets": (
@@ -452,7 +450,7 @@ def edit(request, person_id, version=0, create_bio=False):
 
             societyFormset = SocietyFormset(posted_data, instance=bio)
             if societyFormset.is_valid():
-                sty_list = societyFormset.save()
+                societyFormset.save()
 
             else:
                 dbg_logger.debug("societyFormset is not valid")

@@ -393,11 +393,14 @@ class TranscriptionForm(forms.ModelForm):
                 if default_publisher and not self.initial.get("published_by"):
                     self.initial["published_by"] = default_publisher.pk
 
-        if not self.is_bound and not self.initial.get("published_by"):
-            if not getattr(self.instance, "published_by_id", None):
-                default_publisher = get_default_publisher_user()
-                if default_publisher:
-                    self.initial["published_by"] = default_publisher.pk
+        if (
+            not self.is_bound
+            and not self.initial.get("published_by")
+            and not getattr(self.instance, "published_by_id", None)
+        ):
+            default_publisher = get_default_publisher_user()
+            if default_publisher:
+                self.initial["published_by"] = default_publisher.pk
 
     def save_reviewers(self, transcription):
         """

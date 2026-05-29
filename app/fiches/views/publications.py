@@ -27,10 +27,8 @@ from fiches.models.documents import Transcription
 
 def finding_index(request, finding_id=None):
     # Check if the user is authenticated and has the required permission
-    if request.user.is_authenticated and request.user.has_perm("fiches.change_finding"):
-        q = Q()
-    else:
-        q = Q(published=True)  # Filter for published findings if the user lacks permission
+    # Unprivileged users only see published findings.
+    q = Q() if request.user.is_authenticated and request.user.has_perm("fiches.change_finding") else Q(published=True)
 
     # Fetch the findings based on the query
     findings = Finding.objects.filter(q)
