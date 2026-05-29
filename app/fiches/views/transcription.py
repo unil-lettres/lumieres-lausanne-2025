@@ -319,10 +319,7 @@ def edit(request, trans_id=None, man_id=None, doc_id=None, new_trans=False, del_
             # - when transcription is not public, keep publication metadata unchanged
             # - when it is public, ensure legacy rows have a default publisher
             # - preserve existing publication date across public/off/public toggles
-            if not can_publish_transcription:
-                trans.published_date = published_date_original
-                trans.published_by = published_by_original
-            elif not trans.access_public:
+            if not can_publish_transcription or not trans.access_public:
                 trans.published_date = published_date_original
                 trans.published_by = published_by_original
             else:

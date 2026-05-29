@@ -614,11 +614,10 @@ def do_search(request):
         dbg_logger.debug(f_q)
         if result_qs is None:
             result_qs = model.objects.filter(f_q)
+        elif f_def["op"] == "and":
+            result_qs = model.objects.filter(f_q) & result_qs
         else:
-            if f_def["op"] == "and":
-                result_qs = model.objects.filter(f_q) & result_qs
-            else:
-                result_qs = model.objects.filter(f_q) | result_qs
+            result_qs = model.objects.filter(f_q) | result_qs
 
         if display_columns.get(f_def["cl"]) != "off":
             display_columns[f_def["cl"]] = "on"

@@ -63,4 +63,4 @@ class DictField(models.Field):
         else:
             return None
 
-        return super(DictField, self).get_db_prep_save(value, connection)
+        return super().get_db_prep_save(value, connection)

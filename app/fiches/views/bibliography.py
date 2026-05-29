@@ -296,14 +296,13 @@ def display(request, doc_id):
                     "word": skw.word,
                 }
             )
-        else:
-            # If a SecondaryKeyword has no primary_keyword, treat it as top-level or skip
-            if skw.word not in kw_dict:
-                kw_dict[skw.word] = {
-                    "id": skw.id,
-                    "word": skw.word,
-                    "skw": [],
-                }
+        # If a SecondaryKeyword has no primary_keyword, treat it as top-level or skip
+        elif skw.word not in kw_dict:
+            kw_dict[skw.word] = {
+                "id": skw.id,
+                "word": skw.word,
+                "skw": [],
+            }
             # Optionally do nothing else, or add logic as needed
 
     # Decide on your base template
@@ -706,7 +705,7 @@ def get_person_publications(request, person_id):
         )
         return render(request, "fiches/bibliography_references/publication_list.html", {"publications": publications})
     except (TypeError, ValueError, ObjectDoesNotExist) as e:
-        return HttpResponseServerError("Error: {}".format(e))
+        return HttpResponseServerError(f"Error: {e}")
 
 
 def endnote(request, doc_id, getid=False):

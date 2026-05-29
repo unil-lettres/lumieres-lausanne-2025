@@ -452,7 +452,7 @@ class ContributionDoc(models.Model):
 # ..............................................................................
 class ManuscriptBManager(models.Manager):
     def get_queryset(self):
-        return super(ManuscriptBManager, self).get_queryset().filter(document_type__id=5)
+        return super().get_queryset().filter(document_type__id=5)
 
 
 class ManuscriptB(Biblio):
@@ -602,7 +602,7 @@ class Manuscript(models.Model):
         except IndexError:
             first_author_person = None
         self.first_author = first_author_person
-        super(Manuscript, self).save(force_insert, force_update, *args, **kwargs)
+        super().save(force_insert, force_update, *args, **kwargs)
 
     def getFirstAuthorName(self):
         try:

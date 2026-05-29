@@ -611,7 +611,7 @@ def relations_list(request, person_id=None):
             },
         )
     except Exception as e:
-        return HttpResponseServerError("Error: {}".format(str(e)))
+        return HttpResponseServerError(f"Error: {str(e)}")
 
 
 RELATION_MAX_RECURSION_DEPTH = 5

@@ -31,7 +31,6 @@ from fiches.constants import DATE_DISPLAY_FORMAT, DATE_INPUT_FORMATS
 from fiches.models.misc.notes import NoteBase
 from fiches.models.person import Person
 from fiches.models.person.relation import Relation, RelationType
-
 from fiches.widgets import PersonWidget
 
 
@@ -254,14 +253,11 @@ class RelationForm(ModelForm):
         # If no `related_person` is chosen, remove `relation_type`
         if related_person is None:
             cleaned_data["relation_type"] = None
-        else:
-            # If related_person is set, relation_type must be set
-            if relation_type is None:
-                from django.core.exceptions import ValidationError
+        # If related_person is set, relation_type must be set
+        elif relation_type is None:
+            from django.core.exceptions import ValidationError
 
-                raise ValidationError(
-                    {"relation_type": "Type de relation obligatoire si une personne est sélectionnée."}
-                )
+            raise ValidationError({"relation_type": "Type de relation obligatoire si une personne est sélectionnée."})
 
         return cleaned_data
 

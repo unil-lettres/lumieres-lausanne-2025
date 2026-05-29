@@ -134,8 +134,7 @@ class Person(models.Model):
             except ValueError:
                 version = 0
 
-        if version < 0:
-            version = 0
+        version = max(version, 0)
 
         try:
             return self.biography_set.get(version=version)

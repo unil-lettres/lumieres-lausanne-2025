@@ -123,16 +123,15 @@ class Project(models.Model):
         q = Q(manuscript_b__project=self) & Q(manuscript_b__litterature_type="p")
         if not user.is_authenticated:
             q = q & Q(access_public=True)
-        else:
-            if not (user.has_perm("fiches.access_unpublished_transcription") or self.is_editable(user)):
-                q = q & (
-                    Q(access_public=True)
-                    | Q(author=user)
-                    | Q(author2=user)
-                    | Q(access_groups__users=user)
-                    | Q(access_groups__groups__user=user)
-                    | (Q(access_public=False) & Q(access_private=False) & Q(access_groups__isnull=True))
-                )
+        elif not (user.has_perm("fiches.access_unpublished_transcription") or self.is_editable(user)):
+            q = q & (
+                Q(access_public=True)
+                | Q(author=user)
+                | Q(author2=user)
+                | Q(access_groups__users=user)
+                | Q(access_groups__groups__user=user)
+                | (Q(access_public=False) & Q(access_private=False) & Q(access_groups__isnull=True))
+            )
         from fiches.models.documents.document import Transcription  # Lazy import
 
         return Transcription.objects.filter(q).distinct()

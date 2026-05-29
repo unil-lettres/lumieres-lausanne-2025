@@ -74,7 +74,7 @@ import unicodedata
 def supprime_accent(ligne):
     """Remove accents from the text"""
     ligne = smart_str(ligne)
-    return "".join((c for c in unicodedata.normalize("NFD", ligne) if unicodedata.category(c) != "Mn"))
+    return "".join(c for c in unicodedata.normalize("NFD", ligne) if unicodedata.category(c) != "Mn")
 
 
 def query_fiche(queries_dict, model_name, app_label="fiches", qs=None):

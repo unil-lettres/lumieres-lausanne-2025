@@ -86,9 +86,9 @@ class CKEditorWidget(forms.Textarea):
         self.config["filebrowserUploadUrl"] = reverse("ckeditor_upload")
         self.config["filebrowserBrowseUrl"] = reverse("ckeditor_browse")
 
-        return mark_safe(f'''
+        return mark_safe(f"""
         <textarea {flatatt(attrs)}>{conditional_escape(force_str(value))}</textarea>
         <script type="text/javascript">
             CKEDITOR.replace("{attrs.get("id", name)}", {json_encode(self.config)});
         </script>
-        ''')
+        """)
