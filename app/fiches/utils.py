@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Logging utility
 import logging
 from itertools import groupby

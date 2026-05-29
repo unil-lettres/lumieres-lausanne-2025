@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 #    Copyright (C) 2010-2012 Université de Lausanne, RISET
 #    < http://www.unil.ch/riset/ >
