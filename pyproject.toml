@@ -45,7 +45,22 @@ extend-exclude = ["app/media", "app/static", "app/uploads", "app/staticfiles"]
 #   I    isort                    B   flake8-bugbear
 #   C4   flake8-comprehensions    DJ  flake8-django
 #   D    pydocstyle (docstrings)  N   pep8-naming
-select = ["E", "W", "F", "I", "B", "C4", "DJ", "D", "N"]
+select = [
+  "E",
+  "W",
+  "F",
+  "I",
+  "B",
+  "C4",
+  "DJ",
+  "D",
+  "N",
+  "Q",
+  "SIM",
+  "C90",
+  "PLR",
+  "UP",
+]
 ignore = [
   # E203: whitespace before ':' — owned by the formatter (was ignored under
   # flake8 too). W503 has no ruff equivalent; the formatter sets break style.
@@ -60,6 +75,10 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-third-party = ["django", "requests"]
+
+[tool.ruff.lint.pylint]
+max-statements = 23
+max-args = 5
 
 [tool.ruff.lint.pydocstyle]
 # Mirrors flake8-docstrings' default and resolves the mutually-exclusive
