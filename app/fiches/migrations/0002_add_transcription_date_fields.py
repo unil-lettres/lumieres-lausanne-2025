@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("fiches", "0001_add_transcription_dates"),
+        ("fiches", "0001_initial"),
     ]
 
     operations = [

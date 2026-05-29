@@ -122,6 +122,15 @@ class ManuscriptType(models.Model):
         ordering = ["sorting"]
 
 
+def get_default_language():
+    """Default language for a Biblio: the "Français" DocumentLanguage.
+
+    Defined at module level (not as a staticmethod) so Django can serialize it
+    in migrations as an importable reference.
+    """
+    return DocumentLanguage.objects.get_or_create(name="Français")[0].id
+
+
 class Biblio(models.Model):
     """
     Fiche bibliographique
@@ -220,10 +229,6 @@ class Biblio(models.Model):
     isbn = models.CharField(_("ISBN"), max_length=24, blank=True)
     serie = models.CharField(_("Série"), max_length=64, blank=True)
     serie_num = models.CharField(_("N° de la série"), max_length=64, blank=True)
-
-    @staticmethod
-    def get_default_language():
-        return DocumentLanguage.objects.get_or_create(name="Français")[0].id
 
     # XXX: fixing issue XavierBeheydt/lumieres-lausanne#9
     def get_authors_contributions(self):
