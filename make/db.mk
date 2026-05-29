@@ -4,7 +4,7 @@
 #   - Xavier Beheydt <xavier.beheydt@gmail.com>
 
 include $(CURDIR)/.env
-DB_DUMP_FILE ?= $(CURDIR)/backup/sqldump/v2025/db_2025-07-08.sql
+DB_DUMP_FILE ?=
 
 .PHONY: db/prepare
 db/prepare:  ## Restore the database from a dump file
@@ -23,7 +23,7 @@ db/backup:
 db/restore:  ## Restore the database from a dump file
 db/restore:
 	docker compose exec -T db \
-		mysql -uroot -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < ${DB_DUMP_BACKUP}
+		mysql -uroot -p${MYSQL_ROOT_PASSWORD} ${MYSQL_DATABASE} < ${DB_DUMP_FILE}
 
 .PHONY: db/clean
 db/clean:  ## Clean the database by dropping all tables
@@ -42,3 +42,7 @@ db/create/lluser:  ## Create the lluser database
 		CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}'; \
 		GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${MYSQL_USER}'@'%'; \
 		FLUSH PRIVILEGES; "
+
+.PHONY: db/clean-urls
+db/clean-urls:  ## Rewrite absolute lumieres.unil.ch URLs to relative in DB content
+	docker compose exec -T app python - < tools/clean_urls.py
