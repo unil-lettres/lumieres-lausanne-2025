@@ -1,8 +1,3 @@
-# try:
-#     set
-# except NameError:
-#     from sets import Set as set
-
 from django import template
 from django.conf import settings
 from django.core.paginator import InvalidPage, Paginator
@@ -91,7 +86,6 @@ class AutoPaginateNode(template.Node):
         try:
             page_number = context["request"].GET.get("page", 1)
             page_obj = paginator.page(page_number)
-            # page_obj = paginator.page(context['request'].page)
         except InvalidPage:
             if INVALID_PAGE_RAISES_404:
                 raise Http404(

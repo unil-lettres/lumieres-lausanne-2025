@@ -22,34 +22,7 @@
 from django import template
 from django.contrib.auth.models import AnonymousUser, User
 
-# from django.template.loader import get_template, render_to_string
-# from urlparse import urlparse
-# from django.core.urlresolvers import resolve, Resolver404
-# from django.utils.encoding import smart_str, force_unicode
-# from django.utils.dateformat import format
-# from django.utils.html import urlize
-# from django.utils.safestring import mark_safe
-# from django.conf import settings
-#
-# import datetime, re, time
-
 register = template.Library()
-
-
-# @register.filter
-# def editable_projects(user):
-#     """
-#     Return the list of the projects the user can edit
-#     """
-#     from django.contrib.auth.models import User, AnonymousUser
-#     if not isinstance(user, User) and not isinstance(user, AnonymousUser):
-#         raise template.TemplateSyntaxError("argument should be a User")
-
-#     projs = set()
-#     #for g in user.get_profile().get_usergroups():
-#     for g in user.profile.get_usergroups():
-#         projs |= set(g.group_projects.all())
-#     return set(user.member_projects.all()) | set(user.project_set.all()) | projs
 
 
 @register.filter

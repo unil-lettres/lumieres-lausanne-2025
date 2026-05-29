@@ -29,8 +29,6 @@ from django import template
 from django.contrib.auth.models import AnonymousUser, User
 from django.template import TemplateSyntaxError
 from django.template.loader import get_template
-
-# from django.core.urlresolvers import resolve, Resolver404
 from django.urls import Resolver404, resolve
 from django.utils.dateformat import format
 from django.utils.encoding import force_str, smart_str
@@ -38,8 +36,6 @@ from django.utils.html import urlize
 from django.utils.safestring import mark_safe
 
 from fiches.models import UserGroup
-
-# from django.conf import settings
 
 logger = logging.getLogger(__name__)  # XXX: delete it
 
@@ -82,22 +78,18 @@ def decodeHtmlEntities(string):
     entity_re = re.compile(r"&(#?)(\d{1,5}|\w{1,8});")
 
     def substitute_entity(match):
-        # from htmlentitydefs import name2codepoint as n2cp
         from html.entities import name2codepoint
 
         ent = match.group(2)
         if match.group(1) == "#":
-            # return unichr(int(ent))
             try:
                 return chr(int(ent))
             except ValueError:
                 return match.group()
         else:
-            # cp = n2cp.get(ent)
             cp = cp = name2codepoint.get(ent)
 
             if cp:
-                # return unichr(cp)
                 return chr(cp)
             else:
                 return match.group()
@@ -105,19 +97,9 @@ def decodeHtmlEntities(string):
     return entity_re.subn(substitute_entity, string)[0]
 
 
-# @register.filter
-# def field_verbose_name(model,field):
-#     try:
-#         output = filter(lambda f: f.name == field, model._meta._fields())[0].verbose_name
-#     except:
-#         output = ""
-#     return output
-
-
 @register.filter
 def field_verbose_name(model, field):
     try:
-        # output = filter(lambda f: f.name == field, model._meta._fields())[0].verbose_name
         field_object = next(f for f in model._meta.get_fields() if f.name == field)
         output = field_object.verbose_name
     except (StopIteration, AttributeError):
@@ -289,7 +271,6 @@ RE_HREF = re.compile(r'href="([^"]+)"')
 def docfileinfo(value):
     from fiches.models import DocumentFile
 
-    # output = value
     anchors = re.compile(r"<a[^>]+>.*</a>").findall(value)
     for a in anchors:
         url = RE_HREF.search(a)
@@ -302,7 +283,6 @@ def docfileinfo(value):
             except Resolver404:
                 pass
             except:
-                # raise
                 pass
 
     return mark_safe(value)
@@ -344,7 +324,6 @@ def access_grouplist(value, token=""):
     those auth.Group. Not that easy to explain hum...
     """
     if not isinstance(value, User) and not isinstance(value, AnonymousUser):
-        # raise template.TemplateSyntaxError, "value should be a User"
         raise TemplateSyntaxError("value should be a User")
     user = value
     group_list = UserGroup.objects.filter(groups__in=user.groups.all()) | user.usergroup_set.all()
@@ -402,7 +381,6 @@ class TooltipLinkNode(template.Node):
             else:
                 tooltip_id = self.id
             return '<span class="tooltiplink"><a href="#%s" class="tooltiplink">?</a></span>' % tooltip_id
-        #            return '<span class="tooltiplink ui-state-default"><a href="#%s" class="ui-icon ui-icon-help"></a></span>' % tooltip_id
         except template.VariableDoesNotExist:
             return ""
 
@@ -414,9 +392,6 @@ def tooltiplink(parser, token):
     except ValueError:
         raise TemplateSyntaxError("%r tag requires one argument" % token.contents.split()[0])
 
-    #    if not re.match(r'^[a-zA-Z0-9_-]+$', arg):
-    #        raise template.TemplateSyntaxError, "%r tag argument is incorrect, only [a-zA-Z0-9_-] char accepted" % tag_name
-    #
     return TooltipLinkNode(arg)
 
 
@@ -436,18 +411,6 @@ def timstamp(parser, token):
 
 from django.core.cache import cache
 
-# class BiblioRefNode(template.Node):
-#     def __init__(self, template_filename='fiches/bibliography_references/biblio_template.html'):
-#         self.template = get_template(template_filename)
-#     def render(self, context):
-#         ref_key = 'lumieres__biblioref__%s' % context['ref'].id
-#         ref_string = cache.get(ref_key)
-#         if ref_string is None:
-#             ref_string = self.template.render(context)
-#             cache.set(ref_key, ref_string, 60 * 60 * 24 * 3)  # 3 jours
-#             print (ref_string)
-#         return ref_string
-
 
 class BiblioRefNode(template.Node):
     # XXX: issue #9 Error placeholders
@@ -460,15 +423,12 @@ class BiblioRefNode(template.Node):
             return ""
 
         ref_key = f"lumieres__biblioref__{ref.id}"
-        # ref_key = 'lumieres__biblioref__%s' % context['ref'].id
         ref_string = cache.get(ref_key)
         if ref_string is None:
             # Ensure context is a dictionary
             context_dict = context.flatten() if hasattr(context, "flatten") else dict(context)
             ref_string = self.template.render(context_dict)
             cache.set(ref_key, ref_string, 60 * 60 * 24 * 3)  # Cache for 3 days
-        # logger.debug(f"ref: {ref}")  # XXX: debug
-        # logger.debug(f"ref_key: {ref_key}")  # XXX: debug
         return ref_string
 
 
@@ -481,16 +441,6 @@ def biblioref(parser, token):
     except ValueError:
         kwargs = {}
     return BiblioRefNode(**kwargs)
-
-
-# @register.tag(name='biblioref')
-# def biblioref(parser, token):
-#     try:
-#         tag_name, template_filename = token.contents.split(None, 1)
-#     except ValueError:
-#         raise template.TemplateSyntaxError("'{% biblioref %}' tag requires exactly one argument.")
-
-#     return BiblioRefNode(template_filename)
 
 
 class ACCheckNode(template.Node):
@@ -510,12 +460,6 @@ class ACCheckNode(template.Node):
 
 @register.tag(name="ac_check")
 def do_ac_check(parser, token):
-    #    try:
-    #        tag_name, object_to_be_checked, user_to_check = token.split_contents()
-    #    except ValueError:
-    #        raise template.TemplateSyntaxError, "%r tag requires exactly two arguments" % token.contents.split()[0]
-    #    return ACCheckNode(object_to_be_checked, user_to_check)
-
     try:
         # Splitting by None == splitting by spaces.
         tag_name, arg = token.contents.split(None, 1)
