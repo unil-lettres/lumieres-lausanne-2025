@@ -64,3 +64,22 @@ def test_biography_view_imports_httpresponseservererror():
     import fiches.views.biography as biography_views
 
     assert hasattr(biography_views, "HttpResponseServerError")
+
+
+@pytest.mark.django_db
+def test_free_content_get_content_missing_returns_none():
+    """get_content's bare except was narrowed to DoesNotExist (E722); a missing
+    name must still return None rather than raise."""
+    from fiches.models import FreeContent
+
+    assert FreeContent.objects.get_content("does-not-exist") is None
+
+
+@pytest.mark.django_db
+def test_person_get_valid_biography_none_without_valid_bio():
+    """get_valid_biography's bare except was narrowed to IndexError (E722); a
+    person with no valid biography must still return None."""
+    from fiches.models.person.person import Person
+
+    person = Person.objects.create(name="Nobody, Valid")
+    assert person.get_valid_biography() is None

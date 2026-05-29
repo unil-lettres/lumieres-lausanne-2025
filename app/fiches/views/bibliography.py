@@ -218,7 +218,7 @@ def get_person_biblio(
     if contribution_type and not contribution_type_id:
         try:
             contribution_type_id = contribution_type.id
-        except:
+        except AttributeError:
             contribution_type = contribution_type_id = None
     if contribution_type_id:
         cd = cd.filter(contribution_type__id=contribution_type_id)
@@ -227,7 +227,7 @@ def get_person_biblio(
     if document_type and not document_type_id:
         try:
             document_type_id = document_type.id
-        except:
+        except AttributeError:
             document_type = document_type_id = None
     if document_type_id:
         cd = cd.filter(document__document_type__id=document_type_id)
@@ -759,11 +759,11 @@ def endnote(request, doc_id, getid=False):
         ref_bit.append(("ET", doc.publisher))
         try:
             ref_bit.append(("DA", doc.date.isoformat()))
-        except:
+        except AttributeError:
             ref_bit.append(("DA", "000-00-00"))
         try:
             ref_bit.append(("YE", doc.date.year))
-        except:
+        except AttributeError:
             ref_bit.append(("YE", ""))
 
         ref_bit.append(("PA", doc.pages))
@@ -793,7 +793,7 @@ def endnote(request, doc_id, getid=False):
 
         try:
             ref_bit.append(("AC", doc.access_date.isoformat()))
-        except:
+        except AttributeError:
             ref_bit.append(("AC", ""))
 
         ref_bit.append(("DB", "lumieres.VD"))

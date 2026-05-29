@@ -27,5 +27,5 @@ if not settings.DEBUG:
 else:
     try:
         dbg_logger = logging.getLogger("lumieres.debug")
-    except:
+    except Exception:
         dbg_logger = logging.getLogger("django")

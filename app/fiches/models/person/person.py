@@ -150,7 +150,7 @@ class Person(models.Model):
         """
         try:
             bio = list(self.biography_set.filter(valid=True).order_by("id")).pop()
-        except:
+        except IndexError:
             bio = None
         return bio
 

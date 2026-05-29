@@ -65,7 +65,7 @@ def in_group2(user, groups):
 def startswith(string, needle):
     try:
         return string.startswith(needle)
-    except:
+    except (AttributeError, TypeError):
         return ""
 
 
@@ -107,7 +107,7 @@ def field_verbose_name(model, field):
 def meta(value, arg):
     try:
         return smart_str(value._meta.__getattribute__(arg))
-    except:
+    except AttributeError:
         return ""
 
 
@@ -122,7 +122,7 @@ def date_f(model, param):
 
     try:
         model_field = model.__getattribute__(field)
-    except:
+    except AttributeError:
         return "error 1"
 
     output = ""
@@ -136,7 +136,7 @@ def date_f(model, param):
 
         try:
             output = format(model.__getattribute__(field), user_format)
-        except:
+        except (AttributeError, TypeError, ValueError):
             output = "error 2"
 
     return output
@@ -146,7 +146,7 @@ def date_f(model, param):
 def date_biblio(model, param):
     try:
         model_field = model.__getattribute__(param)
-    except:
+    except AttributeError:
         return "[s.d.]"
     if model_field:
         field_format = model.__getattribute__("%s_f" % param)
@@ -278,7 +278,7 @@ def docfileinfo(value):
                 value = value.replace(a, "%s [%s]" % (a, template.defaultfilters.filesizeformat(docfile.file.size)))
             except Resolver404:
                 pass
-            except:
+            except (KeyError, DocumentFile.DoesNotExist):
                 pass
 
     return mark_safe(value)

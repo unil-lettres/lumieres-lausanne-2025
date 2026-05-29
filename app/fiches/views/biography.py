@@ -146,7 +146,7 @@ def get_bio_formDef(bioForm):
                 try:
                     f["field"] = bioForm.visible_fields()[flst[f["name"]]]
                     fs[f["name"]] = bioForm.visible_fields()[flst[f["name"]]]
-                except:
+                except (KeyError, IndexError):
                     del f
     return formdef
 
@@ -551,7 +551,7 @@ def delete(request, person_id, version=0):
 
     try:
         version = int(version)
-    except:
+    except (ValueError, TypeError):
         version = 0
 
     nb_versions = person.biography_set.count()

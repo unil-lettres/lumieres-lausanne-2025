@@ -42,7 +42,7 @@ try:
     from south.modelsinspector import add_introspection_rules
 
     add_introspection_rules([], [r"^ckeditor\.fields\.RichTextField"])
-except:
+except ImportError:
     pass
 
 

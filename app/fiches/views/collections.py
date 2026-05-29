@@ -53,7 +53,7 @@ def get_coll(user, coll_id=None, create_if_none=False):
     else:
         try:
             coll = ObjectCollection.objects.get(pk=coll_id)
-        except:
+        except ObjectCollection.DoesNotExist:
             coll = None
     return coll
 
@@ -68,7 +68,7 @@ def get_user_coll_list(user, create_if_none=True):
 
         coll_list = list(coll_list)
         return coll_list
-    except:
+    except AttributeError:
         return None
 
 
@@ -143,7 +143,7 @@ def index(request, coll_id=None, coll_slug=None, no_cache=False):
         shared_coll = (
             ObjectCollection.objects.exclude(owner=request.user).filter(access_groups__in=user_groups).distinct()
         )
-    except:
+    except Exception:
         shared_coll = None
 
     try:
@@ -153,7 +153,7 @@ def index(request, coll_id=None, coll_slug=None, no_cache=False):
             .filter(change_groups__in=user_groups)
             .distinct()
         )
-    except:
+    except Exception:
         contrib_coll = None
 
     context = {
@@ -228,7 +228,7 @@ def tab_index(request, coll_id=None, coll_slug=None, no_cache=False):
             .filter(change_groups__in=user_groups)
             .distinct()
         )
-    except:
+    except Exception:
         contrib_coll = None
 
     try:
@@ -239,7 +239,7 @@ def tab_index(request, coll_id=None, coll_slug=None, no_cache=False):
             .filter(access_groups__in=user_groups)
             .distinct()
         )
-    except:
+    except Exception:
         shared_coll = None
 
     response = render(
@@ -402,7 +402,7 @@ def add_object(request):
             coll = ObjectCollection.objects.get(pk=coll_id)
         coll_id = coll.id
         request.session["cur_coll"] = coll_id
-    except:
+    except (ValueError, ObjectCollection.DoesNotExist):
         return return_error("collection error")
 
     # Verify change permission
@@ -446,17 +446,17 @@ def remove_object(request):
     # Get the model and the object, given by item_type and item_id
     try:
         model = apps.get_model("fiches", item_type)
-    except:
+    except LookupError:
         return return_error("item type error")
     try:
         obj = model._default_manager.get(pk=item_id)
-    except:
+    except model.DoesNotExist:
         return return_error("object error")
 
     # Get the collection
     try:
         coll = ObjectCollection.objects.get(pk=coll_id)
-    except:
+    except ObjectCollection.DoesNotExist:
         return return_error("collection not found error")
 
     can_change_coll = (coll.owner == request.user) or (request.user.profile.get_contrib_coll().filter(pk=coll.id))

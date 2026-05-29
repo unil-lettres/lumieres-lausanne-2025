@@ -34,7 +34,7 @@ class FreeContentManager(models.Manager):
     def get_content(self, name):
         try:
             return self.get(name=name)
-        except:
+        except self.model.DoesNotExist:
             return None
 
 
