@@ -28,6 +28,7 @@ include $(MAKE_SUB)/db.mk
 include $(MAKE_SUB)/dev.mk
 include $(MAKE_SUB)/docs.mk
 include $(MAKE_SUB)/helpers.mk
+include $(MAKE_SUB)/lint.mk
 include $(MAKE_SUB)/tests.mk
 include $(MAKE_SUB)/v2024.mk
 

@@ -21,55 +21,71 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "black>=26.5.1",
-  "flake8>=6.1.0",
-  "flake8-bugbear>=24.12.12",
-  "flake8-comprehensions>=3.17.0",
-  "flake8-django>=1.4",
-  "flake8-docstrings>=1.7.0",
-  "flake8-pyproject>=1.2.4",
-  "isort>=8.0.1",
-  "mypy>=2.1.0",
-  "pep8-naming>=0.15.1",
   "pytest>=9.0.3",
   "pytest-cov>=7.1.0",
   "pytest-django>=4.12.0",
+  "ruff>=0.15.15",
+  "ty>=0.0.40",
 ]
 docs = ["mkdocs>=1.6.1"]
 
 [tool.uv]
 package = false
 
-[tool.black]
+# Ruff replaces black (formatting) + isort (import sorting) + flake8 and its
+# plugins (linting). Run with `make lint` / `make format` (see make/lint.mk).
+[tool.ruff]
 line-length = 119
-extend-exclude = "app/(media|static|uploads|staticfiles)/"
-
-[tool.isort]
-profile = "black"
-line_length = 119
-known_third_party = ["django", "requests"]
-skip_glob = [
-  "app/media/*",
-  "app/static/*",
-  "app/uploads/*",
-  "app/staticfiles/*",
+target-version = "py313"
+extend-exclude = [
+  "app/media",
+  "app/static",
+  "app/uploads",
+  "app/staticfiles",
 ]
 
-[tool.flake8]
-max-line-length = 119
-extend-exclude = ["app/media", "app/static", "app/uploads", "app/staticfiles"]
+[tool.ruff.lint]
+# Faithful port of the previous flake8 stack:
+#   E/W  pycodestyle              F   pyflakes
+#   I    isort                    B   flake8-bugbear
+#   C4   flake8-comprehensions    DJ  flake8-django
+#   D    pydocstyle (docstrings)  N   pep8-naming
+select = ["E", "W", "F", "I", "B", "C4", "DJ", "D", "N"]
 ignore = [
-  # E203: Whitespace before ':' (conflicts with black)
+  # E203: whitespace before ':' — owned by the formatter (was ignored under
+  # flake8 too). W503 has no ruff equivalent; the formatter sets break style.
   "E203",
-  # W503: Line break before binary operator (conflicts with black)
-  "W503",
 ]
 
-[tool.mypy]
-files = ["app"]
-exclude = ["app/media/", "app/static/", "app/uploads/", "app/staticfiles/"]
-ignore_missing_imports = true
-strict_optional = true
+[tool.ruff.lint.per-file-ignores]
+# Django settings legitimately "import to re-export" (the imported name becomes
+# a setting) and use late/conditional imports that depend on earlier
+# assignments, so F401 (unused) and E402 (import-not-at-top) are expected here.
+"app/lumieres_project/settings*.py" = ["F401", "E402"]
+
+[tool.ruff.lint.isort]
+known-third-party = ["django", "requests"]
+
+[tool.ruff.lint.pydocstyle]
+# Mirrors flake8-docstrings' default and resolves the mutually-exclusive
+# D203/D211 and D212/D213 pairs.
+convention = "pep257"
+
+# Ty replaces mypy for static type checking. Run with `make typecheck`.
+[tool.ty.environment]
+python-version = "3.13"
+# Source lives under app/ (pytest adds it to pythonpath); declare it as a
+# first-party root so imports like `fiches` / `lumieres_project` resolve.
+root = ["./app"]
+
+[tool.ty.src]
+include = ["app"]
+exclude = [
+  "app/media",
+  "app/static",
+  "app/uploads",
+  "app/staticfiles",
+]
 
 [tool.coverage.run]
 # Measure the project's Python packages by name so coverage works both on the

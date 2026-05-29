@@ -33,7 +33,6 @@ clean/build:  ## Remove build artifacts
 clean/caches:  ## Remove tool caches
 	@echo "Cleaning up caches..."
 	$(RM) .cache/
-	$(RM) .mypy_cache/
 	$(RM) .pytest_cache/
 	$(RM) .ruff_cache/
 

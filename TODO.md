@@ -1,5 +1,86 @@
 # TODO
 
+## Lint & types (ruff + ty migration)
+
+Tooling switched to astral-sh: **ruff** (lint + format + import sort, replacing
+black / isort / flake8 + plugins) and **ty** (type checking, replacing mypy).
+Config lives in `pyproject.toml` (`[tool.ruff*]`, `[tool.ty*]`). Recipes:
+`make lint` · `make lint/fix` · `make format` · `make format/check` ·
+`make typecheck` · `make check`.
+
+Baseline on `app/` (ruff 0.15.15): **1131 lint errors**, **71 files** would be
+reformatted. By family: D docstrings 582 · F pyflakes 156 · E pycodestyle 95 ·
+W whitespace 88 · I imports 67 · DJ django 63 · N naming 58 · B bugbear 19 ·
+C4 comprehensions 3.
+
+### 0. Mechanical fixes (do first — tool-applied, ~0 risk)
+
+- [ ] `make lint/fix` — apply the **209** safe autofixes: import sorting
+      (I001 ×67), blank-line docstring rules (D202/D204/D208/D209/D210),
+      E401/E713, missing-final-newline (W292), …
+- [ ] `make format` — reformat the **71** files (W291/W293 whitespace, line
+      breaks). Commit format + autofix separately so each diff is reviewable.
+- [ ] Re-run `make lint`; then triage `--unsafe-fixes` (108 more) by hand:
+      `ruff check app --fix --unsafe-fixes` — mostly F401 unused-import removal.
+
+### 1. Real bugs / correctness (review individually — not cosmetic)
+
+- [ ] **F821 undefined-name ×9** — latent `NameError`s; trace each.
+- [ ] **F507 ×3** — `%`-format placeholder/arg count mismatch (runtime error).
+- [ ] **F841 unused-variable ×6**, **F811 redefined-while-unused ×4**
+      (autofixable, but confirm each removal is intended, not a lost branch).
+- [ ] **B904 ×11** — use `raise … from err` inside `except` (keep tracebacks).
+- [ ] **B006 mutable default arg ×3**, **B026 ×2**, **B007 / B011 / B018 ×1**.
+- [ ] **E722 bare-except ×31** — replace `except:` with explicit exceptions.
+- [ ] **DJ008 ×1** — model missing `__str__`.
+
+### 2. Wildcard imports (clears F403 + F405 together — 86 findings)
+
+- [ ] Replace `from x import *` (**F403 ×8**) with explicit imports; this also
+      clears the **F405 ×78** "may be undefined from star import" noise
+      (likely settings / `__init__` aggregator modules).
+
+### 3. Django model/form conventions (DJ — 63)
+
+- [ ] **DJ012 ×35** — reorder model body (fields → manager → Meta → `__str__`
+      → save/methods).
+- [ ] **DJ001 ×14** — `null=True` on string field; prefer `blank=True` + `""`.
+- [ ] **DJ007 ×10** — ModelForm `fields = "__all__"`; list fields explicitly.
+- [ ] **DJ006 ×3** — ModelForm `exclude`; switch to explicit `fields`.
+
+### 4. Naming (N — 58)
+
+- [ ] **N806 ×42** — non-lowercase locals (often class aliases `Foo = …`);
+      rename, or `# noqa: N806` where the capitalised alias is intentional.
+- [ ] **N802 func ×10**, **N815 mixedCase class attr ×4**, **N803 arg ×2**.
+
+### 5. Remaining pycodestyle (E — after formatting)
+
+- [ ] **E501 line-too-long ×39** — wrap/refactor (formatter won't split strings).
+- [ ] **E402 module-import-not-at-top ×19** — often legit in settings /
+      `manage.py`; add targeted `# noqa: E402` where load order is required.
+- [ ] **E701 ×2**, **E741 ambiguous-name ×1**.
+
+### 6. Comprehensions (C4 — 3)
+
+- [ ] **C416 ×2** unnecessary comprehension, **C414 ×1** redundant double-cast.
+
+### 7. Docstrings (D — 582, the long tail; lowest ROI, do last)
+
+Mostly "missing docstring" on legacy code.
+
+- [ ] Missing (D1xx, ×410): **D103 func 74 · D101 class 72 · D102 method 70 ·
+      D100 module 63 · D106 nested-class 58 · D105 magic 34 · D107 `__init__`
+      22 · D104 package 17**.
+- [ ] Style (×172): **D205 49 · D200 44 · D400 39 · D401 17 · D202 9 · D204 7**
+      and D301/D419/D208/D209/D210 (1–2 each).
+- [ ] **Decision:** if full docstring coverage isn't a goal, drop `D` from
+      `select` (−582) or ignore just the D1xx "missing" subset (−410) before
+      grinding through these.
+
+> Static types: `make typecheck` (ty) reports **291 diagnostics**, tracked
+> separately — not included in the lint counts above.
+
 ## Staging stack
 
 - [ ] Create staging.mk file with staging recipes

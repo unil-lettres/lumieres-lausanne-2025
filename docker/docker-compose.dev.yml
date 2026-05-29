@@ -25,7 +25,7 @@ services:
             - "*.pyc"
             - "*.pyo"
             - .pytest_cache/
-            - .mypy_cache/
+            - .ruff_cache/
             - media/
             - staticfiles/
         - action: rebuild
