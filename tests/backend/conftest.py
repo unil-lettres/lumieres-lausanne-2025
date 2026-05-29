@@ -56,12 +56,11 @@ def django_db_setup(django_db_setup, django_db_blocker):
     from django.apps import apps
     from django.db import connection
 
-    with django_db_blocker.unblock():
-        with connection.schema_editor() as schema_editor:
-            existing = set(connection.introspection.table_names())
-            for model in apps.get_app_config("fiches").get_models(include_auto_created=True):
-                if model._meta.managed:
-                    continue
-                if model._meta.db_table in existing:
-                    continue
-                schema_editor.create_model(model)
+    with django_db_blocker.unblock(), connection.schema_editor() as schema_editor:
+        existing = set(connection.introspection.table_names())
+        for model in apps.get_app_config("fiches").get_models(include_auto_created=True):
+            if model._meta.managed:
+                continue
+            if model._meta.db_table in existing:
+                continue
+            schema_editor.create_model(model)

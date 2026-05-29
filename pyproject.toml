@@ -72,6 +72,9 @@ ignore = [
 # a setting) and use late/conditional imports that depend on earlier
 # assignments, so F401 (unused) and E402 (import-not-at-top) are expected here.
 "app/lumieres_project/settings*.py" = ["F401", "E402"]
+# Test files: pytest functions don't need docstrings (D), and assertions
+# legitimately compare against literal expected values (PLR2004).
+"tests/**/*.py" = ["D", "PLR2004"]
 
 [tool.ruff.lint.isort]
 known-third-party = ["django", "requests"]

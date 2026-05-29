@@ -30,7 +30,6 @@ private attributes that no longer exist).
 import pytest
 from django.core.paginator import Paginator
 from django.template import TemplateSyntaxError
-
 from pagination.templatetags.pagination_tags import do_autopaginate, paginate
 
 
