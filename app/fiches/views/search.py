@@ -723,6 +723,4 @@ def list_persons(request):
 
 def req_search_view(request):
     """Compat alias kept for legacy imports."""
-    # You can also return quick_search(request) if you prefer:
-    # return quick_search(request)
     return search_general(request)

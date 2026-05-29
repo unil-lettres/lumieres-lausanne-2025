@@ -360,9 +360,7 @@ def edit(request, trans_id=None, man_id=None, doc_id=None, new_trans=False, del_
                 note_formset.save()
                 if request.POST.get("__continue", "") == "on":
                     url = reverse("transcription-edit", args=[trans.id])
-                    # if ( request.REQUEST.get('__position') ):
                     if request.GET.get("__position"):
-                        # url += "?__position=" + urlquote(request.REQUEST.get('__position'))
                         url += "?__position=" + urlquote(request.GET.get("__position"))
                     return HttpResponseRedirect(url)
                 else:

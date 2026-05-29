@@ -238,7 +238,6 @@ def add_object(request):
 
     # Get the model of the object, given by item_type
     try:
-        # model = models.get_model('fiches', item_type)
         model = apps.get_model("fiches", item_type)
     except LookupError:
         return return_error("item type error")
@@ -250,12 +249,9 @@ def add_object(request):
         return return_error("object error")
 
     # Add the object to the collection
-    # project.add_object(obj)
     if hasattr(project, "add_object"):
         project.add_object(obj)
 
-    # if model == Transcription:
-    #     project.add_object(obj.manuscript_b)
     # Special case for Transcription
     if model == apps.get_model("fiches", "Transcription"):
         if hasattr(project, "add_object"):

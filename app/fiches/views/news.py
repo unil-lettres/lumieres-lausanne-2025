@@ -26,12 +26,6 @@ from fiches.models import News
 
 def index(request):
     news = News.objects.filter(published=True)
-    # news = News.objects.filter(published=True).order_by('-created_on')  # Order by created_on descending
-    # print("printing news query...")
-    # print(news.query)  # Print the raw SQL query
-
-    # for n in news:
-    # print(n.created_on)  # Print the dates to check order
 
     context = {"news": news}
     return render(request, "fiches/news/index.html", context)

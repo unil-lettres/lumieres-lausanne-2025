@@ -88,7 +88,6 @@ def get_writable_shared_coll_list(user):
 def get_editable_coll_list(user, create_if_none=True):
     coll_dict = {
         "user": get_user_coll_list(user, create_if_none=create_if_none),
-        #'contrib':  user.get_profile().get_contrib_coll()
         "contrib": user.profile.get_contrib_coll(),
     }
     return coll_dict
@@ -130,7 +129,6 @@ def index(request, coll_id=None, coll_slug=None, no_cache=False):
     request.session["cur_coll"] = coll.id
 
     # Get all UserGroups this user is member of
-    # user_groups = request.user.get_profile().get_usergroups()
     user_groups = request.user.profile.get_usergroups()
 
     # Access is granted if ACModel.user_access is True OR if the user is member of a change_group
@@ -158,17 +156,6 @@ def index(request, coll_id=None, coll_slug=None, no_cache=False):
         )
     except:
         contrib_coll = None
-
-    # response = render('fiches/collections/index.html',
-    #                           { 'coll': coll,
-    #                             'coll_access': coll_access,
-    #                             'coll_change': coll_change,
-    #                             'coll_list': coll_list,
-    #                             'shared_coll': shared_coll,
-    #                             'contrib_coll': contrib_coll,
-    #                           },
-    #                           context_instance=RequestContext(request)
-    # )
 
     context = {
         "coll": coll,
@@ -228,7 +215,6 @@ def tab_index(request, coll_id=None, coll_slug=None, no_cache=False):
     request.session["cur_coll"] = coll.id
 
     # Get all UserGroups this user is member of
-    # user_groups = request.user.get_profile().get_usergroups()
     user_groups = request.user.profile.get_usergroups()
 
     # Access is granted if ACModel.user_access is True OR if the user is member of a change_group
@@ -312,7 +298,6 @@ def get_user_list(request, format="select"):
     Return the list of the collections that belongs to the current user
     """
     user_coll_list = get_user_coll_list(request.user)
-    # shared_coll_list = request.user.get_profile().get_contrib_coll()
     shared_coll_list = request.user.profile.get_contrib_coll()
 
     current_collection = request.session.get("cur_coll", "-1")
@@ -360,8 +345,6 @@ def get_in_collection_list(request):
         projects = Project.objects.filter(transcriptions=request.GET["id"])
 
     # filter out the collections/projects the user cannot access
-    # accessible_coll = set(get_user_coll_list(request.user)) \
-    #                   | set(request.user.get_profile().get_contrib_coll())
     accessible_coll = set(get_user_coll_list(request.user)) | set(request.user.profile.get_contrib_coll())
     collections = set(collections) & accessible_coll
     accessible_proj = editable_projects(request.user)
@@ -394,10 +377,6 @@ def add_object(request):
     coll_id = request.POST.get("coll_id", "")
 
     # Get the model of the object, given by item_type
-    # try:
-    #     model = models.get_model('fiches', item_type)
-    # except:
-    #     return return_error("item type error")
     try:
         model = apps.get_model("fiches", item_type)
         if model is None:
@@ -428,8 +407,6 @@ def add_object(request):
         return return_error("collection error")
 
     # Verify change permission
-    # can_change_coll = (coll.owner == request.user) or ( request.user.usergroup_set.all() & coll.change_groups.all() )
-    # can_change_coll = (coll.owner == request.user) or ( request.user.get_profile().get_contrib_coll().filter(pk=coll.id) )
     can_change_coll = (coll.owner == request.user) or (request.user.profile.get_contrib_coll().filter(pk=coll.id))
     if not can_change_coll:
         return return_error("collection permission error")
@@ -437,7 +414,6 @@ def add_object(request):
     # Get the object
     try:
         obj = model._default_manager.get(pk=item_id)
-    # except:
     except model.DoesNotExist:
         return return_error("object error")
 
@@ -484,8 +460,6 @@ def remove_object(request):
     except:
         return return_error("collection not found error")
 
-    # can_change_coll = (coll.owner == request.user) or ( request.user.usergroup_set.all() & coll.change_groups.all() )
-    # can_change_coll = (coll.owner == request.user) or ( request.user.get_profile().get_contrib_coll().filter(pk=coll.id) )
     can_change_coll = (coll.owner == request.user) or (request.user.profile.get_contrib_coll().filter(pk=coll.id))
     if not can_change_coll:
         return return_error("collection permission error")
@@ -499,11 +473,6 @@ def remove_object(request):
 def display(request, coll_id):
     coll = get_object_or_404(ObjectCollection, pk=coll_id)
     coll_access = coll.user_access(request.user) or (request.user.usergroup_set.all() & coll.change_groups.all())
-    # response = render('fiches/collections/display.html',{
-    #                             'coll': coll,
-    #                             'coll_access': coll_access,
-    #                             }, context_instance=RequestContext(request)
-    # )
 
     context = {
         "coll": coll,
@@ -523,10 +492,6 @@ def short_info(request, coll_id):
     - group access
     """
     coll = get_object_or_404(ObjectCollection, pk=coll_id)
-    # return render('fiches/collections/shortinfo.html',
-    #                           { 'coll': coll },
-    #                           context_instance=RequestContext(request)
-    # )
     return render(request, "fiches/collections/shortinfo.html", {"coll": coll})
 
 
@@ -612,8 +577,4 @@ def delete(request, coll_id):
         return HttpResponseServerError("Problème lors de la suppression de la collection: " + str(e))
 
     # Redirect to the workspace home page.
-    # Option 1: If you have a named URL for workspace home:
     return HttpResponseRedirect(reverse("workspace-main"))
-
-    # Option 2: Hardcode the URL (uncomment the line below if you prefer)
-    # return HttpResponseRedirect('/espace_de_travail')

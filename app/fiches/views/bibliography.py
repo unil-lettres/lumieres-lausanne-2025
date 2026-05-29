@@ -237,7 +237,6 @@ def get_person_biblio(
     # List of the document ids
     doc_ids = cd.values_list("document_id", flat=True)
 
-    # model = models.get_model(app_label, model_name)
     return output_model.objects.filter(pk__in=doc_ids)
 
 
@@ -630,12 +629,6 @@ def delete(request, doc_id):
 
 def documentfile_change_list(request, doc_id):
     doc = get_object_or_404(Biblio, pk=doc_id)
-    # return render('fiches/edition/document/documentfile_change_list.html',
-    #                           {
-    #                            'doc': doc,
-    #                            },
-    #                           context_instance=RequestContext(request)
-    # )
 
     return render(request, "fiches/edition/document/documentfile_change_list.html", {"doc": doc})
 
@@ -695,7 +688,6 @@ def documentfile_remove(request, doc_id, docfile_id):
         "remove_done": remove_done,
         "framed": True,
     }
-    # return render('fiches/edition/document/documentfile_remove.html', c, context_instance=RequestContext(request))
 
     return render(request, "fiches/edition/document/documentfile_remove.html", c)
 
@@ -809,7 +801,6 @@ def endnote(request, doc_id, getid=False):
 
         references.append("\n".join(["REF"] + ["%s- %s" % (label, value) for label, value in ref_bit] + ["END"]))
 
-    # return HttpResponse("\n\n".join(references), mimetype="text/plain ; charset=utf-8")
     return HttpResponse("\n\n".join(references), content_type="text/plain; charset=utf-8")
 
 

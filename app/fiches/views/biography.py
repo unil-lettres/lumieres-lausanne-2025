@@ -31,11 +31,7 @@ from django.http import (
     JsonResponse,
 )
 from django.shortcuts import get_object_or_404, render
-
-# from django.core.urlresolvers import reverse
 from django.urls import reverse
-
-# from django.utils.encoding import smart_str, smart_unicode
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from utils import dbg_logger
@@ -330,7 +326,6 @@ def display(request, person_id, version=0):
     bio_template = "fiches/display/biography2.html"
 
     return render(request, bio_template, ctx)
-    # return render(bio_template, ctx, context_instance=RequestContext(request))
 
 
 def to_be_validated(request):
@@ -528,7 +523,6 @@ def edit(request, person_id, version=0, create_bio=False):
             "can_add_person": request.user.has_perm("fiches.add_person"),
         }
     )
-    # return render('fiches/edition/biography.html', ctx, context_instance=RequestContext(request))
     return render(request, "fiches/edition/biography.html", ctx)
 
 
@@ -623,14 +617,6 @@ def relations_list(request, person_id=None):
             }
             for r in rrel
         ]
-
-        # return render('fiches/list/biography_relations_list.html',
-        #                           {
-        #                            'person': person,
-        #                            'relation_list': relation_list,
-        #                           },
-        #                           context_instance=RequestContext(request)
-        # )
 
         return render(
             request,
