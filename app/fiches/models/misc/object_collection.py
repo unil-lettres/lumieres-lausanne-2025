@@ -69,7 +69,7 @@ class ObjectCollection(ACModel):
                 self.slug = slug_candidate
             else:
                 self.slug = None
-        super().save(force_insert=force_insert, force_update=force_update, *args, **kwargs)
+        super().save(*args, force_insert=force_insert, force_update=force_update, **kwargs)
 
         if nb_existing_slug > 0:
             old_slug = self.slug
@@ -78,7 +78,7 @@ class ObjectCollection(ACModel):
             if len(new_slug) > 50:
                 new_slug = f"{old_slug[: 50 - len(obj_id) - 1]}-{obj_id}"
             self.slug = new_slug
-            super().save(force_insert=force_insert, force_update=force_update, *args, **kwargs)
+            super().save(*args, force_insert=force_insert, force_update=force_update, **kwargs)
 
     def add_object(self, obj):
         of = self.get_object_field(obj)

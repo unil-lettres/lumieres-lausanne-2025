@@ -537,8 +537,7 @@ def debug_test(request):
     """
     Pour test et debug
     """
-    assert False, "Pour tester"
-    return HttpResponse("empty")
+    raise AssertionError("Pour tester")
 
 
 from .bibliography import *

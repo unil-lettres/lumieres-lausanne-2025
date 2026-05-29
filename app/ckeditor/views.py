@@ -167,7 +167,7 @@ def get_image_browse_urls(user=None):
 
     browse_path = os.path.join(settings.CKEDITOR_UPLOAD_PATH, user_path)
 
-    for root, dirs, files in os.walk(browse_path):
+    for root, _dirs, files in os.walk(browse_path):
         for filename in [os.path.join(root, x) for x in files]:
             # bypass for thumbs
             if "_thumb" in filename:

@@ -47,3 +47,11 @@ def test_fiches_search_form_get_models_uses_haystack_connection():
     # With no selected models the form falls back to the Haystack unified index;
     # that branch referenced the undefined `connections` name before the fix.
     assert isinstance(FichesSearchForm().get_models(), list)
+
+
+def test_get_all_relations_has_no_mutable_default_args():
+    """`_get_all_relations` mutated its list defaults in place, leaking state
+    across calls (ruff B006); defaults must not be mutable containers."""
+    from fiches.views.biography import _get_all_relations
+
+    assert not any(isinstance(d, (list, dict, set)) for d in _get_all_relations.__defaults__)

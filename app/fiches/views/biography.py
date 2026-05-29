@@ -634,7 +634,13 @@ def relations_list(request, person_id=None):
 RELATION_MAX_RECURSION_DEPTH = 5
 
 
-def _get_all_relations(person, excluded_rels=[], depth=0, only_people=[], only_relations=[]):
+def _get_all_relations(person, excluded_rels=None, depth=0, only_people=None, only_relations=None):
+    if excluded_rels is None:
+        excluded_rels = []
+    if only_people is None:
+        only_people = []
+    if only_relations is None:
+        only_relations = []
     rel = person.get_relations(only_people=only_people, only_relations=only_relations)
     rrel = person.get_reverse_relations(only_people=only_people, only_relations=only_relations)
     relation_list = [
