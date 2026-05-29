@@ -469,7 +469,7 @@ def biblio_extended_search(request):
             try:
                 page = paginator.page(request.GET.get("page", 1))
             except InvalidPage:
-                raise Http404
+                raise Http404 from None
             context.update(
                 {
                     "page": page,

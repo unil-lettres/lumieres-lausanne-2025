@@ -242,7 +242,7 @@ class BiblioForm(forms.ModelForm):
                 persons.append(p)
             except (ValueError, Person.DoesNotExist):
                 label = label or item
-                raise forms.ValidationError(f"La personne «{label}» n'existe pas dans la base.")
+                raise forms.ValidationError(f"La personne «{label}» n'existe pas dans la base.") from None
         return persons
 
 
@@ -645,7 +645,7 @@ class ContributionDocForm(forms.ModelForm):
                 person = Person.objects.get(pk=pk)
                 return person
             except (ValueError, Person.DoesNotExist):
-                raise forms.ValidationError("Cette personne est introuvable dans la base.")
+                raise forms.ValidationError("Cette personne est introuvable dans la base.") from None
 
         # If user typed an ID directly
         if raw_value.isdigit():

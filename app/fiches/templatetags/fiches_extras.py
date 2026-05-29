@@ -386,7 +386,7 @@ def tooltiplink(parser, token):
     try:
         tag_name, arg = token.contents.split(None, 1)
     except ValueError:
-        raise TemplateSyntaxError("%r tag requires one argument" % token.contents.split()[0])
+        raise TemplateSyntaxError("%r tag requires one argument" % token.contents.split()[0]) from None
 
     return TooltipLinkNode(arg)
 
@@ -460,7 +460,7 @@ def do_ac_check(parser, token):
         # Splitting by None == splitting by spaces.
         tag_name, arg = token.contents.split(None, 1)
     except ValueError:
-        raise TemplateSyntaxError("%r tag requires arguments" % token.contents.split()[0])
+        raise TemplateSyntaxError("%r tag requires arguments" % token.contents.split()[0]) from None
     m = re.search(r"^(.\w+)\s+(\w+?)$", arg)
     if m:
         object_to_be_checked, user_to_check = m.groups()
@@ -479,7 +479,7 @@ def do_captureas(parser, token):
     try:
         tag_name, args = token.contents.split(None, 1)
     except ValueError:
-        raise template.TemplateSyntaxError("'captureas' node requires a variable name.")
+        raise template.TemplateSyntaxError("'captureas' node requires a variable name.") from None
     nodelist = parser.parse(("endcaptureas",))
     parser.delete_first_token()
     return CaptureasNode(nodelist, args)

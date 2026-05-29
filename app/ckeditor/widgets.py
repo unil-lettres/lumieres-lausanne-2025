@@ -57,7 +57,7 @@ class CKEditorWidget(forms.Textarea):
             raise ImproperlyConfigured(
                 "django-ckeditor requires STATIC_URL setting. "
                 "This setting specifies a URL prefix to the CKEditor JS and CSS media."
-            )
+            ) from None
 
     def __init__(self, config_name="default", *args, **kwargs):
         super().__init__(*args, **kwargs)  # ✅ Python 3 style super()
