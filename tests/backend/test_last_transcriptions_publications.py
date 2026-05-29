@@ -8,10 +8,20 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from fiches.models.documents.document import Biblio, Transcription
+from fiches.models.documents.document import (
+    Biblio,
+    DocumentLanguage,
+    DocumentType,
+    Transcription,
+)
 
 
 class LastTranscriptionsPublicationsTest(TestCase):
+    def setUp(self):
+        # Biblio.document_type FK + get_default_language() lookup
+        DocumentType.objects.create(id=1, name="Test type", code=1)
+        DocumentLanguage.objects.create(name="Français", code="fr", ordering=1)
+
     def _create_public_transcription(self, index, published_date):
         biblio = Biblio.objects.create(
             title=f"Published {index:03d}",
