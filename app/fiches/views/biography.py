@@ -209,7 +209,6 @@ def build_person_biblio_dict(person):
     def cd_grouper_ctype(cd):
         return cd.contribution_type.name
 
-    # refs_prim = get_person_biblio(person).select_related().order_by('document_type__id')
     refs_prim = (
         Biblio.objects.exclude(document_type__id=5)
         .filter(litterature_type="p", contributiondoc__person=person)
@@ -234,8 +233,7 @@ def build_person_biblio_dict(person):
         for g in groupby(cd, cd_grouper_doctype)
     ]
 
-    # Biblio - litt�rature secondaire
-    # refs_sec = Biblio.objects.exclude(document_type__id=5).select_related().filter(subj_person=person).order_by('document_type__id','date','title')
+    # Biblio - littérature secondaire
     litt_prim = (
         Biblio.objects.exclude(contributiondoc__person=person)
         .select_related()
@@ -258,13 +256,10 @@ def build_person_biblio_dict(person):
 
     return {
         "contrib_man": contrib_man,
-        #'trans_list': trans_list,
-        #'grouped_refs': grouped_refs,
         "ref_list": refs_prim,
         "grouped_refs_prim": grouped_refs_prim,
         "litt_prim": litt_prim,
         "litt_sec": litt_sec,
-        #'grouped_refs_sec': grouped_refs_sec,
     }
 
 
@@ -360,8 +355,6 @@ def edit(request, person_id, version=0, create_bio=False):
         if bio is None:
             raise Http404()
 
-    #    dbg_logger.debug("relation_set -> %s" % bio.relation_set)
-
     # ------------------------- Formsets ---------------------------------------#
     NoteFormset = inlineformset_factory(Biography, NoteBiography, extra=0, form=NoteFormBiography)
 
@@ -399,7 +392,6 @@ def edit(request, person_id, version=0, create_bio=False):
         prev_version_note_ids = []
         for note in note_qs:
             prev_version_note_ids.append(note.id)
-        # dbg_logger.debug("relationFormset.is_valid() -> %s" % relationFormset.is_valid())
 
         if (
             bioForm.is_valid()
@@ -416,11 +408,7 @@ def edit(request, person_id, version=0, create_bio=False):
                 bio.version = 0
                 bio.save()
                 person.renum_bio()
-                # new_bio = duplicate(bio, 'version', '0', exclude_models=exclude_from_duplication)
-                # new_bio.person.renum_bio()
 
-            # Modifie les donn�es des formsets de sorte que tous les �l�ments du formset soient pris comme nouveaux �l�ments.
-            # Comme �a on provoque une duplication des objets li�s
             posted_data = request.POST.copy()
             for excluded_modelname in exclude_from_duplication:
                 formset_prefix = "%s_set" % excluded_modelname.lower()
@@ -529,9 +517,7 @@ def edit(request, person_id, version=0, create_bio=False):
 
 
 def validate(request, person_id, version=0):
-    """
-    Validate the version of a biography
-    """
+    """Validate the version of a biography."""
     if not request.user.has_perm("fiches.validate_biography"):
         return HttpResponseForbidden("Accès non autorisé")
 
@@ -554,11 +540,9 @@ def validate(request, person_id, version=0):
 
 
 def delete(request, person_id, version=0):
-    """
-    Delete a biography version and call renum_bio on the person instance
-    """
+    """Delete a biography version and call renum_bio on the person instance."""
     if not request.user.has_perm("fiches.delete_biography"):
-        return HttpResponseForbidden("Acc�s non autoris�")
+        return HttpResponseForbidden("Accès non autorisé")
 
     person = get_object_or_404(Person, pk=person_id)
     bio = person.get_biography(version=version)
@@ -603,7 +587,6 @@ def relations_list(request, person_id=None):
         relation_list = [
             {
                 "id": r.related_person.id,
-                #'name': r.related_person.__str__(), #__unicode__(),
                 "name": str(r.related_person),
                 "type": r.relation_type,
                 "rel": r.related_person.has_relations(exclude_people=[person_id]),
@@ -612,7 +595,6 @@ def relations_list(request, person_id=None):
         ] + [
             {
                 "id": r.bio.person.id,
-                #'name': r.bio.person.__str__(), #__unicode__(),
                 "name": str(r.bio.person),
                 "type": r.relation_type.reverse_name,
                 "rel": r.bio.person.has_relations(exclude_people=[person_id]),
@@ -647,7 +629,6 @@ def _get_all_relations(person, excluded_rels=None, depth=0, only_people=None, on
     relation_list = [
         {
             "id": r.id,
-            #'dst_name': r.related_person.__unicode__(),
             "dst_name": str(r.related_person),
             "src_name": person.name,
             "type": r.relation_type,
@@ -658,7 +639,6 @@ def _get_all_relations(person, excluded_rels=None, depth=0, only_people=None, on
     ] + [
         {
             "id": r.id,
-            #'dst_name': r.bio.person.__unicode__(),
             "dst_name": str(r.bio.person),
             "src_name": person.name,
             "type": r.relation_type.reverse_name,
@@ -699,7 +679,3 @@ def relation_dot(request=None, person_id=None, max_depth=3):
 
     output = "digraph essais {\n" + dot_relations + "\n}\n"
     return output
-
-    response = HttpResponse(output)
-    response["mime/type"] = "plain/text"
-    return response
