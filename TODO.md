@@ -49,17 +49,34 @@ higher — clean that first so the number means something.
 
 #### 0. Dead / broken code cleanup (do first — it inflates the gap)
 
-- [ ] Remove `fiches/dev/__init__.py` (197 stmts) — dev-only script, unreferenced
-- [ ] Remove `fiches/management/commands/sync_perms.py` — broken (uses Django 1.x
-      `get_models`/`get_app`); superseded by `sync_status_roles`
-- [ ] Remove `pagination/paginator.py` (`InfinitePaginator`/`FinitePaginator`) —
-      broken under Django 5.2 (`del self._num_pages`), unreferenced
-- [ ] Remove `pagination/middleware.py` — unused, not in `MIDDLEWARE`
-- [ ] Decide COinS/Zotero feature: revive or remove `utils/coins.py`,
-      `utils/utils_coins.py`, `fiches/utils_coin.py` (disabled — templates
-      commented out, no `coins` model property)
-- [ ] Verify/remove `fiches/context_processors.py` — not wired in `TEMPLATES`
-- [ ] Add `[tool.coverage.run] omit` for anything intentionally kept-but-excluded
+Verified by whole-repo reference search + empirical import/instantiation. Remove
+one file per commit; run the suite after each. ~446 stmts total.
+
+- [ ] Remove `fiches/management/commands/sync_perms.py` (16) — **broken**:
+      `ImportError` on `get_models`/`get_app` (removed since Django 1.9);
+      superseded by `sync_status_roles`; no references
+- [ ] Remove `pagination/paginator.py` (77) — **broken**: `AttributeError`
+      (`del self._num_pages`) on instantiation; `InfinitePaginator`/
+      `FinitePaginator` referenced nowhere
+- [ ] Remove `pagination/middleware.py` (19) — unused, not in `MIDDLEWARE`
+- [ ] Remove `utils/aggregates.py` (11) — `Concatenate`/`ConcatenateSQL`
+      referenced nowhere
+- [ ] Remove `fiches/context_processors.py` (5) — not wired in `TEMPLATES`;
+      its outputs (`DOCTYPE`, `display_collector`) are set per-view, so removal
+      is runtime-safe
+- [ ] Remove `fiches/dev/__init__.py` (197) — dev-only data script, imports OK
+      but zero references (code/templates/docs/CI)
+- [ ] **Decision needed** — COinS/Zotero (closed cluster, 127): revive or remove
+      `utils/coins.py` (89), `utils/utils_coins.py` (24), `fiches/utils_coin.py`
+      (14). Disabled: template usages commented, no `coins` model property, no
+      external callers
+- [ ] Add `[tool.coverage.run] omit` only for anything intentionally
+      kept-but-excluded (none expected if all the above are removed)
+
+> Keep (NOT dead — test gaps, do not remove): `utils/fields.py` `DictField`
+> (used by `search.py` + migration 0001), `utils/__init__.py` `dbg_logger`
+> (used by views), `fiches/templatetags/paginator.py` (live tag, ≠
+> `pagination/paginator.py`).
 
 #### 1. Test infrastructure / fixtures
 
