@@ -55,9 +55,9 @@ one file per commit; run the suite after each. ~446 stmts total.
 - [x] Remove `fiches/management/commands/sync_perms.py` (16) — **broken**:
       `ImportError` on `get_models`/`get_app` (removed since Django 1.9);
       superseded by `sync_status_roles`; no references
-- [ ] **On hold (decide: fix/revive vs remove)** — `pagination/paginator.py`
-      (77) — **broken**: `AttributeError` (`del self._num_pages`) on
-      instantiation; `InfinitePaginator`/`FinitePaginator` referenced nowhere
+- [x] Remove `pagination/paginator.py` (77) — **broken**: `AttributeError`
+      (`del self._num_pages`) on instantiation; `InfinitePaginator`/
+      `FinitePaginator` referenced nowhere
 - [x] Remove `pagination/middleware.py` (19) — unused, not in `MIDDLEWARE`
 - [x] Remove `utils/aggregates.py` (11) — `Concatenate`/`ConcatenateSQL`
       referenced nowhere
