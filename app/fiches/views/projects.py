@@ -18,7 +18,6 @@
 #
 # This copyright notice MUST APPEAR in all copies of the file.
 
-import logging  # XXX: delete it
 import re
 
 from django.apps import apps
@@ -29,8 +28,6 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators.csrf import csrf_exempt
 
 from fiches.models import *
-
-logger = logging.getLogger(__name__)  # XXX: delete it
 
 
 def index_project(request, proj_slug=None):
@@ -129,7 +126,6 @@ def get_project_description(request, proj_id=None):
         "lit_sec": lit_sec,
         "transcriptions": transcriptions,
     }
-    logger.debug(f"{__file__}.get_project_description() : {context}")
     return render(request, "fiches/ajax/project_description.html", context)
 
 

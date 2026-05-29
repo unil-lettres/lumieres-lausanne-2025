@@ -19,7 +19,6 @@
 # This copyright notice MUST APPEAR in all copies of the file.
 
 import datetime
-import logging  # XXX: delete it
 import re
 import time
 import urllib.parse as urlparse
@@ -35,8 +34,6 @@ from django.utils.html import urlize
 from django.utils.safestring import mark_safe
 
 from fiches.models import UserGroup
-
-logger = logging.getLogger(__name__)  # XXX: delete it
 
 register = template.Library()
 

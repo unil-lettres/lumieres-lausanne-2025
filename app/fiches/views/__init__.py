@@ -19,7 +19,6 @@
 # This copyright notice MUST APPEAR in all copies of the file.
 
 import json
-import logging  # XXX: delete it
 import os
 import unicodedata
 from mimetypes import guess_type
@@ -59,8 +58,6 @@ from fiches.models import (
     Transcription,
 )
 from fiches.utils import user_can_change_documentfile
-
-logger = logging.getLogger(__name__)  # XXX: delete it
 
 
 def main_index(request):
