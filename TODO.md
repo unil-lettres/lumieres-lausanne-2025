@@ -34,3 +34,92 @@
   - [x] Move to settings/solr
   - [x] Update docker-compose references
   - [ ] Update Django settings if needed
+
+## Tests
+
+Backend suite lives in `tests/backend/` (pytest, SQLite `settings_test`,
+`--no-migrations`). Run with `make dev/tests/run` (container) or
+`make dev/tests/local` (host). Coverage: `make dev/tests/local/html` → `htmlcov/`.
+
+Baseline: **34 tests, 42% coverage**. Caveat: ~440 of the ~3390 uncovered
+statements are dead/broken code (see cleanup below), so real "live" coverage is
+higher — clean that first so the number means something.
+
+### Backend
+
+#### 0. Dead / broken code cleanup (do first — it inflates the gap)
+
+- [ ] Remove `fiches/dev/__init__.py` (197 stmts) — dev-only script, unreferenced
+- [ ] Remove `fiches/management/commands/sync_perms.py` — broken (uses Django 1.x
+      `get_models`/`get_app`); superseded by `sync_status_roles`
+- [ ] Remove `pagination/paginator.py` (`InfinitePaginator`/`FinitePaginator`) —
+      broken under Django 5.2 (`del self._num_pages`), unreferenced
+- [ ] Remove `pagination/middleware.py` — unused, not in `MIDDLEWARE`
+- [ ] Decide COinS/Zotero feature: revive or remove `utils/coins.py`,
+      `utils/utils_coins.py`, `fiches/utils_coin.py` (disabled — templates
+      commented out, no `coins` model property)
+- [ ] Verify/remove `fiches/context_processors.py` — not wired in `TEMPLATES`
+- [ ] Add `[tool.coverage.run] omit` for anything intentionally kept-but-excluded
+
+#### 1. Test infrastructure / fixtures
+
+- [ ] Shared fixtures in `conftest.py` for the common lookup rows
+      (`DocumentType` pk=1, `DocumentLanguage` "Français") — remove the
+      duplicated `setUp` seeding across tests
+- [ ] Model factories (factory_boy or thin helpers) for `Biblio`, `Person`,
+      `Transcription`, `ObjectCollection`
+- [ ] Add a coverage gate (`--cov-fail-under`) once the baseline is meaningful;
+      wire `make dev/tests/cov` into CI
+- [ ] Scaffold `tests/frontend/` placeholder for the JS suite
+
+#### 2. Pure functions & template tags (high ROI, little/no DB)
+
+- [ ] `fiches/templatetags/fiches_extras.py` (38%): `startswith`,
+      `decodeHtmlEntities`, `substract`, `split`, `attr`, `truncate_chars` /
+      `truncatechars`, `urlizename`, `date_f`, `sort_biblio`, `in_group2`,
+      `field_verbose_name`, `meta`, `access_strict`/`access_lazy`/
+      `access_grouplist`/`df_access`, `docfileinfo`
+- [ ] `fiches/utils.py` (21%): `supprime_accent`, `query_fiche`,
+      `user_can_change_documentfile`, `user_can_delete_documentfile`,
+      `get_default_publisher_user`
+- [ ] `pagination/templatetags/pagination_tags.py` (40%): `autopaginate` tag +
+      edge cases (orphans, last page, invalid page)
+- [ ] `fiches/templatetags/{utils,collector,paginator}.py`
+- [ ] `utils/fields.py` `DictField` serialization (if kept)
+
+#### 3. Forms validation (core business rules)
+
+- [ ] `BiblioForm`: required fields, `litterature_type`, language default,
+      subject-person permissions (extend existing)
+- [ ] `ManuscriptForm`, `TranscriptionForm` (extend defaults),
+      `ContributionDocForm` / `ContributionDocSecForm`
+- [ ] `ObjectCollectionForm`, `ProjectForm`
+- [ ] `FichesSearchForm`: query construction
+
+#### 4. Model methods & managers
+
+- [ ] `models/person/person.py` (29%): name/display helpers, querysets
+- [ ] `models/documents/document.py` (82% → fill gaps), `Transcription` managers
+- [ ] `models/misc/object_collection.py` (51%), `project.py` (52%),
+      `models/documents/document_file.py` (54%), `logging/activity_log.py` (40%)
+- [ ] `models/search/search.py` `managed=False` view models behavior
+- [ ] `models/person/biography.py` (68% → fill gaps)
+
+#### 5. Views — smoke first, then behavior (largest absolute gap)
+
+- [ ] Permission/auth gating + status codes for: `search` (11%),
+      `collections` (14%), `projects` (13%), `biography` (15%),
+      `bibliography` (31%), `transcription` (38%), `publications`, `news`
+- [ ] Key behaviors: search results, create/edit flows, access control
+      (public / private / group-restricted)
+- [ ] Error views: extend (`server_error` done) with 403/404
+
+#### 6. Search indexes (Haystack)
+
+- [ ] `fiches/search_indexes.py` (0%, 131 stmts): unit-test `prepare()` /
+      `prepare_*` against model instances (no Solr needed); check index text
+      templates render
+
+#### 7. Management commands
+
+- [ ] `sync_status_roles` (74%): edge cases, idempotence, `--apply` vs dry-run
