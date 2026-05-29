@@ -8,11 +8,28 @@ Config lives in `pyproject.toml` (`[tool.ruff*]`, `[tool.ty*]`). Recipes:
 `make lint` · `make lint/fix` · `make format` · `make format/check` ·
 `make typecheck` · `make check`.
 
-Baseline was **1131 errors** on `app/` (ruff 0.15.15). Section 0 (mechanical) is
-now applied — `ruff check --fix` (205 fixes) + `ruff format` (66 files) —
-leaving **887**, the manual long tail. By family now: D docstrings 563 ·
-F pyflakes 111 · E pycodestyle 70 · DJ django 63 · N naming 58 · B bugbear 19 ·
-C4 comprehensions 3. (W whitespace and I imports fully cleared.)
+Baseline was **1131 errors** on `app/` (ruff 0.15.15). After the mechanical
+fixes, the correctness/robustness pass, and adopting the client's expanded
+ruleset (Q/SIM/C90/PLR/UP), **868** remain.
+
+**Done** (regression tests in `tests/backend/test_lint_regressions.py` where
+behaviour changed): F821/F507 latent bugs · bugbear B-series
+(B006/B026/B904/B011/B018/B007) · wildcard imports (F403/F405) · SIM115 file
+handling · E722 bare-excepts narrowed to precise types · the mechanical
+SIM/C4/F401/F841 lot.
+
+**Deferred to backlog** (client decision):
+- **Complexity — C901 + PLR0915/0912/0911/0913 (~73)**: refactoring legacy
+  functions is high-risk/subjective; revisit as a dedicated effort.
+- **Docstrings — D (~557)**: bulk back-filling, low ROI on legacy code.
+
+**Remaining actionable**: UP031 printf→f-string (65) · N naming (58) · DJ
+conventions DJ012/007/006/008 (~49) · PLR2004 magic-value (20) ·
+E501/E402/E741 (31). **DJ001** (null on a string field, 14) needs a **migration**
+on the legacy DB — handle carefully/separately.
+
+> The numbered breakdown below is the original migration plan; items in §1–§2
+> and the mechanical parts are now done per the summary above.
 
 ### 0. Mechanical fixes — DONE ✅
 
