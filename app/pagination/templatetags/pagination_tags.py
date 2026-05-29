@@ -101,10 +101,7 @@ class AutoPaginateNode(template.Node):
     def render(self, context):
         key = self.queryset_var.var
         value = self.queryset_var.resolve(context)
-        if isinstance(self.paginate_by, int):
-            paginate_by = self.paginate_by
-        else:
-            paginate_by = self.paginate_by.resolve(context)
+        paginate_by = self.paginate_by if isinstance(self.paginate_by, int) else self.paginate_by.resolve(context)
         paginator = Paginator(value, paginate_by, self.orphans)
         try:
             page_number = context["request"].GET.get("page", 1)

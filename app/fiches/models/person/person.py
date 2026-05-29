@@ -244,6 +244,4 @@ class Person(models.Model):
         exclude_people = exclude_people or []
         if self.get_relations(exclude_people=exclude_people):
             return True
-        if self.get_reverse_relations(exclude_people=exclude_people):
-            return True
-        return False
+        return bool(self.get_reverse_relations(exclude_people=exclude_people))

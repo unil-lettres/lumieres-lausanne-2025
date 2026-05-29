@@ -177,10 +177,7 @@ def get_biblio_formDef(biblioForm):
                 name = f["name"]
                 if "map_to" in f and f["map_to"]:
                     name = f["map_to"]
-                if f.get("hidden", False):
-                    fields_list = biblioForm.hidden_fields()
-                else:
-                    fields_list = biblioForm.visible_fields()
+                fields_list = biblioForm.hidden_fields() if f.get("hidden", False) else biblioForm.visible_fields()
                 idx = flst.get(name)
                 if idx is not None and idx < len(fields_list):
                     f["field"] = fields_list[idx]

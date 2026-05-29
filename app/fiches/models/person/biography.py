@@ -348,10 +348,7 @@ class SocietyMembership(models.Model):
         if self.begin_date_approx and begin_date is not None:
             begin_date = "v. %s" % begin_date
 
-        if self.end_date:
-            end_date = format(self.end_date, self.end_date_f.replace("%", "").replace("-", "."))
-        else:
-            end_date = "?"
+        end_date = format(self.end_date, self.end_date_f.replace("%", "").replace("-", ".")) if self.end_date else "?"
         if self.end_date_approx and end_date != "?":
             end_date = "v. %s" % end_date
 

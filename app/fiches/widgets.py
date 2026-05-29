@@ -18,6 +18,7 @@
 #
 # This copyright notice MUST APPEAR in all copies of the file.
 
+import contextlib
 from itertools import chain
 
 from django import forms
@@ -268,10 +269,8 @@ class DynamicList(forms.SelectMultiple):
                 id_value.append(val.id)
             elif isinstance(val, str):
                 if "|" in val:
-                    try:
+                    with contextlib.suppress(ValueError):
                         id_value.append(int(val.split("|")[0]))
-                    except ValueError:
-                        pass
                 else:
                     name_value.append(val.strip("|"))
             else:

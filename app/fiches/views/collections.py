@@ -80,7 +80,7 @@ def get_writable_shared_coll_list(user):
     if etitable_grps.count() > 0:
         for g in etitable_grps:
             coll_list |= set(g.objectcollections.all())
-    coll_list = sorted(list(coll_list))
+    coll_list = sorted(coll_list)
     return coll_list
 
 

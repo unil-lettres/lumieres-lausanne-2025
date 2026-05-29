@@ -88,9 +88,7 @@ class Project(models.Model):
             all_users |= set(ug.users.all())
             all_groups |= set(ug.groups.all())
 
-        if (user in all_users) or (set(user.groups.all()) & all_groups):
-            return True
-        return False
+        return bool(user in all_users or set(user.groups.all()) & all_groups)
 
     def add_object(self, obj):
         of = self.get_object_field(obj)

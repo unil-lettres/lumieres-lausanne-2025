@@ -390,9 +390,8 @@ class TranscriptionForm(forms.ModelForm):
             # Prefill with the default publisher in the form UI without mutating DB.
             if self.instance.access_public and self.instance.published_date and not self.instance.published_by_id:
                 default_publisher = get_default_publisher_user()
-                if default_publisher:
-                    if not self.initial.get("published_by"):
-                        self.initial["published_by"] = default_publisher.pk
+                if default_publisher and not self.initial.get("published_by"):
+                    self.initial["published_by"] = default_publisher.pk
 
         if not self.is_bound and not self.initial.get("published_by"):
             if not getattr(self.instance, "published_by_id", None):
@@ -670,7 +669,7 @@ class ContributionDocForm(forms.ModelForm):
         In both cases, keep them without biography by default.
         """
         litterature = (self.litterature_type or "").lower()
-        desired_modern = True if litterature == "s" else False
+        desired_modern = litterature == "s"
 
         fields_to_update = []
         if person.modern is None or person.modern != desired_modern:

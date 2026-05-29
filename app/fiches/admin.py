@@ -20,6 +20,8 @@
 
 """Admin configuration for the fiches app in Lumières.Lausanne."""
 
+import contextlib
+
 from django.contrib import admin, messages
 from django.contrib.admin import AdminSite
 from django.contrib.admin.sites import NotRegistered
@@ -623,8 +625,6 @@ fiches_admin.unregister(User)
 fiches_admin.register(User, CustomUserAdmin)
 
 # Keep the default Django admin aligned with the custom fiches admin for User profile fields.
-try:
+with contextlib.suppress(NotRegistered):
     admin.site.unregister(User)
-except NotRegistered:
-    pass
 admin.site.register(User, CustomUserAdmin)

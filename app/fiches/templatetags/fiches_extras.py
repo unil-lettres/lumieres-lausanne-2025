@@ -132,7 +132,7 @@ def date_f(model, param):
         if field_format:
             user_format = sep.join([c for c in format_str if c in field_format])
         else:
-            user_format = sep.join([c for c in format_str])
+            user_format = sep.join(list(format_str))
 
         try:
             output = format(model.__getattribute__(field), user_format)
@@ -323,10 +323,7 @@ def access_grouplist(value, token=""):
         raise TemplateSyntaxError("value should be a User")
     user = value
     group_list = UserGroup.objects.filter(groups__in=user.groups.all()) | user.usergroup_set.all()
-    if token == "as_id":
-        group_list = [g.id for g in group_list]
-    else:
-        group_list = list(group_list)
+    group_list = [g.id for g in group_list] if token == "as_id" else list(group_list)
     return group_list
 
 
@@ -372,10 +369,7 @@ class TooltipLinkNode(template.Node):
 
     def render(self, context):
         try:
-            if self.id is None:
-                tooltip_id = self.id_to_be_resolved.resolve(context)
-            else:
-                tooltip_id = self.id
+            tooltip_id = self.id_to_be_resolved.resolve(context) if self.id is None else self.id
             return '<span class="tooltiplink"><a href="#%s" class="tooltiplink">?</a></span>' % tooltip_id
         except template.VariableDoesNotExist:
             return ""

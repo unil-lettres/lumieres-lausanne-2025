@@ -18,6 +18,7 @@
 #
 # This copyright notice MUST APPEAR in all copies of the file.
 
+import contextlib
 import json
 import os
 import unicodedata
@@ -191,15 +192,10 @@ def ajax_search(request):
         nq = models.Q()
         if not_queries is not None:
             for not_q in not_queries:
-                try:
+                with contextlib.suppress(Exception):
                     nq = nq & models.Q(**{construct_search(smart_str(not_q["field"])): not_q["value"]})
-                except Exception:
-                    pass
 
-        if query is None:
-            qs = model._default_manager.all()
-        else:
-            qs = model._default_manager.filter(q).exclude(nq).distinct()
+        qs = model._default_manager.all() if query is None else model._default_manager.filter(q).exclude(nq).distinct()
 
         #
         # Format data for output

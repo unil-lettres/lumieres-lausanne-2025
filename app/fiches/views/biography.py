@@ -294,10 +294,7 @@ def display(request, person_id, version=0):
     }
 
     # Relations
-    if version == 0:
-        relations = person.get_relations()
-    else:
-        relations = bio.relation_set.all()
+    relations = person.get_relations() if version == 0 else bio.relation_set.all()
 
     reverse_relations = person.get_reverse_relations()
 

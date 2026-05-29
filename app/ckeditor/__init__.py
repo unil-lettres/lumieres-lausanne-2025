@@ -31,9 +31,8 @@ if "ckeditor" in settings.INSTALLED_APPS:
         )
 
     # If a CKEDITOR_UPLOAD_PATH settings has been specified, confirm it exists.
-    if getattr(settings, "CKEDITOR_UPLOAD_PATH", None):
-        if not os.path.exists(settings.CKEDITOR_UPLOAD_PATH):
-            raise ImproperlyConfigured(
-                "django-ckeditor CKEDITOR_UPLOAD_PATH setting error, no such file or directory: '%s'"
-                % settings.CKEDITOR_UPLOAD_PATH
-            )
+    if getattr(settings, "CKEDITOR_UPLOAD_PATH", None) and not os.path.exists(settings.CKEDITOR_UPLOAD_PATH):
+        raise ImproperlyConfigured(
+            "django-ckeditor CKEDITOR_UPLOAD_PATH setting error, no such file or directory: '%s'"
+            % settings.CKEDITOR_UPLOAD_PATH
+        )

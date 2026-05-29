@@ -20,6 +20,7 @@
 
 # stdlib
 import calendar
+import contextlib
 import copy
 import datetime
 import json
@@ -178,7 +179,7 @@ def quick_search(request):
     # Normalize facet list/tuples to dict
     # Solr returns list of (value, count) tuples with Haystack.
     if isinstance(raw, list):
-        ct_counts = {k: v for k, v in raw}
+        ct_counts = dict(raw)
     else:
         ct_counts = raw  # already a dict
 
@@ -582,10 +583,8 @@ def do_search(request):
         return q
 
     qparam = request.GET.get("q", "")
-    try:
+    with contextlib.suppress(Exception):
         qparam = b64decode(qparam)
-    except Exception:
-        pass
     query_def = json.loads(qparam)
 
     order_by = request.GET.get("o") or "title"

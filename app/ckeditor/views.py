@@ -98,10 +98,7 @@ def get_media_url(path):
 
 def get_upload_filename(upload_name, user):
     # If CKEDITOR_RESTRICT_BY_USER is True upload file to user specific path.
-    if getattr(settings, "CKEDITOR_RESTRICT_BY_USER", False):
-        user_path = user.username
-    else:
-        user_path = ""
+    user_path = user.username if getattr(settings, "CKEDITOR_RESTRICT_BY_USER", False) else ""
 
     # Generate date based path to put uploaded file.
     date_path = datetime.now().strftime("%Y/%m/%d")
