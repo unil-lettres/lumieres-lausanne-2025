@@ -37,12 +37,7 @@ package = false
 [tool.ruff]
 line-length = 119
 target-version = "py313"
-extend-exclude = [
-  "app/media",
-  "app/static",
-  "app/uploads",
-  "app/staticfiles",
-]
+extend-exclude = ["app/media", "app/static", "app/uploads", "app/staticfiles"]
 
 [tool.ruff.lint]
 # Faithful port of the previous flake8 stack:
@@ -80,23 +75,18 @@ root = ["./app"]
 
 [tool.ty.src]
 include = ["app"]
-exclude = [
-  "app/media",
-  "app/static",
-  "app/uploads",
-  "app/staticfiles",
-]
+exclude = ["app/media", "app/static", "app/uploads", "app/staticfiles"]
+
+[tool.ruff.lint.mccabe]
+# Flag errors (`C901`) whenever the complexity level exceeds 5.
+max-complexity = 7
 
 [tool.coverage.run]
 # Measure the project's Python packages by name so coverage works both on the
 # host (code under app/, on sys.path via pytest pythonpath) and in the
 # container (code at /app). Recipes pass a bare --cov which uses this source.
 source_pkgs = ["ckeditor", "fiches", "lumieres_project", "pagination", "utils"]
-omit = [
-  "*/migrations/*",
-  "*/tests/*",
-  "*/staticfiles/*",
-]
+omit = ["*/migrations/*", "*/tests/*", "*/staticfiles/*"]
 
 [tool.coverage.report]
 show_missing = true
