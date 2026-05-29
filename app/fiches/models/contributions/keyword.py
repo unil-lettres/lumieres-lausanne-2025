@@ -28,9 +28,9 @@ class SecondaryKeyword(models.Model):
     primary_keyword = models.ForeignKey(
         PrimaryKeyword,
         on_delete=models.CASCADE,
-        db_column='parent_id',
-        related_name='secondary_keywords',
-        verbose_name=_("Mot clé principal")
+        db_column="parent_id",
+        related_name="secondary_keywords",
+        verbose_name=_("Mot clé principal"),
     )
 
     def __str__(self):

@@ -82,13 +82,11 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
-
     # Third-party apps
     "haystack",
     "ckeditor",
     "ckeditor_uploader",
     "sorl.thumbnail",
-
     # Custom apps
     "fiches",
     "pagination",
@@ -272,30 +270,26 @@ logfile.parent.mkdir(parents=True, exist_ok=True)
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-
     "formatters": {
         "simple": {"format": "%(levelname)s %(name)s: %(message)s"},
     },
-
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "level": "INFO",          # ↓ show info+ on console (no DEBUG spam)
+            "level": "INFO",  # ↓ show info+ on console (no DEBUG spam)
             "formatter": "simple",
         },
         "file": {
             "class": "logging.FileHandler",
-            "level": "DEBUG",         # keep full detail in file
+            "level": "DEBUG",  # keep full detail in file
             "filename": str(logfile),
         },
     },
-
     # Default/root logger
     "root": {
         "handlers": ["console", "file"],
         "level": "INFO",
     },
-
     "loggers": {
         # Silence the autoreload “first seen with mtime …” chatter
         "django.utils.autoreload": {

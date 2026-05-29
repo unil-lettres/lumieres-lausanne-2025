@@ -27,7 +27,7 @@ from fiches.models.documents import Transcription
 
 def finding_index(request, finding_id=None):
     # Check if the user is authenticated and has the required permission
-    if request.user.is_authenticated and request.user.has_perm('fiches.change_finding'):
+    if request.user.is_authenticated and request.user.has_perm("fiches.change_finding"):
         q = Q()
     else:
         q = Q(published=True)  # Filter for published findings if the user lacks permission
@@ -36,18 +36,19 @@ def finding_index(request, finding_id=None):
     findings = Finding.objects.filter(q)
 
     # Prepare the context for the template
-    context = {'elements': findings, 'opened_element': finding_id}
+    context = {"elements": findings, "opened_element": finding_id}
 
     # Render the template with the context
-    return render(request, 'fiches/display/thumbnail_detail_view.html', context)
+    return render(request, "fiches/display/thumbnail_detail_view.html", context)
 
 
 def get_finding_description(request, finding_id):
     finding = get_object_or_404(Finding, pk=finding_id)
 
-    context = { 'finding': finding }
+    context = {"finding": finding}
 
-    return render(request, 'fiches/ajax/finding_description.html', context)
+    return render(request, "fiches/ajax/finding_description.html", context)
+
 
 def last_transcriptions(request):
     """
@@ -56,37 +57,41 @@ def last_transcriptions(request):
     content = FreeContent.objects.get_content("publications>last_transcriptions")
     transcriptions = Transcription.objects.latest_published_by_date(50)
 
-    context = { "content": content, "last_transcriptions": transcriptions }
+    context = {"content": content, "last_transcriptions": transcriptions}
     return render(request, "fiches/publications/last_transcriptions.html", context)
+
 
 def conference_proceedings(request):
     """
     Conference proceedings page
     """
     content = FreeContent.objects.get_content("publications>proceedings")
-    context = { "content": content }
+    context = {"content": content}
     return render(request, "fiches/publications/proceedings.html", context)
+
 
 def studies_ll(request):
     """
     Studies LL page
     """
     content = FreeContent.objects.get_content("publications>studies_ll")
-    context = { "content": content }
+    context = {"content": content}
     return render(request, "fiches/publications/studies.html", context)
+
 
 def seminars_and_memoirs(request):
     """
     Seminars and memoirs publications page
     """
     content = FreeContent.objects.get_content("publications>seminars")
-    context = { "content": content }
+    context = {"content": content}
     return render(request, "fiches/publications/seminars.html", context)
+
 
 def videos(request):
     """
     Videos pages
     """
     content = FreeContent.objects.get_content("publications>videos")
-    context = { "content": content }
+    context = {"content": content}
     return render(request, "fiches/publications/videos.html", context)

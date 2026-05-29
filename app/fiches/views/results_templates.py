@@ -20,22 +20,18 @@
 #    This copyright notice MUST APPEAR in all copies of the file.
 #
 result_person = {
-
-    'person_name': '''
+    "person_name": """
         {% if person.has_biography %}
             <a href="{% url 'biography-display' person.id %}" target="_blank">{{ person.get_biography.person_name }}</a>
         {% else %}
             <span>{{ person.name }}</span>
         {% endif %}
-    ''',
-
-    'birth_date' : '<span title="{{ bio|date_f:"birth_date" }}{% if bio.birth_place %} � {{ bio.birth_place }}{% endif %}">{{ bio.birth_date|date:"Y" }}</span>',
-    'birth_date_place' : '{{ bio|date_f:"birth_date" }}{% if bio.birth_place %} � {{ bio.birth_place }}{% endif %}',
-
-    'death_date' : '<span title="{{ bio|date_f:"death_date" }}{% if bio.death_place %} � {{ bio.death_place }}{% endif %}">{{ bio.death_date|date:"Y" }}</span>',
-    'death_date_place' : '{{ bio|date_f:"death_date" }}{% if bio.death_place %} � {{ bio.death_place }}{% endif %}',
-
-    'profession': '''
+    """,
+    "birth_date": '<span title="{{ bio|date_f:"birth_date" }}{% if bio.birth_place %} � {{ bio.birth_place }}{% endif %}">{{ bio.birth_date|date:"Y" }}</span>',
+    "birth_date_place": '{{ bio|date_f:"birth_date" }}{% if bio.birth_place %} � {{ bio.birth_place }}{% endif %}',
+    "death_date": '<span title="{{ bio|date_f:"death_date" }}{% if bio.death_place %} � {{ bio.death_place }}{% endif %}">{{ bio.death_date|date:"Y" }}</span>',
+    "death_date_place": '{{ bio|date_f:"death_date" }}{% if bio.death_place %} � {{ bio.death_place }}{% endif %}',
+    "profession": """
         {% if bio.profession_set %}
         <ul>
         {% for p in bio.profession_set.all %}
@@ -43,6 +39,5 @@ result_person = {
         {% endfor %}
         </ul>
         {% endif %}
-    ''',
-
+    """,
 }

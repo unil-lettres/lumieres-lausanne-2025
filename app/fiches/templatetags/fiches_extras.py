@@ -224,7 +224,7 @@ def sort_biblio(results, doc_name):
         if isinstance(value, datetime.date):
             return value
         if isinstance(value, str):
-            digits = ''.join(ch for ch in value if ch.isdigit())
+            digits = "".join(ch for ch in value if ch.isdigit())
             if len(digits) >= 4:
                 try:
                     return datetime.date(int(digits[:4]), 1, 1)

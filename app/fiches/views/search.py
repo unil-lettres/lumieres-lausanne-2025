@@ -69,11 +69,7 @@ def _accessible_transcription_ids(user):
             | models.Q(access_groups__users=user)
             | models.Q(access_groups__groups__user=user)
             | models.Q(project__members=user)
-            | (
-                models.Q(access_public=False)
-                & models.Q(access_private=False)
-                & models.Q(access_groups__isnull=True)
-            )
+            | (models.Q(access_public=False) & models.Q(access_private=False) & models.Q(access_groups__isnull=True))
         ).distinct()
 
     return list(qs.values_list("id", flat=True))
@@ -127,6 +123,7 @@ def quick_search(request):
 
     # Base SQS (query)
     sqs = SearchQuerySet().all()
+
     def _apply_term_filters(sqs_obj, query_string):
         if not query_string:
             return sqs_obj
@@ -215,17 +212,14 @@ def quick_search(request):
         {
             "form": form,
             "query": q,
-
             # pagination context expected by your {% paginate %} tag
             "page": page,
-            "page_obj": page,          # so you don't need the {% with %} wrapper
+            "page_obj": page,  # so you don't need the {% with %} wrapper
             "paginator": paginator,
             "qs": qs,
-
             # type filters
             "counts": counts,
             "selected_types": selected_types,
-
             # keeps collector button logic working if you use it on this page
             "display_collector": True,
         },
@@ -245,9 +239,7 @@ def biblio_extended_search(request):
         if user.has_perm("fiches.view_unpublished_project"):
             project_qs = Project.objects.all()
         else:
-            project_qs = Project.objects.filter(
-                models.Q(publish=True) | models.Q(members=user)
-            ).distinct()
+            project_qs = Project.objects.filter(models.Q(publish=True) | models.Q(members=user)).distinct()
 
     doSearch = len(request.GET) > 0
     if doSearch:
@@ -317,30 +309,25 @@ def biblio_extended_search(request):
                 if not user.is_authenticated:
                     q_trans &= models.Q(transcription__access_public=True)
                 elif not user.has_perm("fiches.access_unpublished_transcription"):
-                    q_trans &= (
-                        models.Q(transcription__access_public=True)
+                    q_trans &= models.Q(transcription__access_public=True) | (
+                        models.Q(transcription__author=user)
+                        | models.Q(transcription__author2=user)
+                        | models.Q(transcription__access_groups__users=user)
+                        | models.Q(transcription__access_groups__groups__user=user)
+                        | models.Q(transcription__project__members=user)
                         | (
-                            models.Q(transcription__author=user)
-                            | models.Q(transcription__author2=user)
-                            | models.Q(transcription__access_groups__users=user)
-                            | models.Q(transcription__access_groups__groups__user=user)
-                            | models.Q(transcription__project__members=user)
-                            | (
-                                models.Q(transcription__access_public=False)
-                                & models.Q(transcription__access_private=False)
-                                & models.Q(transcription__access_groups__isnull=True)
-                            )
+                            models.Q(transcription__access_public=False)
+                            & models.Q(transcription__access_private=False)
+                            & models.Q(transcription__access_groups__isnull=True)
                         )
                     )
-                q &= (
-                    models.Q(document_type__in=doctype)
-                    | (models.Q(document_type__id=DOCTYPE_MANUSCRIPT_ID) & q_trans)
+                q &= models.Q(document_type__in=doctype) | (
+                    models.Q(document_type__id=DOCTYPE_MANUSCRIPT_ID) & q_trans
                 )
 
         # For template logic
         user_accessible_trans = _accessible_transcription_ids(user) if onlyTrans != "1" else True
         context.update({"user_accessible_trans": user_accessible_trans or [-1]})
-
 
         # Publication date (aaaa.mm)
         if cd.get("date_from") or cd.get("date_to"):
@@ -368,9 +355,7 @@ def biblio_extended_search(request):
                     date_to_m = 12
             except ValueError:
                 date_to_m = 12
-            date_to = datetime.date(
-                date_to_y, date_to_m, calendar.monthrange(date_to_y, date_to_m)[1]
-            )
+            date_to = datetime.date(date_to_y, date_to_m, calendar.monthrange(date_to_y, date_to_m)[1])
             q &= models.Q(date__range=(date_from, date_to))
 
         # Modification date (activity log)
@@ -383,14 +368,11 @@ def biblio_extended_search(request):
             trans_ids_from_log = ActivityLog.objects.filter(
                 model_name="Transcription", date__range=(mdate_from, mdate_to)
             ).values_list("object_id", flat=True)
-            q &= (
-                models.Q(pk__in=list(biblio_ids_from_log))
-                | models.Q(transcription__pk__in=list(trans_ids_from_log))
-            )
+            q &= models.Q(pk__in=list(biblio_ids_from_log)) | models.Q(transcription__pk__in=list(trans_ids_from_log))
 
         # Language (primary or secondary)
         if cd.get("l"):
-            q &= (models.Q(language=cd.get("l")) | models.Q(language_sec=cd.get("l")))
+            q &= models.Q(language=cd.get("l")) | models.Q(language_sec=cd.get("l"))
 
         # Depot
         if cd.get("depot"):
@@ -481,9 +463,7 @@ def biblio_extended_search(request):
                 }
             )
         else:
-            qs = request.META.get("QUERY_STRING", "").replace(
-                f"&page={int(request.GET.get('page', 1))}", ""
-            )
+            qs = request.META.get("QUERY_STRING", "").replace(f"&page={int(request.GET.get('page', 1))}", "")
             context.update(
                 {
                     "results": results,
@@ -500,6 +480,7 @@ def biblio_extended_search(request):
         else "fiches/search/actions/trans_access.html",
         context,
     )
+
 
 # ---------------------------------------------------------------------
 # Legacy filter builder / generic search endpoints (left as-is)
@@ -738,6 +719,7 @@ def list_persons(request):
         filter_params["name__istartswith"] = first_letter
     persons = Person.objects.filter(**filter_params).order_by("name").distinct()
     return render(request, "fiches/search/list_persons.html", {"persons": persons, "first_letter": first_letter})
+
 
 def req_search_view(request):
     """Compat alias kept for legacy imports."""

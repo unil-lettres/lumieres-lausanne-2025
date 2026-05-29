@@ -12,6 +12,7 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
 
+
 def get_usergroups_for_user(user):
     """
     Utility function to retrieve user groups for a given user.

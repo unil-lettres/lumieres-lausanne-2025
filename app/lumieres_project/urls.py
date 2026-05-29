@@ -48,10 +48,8 @@ urlpatterns = [
     # Admin URLs ======================================================================================================
     path("admin/", admin.site.urls),
     path("fiches_admin/", fiches_admin.urls, name="fiches_admin"),
-
     # CKEditor URLs ===================================================================================================
     path("ckeditor/", include("ckeditor_uploader.urls")),
-
     # Auth URLs =======================================================================================================
     # Authentication URLs using Django's built-in class-based views
     path("accounts/login/", auth_views.LoginView.as_view(template_name="registration/login2.html"), name="login-page"),
@@ -92,7 +90,8 @@ urlpatterns = [
     path(
         "accounts/reset_password_confirm/<uidb64>/<token>/",
         auth_views.PasswordResetConfirmView.as_view(
-            template_name="registration/password_reset_confirm.html", success_url="/accounts/reset_password_complete/",
+            template_name="registration/password_reset_confirm.html",
+            success_url="/accounts/reset_password_complete/",
         ),
         name="password_reset_confirm",
     ),
@@ -101,13 +100,10 @@ urlpatterns = [
         auth_views.PasswordResetCompleteView.as_view(template_name="registration/password_reset_complete.html"),
         name="password_reset_complete",
     ),
-
     # Home Page =======================================================================================================
     path("", fiches_views.main_index, name="lumieres-home"),
-
     # Static About Page ===============================================================================================
     path("a_propos/", TemplateView.as_view(template_name="fiches/about.html"), name="about"),
-
     # Include App-specific URLs =======================================================================================
     path("fiches/", include("fiches.urls")),
     path("projets/", include("fiches.urls_project")),
@@ -116,7 +112,6 @@ urlpatterns = [
     path("presentation/<str:what>/", fiches_views.presentation, name="presentation"),
     path("espace_de_travail/", include("fiches.urls_workspace")),
     path("chercher/", include("fiches.urls_search")),
-
     # Test Debug View =================================================================================================
     path("testdebug/", fiches_views.debug_test, name="test-debug"),
 ]

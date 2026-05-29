@@ -7,7 +7,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("fiches", "0003_populate_transcription_dates"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

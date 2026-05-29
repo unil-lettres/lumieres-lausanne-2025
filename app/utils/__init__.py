@@ -1,16 +1,15 @@
-#from django.utils.log import getLogger
+# from django.utils.log import getLogger
 import logging
 
 from django.conf import settings
 
 if not settings.DEBUG:
-    dbg_logger = logging.getLogger('django')
+    dbg_logger = logging.getLogger("django")
 else:
     try:
-        dbg_logger = logging.getLogger('lumieres.debug')
+        dbg_logger = logging.getLogger("lumieres.debug")
     except:
-        dbg_logger = logging.getLogger('django')
-
+        dbg_logger = logging.getLogger("django")
 
 
 # ## Taken from http://www.djangosnippets.org/snippets/1282/

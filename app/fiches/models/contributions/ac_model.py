@@ -7,22 +7,15 @@ from django.utils.translation import gettext_lazy as _
 
 class ACModel(models.Model):
     access_owner = models.ForeignKey(
-        User,
-        verbose_name=_("Propriétaire"),
-        blank=True,
-        null=True,
-        on_delete=models.SET_NULL
+        User, verbose_name=_("Propriétaire"), blank=True, null=True, on_delete=models.SET_NULL
     )
     access_public = models.BooleanField(
-        blank=True,
-        default=False,
-        verbose_name=_("Public"),
-        help_text=_("L'élément sera visible par tout le monde.")
+        blank=True, default=False, verbose_name=_("Public"), help_text=_("L'élément sera visible par tout le monde.")
     )
     access_groups = models.ManyToManyField(
         "fiches.UserGroup",  # Lazy import of UserGroup
         verbose_name=_("Groupes d'accès"),
-        blank=True
+        blank=True,
     )
 
     class Meta:
@@ -40,7 +33,7 @@ class ACModel(models.Model):
             return True
 
         # Handle access_private if present in a subclass
-        if hasattr(self, 'access_private') and self.access_private:
+        if hasattr(self, "access_private") and self.access_private:
             return self.access_owner == user
 
         # If user is not authenticated, only public objects are visible
@@ -59,7 +52,7 @@ class ACModel(models.Model):
         from fiches.models.core.user_group import UserGroup
 
         # Direct membership in `access_groups`
-        if UserGroup.objects.filter(users=user, id__in=self.access_groups.values_list('id', flat=True)).exists():
+        if UserGroup.objects.filter(users=user, id__in=self.access_groups.values_list("id", flat=True)).exists():
             return True
 
         # Indirect membership via Django groups

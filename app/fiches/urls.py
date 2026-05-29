@@ -39,13 +39,10 @@ from fiches.views.search import biblio_extended_search, filter_builder
 urlpatterns = [
     # Home Page (relative to 'fiches/' prefix)
     path("", main_index, name="home"),
-
     # AJAX Search =====================================================================================================
     path("ajax_search/", ajax_search, name="ajax-search"),
-
     # Last Activities =================================================================================================
     path("last_activities/", last_activities, name="last-activities-list"),
-
     # Bibliography URLs ===============================================================================================
     path("biblio/", biblio_extended_search, name="bibliography-index"),
     path("biblio/ref/", biblio_extended_search, name="bibliography-references"),
@@ -72,7 +69,6 @@ urlpatterns = [
         name="bibliography-documentfile-remove",
     ),
     path("biblio/person/<int:person_id>/", bibliography_get_person_publications, name="get-person-publications"),
-
     # Biography URLs ==================================================================================================
     path("bio/", filter_builder, {"model_name": "Person"}, name="biography-index"),
     path("bio/a_valider/", filter_builder, {"model_name": "Person"}, name="biography-2b-validated"),
@@ -86,10 +82,8 @@ urlpatterns = [
     path("bio/<int:person_id>/relations/", biography_relations_list, name="biography-relations-list"),
     path("bio/pfnb/", biography_person_without_bio, name="persons-for-new-biography"),
     path("bio/ajax/add_person/", biography_ajax_add_person, name="biography-ajax-add-person"),
-
     # Manuscript URLs =================================================================================================
     path("man/<int:man_id>/", bibliography_display_man, name="manuscript-display"),
-
     # Transcription URLs ==============================================================================================
     path("trans/", views_transcription.index, name="transcription-index"),
     path("trans/list/", views_transcription.index, name="transcription-list"),
@@ -97,7 +91,6 @@ urlpatterns = [
     path("trans/edit/<int:trans_id>/", views_transcription.edit, name="transcription-edit"),
     path("trans/new/<int:doc_id>/", views_transcription.create, name="transcription-b-add"),
     path("trans/delete/<int:trans_id>/", views_transcription.delete, name="transcription-delete"),
-
     # Document URLs ===================================================================================================
     re_path(r"^documents/get/(?P<documentfile_key>[a-zA-Z0-9_-]+)/$", serve_documentfile, name="serve-file"),
     re_path(
@@ -121,7 +114,6 @@ urlpatterns = [
         {"edit_done": True},
         name="docfile-frame-edit-done",
     ),
-
     # Collections URLs ================================================================================================
     # 1. Fixed underscore‑prefixed URLs (these are exact matches)
     path("collection/_new/", views_collections.edit, {"coll_id": "#", "create_coll": True}, name="collection-new"),

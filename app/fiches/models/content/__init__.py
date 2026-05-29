@@ -5,4 +5,4 @@ from .image import Image
 from .news import News
 from .publication import Publication
 
-__all__ = ['FreeContent', 'Image', 'News', 'Publication']
+__all__ = ["FreeContent", "Image", "News", "Publication"]

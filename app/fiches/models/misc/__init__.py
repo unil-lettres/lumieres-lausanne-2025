@@ -4,8 +4,8 @@ from .project import Project
 from .society import Society
 
 __all__ = [
-    'ObjectCollection',
-    'Project',
-    'Society',
-    'NoteBase',
+    "ObjectCollection",
+    "Project",
+    "Society",
+    "NoteBase",
 ]

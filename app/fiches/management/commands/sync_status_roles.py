@@ -69,8 +69,7 @@ class Command(BaseCommand):
         """Fetch DocumentFile permissions required for attachment management."""
         ct = ContentType.objects.get_for_model(DocumentFile)
         perms = {
-            perm.codename: perm
-            for perm in Permission.objects.filter(content_type=ct, codename__in=self.DOCFILE_PERMS)
+            perm.codename: perm for perm in Permission.objects.filter(content_type=ct, codename__in=self.DOCFILE_PERMS)
         }
         missing = sorted(set(self.DOCFILE_PERMS) - set(perms))
         if missing:
@@ -98,11 +97,7 @@ class Command(BaseCommand):
                 f"{', '.join(missing)}. Please run migrations before applying changes."
             )
             self.stdout.write(self.style.WARNING(warning))
-        return [
-            perms[codename]
-            for codename in self.DIRECTOR_USER_PROFILE_PERMS
-            if codename in perms
-        ]
+        return [perms[codename] for codename in self.DIRECTOR_USER_PROFILE_PERMS if codename in perms]
 
     def _update_doctorant_permissions(self, docfile_perms, apply_changes):
         """Grant document-file management to doctorants."""
@@ -126,20 +121,14 @@ class Command(BaseCommand):
             if apply_changes:
                 group.permissions.add(*missing_perms)
                 self.stdout.write(
-                    self.style.SUCCESS(
-                        f"Granted document attachment permissions to '{group.name}': {perm_labels}"
-                    )
+                    self.style.SUCCESS(f"Granted document attachment permissions to '{group.name}': {perm_labels}")
                 )
             else:
                 self.stdout.write(
-                    self.style.WARNING(
-                        f"Would grant document attachment permissions to '{group.name}': {perm_labels}"
-                    )
+                    self.style.WARNING(f"Would grant document attachment permissions to '{group.name}': {perm_labels}")
                 )
         else:
-            self.stdout.write(
-                self.style.SUCCESS(f"'{group.name}' already has document attachment permissions.")
-            )
+            self.stdout.write(self.style.SUCCESS(f"'{group.name}' already has document attachment permissions."))
 
     def _ensure_collection_owner_permission(self, apply_changes):
         """Create the custom permission for changing collection owners."""
@@ -148,9 +137,7 @@ class Command(BaseCommand):
             perm = Permission.objects.get(content_type=ct, codename=self.COLLECTION_OWNER_PERM)
             if not apply_changes:
                 self.stdout.write(
-                    self.style.SUCCESS(
-                        "Custom permission 'fiches.change_collection_owner' already exists."
-                    )
+                    self.style.SUCCESS("Custom permission 'fiches.change_collection_owner' already exists.")
                 )
             return perm
         except Permission.DoesNotExist:
@@ -160,17 +147,12 @@ class Command(BaseCommand):
                     codename=self.COLLECTION_OWNER_PERM,
                     name="Can change collection owner",
                 )
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        "Created custom permission 'fiches.change_collection_owner'."
-                    )
-                )
+                self.stdout.write(self.style.SUCCESS("Created custom permission 'fiches.change_collection_owner'."))
                 return perm
             else:
                 self.stdout.write(
                     self.style.WARNING(
-                        "Permission 'fiches.change_collection_owner' is missing. "
-                        "Would create it in apply mode."
+                        "Permission 'fiches.change_collection_owner' is missing. Would create it in apply mode."
                     )
                 )
                 return None
@@ -191,27 +173,15 @@ class Command(BaseCommand):
         missing_permissions = [permission for permission in permissions if permission.id not in existing_ids]
 
         if not missing_permissions:
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"'{group.name}' already holds required director permissions."
-                )
-            )
+            self.stdout.write(self.style.SUCCESS(f"'{group.name}' already holds required director permissions."))
             return
 
         perm_labels = ", ".join(permission.codename for permission in missing_permissions)
         if apply_changes:
             group.permissions.add(*missing_permissions)
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"Granted director permissions to '{group.name}': {perm_labels}"
-                )
-            )
+            self.stdout.write(self.style.SUCCESS(f"Granted director permissions to '{group.name}': {perm_labels}"))
         else:
-            self.stdout.write(
-                self.style.WARNING(
-                    f"Would grant director permissions to '{group.name}': {perm_labels}"
-                )
-            )
+            self.stdout.write(self.style.WARNING(f"Would grant director permissions to '{group.name}': {perm_labels}"))
 
     def _retire_assistant_group(self, apply_changes):
         """Remove the assistant status group entirely."""
@@ -236,8 +206,5 @@ class Command(BaseCommand):
                 note += f" {total_users} user(s) lost that status."
             self.stdout.write(self.style.SUCCESS(note))
         else:
-            note = (
-                f"Would remove assistant group(s) ({label}). "
-                f"{total_users} associated user(s) currently assigned."
-            )
+            note = f"Would remove assistant group(s) ({label}). {total_users} associated user(s) currently assigned."
             self.stdout.write(self.style.WARNING(note))

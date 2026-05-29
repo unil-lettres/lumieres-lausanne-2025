@@ -137,11 +137,12 @@ class PersonAdmin(admin.ModelAdmin):
         bio = obj.biography_set.first()
         if bio:
             url = f"/fiches/bio/{obj.id}/"
-            return format_html('<a href="{}" target="_blank">{}</a>', url, _(u"Afficher"))
+            return format_html('<a href="{}" target="_blank">{}</a>', url, _("Afficher"))
         # Show button to add biography
         return format_html(
             '<button type="button" onclick="fiches_admin.add_person_biography({})">{}</button>',
-            obj.id, _(u"Ajouter une biographie")
+            obj.id,
+            _("Ajouter une biographie"),
         )
 
     @admin.action(description=_("Ajouter une biographie"))
@@ -153,16 +154,10 @@ class PersonAdmin(admin.ModelAdmin):
                 Biography.objects.create(person=person)
                 created += 1
         if created:
-            self.message_user(
-                request,
-                _("%d biography(ies) created." % created),
-                messages.SUCCESS
-            )
+            self.message_user(request, _("%d biography(ies) created." % created), messages.SUCCESS)
         else:
             self.message_user(
-                request,
-                _("No biography was created. All selected persons already have a biography."),
-                messages.INFO
+                request, _("No biography was created. All selected persons already have a biography."), messages.INFO
             )
 
 

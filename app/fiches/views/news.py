@@ -26,22 +26,22 @@ from fiches.models import News
 
 def index(request):
     news = News.objects.filter(published=True)
-    #news = News.objects.filter(published=True).order_by('-created_on')  # Order by created_on descending
-    #print("printing news query...")
-    #print(news.query)  # Print the raw SQL query
+    # news = News.objects.filter(published=True).order_by('-created_on')  # Order by created_on descending
+    # print("printing news query...")
+    # print(news.query)  # Print the raw SQL query
 
+    # for n in news:
+    # print(n.created_on)  # Print the dates to check order
 
-    #for n in news:
-        #print(n.created_on)  # Print the dates to check order
+    context = {"news": news}
+    return render(request, "fiches/news/index.html", context)
 
-    context = {'news': news }
-    return render(request, 'fiches/news/index.html', context)
 
 def display_news(request, news_id):
     news = get_object_or_404(News, pk=news_id)
 
-    if not news.published and (not request.user.is_authenticated or not request.user.has_perm('fiches.change_news')):
+    if not news.published and (not request.user.is_authenticated or not request.user.has_perm("fiches.change_news")):
         return HttpResponseForbidden("Access denied")
 
-    context = {'news': news }
-    return render(request, 'fiches/news/display.html', context)
+    context = {"news": news}
+    return render(request, "fiches/news/display.html", context)

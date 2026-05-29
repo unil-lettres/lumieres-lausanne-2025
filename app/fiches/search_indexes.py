@@ -19,15 +19,16 @@ from haystack.indexes import *
 # Migrating from haystack 1.x to 2.x
 # https://django-haystack.readthedocs.io/en/master/migration_from_1_to_2.html
 
+
 class BiblioIndex(indexes.SearchIndex, indexes.Indexable):
-    text            = indexes.CharField(document=True, use_template=True)
-    authors         = indexes.CharField(use_template=True)
-    biblio_persons  = indexes.MultiValueField()
-    title           = indexes.CharField(model_attr="title")
-    modelSort       = indexes.CharField(default="B00")
-    doctype         = indexes.CharField(model_attr="document_type__id")
-    sort1           = indexes.CharField(null=True, stored=True)
-    sort2           = indexes.CharField(null=True, stored=True)
+    text = indexes.CharField(document=True, use_template=True)
+    authors = indexes.CharField(use_template=True)
+    biblio_persons = indexes.MultiValueField()
+    title = indexes.CharField(model_attr="title")
+    modelSort = indexes.CharField(default="B00")
+    doctype = indexes.CharField(model_attr="document_type__id")
+    sort1 = indexes.CharField(null=True, stored=True)
+    sort2 = indexes.CharField(null=True, stored=True)
 
     def _doc_type_label(self, obj):
         return (getattr(obj.document_type, "name", "") or "").strip().lower()
@@ -46,7 +47,7 @@ class BiblioIndex(indexes.SearchIndex, indexes.Indexable):
         if not value:
             return ""
         normalized = unicodedata.normalize("NFKD", value)
-        return ''.join(ch for ch in normalized if not unicodedata.combining(ch))
+        return "".join(ch for ch in normalized if not unicodedata.combining(ch))
 
     def _normalize_author(self, obj):
         name = getattr(obj, "first_author_name", "") or ""
@@ -86,7 +87,7 @@ class BiblioIndex(indexes.SearchIndex, indexes.Indexable):
             except Exception:
                 return "9999-12-31"
         if isinstance(value, str):
-            digits = ''.join(ch for ch in value if ch.isdigit())
+            digits = "".join(ch for ch in value if ch.isdigit())
             if len(digits) >= 4:
                 return f"{digits[:4]}-12-31"
             return "9999-12-31"
@@ -121,7 +122,6 @@ class BiblioIndex(indexes.SearchIndex, indexes.Indexable):
         return self.get_model().objects.all()
 
 
-
 # class ManuscriptIndex(SearchIndex):
 #     text = CharField(document=True, use_template=True, template_name='search/indexes/fiches/biblio_text.txt')
 #     title = CharField(model_attr='title')
@@ -132,11 +132,11 @@ class BiblioIndex(indexes.SearchIndex, indexes.Indexable):
 
 
 class PersonIndex(indexes.SearchIndex, indexes.Indexable):
-    text        = indexes.CharField(document=True, use_template=True)
+    text = indexes.CharField(document=True, use_template=True)
     person_name = indexes.CharField(model_attr="name")
-    modelSort   = indexes.CharField(default="A00")
-    sort1       = indexes.CharField(null=True)
-    sort2       = indexes.CharField(null=True)
+    modelSort = indexes.CharField(default="A00")
+    sort1 = indexes.CharField(null=True)
+    sort2 = indexes.CharField(null=True)
 
     def prepare_modelSort(self, obj):
         return "A00"
@@ -161,18 +161,14 @@ class PersonIndex(indexes.SearchIndex, indexes.Indexable):
 
     def index_queryset(self, using=None):
         """Used when the entire index for model is updated."""
-        return (
-            self.get_model()
-            .objects.filter(biography__isnull=False, biography__valid=True)
-            .distinct()
-        )
+        return self.get_model().objects.filter(biography__isnull=False, biography__valid=True).distinct()
 
 
 class TranscriptionIndex(indexes.SearchIndex, indexes.Indexable):
-    text      = indexes.CharField(document=True, use_template=True)
+    text = indexes.CharField(document=True, use_template=True)
     modelSort = indexes.CharField(default="C00")
-    sort1     = indexes.CharField(null=True)
-    sort2     = indexes.CharField(null=True)
+    sort1 = indexes.CharField(null=True)
+    sort2 = indexes.CharField(null=True)
 
     def prepare_modelSort(self, obj):
         return "C00"

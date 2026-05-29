@@ -8,8 +8,8 @@ from fiches.models.core.shared import get_usergroups_for_user  # Import shared l
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    field_of_research = models.TextField(_(u'Domaine de recherche / Historique'), blank=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    field_of_research = models.TextField(_("Domaine de recherche / Historique"), blank=True)
     shib_uniqueID = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
@@ -26,15 +26,17 @@ class UserProfile(models.Model):
         Get contributable collections for this user.
         """
         from fiches.models.misc.object_collection import ObjectCollection  # Lazy import
-        return (ObjectCollection.objects
-                              .exclude(owner=self.user)
-                              .exclude(access_private=True)
-                              .filter(change_groups__in=self.get_usergroups())
-                              .distinct())
+
+        return (
+            ObjectCollection.objects.exclude(owner=self.user)
+            .exclude(access_private=True)
+            .filter(change_groups__in=self.get_usergroups())
+            .distinct()
+        )
 
     class Meta:
-        verbose_name = u'Informations supplémentaires'
-        verbose_name_plural = u'Informations supplémentaires'
+        verbose_name = "Informations supplémentaires"
+        verbose_name_plural = "Informations supplémentaires"
         app_label = "fiches"
 
 

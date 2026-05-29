@@ -22,16 +22,16 @@
 from django import template
 from django.contrib.auth.models import AnonymousUser, User
 
-#from django.template.loader import get_template, render_to_string
-#from urlparse import urlparse
-#from django.core.urlresolvers import resolve, Resolver404
-#from django.utils.encoding import smart_str, force_unicode
-#from django.utils.dateformat import format
-#from django.utils.html import urlize
-#from django.utils.safestring import mark_safe
-#from django.conf import settings
+# from django.template.loader import get_template, render_to_string
+# from urlparse import urlparse
+# from django.core.urlresolvers import resolve, Resolver404
+# from django.utils.encoding import smart_str, force_unicode
+# from django.utils.dateformat import format
+# from django.utils.html import urlize
+# from django.utils.safestring import mark_safe
+# from django.conf import settings
 #
-#import datetime, re, time
+# import datetime, re, time
 
 register = template.Library()
 
@@ -60,7 +60,7 @@ def editable_projects(user):
     if not isinstance(user, (User, AnonymousUser)):
         raise template.TemplateSyntaxError("argument should be a User")
 
-    if isinstance(user, AnonymousUser) or not hasattr(user, 'profile'):
+    if isinstance(user, AnonymousUser) or not hasattr(user, "profile"):
         return set()
 
     projs = set()

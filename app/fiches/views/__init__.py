@@ -164,7 +164,7 @@ def ajax_search(request):
             elif field_name.startswith("_null_"):
                 return "%s__isnull" % field_name[6:]
             # If the field is a ForeignKey (endswith _id), use exact
-            elif field_name.endswith('_id'):
+            elif field_name.endswith("_id"):
                 return "%s__exact" % field_name
             else:
                 return "%s__icontains" % field_name
@@ -375,9 +375,7 @@ def documentfile_frame_create(request, doc_id=None, docfile_id=None, create_done
                 docfile.access_owner = request.user
             docfile.save()
             form.save_m2m()
-            return HttpResponseRedirect(
-                reverse("docfile-frame-create-done", kwargs={"docfile_id": docfile.id})
-            )
+            return HttpResponseRedirect(reverse("docfile-frame-create-done", kwargs={"docfile_id": docfile.id}))
     else:
         form = DocumentFileForm()
 

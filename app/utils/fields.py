@@ -41,12 +41,12 @@ class DictField(models.Field):
         # except ValueError:
         #     return value
         try:
-            return pickle.loads(value.encode('latin1'))  # Using bytes directly
+            return pickle.loads(value.encode("latin1"))  # Using bytes directly
         except (pickle.PickleError, ValueError):
             return value
 
     def to_python(self, value):
-        #"""Convert the value to a Python dictionary."""
+        # """Convert the value to a Python dictionary."""
         """Unpickle our string value to Dict after we load it from the DB."""
         if value == "":
             return None
@@ -98,6 +98,7 @@ class DictField(models.Field):
 
     # def get_internal_type(self):
     #     return "TextField"  # Maps to a text field in the database
+
 
 # class DictField(models.TextField):
 #     """DictField is a textfield that contains pickled dictionaries."""

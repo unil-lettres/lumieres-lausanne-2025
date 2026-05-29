@@ -38,7 +38,6 @@ from fiches.widgets import PersonWidget
 # from fiches.models.person.relation import Relation, RelationType
 
 
-
 # ===============================================================================
 # Nationality
 # ===============================================================================
@@ -264,7 +263,10 @@ class RelationForm(ModelForm):
             # If related_person is set, relation_type must be set
             if relation_type is None:
                 from django.core.exceptions import ValidationError
-                raise ValidationError({"relation_type": "Type de relation obligatoire si une personne est sélectionnée."})
+
+                raise ValidationError(
+                    {"relation_type": "Type de relation obligatoire si une personne est sélectionnée."}
+                )
 
         return cleaned_data
 
@@ -286,7 +288,9 @@ class Profession(models.Model):
 
     def get_formatted_dates(self):
         if self.begin_date:
-            begin_date = format(self.begin_date, self.begin_date_f.replace("%", "").replace("-", ".").replace("/", "."))
+            begin_date = format(
+                self.begin_date, self.begin_date_f.replace("%", "").replace("-", ".").replace("/", ".")
+            )
         else:
             begin_date = "?"
         if self.begin_date_approx:

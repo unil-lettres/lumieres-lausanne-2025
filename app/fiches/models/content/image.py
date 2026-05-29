@@ -21,4 +21,4 @@ class Image(models.Model):
         return basename(self.image.name) if self.image and self.image.name else "No image"
 
     class Meta:
-        ordering = ('pos',)
+        ordering = ("pos",)

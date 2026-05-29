@@ -9,7 +9,7 @@ class Publication(models.Model):
     content = models.TextField()
 
     class Meta:
-        db_table = 'fiches_publication'
+        db_table = "fiches_publication"
 
     def __str__(self):
         return self.title

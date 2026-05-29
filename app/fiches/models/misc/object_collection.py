@@ -14,30 +14,25 @@ class ObjectCollection(ACModel):
     slug = models.SlugField(editable=False, blank=True, null=True, unique=True)
     description = models.TextField(_("Description"), blank=True)
     owner = models.ForeignKey(
-        User, verbose_name=_("Utilisateur"), related_name='objectcollections', on_delete=models.CASCADE
+        User, verbose_name=_("Utilisateur"), related_name="objectcollections", on_delete=models.CASCADE
     )
     change_groups = models.ManyToManyField(
-        UserGroup, verbose_name=_("Groupes contributeurs"), related_name='objectcollections', blank=True
+        UserGroup, verbose_name=_("Groupes contributeurs"), related_name="objectcollections", blank=True
     )
     access_private = models.BooleanField(
-        blank=True, default=True, verbose_name=_("Privé"),
-        help_text=_("Accessible pour le propriétaire seulement")
+        blank=True, default=True, verbose_name=_("Privé"), help_text=_("Accessible pour le propriétaire seulement")
     )
 
     # Fields for related objects
-    persons = models.ManyToManyField(Person, related_name='objectcollections', blank=True)
+    persons = models.ManyToManyField(Person, related_name="objectcollections", blank=True)
     # Use lazy references for Biblio and Transcription
-    bibliographies = models.ManyToManyField(
-        'fiches.Biblio', blank=True
-    )
-    transcriptions = models.ManyToManyField(
-        'fiches.Transcription', blank=True
-    )
+    bibliographies = models.ManyToManyField("fiches.Biblio", blank=True)
+    transcriptions = models.ManyToManyField("fiches.Transcription", blank=True)
 
     class Meta:
         verbose_name = _("Collection")
         verbose_name_plural = _("Collections")
-        ordering = ['id']
+        ordering = ["id"]
         permissions = [
             ("change_collection_owner", "Peut changer le propriétaire de la collection"),
         ]
@@ -61,7 +56,7 @@ class ObjectCollection(ACModel):
             obj_id = str(self.id)
             new_slug = f"{old_slug}-{obj_id}"
             if len(new_slug) > 50:
-                new_slug = f"{old_slug[:50 - len(obj_id) - 1]}-{obj_id}"
+                new_slug = f"{old_slug[: 50 - len(obj_id) - 1]}-{obj_id}"
             self.slug = new_slug
             super().save(force_insert=force_insert, force_update=force_update, *args, **kwargs)
 
@@ -78,8 +73,9 @@ class ObjectCollection(ACModel):
     def get_object_field(self, obj):
         # Retrieve ManyToMany fields excluding 'access_groups' from ACModel if it exists
         object_fields_names = [
-            f.attname for f in self._meta.get_fields()
-            if isinstance(f, ManyToManyField) and f.attname != 'access_groups'
+            f.attname
+            for f in self._meta.get_fields()
+            if isinstance(f, ManyToManyField) and f.attname != "access_groups"
         ]
 
         for f in object_fields_names:

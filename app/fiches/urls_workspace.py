@@ -25,14 +25,17 @@ from fiches.views import workspace, workspace_collections
 
 urlpatterns = [
     # Main workspace view
-    path('', workspace, name='workspace-main'),
-
+    path("", workspace, name="workspace-main"),
     # Collections: root view
-    path('collections/', workspace_collections, {'coll_id': None, 'coll_slug': None}, name='workspace-collection-index'),
-
+    path(
+        "collections/", workspace_collections, {"coll_id": None, "coll_slug": None}, name="workspace-collection-index"
+    ),
     # Collections: with ID (integer)
-    path('collections/<int:coll_id>/', workspace_collections, name='workspace-collection'),
-
+    path("collections/<int:coll_id>/", workspace_collections, name="workspace-collection"),
     # Collections: with slug (alphanumeric + dashes/underscores)
-    re_path(r'^collections/(?P<coll_slug>[a-zA-Z0-9-][a-zA-Z0-9_-]+)/$', workspace_collections, name='named-workspace-collection'),
+    re_path(
+        r"^collections/(?P<coll_slug>[a-zA-Z0-9-][a-zA-Z0-9_-]+)/$",
+        workspace_collections,
+        name="named-workspace-collection",
+    ),
 ]

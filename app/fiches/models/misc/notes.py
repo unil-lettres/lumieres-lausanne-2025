@@ -14,7 +14,7 @@ class NoteBase(ACModel):
     Abstract base model for notes.
     """
 
-    text = RichTextField(verbose_name=_("Note"), config_name='note_ckeditor', blank=True)
+    text = RichTextField(verbose_name=_("Note"), config_name="note_ckeditor", blank=True)
     groups = models.ManyToManyField(Group, blank=True, verbose_name=_("Visible pour"))
 
     class Meta:

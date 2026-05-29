@@ -34,67 +34,28 @@ from fiches.views.projects import (
 
 urlpatterns = [
     # Projet principal avec slug optionnel
-    re_path(
-        r'^((?P<proj_slug>[a-zA-Z][a-zA-Z0-9_-]+)/)?$',
-        index_project,
-        name='project-index'
-    ),
-
+    re_path(r"^((?P<proj_slug>[a-zA-Z][a-zA-Z0-9_-]+)/)?$", index_project, name="project-index"),
     # Afficher le projet par ID
-    re_path(
-        r'^(?P<proj_id>\d+)/$',
-        display_project,
-        name="project-display-id"
-    ),
-
+    re_path(r"^(?P<proj_id>\d+)/$", display_project, name="project-display-id"),
     # Afficher le projet par slug
-    re_path(
-        r'^(?P<proj_slug>[a-zA-Z][a-zA-Z0-9_-]+)/$',
-        index_project,
-        name="project-display"
-    ),
-
+    re_path(r"^(?P<proj_slug>[a-zA-Z][a-zA-Z0-9_-]+)/$", index_project, name="project-display"),
     # Ajouter un objet au projet
-    re_path(
-        r'^_add-object/$',
-        add_object,
-        name='project-add-object'
-    ),
-
+    re_path(r"^_add-object/$", add_object, name="project-add-object"),
     # Remove Object from Project
-    re_path(
-        r'^_remove-object/$',
-        remove_object,
-        name='project-remove-object'
-    ),
-
+    re_path(r"^_remove-object/$", remove_object, name="project-remove-object"),
     # Get Project Description by ID
-    re_path(
-        r'^(?P<proj_id>\d+)/description/$',
-        get_project_description,
-        name="project-description"
-    ),
-
+    re_path(r"^(?P<proj_id>\d+)/description/$", get_project_description, name="project-description"),
     # Get Project Transcription List by ID
-    re_path(
-        r'^(?P<proj_id>\d+)/list/transcription/$',
-        get_project_transcription,
-        name="project-transcription-list"
-    ),
-
+    re_path(r"^(?P<proj_id>\d+)/list/transcription/$", get_project_transcription, name="project-transcription-list"),
     # Get Project Primary Bibliography List by ID
     re_path(
-        r'^(?P<proj_id>\d+)/list/littprim/$',
+        r"^(?P<proj_id>\d+)/list/littprim/$",
         get_project_bibliography,
-        {'litt_type': 'p'},
-        name="project-littprim-list"
+        {"litt_type": "p"},
+        name="project-littprim-list",
     ),
-
     # Get Project Secondary Bibliography List by ID
     re_path(
-        r'^(?P<proj_id>\d+)/list/littsec/$',
-        get_project_bibliography,
-        {'litt_type': 's'},
-        name="project-littsec-list"
+        r"^(?P<proj_id>\d+)/list/littsec/$", get_project_bibliography, {"litt_type": "s"}, name="project-littsec-list"
     ),
 ]

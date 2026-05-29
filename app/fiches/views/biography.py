@@ -270,8 +270,6 @@ def build_person_biblio_dict(person):
     }
 
 
-
-
 def display(request, person_id, version=0):
 
     person = get_object_or_404(Person, pk=person_id)

@@ -64,9 +64,7 @@ class PlaceView(models.Model):
 
 
 class JournaltitleView(models.Model):
-    journal_title = models.CharField(
-        max_length=512, primary_key=True, verbose_name=_("Journal Title")
-    )
+    journal_title = models.CharField(max_length=512, primary_key=True, verbose_name=_("Journal Title"))
 
     def __str__(self):
         return self.journal_title
@@ -103,22 +101,25 @@ class BiblioExtendedSearchForm(forms.Form):
     )
     OP_FIELD_CHOICES = (("or", "Ou"), ("and", "Et"), ("not", "Sauf"))
 
-    sort = forms.ChoiceField(required=False, initial="",
-                             choices=(("d", "Date croissante"), ("-d", "Date décroissante"), ("t", "Titre")))
-    nbi  = forms.ChoiceField(required=False, initial="",
-                             choices=(("10", "10"), ("", "25"), ("50", "50"), ("75", "75")))
-    grp  = forms.ChoiceField(required=False, initial="d",
-                             choices=(("d", "Type et auteur"), ("a", "Auteur et type"), ("", "– sans regroupement –")))
+    sort = forms.ChoiceField(
+        required=False, initial="", choices=(("d", "Date croissante"), ("-d", "Date décroissante"), ("t", "Titre"))
+    )
+    nbi = forms.ChoiceField(required=False, initial="", choices=(("10", "10"), ("", "25"), ("50", "50"), ("75", "75")))
+    grp = forms.ChoiceField(
+        required=False,
+        initial="d",
+        choices=(("d", "Type et auteur"), ("a", "Auteur et type"), ("", "– sans regroupement –")),
+    )
 
     x0_fld = forms.ChoiceField(required=False, choices=EXPR_FIELDS_CHOICE, initial="title")
     x0_val = forms.CharField(required=False)
-    x1_op  = forms.ChoiceField(required=False, choices=OP_FIELD_CHOICES, initial="and")
+    x1_op = forms.ChoiceField(required=False, choices=OP_FIELD_CHOICES, initial="and")
     x1_fld = forms.ChoiceField(required=False, choices=EXPR_FIELDS_CHOICE, initial="authors")
     x1_val = forms.CharField(required=False)
-    x2_op  = forms.ChoiceField(required=False, choices=OP_FIELD_CHOICES, initial="and")
+    x2_op = forms.ChoiceField(required=False, choices=OP_FIELD_CHOICES, initial="and")
     x2_fld = forms.ChoiceField(required=False, choices=EXPR_FIELDS_CHOICE, initial="place")
     x2_val = forms.CharField(required=False)
-    x3_op  = forms.ChoiceField(required=False, choices=OP_FIELD_CHOICES, initial="and")
+    x3_op = forms.ChoiceField(required=False, choices=OP_FIELD_CHOICES, initial="and")
     x3_fld = forms.ChoiceField(required=False, choices=EXPR_FIELDS_CHOICE, initial="edit")
     x3_val = forms.CharField(required=False)
 
@@ -139,29 +140,47 @@ class BiblioExtendedSearchForm(forms.Form):
     )
 
     # Dates
-    date_from = forms.DecimalField(required=False, max_digits=6, decimal_places=2,
-                                   widget=forms.TextInput(attrs={"maxlength": "7", "placeholder": "aaaa.mm"}),
-                                   label=_("Date de parution (de)"))
-    date_to   = forms.DecimalField(required=False, max_digits=6, decimal_places=2,
-                                   widget=forms.TextInput(attrs={"maxlength": "7", "placeholder": "aaaa.mm"}),
-                                   label=_("Date de parution (à)"))
+    date_from = forms.DecimalField(
+        required=False,
+        max_digits=6,
+        decimal_places=2,
+        widget=forms.TextInput(attrs={"maxlength": "7", "placeholder": "aaaa.mm"}),
+        label=_("Date de parution (de)"),
+    )
+    date_to = forms.DecimalField(
+        required=False,
+        max_digits=6,
+        decimal_places=2,
+        widget=forms.TextInput(attrs={"maxlength": "7", "placeholder": "aaaa.mm"}),
+        label=_("Date de parution (à)"),
+    )
 
     # Dates d’enregistrement
-    mdate_from = forms.DateField(required=False, input_formats=("%Y.%m.%d",),
-                                 widget=forms.DateInput(attrs={"size": "10", "maxlength": "10", "placeholder": "aaaa.mm.jj"}),
-                                 label=_("Date d'enregistrement (de)"))
-    mdate_to   = forms.DateField(required=False, input_formats=("%Y.%m.%d",),
-                                 widget=forms.DateInput(attrs={"size": "10", "maxlength": "10", "placeholder": "aaaa.mm.jj"}),
-                                 label=_("Date d'enregistrement (à)"))
+    mdate_from = forms.DateField(
+        required=False,
+        input_formats=("%Y.%m.%d",),
+        widget=forms.DateInput(attrs={"size": "10", "maxlength": "10", "placeholder": "aaaa.mm.jj"}),
+        label=_("Date d'enregistrement (de)"),
+    )
+    mdate_to = forms.DateField(
+        required=False,
+        input_formats=("%Y.%m.%d",),
+        widget=forms.DateInput(attrs={"size": "10", "maxlength": "10", "placeholder": "aaaa.mm.jj"}),
+        label=_("Date d'enregistrement (à)"),
+    )
 
     # Langue
-    l = forms.ModelChoiceField(required=False, queryset=DocumentLanguage.objects.none(),
-                               empty_label="< toutes >", label=_("Langue"))
+    l = forms.ModelChoiceField(
+        required=False, queryset=DocumentLanguage.objects.none(), empty_label="< toutes >", label=_("Langue")
+    )
 
     # Lieu de dépôt
-    depot = forms.ModelChoiceField(required=False, queryset=Depot.objects.none(),
-                                   label=_("Lieu de dépôt"),
-                                   widget=forms.Select(attrs={"class": "js-combobox"}))
+    depot = forms.ModelChoiceField(
+        required=False,
+        queryset=Depot.objects.none(),
+        label=_("Lieu de dépôt"),
+        widget=forms.Select(attrs={"class": "js-combobox"}),
+    )
 
     # Projets
     proj = forms.ModelMultipleChoiceField(
@@ -170,68 +189,109 @@ class BiblioExtendedSearchForm(forms.Form):
         widget=forms.CheckboxSelectMultiple(attrs={"class": "ext-checkbox-inline"}),
         label=_("Projets"),
     )
-    proj_op = forms.ChoiceField(required=False, initial="and",
-                                choices=OP_FIELD_CHOICES, label=_("Projets (op.)"))
+    proj_op = forms.ChoiceField(required=False, initial="and", choices=OP_FIELD_CHOICES, label=_("Projets (op.)"))
 
     # Société / Académie
-    society = forms.ModelChoiceField(required=False, queryset=Society.objects.none(),
-                                     label=_("Société/Académie"),
-                                     widget=forms.Select(attrs={"class": "js-combobox"}))
+    society = forms.ModelChoiceField(
+        required=False,
+        queryset=Society.objects.none(),
+        label=_("Société/Académie"),
+        widget=forms.Select(attrs={"class": "js-combobox"}),
+    )
 
     # Revue
-    journal = forms.ModelChoiceField(required=False, queryset=JournaltitleView.objects.none(),
-                                     empty_label="---------", label=_("Revue"),
-                                     widget=forms.Select(attrs={"class": "js-combobox"}))
+    journal = forms.ModelChoiceField(
+        required=False,
+        queryset=JournaltitleView.objects.none(),
+        empty_label="---------",
+        label=_("Revue"),
+        widget=forms.Select(attrs={"class": "js-combobox"}),
+    )
 
     # Type de manuscrit
-    mtype = forms.ModelChoiceField(required=False, queryset=ManuscriptType.objects.none(),
-                                   label=_("Type de manuscrit"),
-                                   widget=forms.Select(attrs={"class": "js-combobox"}))
+    mtype = forms.ModelChoiceField(
+        required=False,
+        queryset=ManuscriptType.objects.none(),
+        label=_("Type de manuscrit"),
+        widget=forms.Select(attrs={"class": "js-combobox"}),
+    )
 
     # Mots-clés (primaire / secondaire)
     kw0_op = forms.ChoiceField(required=False, initial="and", choices=OP_FIELD_CHOICES)
-    kw0_p  = forms.ModelChoiceField(required=False, queryset=PrimaryKeyword.objects.none(),
-                                    empty_label="< mot-clé primaire >",
-                                    widget=forms.Select(attrs={"class": "js-combobox pkw"}))
-    kw0_s  = forms.ModelChoiceField(required=False, queryset=SecondaryKeyword.objects.none(),
-                                    widget=forms.Select(attrs={"class": "js-combobox skw"}))
+    kw0_p = forms.ModelChoiceField(
+        required=False,
+        queryset=PrimaryKeyword.objects.none(),
+        empty_label="< mot-clé primaire >",
+        widget=forms.Select(attrs={"class": "js-combobox pkw"}),
+    )
+    kw0_s = forms.ModelChoiceField(
+        required=False,
+        queryset=SecondaryKeyword.objects.none(),
+        widget=forms.Select(attrs={"class": "js-combobox skw"}),
+    )
 
     kw1_op = forms.ChoiceField(required=False, initial="and", choices=OP_FIELD_CHOICES)
-    kw1_p  = forms.ModelChoiceField(required=False, queryset=PrimaryKeyword.objects.none(),
-                                    empty_label="< mot-clé primaire >",
-                                    widget=forms.Select(attrs={"class": "js-combobox pkw"}))
-    kw1_s  = forms.ModelChoiceField(required=False, queryset=SecondaryKeyword.objects.none(),
-                                    widget=forms.Select(attrs={"class": "js-combobox skw"}))
+    kw1_p = forms.ModelChoiceField(
+        required=False,
+        queryset=PrimaryKeyword.objects.none(),
+        empty_label="< mot-clé primaire >",
+        widget=forms.Select(attrs={"class": "js-combobox pkw"}),
+    )
+    kw1_s = forms.ModelChoiceField(
+        required=False,
+        queryset=SecondaryKeyword.objects.none(),
+        widget=forms.Select(attrs={"class": "js-combobox skw"}),
+    )
 
     kw2_op = forms.ChoiceField(required=False, initial="and", choices=OP_FIELD_CHOICES)
-    kw2_p  = forms.ModelChoiceField(required=False, queryset=PrimaryKeyword.objects.none(),
-                                    empty_label="< mot-clé primaire >",
-                                    widget=forms.Select(attrs={"class": "js-combobox pkw"}))
-    kw2_s  = forms.ModelChoiceField(required=False, queryset=SecondaryKeyword.objects.none(),
-                                    widget=forms.Select(attrs={"class": "js-combobox skw"}))
+    kw2_p = forms.ModelChoiceField(
+        required=False,
+        queryset=PrimaryKeyword.objects.none(),
+        empty_label="< mot-clé primaire >",
+        widget=forms.Select(attrs={"class": "js-combobox pkw"}),
+    )
+    kw2_s = forms.ModelChoiceField(
+        required=False,
+        queryset=SecondaryKeyword.objects.none(),
+        widget=forms.Select(attrs={"class": "js-combobox skw"}),
+    )
 
     kw3_op = forms.ChoiceField(required=False, initial="and", choices=OP_FIELD_CHOICES)
-    kw3_p  = forms.ModelChoiceField(required=False, queryset=PrimaryKeyword.objects.none(),
-                                    empty_label="< mot-clé primaire >",
-                                    widget=forms.Select(attrs={"class": "js-combobox pkw"}))
-    kw3_s  = forms.ModelChoiceField(required=False, queryset=SecondaryKeyword.objects.none(),
-                                    widget=forms.Select(attrs={"class": "js-combobox skw"}))
+    kw3_p = forms.ModelChoiceField(
+        required=False,
+        queryset=PrimaryKeyword.objects.none(),
+        empty_label="< mot-clé primaire >",
+        widget=forms.Select(attrs={"class": "js-combobox pkw"}),
+    )
+    kw3_s = forms.ModelChoiceField(
+        required=False,
+        queryset=SecondaryKeyword.objects.none(),
+        widget=forms.Select(attrs={"class": "js-combobox skw"}),
+    )
 
     # Etat collapsed/expanded
-    cl1 = forms.BooleanField(required=False, initial=False, widget=forms.HiddenInput(attrs={"class": "collapse_status"}))
-    cl2 = forms.BooleanField(required=False, initial=False, widget=forms.HiddenInput(attrs={"class": "collapse_status"}))
-    cl3 = forms.BooleanField(required=False, initial=False, widget=forms.HiddenInput(attrs={"class": "collapse_status"}))
-    cl4 = forms.BooleanField(required=False, initial=False, widget=forms.HiddenInput(attrs={"class": "collapse_status"}))
+    cl1 = forms.BooleanField(
+        required=False, initial=False, widget=forms.HiddenInput(attrs={"class": "collapse_status"})
+    )
+    cl2 = forms.BooleanField(
+        required=False, initial=False, widget=forms.HiddenInput(attrs={"class": "collapse_status"})
+    )
+    cl3 = forms.BooleanField(
+        required=False, initial=False, widget=forms.HiddenInput(attrs={"class": "collapse_status"})
+    )
+    cl4 = forms.BooleanField(
+        required=False, initial=False, widget=forms.HiddenInput(attrs={"class": "collapse_status"})
+    )
 
     # ---------- runtime wiring ----------
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Simple alphabetical ordering
-        self.fields["l"].queryset       = DocumentLanguage.objects.order_by("name")
+        self.fields["l"].queryset = DocumentLanguage.objects.order_by("name")
         self.fields["journal"].queryset = JournaltitleView.objects.order_by("journal_title")
-        self.fields["depot"].queryset   = Depot.objects.order_by("name")
-        self.fields["mtype"].queryset   = ManuscriptType.objects.order_by("name")
+        self.fields["depot"].queryset = Depot.objects.order_by("name")
+        self.fields["mtype"].queryset = ManuscriptType.objects.order_by("name")
         self.fields["society"].queryset = Society.objects.order_by("name")
 
         # Default projects (permission-aware override is done in the view)

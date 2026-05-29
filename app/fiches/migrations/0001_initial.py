@@ -13,7 +13,6 @@ import fiches.models.documents.document
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [

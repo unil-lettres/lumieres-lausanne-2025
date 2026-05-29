@@ -570,7 +570,11 @@ def cancel_new_bibliography(request, doc_id):
 
     biblio = get_object_or_404(Biblio, pk=doc_id)
 
-    if biblio.creator_id and biblio.creator_id != request.user.id and not request.user.has_perm("fiches.delete_biblio"):
+    if (
+        biblio.creator_id
+        and biblio.creator_id != request.user.id
+        and not request.user.has_perm("fiches.delete_biblio")
+    ):
         return HttpResponseForbidden(_("Accès non autorisé"))
 
     remove_object_index(biblio)
@@ -620,7 +624,7 @@ def delete(request, doc_id):
         except Exception as exc:
             # Return a user-friendly error page if reverse fails
             return HttpResponseServerError(
-                f"Could not resolve redirect after deletion: {exc}. " "Please contact the administrator."
+                f"Could not resolve redirect after deletion: {exc}. Please contact the administrator."
             )
 
 

@@ -122,11 +122,7 @@ class BiblioForm(forms.ModelForm):
         self.fields["litterature_type"].required = True
 
         # Remove any blank choice inserted by Django for the litterature_type
-        choices_without_blank = [
-            choice
-            for choice in self.fields["litterature_type"].choices
-            if choice[0] != ""
-        ]
+        choices_without_blank = [choice for choice in self.fields["litterature_type"].choices if choice[0] != ""]
         self.fields["litterature_type"].choices = choices_without_blank
 
         # Force date format for initial value
@@ -211,9 +207,7 @@ class BiblioForm(forms.ModelForm):
 
             if not pk_str and label:
                 if not (self.user and self.user.has_perm("fiches.can_add_listitem")):
-                    raise forms.ValidationError(
-                        f"La personne «{label}» n'existe pas dans la base."
-                    )
+                    raise forms.ValidationError(f"La personne «{label}» n'existe pas dans la base.")
                 person, _created = Person.objects.get_or_create(
                     name=label,
                     defaults={
@@ -230,9 +224,7 @@ class BiblioForm(forms.ModelForm):
                 persons.append(p)
             except (ValueError, Person.DoesNotExist):
                 label = label or item
-                raise forms.ValidationError(
-                    f"La personne «{label}» n'existe pas dans la base."
-                )
+                raise forms.ValidationError(f"La personne «{label}» n'existe pas dans la base.")
         return persons
 
 
@@ -246,9 +238,7 @@ class NoteFormBiblio(NoteFormBase):
     """
 
     # Add virtual rte_type field for template compatibility
-    rte_type = forms.CharField(
-        initial="CKE", widget=forms.HiddenInput(), required=False
-    )
+    rte_type = forms.CharField(initial="CKE", widget=forms.HiddenInput(), required=False)
 
     class Meta(NoteFormBase.Meta):
         model = NoteBiblio
@@ -303,9 +293,7 @@ class ManuscriptForm(forms.ModelForm):
         label=_("Date"),
         required=False,
     )
-    date_f = forms.CharField(
-        widget=forms.HiddenInput(attrs={"class": "vardateformat"}), required=False
-    )
+    date_f = forms.CharField(widget=forms.HiddenInput(attrs={"class": "vardateformat"}), required=False)
     subj_primary_kw = forms.ModelMultipleChoiceField(
         queryset=PrimaryKeyword.objects.all(),
         widget=StaticList(),
@@ -343,9 +331,7 @@ class TranscriptionForm(forms.ModelForm):
     manuscript = forms.CharField(widget=forms.HiddenInput(), required=False)
     manuscript_b = forms.CharField(widget=forms.HiddenInput(), required=False)
     author = forms.ModelChoiceField(queryset=User.objects.all().order_by("username"))
-    author2 = forms.ModelChoiceField(
-        queryset=User.objects.all().order_by("username"), required=False
-    )
+    author2 = forms.ModelChoiceField(queryset=User.objects.all().order_by("username"), required=False)
     reviewers = MultipleUserField(
         queryset=User.objects.all().order_by("username"),
         widget=DynamicList(
@@ -392,19 +378,15 @@ class TranscriptionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk and not self.is_bound:
             reviewer_ids = list(
-                TranscriptionReviewer.objects.filter(
-                    transcription_id=self.instance.pk
-                ).values_list("user_id", flat=True)
+                TranscriptionReviewer.objects.filter(transcription_id=self.instance.pk).values_list(
+                    "user_id", flat=True
+                )
             )
             self.initial.setdefault("reviewers", reviewer_ids)
 
             # Legacy rows can be public and dated but still miss "published_by".
             # Prefill with the default publisher in the form UI without mutating DB.
-            if (
-                self.instance.access_public
-                and self.instance.published_date
-                and not self.instance.published_by_id
-            ):
+            if self.instance.access_public and self.instance.published_date and not self.instance.published_by_id:
                 default_publisher = get_default_publisher_user()
                 if default_publisher:
                     if not self.initial.get("published_by"):
@@ -425,20 +407,13 @@ class TranscriptionForm(forms.ModelForm):
             return
 
         selected_ids = set(selected_reviewers.values_list("id", flat=True))
-        TranscriptionReviewer.objects.filter(transcription=transcription).exclude(
-            user_id__in=selected_ids
-        ).delete()
+        TranscriptionReviewer.objects.filter(transcription=transcription).exclude(user_id__in=selected_ids).delete()
         existing_ids = set(
-            TranscriptionReviewer.objects.filter(
-                transcription=transcription
-            ).values_list("user_id", flat=True)
+            TranscriptionReviewer.objects.filter(transcription=transcription).values_list("user_id", flat=True)
         )
         missing_ids = selected_ids - existing_ids
         TranscriptionReviewer.objects.bulk_create(
-            [
-                TranscriptionReviewer(transcription=transcription, user_id=user_id)
-                for user_id in missing_ids
-            ]
+            [TranscriptionReviewer(transcription=transcription, user_id=user_id) for user_id in missing_ids]
         )
 
     def clean(self):
@@ -498,15 +473,10 @@ class ObjectCollectionForm(forms.ModelForm):
         self.can_edit_details = kwargs.pop("can_edit_details", True)
         super().__init__(*args, **kwargs)
 
-        can_change_owner = bool(
-            self.request_user
-            and self.request_user.has_perm("fiches.change_collection_owner")
-        )
+        can_change_owner = bool(self.request_user and self.request_user.has_perm("fiches.change_collection_owner"))
 
         if can_change_owner:
-            owner_queryset = User.objects.order_by(
-                "last_name", "first_name", "username"
-            )
+            owner_queryset = User.objects.order_by("last_name", "first_name", "username")
             self.fields["owner"] = forms.ModelChoiceField(
                 queryset=owner_queryset,
                 label=_("Propriétaire"),
@@ -582,9 +552,7 @@ class FichesSearchForm(ModelSearchForm):
         search_models = super().get_models()
         if not search_models:
             # If no models are found, retrieve them from the Haystack unified index
-            search_models = (
-                connections["default"].get_unified_index().get_indexed_models()
-            )
+            search_models = connections["default"].get_unified_index().get_indexed_models()
         return search_models
 
     def search(self):
@@ -597,9 +565,7 @@ class FichesSearchForm(ModelSearchForm):
 
         # Restrict results based on user permissions and access
         if self.request and self.request.user.is_authenticated:
-            if not self.request.user.has_perm(
-                "fiches.access_unpublished_transcription"
-            ):
+            if not self.request.user.has_perm("fiches.access_unpublished_transcription"):
                 self.searchqueryset = RelatedSearchQuerySet().load_all_queryset(
                     Transcription,
                     Transcription.objects.filter(
@@ -660,9 +626,7 @@ class ContributionDocForm(forms.ModelForm):
         self.litterature_type = litterature_type
         super().__init__(*args, **kwargs)
         if not self.litterature_type and getattr(self.instance, "document_id", None):
-            self.litterature_type = getattr(
-                self.instance.document, "litterature_type", None
-            )
+            self.litterature_type = getattr(self.instance.document, "litterature_type", None)
         self._person_was_created = False
 
     #
@@ -683,9 +647,7 @@ class ContributionDocForm(forms.ModelForm):
                 person = Person.objects.get(pk=pk)
                 return person
             except (ValueError, Person.DoesNotExist):
-                raise forms.ValidationError(
-                    "Cette personne est introuvable dans la base."
-                )
+                raise forms.ValidationError("Cette personne est introuvable dans la base.")
 
         # If user typed an ID directly
         if raw_value.isdigit():
@@ -745,9 +707,7 @@ class DocumentFileForm(forms.ModelForm):
         model = DocumentFile
         fields = ["title", "slug", "file", "url", "access_public", "access_groups"]
         widgets = {
-            "title": forms.TextInput(
-                attrs={"maxlength": 255, "placeholder": _("Title")}
-            ),
+            "title": forms.TextInput(attrs={"maxlength": 255, "placeholder": _("Title")}),
             "slug": forms.TextInput(attrs={"maxlength": 255, "placeholder": _("Slug")}),
             "file": forms.ClearableFileInput(),
             "url": forms.URLInput(attrs={"placeholder": _("URL")}),
@@ -795,5 +755,3 @@ class ProjectForm(forms.ModelForm):
             "js/lib/urlify.js",
             "js/admin/project_url_tools.js",
         )
-
-
