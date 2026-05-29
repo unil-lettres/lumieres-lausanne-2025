@@ -47,9 +47,12 @@ def do_autopaginate(parser, token):
             context_var = split[as_index + 1]
         except IndexError:
             raise template.TemplateSyntaxError(
-                "Context variable assignment "
-                + "must take the form of {%% %r object.example_set.all ... as "
-                + "context_var_name %%}" % split[0]
+                (
+                    "Context variable assignment "
+                    + "must take the form of {%% %r object.example_set.all ... as "
+                    + "context_var_name %%}"
+                )
+                % split[0]
             )
         del split[as_index : as_index + 2]
     if len(split) == 2:
@@ -64,7 +67,7 @@ def do_autopaginate(parser, token):
         return AutoPaginateNode(split[1], paginate_by=split[2], orphans=orphans, context_var=context_var)
     else:
         raise template.TemplateSyntaxError(
-            "%r tag takes one required " + "argument and one optional argument" % split[0]
+            ("%r tag takes one required " + "argument and one optional argument") % split[0]
         )
 
 

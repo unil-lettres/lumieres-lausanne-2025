@@ -21,6 +21,7 @@
 from ckeditor.widgets import CKEditorWidget
 from django import forms
 from django.contrib.auth.models import User
+from django.db.models import Q
 from django.forms.widgets import RadioSelect
 from django.utils.translation import gettext_lazy as _
 
@@ -533,6 +534,7 @@ class ObjectCollectionForm(forms.ModelForm):
         return collection
 
 
+from haystack import connections
 from haystack.forms import ModelSearchForm
 from haystack.query import RelatedSearchQuerySet
 

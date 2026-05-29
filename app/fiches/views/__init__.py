@@ -225,7 +225,7 @@ def ajax_search(request):
                     data_set = set(data_list)
                     data_list = list(data_set | data_set)
             except AttributeError:
-                dbg_logger.debug("attribute not found" % method)
+                dbg_logger.debug("attribute not found: %s", method)
                 data_list = ["%s\n" % str(f) for f in qs]
 
         else:

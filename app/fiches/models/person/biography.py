@@ -22,6 +22,7 @@ from ckeditor.fields import RichTextField
 from django import forms
 from django.db import models
 from django.forms import ModelForm
+from django.urls import reverse
 from django.utils.dateformat import format
 from django.utils.translation import gettext_lazy as _
 
@@ -131,8 +132,6 @@ class Biography(models.Model):
 
     def __str__(self):
         return self.person_name()
-
-    from django.urls import reverse
 
     def get_absolute_url(self):
         return reverse("biography-display", args=[str(self.person_id)])
