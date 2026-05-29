@@ -263,8 +263,8 @@ def serve_documentfile(request, documentfile_key, attachment=True):
     if content_type is None:
         content_type = "application/octet-stream"
 
-    # Create a file wrapper around the file
-    wrapper = FileWrapper(open(path_to_file, "rb"))
+    # Create a file wrapper around the file (kept open for the streaming response)
+    wrapper = FileWrapper(open(path_to_file, "rb"))  # noqa: SIM115
     response = HttpResponse(wrapper, content_type=content_type)
     response["ETag"] = ""
     response["Content-Length"] = os.path.getsize(path_to_file)

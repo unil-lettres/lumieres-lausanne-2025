@@ -131,12 +131,11 @@ def upload(request):
 
     # Open output file in which to store upload.
     upload_filename = get_upload_filename(upload.name, request.user)
-    out = open(upload_filename, "wb+")
 
     # Iterate through chunks and write to destination.
-    for chunk in upload.chunks():
-        out.write(chunk)
-    out.close()
+    with open(upload_filename, "wb+") as out:
+        for chunk in upload.chunks():
+            out.write(chunk)
 
     create_thumbnail(upload_filename)
 
