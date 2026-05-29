@@ -10,6 +10,10 @@
 
 ARGS ?=
 
+COMPOSE_BASE = docker compose -f docker-compose.yml
+COMPOSE      = $(COMPOSE_BASE) -f docker/docker-compose.dev.yml
+SERVICES ?=
+
 LOCAL_MANAGE  = uv run python $(APP_PATH)/manage.py
 DOCKER_EXEC   = $(COMPOSE) exec app
 DOCKER_MANAGE = $(DOCKER_EXEC) python manage.py
@@ -24,18 +28,54 @@ dev/init:  ## Copy .env.template to .env
 dev/install:  ## Install all deps locally with uv (main + dev + docs)
 	uv sync --all-groups
 
-# Stack lifecycle =============================================================
+# Docker compose commands ====================================================
+
+.PHONY: dev/compose/up dev/compose/down dev/compose/start dev/compose/stop
+.PHONY: dev/compose/restart dev/compose/logs dev/compose/build dev/compose/watch
+.PHONY: dev/compose/ps dev/compose/config
+
+dev/compose/up:  ## Bring up the dev stack (SERVICES=... to scope)
+	$(COMPOSE) up -d $(SERVICES)
+
+dev/compose/down:  ## Bring down the dev stack
+	$(COMPOSE) down $(SERVICES)
+
+dev/compose/start:  ## Start existing containers
+	$(COMPOSE) start $(SERVICES)
+
+dev/compose/stop:  ## Stop containers without removing
+	$(COMPOSE) stop $(SERVICES)
+
+dev/compose/restart:  ## Restart containers
+	$(COMPOSE) restart $(SERVICES)
+
+dev/compose/logs:  ## Follow logs (SERVICES=app to scope)
+	$(COMPOSE) logs -f $(SERVICES)
+
+dev/compose/build:  ## Build images
+	$(COMPOSE) build $(SERVICES)
+
+dev/compose/watch:  ## Run with develop.watch (hot reload)
+	$(COMPOSE) watch
+
+dev/compose/ps:  ## List running services
+	$(COMPOSE) ps
+
+dev/compose/config:  ## Show the merged compose configuration
+	$(COMPOSE) config
+
+# Stack lifecycle (shortcuts) =================================================
 
 .PHONY: dev/up dev/down dev/start dev/stop dev/restart dev/logs dev/build dev/watch
 
-dev/up:       docker/compose/up        ## Start the dev stack in background
-dev/down:     docker/compose/down      ## Stop and remove the dev stack
-dev/start:    docker/compose/start     ## Start existing containers
-dev/stop:     docker/compose/stop      ## Stop containers without removing
-dev/restart:  docker/compose/restart   ## Restart containers
-dev/logs:     docker/compose/logs      ## Follow logs (SERVICES=app to scope)
-dev/build:    docker/compose/build     ## Build the dev images
-dev/watch:    docker/compose/watch     ## Start with hot reload (develop.watch)
+dev/up:       dev/compose/up        ## Start the dev stack in background
+dev/down:     dev/compose/down      ## Stop and remove the dev stack
+dev/start:    dev/compose/start     ## Start existing containers
+dev/stop:     dev/compose/stop      ## Stop containers without removing
+dev/restart:  dev/compose/restart   ## Restart containers
+dev/logs:     dev/compose/logs      ## Follow logs (SERVICES=app to scope)
+dev/build:    dev/compose/build     ## Build the dev images
+dev/watch:    dev/compose/watch     ## Start with hot reload (develop.watch)
 
 # Local commands (uv run) =====================================================
 

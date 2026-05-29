@@ -26,7 +26,6 @@ APP_PATH = ./app
 include $(MAKE_SUB)/clean.mk
 include $(MAKE_SUB)/db.mk
 include $(MAKE_SUB)/dev.mk
-include $(MAKE_SUB)/docker-compose.mk
 include $(MAKE_SUB)/docs.mk
 include $(MAKE_SUB)/helpers.mk
 include $(MAKE_SUB)/tests.mk
