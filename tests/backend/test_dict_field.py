@@ -58,3 +58,21 @@ def test_from_db_value_invalid_pickle_passthrough():
 
 def test_get_db_prep_save_non_dict_is_none():
     assert FIELD.get_db_prep_save("nope", None) is None
+
+
+def test_get_db_prep_save_dict_returns_pickled_bytes():
+    # Covers the dict branch (lines 62, 66): pickle.dumps + super().get_db_prep_save
+    result = FIELD.get_db_prep_save({"k": 42}, None)
+    assert isinstance(result, bytes)
+    assert pickle.loads(result) == {"k": 42}
+
+
+def test_to_python_str_raises_type_error():
+    # Bug (Python 3): to_python() calls pickle.loads(smart_str(value)) when
+    # value is a non-empty string. smart_str() returns str, but pickle.loads()
+    # requires bytes in Python 3 → TypeError propagates uncaught (line 53).
+    # Lines 54-55 (except ValueError/UnpicklingError) are dead code in Python 3
+    # because pickle.loads(str) always raises TypeError, never ValueError.
+    import pytest
+    with pytest.raises(TypeError):
+        FIELD.to_python("non-empty-string-that-is-not-a-pickle")
