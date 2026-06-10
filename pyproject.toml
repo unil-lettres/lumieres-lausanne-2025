@@ -65,6 +65,10 @@ ignore = [
   # E203: whitespace before ':' — owned by the formatter (was ignored under
   # flake8 too). W503 has no ruff equivalent; the formatter sets break style.
   "E203",
+  # D105/D106: docstrings on magic methods (e.g. __str__) and nested classes
+  # (e.g. Django model `Meta`) add no value — their meaning is self-evident.
+  "D105",
+  "D106",
 ]
 
 [tool.ruff.lint.per-file-ignores]

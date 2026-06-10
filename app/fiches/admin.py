@@ -48,6 +48,7 @@ from fiches.models import (
     ManuscriptType,
     Nationality,
     Person,
+    PlaceCategory,
     PlaceView,
     PrimaryKeyword,
     RelationType,
@@ -344,6 +345,7 @@ class NewsAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         """
         Keep compatibility with DB schemas where news.author_id is NOT NULL.
+
         If author is not set in the form, default to the current admin user.
         """
         if not getattr(obj, "author_id", None) and getattr(request.user, "id", None):
@@ -468,6 +470,14 @@ class ManuscriptTypeAdmin(admin.ModelAdmin):
     list_display = ("name", "sorting")
     search_fields = ("name",)
     ordering = ("sorting",)
+
+
+class PlaceCategoryAdmin(admin.ModelAdmin):
+    """Admin interface for the PlaceCategory lookup table (fiche Lieu)."""
+
+    list_display = ("name",)
+    search_fields = ("name",)
+    ordering = ("name",)
 
 
 class ManuscriptAdmin(admin.ModelAdmin):
@@ -616,6 +626,7 @@ fiches_admin.register(Finding, FindingAdmin)
 fiches_admin.register(DocumentType, DocumentTypeAdmin)
 fiches_admin.register(RelationType, RelationTypeAdmin)
 fiches_admin.register(ManuscriptType, ManuscriptTypeAdmin)
+fiches_admin.register(PlaceCategory, PlaceCategoryAdmin)
 fiches_admin.register(User, UserAdmin)
 fiches_admin.register(Group, GroupAdmin)
 fiches_admin.register(Site, SiteAdmin)
