@@ -20,11 +20,13 @@
 
 from .notes import NoteBase
 from .object_collection import ObjectCollection
+from .place import PlaceCategory
 from .project import Project
 from .society import Society
 
 __all__ = [
     "ObjectCollection",
+    "PlaceCategory",
     "Project",
     "Society",
     "NoteBase",
