@@ -22,12 +22,14 @@ from .notes import NoteBase
 from .object_collection import ObjectCollection
 from .place import PlaceCategory
 from .project import Project
+from .reference_site import ReferenceSite
 from .society import Society
 
 __all__ = [
     "ObjectCollection",
     "PlaceCategory",
     "Project",
+    "ReferenceSite",
     "Society",
     "NoteBase",
 ]
