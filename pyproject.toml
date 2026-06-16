@@ -79,6 +79,9 @@ ignore = [
 # Test files: pytest functions don't need docstrings (D), and assertions
 # legitimately compare against literal expected values (PLR2004).
 "tests/**/*.py" = ["D", "PLR2004"]
+# Migrations are largely auto-generated; docstring rules (D) add no value on
+# the boilerplate Migration class / module.
+"app/fiches/migrations/*.py" = ["D"]
 
 [tool.ruff.lint.isort]
 known-third-party = ["django", "requests"]
