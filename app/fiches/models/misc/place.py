@@ -20,14 +20,23 @@
 
 """Named-entity models for places (Lieux).
 
-Data layer for the place fiches, built incrementally. This module currently
-provides the admin-managed category lookup (:class:`PlaceCategory`); the
-place record itself and its satellite tables (variants, reference-site
+Data layer for the place fiches, built incrementally. This module provides the
+admin-managed category lookup (:class:`PlaceCategory`) and the place record
+itself (:class:`PlaceRecord`); the satellite tables (variants, reference-site
 pivot, notes) are added in later steps.
 """
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+
+from fiches.models.contributions.ac_model import ACModel
+
+# The legacy auth_user / fiches_usergroup tables use INT primary keys, while
+# these new tables use BIGINT — MySQL cannot create a cross-type FK constraint.
+# FKs that target those legacy tables therefore set db_constraint=False;
+# referential integrity then stays at the ORM level, as it already does across
+# the legacy schema. FKs between the new place tables keep their DB constraint.
 
 
 class PlaceCategory(models.Model):
@@ -48,3 +57,55 @@ class PlaceCategory(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class PlaceRecord(ACModel):
+    """A named-entity record for a place (fiche lieu)."""
+
+    # Override the ACModel access relations to the legacy INT-PK tables
+    # (see module note): keep the relation at the ORM level, without a DB FK.
+    access_owner = models.ForeignKey(
+        User,
+        verbose_name=_("Propriétaire"),
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+        db_constraint=False,
+    )
+    access_groups = models.ManyToManyField(
+        "fiches.UserGroup",
+        verbose_name=_("Groupes d'accès"),
+        blank=True,
+        db_constraint=False,
+    )
+
+    name = models.CharField(_("Nom"), max_length=255)
+    category = models.ForeignKey(
+        PlaceCategory,
+        verbose_name=_("Catégorie"),
+        on_delete=models.PROTECT,
+        related_name="places",
+    )
+    related_places = models.ManyToManyField(
+        "self",
+        verbose_name=_("Lieux associés"),
+        blank=True,
+        symmetrical=True,
+    )
+    created_at = models.DateTimeField(_("Créé le"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Mis à jour le"), auto_now=True)
+
+    class Meta:
+        app_label = "fiches"
+        verbose_name = _("Fiche lieu")
+        verbose_name_plural = _("Fiches lieux")
+        ordering = ("name",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name", "category"],
+                name="unique_place_name_per_category",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.category})"
