@@ -58,7 +58,7 @@ from .misc.notes import NoteBase
 
 # Miscellaneous Models
 from .misc.object_collection import ObjectCollection
-from .misc.place import PlaceCategory, PlaceRecord
+from .misc.place import PlaceCategory, PlaceRecord, PlaceVariant
 from .misc.project import Project
 from .misc.reference_site import ReferenceSite
 from .misc.society import Society
@@ -110,6 +110,7 @@ __all__ = [
     "Depot",
     "PlaceCategory",
     "PlaceRecord",
+    "PlaceVariant",
     "ReferenceSite",
     # Add any additional models here
 ]

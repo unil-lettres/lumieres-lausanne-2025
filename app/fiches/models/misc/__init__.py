@@ -20,7 +20,7 @@
 
 from .notes import NoteBase
 from .object_collection import ObjectCollection
-from .place import PlaceCategory, PlaceRecord
+from .place import PlaceCategory, PlaceRecord, PlaceVariant
 from .project import Project
 from .reference_site import ReferenceSite
 from .society import Society
@@ -29,6 +29,7 @@ __all__ = [
     "ObjectCollection",
     "PlaceCategory",
     "PlaceRecord",
+    "PlaceVariant",
     "Project",
     "ReferenceSite",
     "Society",

@@ -109,3 +109,30 @@ class PlaceRecord(ACModel):
 
     def __str__(self):
         return f"{self.name} ({self.category})"
+
+
+class PlaceVariant(models.Model):
+    """Alternate spelling or translation of a place name (one entry per row)."""
+
+    place = models.ForeignKey(
+        PlaceRecord,
+        verbose_name=_("Lieu"),
+        on_delete=models.CASCADE,
+        related_name="variants",
+    )
+    name = models.CharField(_("Variante"), max_length=255)
+
+    class Meta:
+        app_label = "fiches"
+        verbose_name = _("Variante de lieu")
+        verbose_name_plural = _("Variantes de lieu")
+        ordering = ("name",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["place", "name"],
+                name="unique_variant_per_place",
+            ),
+        ]
+
+    def __str__(self):
+        return self.name
