@@ -136,3 +136,41 @@ class PlaceVariant(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class PlaceReferenceSite(models.Model):
+    """A place's permalink on an external reference site (référentiel)."""
+
+    place = models.ForeignKey(
+        PlaceRecord,
+        verbose_name=_("Lieu"),
+        on_delete=models.CASCADE,
+        related_name="reference_links",
+    )
+    reference_site = models.ForeignKey(
+        "fiches.ReferenceSite",
+        verbose_name=_("Site de référence"),
+        on_delete=models.PROTECT,
+        related_name="place_links",
+    )
+    identifier = models.CharField(_("Identifiant"), max_length=255)
+
+    class Meta:
+        app_label = "fiches"
+        verbose_name = _("Site de référence du lieu")
+        verbose_name_plural = _("Sites de référence du lieu")
+        ordering = ("reference_site__name",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["place", "reference_site"],
+                name="unique_reference_site_per_place",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.reference_site}: {self.identifier}"
+
+    @property
+    def url(self):
+        """Return the permalink built from the reference site and identifier."""
+        return self.reference_site.build_url(self.identifier)

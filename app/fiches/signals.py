@@ -20,25 +20,28 @@
 
 """Search-index signals for place named entities.
 
-A place's search document embeds its variant names, but variants are a separate
-model, so Haystack's realtime signal processor — which only reacts to
-``PlaceRecord`` saves — never refreshes a place when one of its variants
-changes. These receivers re-index the parent place whenever a variant is
-created, updated or deleted. They delegate to the active signal processor, so
-the work is a no-op under the test backend (``BaseSignalProcessor``).
+A place's search document embeds data from satellite models — its name variants
+and its external reference links (identifier, référentiel + identifier and full
+permalink). Those live in separate models, so Haystack's realtime signal
+processor (which only reacts to ``PlaceRecord`` saves) never refreshes a place
+when one of them changes. These receivers re-index the parent place whenever a
+satellite row is created, updated or deleted, delegating to the active signal
+processor (a no-op under the test backend, ``BaseSignalProcessor``).
 """
 
 from django.apps import apps
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from fiches.models import PlaceRecord, PlaceVariant
+from fiches.models import PlaceRecord, PlaceReferenceSite, PlaceVariant
 
 
 @receiver(post_save, sender=PlaceVariant)
 @receiver(post_delete, sender=PlaceVariant)
-def reindex_place_for_variant(sender, instance, **kwargs):
-    """Re-index the parent place so variant changes reach the search backend."""
+@receiver(post_save, sender=PlaceReferenceSite)
+@receiver(post_delete, sender=PlaceReferenceSite)
+def reindex_place_for_satellite_change(sender, instance, **kwargs):
+    """Re-index the parent place so satellite changes reach the search backend."""
     try:
         place = PlaceRecord.objects.get(pk=instance.place_id)
     except PlaceRecord.DoesNotExist:

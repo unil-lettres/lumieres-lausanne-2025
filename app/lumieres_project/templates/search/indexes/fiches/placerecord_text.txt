@@ -2,3 +2,7 @@
 {{ object.category.name }}
 {% for variant in object.variants.all %}{{ variant.name }}
 {% endfor %}
+{% for ref in object.reference_links.all %}{{ ref.identifier }}
+{{ ref.reference_site.name }} {{ ref.identifier }}
+{{ ref.url }}
+{% endfor %}

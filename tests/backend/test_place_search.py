@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import pytest
 from django.apps import apps
-from fiches.models import PlaceCategory, PlaceRecord, PlaceVariant
+from fiches.models import PlaceCategory, PlaceRecord, PlaceReferenceSite, PlaceVariant, ReferenceSite
 from fiches.search_indexes import PlaceRecordIndex
 
 
@@ -89,3 +89,33 @@ def test_place_delete_cascade_is_safe(lausanne, monkeypatch):
     lausanne.delete()  # cascade deletes variants → receiver must not raise
     assert PlaceRecord.objects.count() == 0
     assert PlaceVariant.objects.count() == 0
+
+
+@pytest.fixture
+def geonames(db):
+    return ReferenceSite.objects.create(
+        name="GeoNames",
+        code="geonames",
+        base_url="https://www.geonames.org/{id}",
+    )
+
+
+@pytest.mark.django_db
+def test_index_text_includes_reference_site_forms(lausanne, geonames):
+    PlaceReferenceSite.objects.create(place=lausanne, reference_site=geonames, identifier="2659994")
+    text = PlaceRecordIndex().prepare(lausanne)["text"]
+    assert "2659994" in text  # identifier alone
+    assert "GeoNames 2659994" in text  # référentiel + identifier
+    assert "https://www.geonames.org/2659994" in text  # full permalink
+
+
+@pytest.mark.django_db
+def test_reference_link_create_reindexes_parent_place(lausanne, geonames, monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        apps.get_app_config("haystack").signal_processor,
+        "handle_save",
+        lambda sender, instance, **kw: calls.append(instance),
+    )
+    PlaceReferenceSite.objects.create(place=lausanne, reference_site=geonames, identifier="2659994")
+    assert calls == [lausanne]
