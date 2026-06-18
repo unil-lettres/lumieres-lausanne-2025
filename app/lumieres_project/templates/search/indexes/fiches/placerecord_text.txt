@@ -1,0 +1,4 @@
+{{ object.name }}
+{{ object.category.name }}
+{% for variant in object.variants.all %}{{ variant.name }}
+{% endfor %}

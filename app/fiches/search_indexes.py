@@ -191,3 +191,29 @@ class TranscriptionIndex(indexes.SearchIndex, indexes.Indexable):
     def index_queryset(self, using=None):
         """Used when the entire index for model is updated."""
         return self.get_model().objects.all()
+
+
+class PlaceRecordIndex(indexes.SearchIndex, indexes.Indexable):
+    text = indexes.CharField(document=True, use_template=True)
+    place_name = indexes.CharField(model_attr="name")
+    category = indexes.CharField(model_attr="category__name")
+    modelSort = indexes.CharField(default="D00")
+    sort1 = indexes.CharField(null=True)
+    sort2 = indexes.CharField(null=True)
+
+    def prepare_modelSort(self, obj):
+        return "D00"
+
+    def prepare_sort1(self, obj):
+        return (obj.name or "").strip().casefold()
+
+    def prepare_sort2(self, obj):
+        return (getattr(obj.category, "name", "") or "").strip().casefold()
+
+    def get_model(self):
+        # resolve at runtime: fiches.PlaceRecord
+        return apps.get_model("fiches", "PlaceRecord")
+
+    def index_queryset(self, using=None):
+        """Used when the entire index for model is updated."""
+        return self.get_model().objects.all()
