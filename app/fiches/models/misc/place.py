@@ -26,11 +26,12 @@ itself (:class:`PlaceRecord`); the satellite tables (variants, reference-site
 pivot, notes) are added in later steps.
 """
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from fiches.models.contributions.ac_model import ACModel
+from fiches.models.misc.notes import NoteBase
 
 # The legacy auth_user / fiches_usergroup tables use INT primary keys, while
 # these new tables use BIGINT — MySQL cannot create a cross-type FK constraint.
@@ -174,3 +175,50 @@ class PlaceReferenceSite(models.Model):
     def url(self):
         """Return the permalink built from the reference site and identifier."""
         return self.reference_site.build_url(self.identifier)
+
+
+class NotePlace(NoteBase):
+    """Access-controlled note attached to a place (fiche lieu).
+
+    A place may carry several notes, mirroring the notes of the biblio and
+    biography fiches; each note has its own access control.
+    """
+
+    owner = models.ForeignKey(
+        PlaceRecord,
+        verbose_name=_("Lieu"),
+        on_delete=models.CASCADE,
+        related_name="notes",
+    )
+    # Override the ACModel / NoteBase access relations to the legacy INT-PK
+    # tables (see module note): keep them at the ORM level, without a DB FK.
+    access_owner = models.ForeignKey(
+        User,
+        verbose_name=_("Propriétaire"),
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+        db_constraint=False,
+    )
+    access_groups = models.ManyToManyField(
+        "fiches.UserGroup",
+        verbose_name=_("Groupes d'accès"),
+        blank=True,
+        db_constraint=False,
+    )
+    groups = models.ManyToManyField(
+        Group,
+        verbose_name=_("Visible pour"),
+        blank=True,
+        db_constraint=False,
+    )
+
+    class Meta(NoteBase.Meta):
+        app_label = "fiches"
+        verbose_name = _("Note de lieu")
+        verbose_name_plural = _("Notes de lieu")
+
+    @property
+    def rte_type(self):
+        """Return CKE to be compatible with note_formset.html template."""
+        return "CKE"
