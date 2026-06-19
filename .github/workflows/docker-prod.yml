@@ -15,11 +15,11 @@ jobs:
       matrix:
         include:
           - { arch: linux/amd64, os: ubuntu-latest }
-          - { arch: linux/arm64, os: ubuntu-24.04-arm }
+          - { arch: linux/arm64, os: ubuntu-26.04-arm }
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           ref: master
 
@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           ref: master
 
@@ -61,7 +61,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           ref: master
 
