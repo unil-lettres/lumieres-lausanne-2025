@@ -44,7 +44,7 @@ from .models.documents import (
     Transcription,
 )
 from .models.documents.document import TranscriptionReviewer
-from .models.misc import ObjectCollection, Society
+from .models.misc import NotePlace, ObjectCollection, PlaceRecord, Society
 from .models.person import Person
 from .utils import get_default_publisher_user
 from .widgets import DynamicList, PersonWidget, StaticList
@@ -274,6 +274,41 @@ class NoteFormTranscription(NoteFormBase):
     class Meta(NoteFormBase.Meta):
         model = NoteTranscription
         fields = "__all__"  # Or just ['text', 'owner'] if that's all you need
+
+
+# ===============================
+# Place fiche forms (Lieux)
+# ===============================
+class NoteFormPlace(NoteFormBase):
+    """Form for a NotePlace (rich-text note attached to a place fiche)."""
+
+    # Virtual field for note_formset.html template compatibility (cf. NoteFormBiblio).
+    rte_type = forms.CharField(initial="CKE", widget=forms.HiddenInput(), required=False)
+
+    class Meta(NoteFormBase.Meta):
+        model = NotePlace
+        fields = "__all__"
+
+
+class PlaceRecordForm(forms.ModelForm):
+    """Main form for creating/editing a place fiche (Lieu).
+
+    Like the biblio and biography fiche forms, this exposes only the fiche's
+    own content fields. A place fiche is publicly readable; access control is
+    carried by its notes, not by the fiche, so no access field is shown here
+    and ``access_owner`` is set programmatically to the current editor.
+    """
+
+    class Meta:
+        model = PlaceRecord
+        fields = ["name", "category", "related_places"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["related_places"].required = False
+        # A place cannot be associated with itself.
+        if self.instance and self.instance.pk:
+            self.fields["related_places"].queryset = PlaceRecord.objects.exclude(pk=self.instance.pk)
 
 
 # ===============================
