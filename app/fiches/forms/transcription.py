@@ -37,6 +37,8 @@ from fiches.widgets import DynamicList
 
 
 class TranscriptionForm(forms.ModelForm):
+    """Form for editing a transcription."""
+
     manuscript = forms.CharField(widget=forms.HiddenInput(), required=False)
     manuscript_b = forms.CharField(widget=forms.HiddenInput(), required=False)
     author = forms.ModelChoiceField(queryset=User.objects.all().order_by("username"))
@@ -84,6 +86,7 @@ class TranscriptionForm(forms.ModelForm):
         exclude = ("modified_by",)
 
     def __init__(self, *args, **kwargs):
+        """Prefill reviewers and the default publisher for legacy transcriptions."""
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk and not self.is_bound:
             reviewer_ids = list(
@@ -110,9 +113,7 @@ class TranscriptionForm(forms.ModelForm):
                 self.initial["published_by"] = default_publisher.pk
 
     def save_reviewers(self, transcription):
-        """
-        Persist the explicit reviewers selection in the through table.
-        """
+        """Persist the explicit reviewers selection in the through table."""
         selected_reviewers = self.cleaned_data.get("reviewers")
         if selected_reviewers is None:
             return
@@ -128,6 +129,7 @@ class TranscriptionForm(forms.ModelForm):
         )
 
     def clean(self):
+        """Validate the form and resolve the linked manuscript."""
         cleaned_data = super().clean()
 
         manuscript_id = cleaned_data.get("manuscript")

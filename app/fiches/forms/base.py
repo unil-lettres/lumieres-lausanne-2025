@@ -27,7 +27,10 @@ from django import forms
 # Base Form for Notes
 # ===============================
 class NoteFormBase(forms.ModelForm):
+    """Base ModelForm for the per-fiche note forms (shared text handling)."""
+
     def clean_text(self):
+        """Return the submitted rich-text note content unchanged."""
         data = self.cleaned_data.get("text", "")
         return data
 

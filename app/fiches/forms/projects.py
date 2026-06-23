@@ -30,10 +30,13 @@ from fiches.models.misc.project import Project
 # ProjectForm Definition
 # ===============================
 class ProjectForm(forms.ModelForm):
+    """Form for editing a project."""
+
     url = forms.SlugField(
         label=_("Url"),
         help_text=_(
-            "ATTENTION, doit être unique. Uniquement caractères non-accentués, tiret et chiffres. Pas d'espaces ni de ponctuation."
+            "ATTENTION, doit être unique. Uniquement caractères non-accentués, "
+            "tiret et chiffres. Pas d'espaces ni de ponctuation."
         ),
         required=True,
         widget=forms.TextInput(

@@ -28,11 +28,10 @@ from fiches.models.misc import ObjectCollection
 
 
 class ObjectCollectionForm(forms.ModelForm):
-    """
-    Form for the ObjectCollection model.
-    """
+    """Form for the ObjectCollection model."""
 
     def __init__(self, *args, **kwargs):
+        """Configure the owner field and field editability from the request user."""
         self.request_user = kwargs.pop("user", None)
         self.can_edit_details = kwargs.pop("can_edit_details", True)
         super().__init__(*args, **kwargs)
@@ -71,10 +70,12 @@ class ObjectCollectionForm(forms.ModelForm):
         }
 
     def clean(self):
+        """Return the cleaned form data unchanged."""
         cleaned_data = super().clean()
         return cleaned_data
 
     def save(self, commit=True):
+        """Save the collection, applying the owner-assignment rules."""
         collection = super().save(commit=False)
 
         can_change_owner = (

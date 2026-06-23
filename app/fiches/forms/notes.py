@@ -33,8 +33,8 @@ from fiches.models.documents import (
 # NoteFormBiblio Definition
 # ===============================
 class NoteFormBiblio(NoteFormBase):
-    """
-    Form for editing the NoteBiblio model (notes referencing a Biblio).
+    """Form for editing the NoteBiblio model (notes referencing a Biblio).
+
     It should NOT contain fields that belong to Biblio, like subj_person, etc.
     """
 
@@ -50,9 +50,7 @@ class NoteFormBiblio(NoteFormBase):
 # NoteFormTranscription Definition
 # ===============================
 class NoteFormTranscription(NoteFormBase):
-    """
-    Form for editing the NoteTranscription model (notes referencing a Transcription).
-    """
+    """Form for editing the NoteTranscription model (notes referencing a Transcription)."""
 
     class Meta(NoteFormBase.Meta):
         model = NoteTranscription

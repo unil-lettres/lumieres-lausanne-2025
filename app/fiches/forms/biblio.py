@@ -41,6 +41,12 @@ from fiches.models.misc import Society
 from fiches.models.person import Person
 from fiches.widgets import DynamicList, PersonWidget, StaticList
 
+# DocumentType IDs whose Biblio form requires a specific title/type field.
+DOCTYPE_BOOK = 2
+DOCTYPE_JOURNAL = 3
+DOCTYPE_DICTIONARY = 4
+DOCTYPE_MANUSCRIPT = 5
+
 
 # ===============================
 # BiblioForm Definition
@@ -97,6 +103,7 @@ class BiblioForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        """Normalise duplicated POST values and format the initial dates."""
         self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
 
@@ -157,6 +164,7 @@ class BiblioForm(forms.ModelForm):
                         continue
 
     def clean(self):
+        """Require the title/type field that matches the selected document type."""
         cleaned_data = super().clean()
         doctype = cleaned_data.get("document_type")
         book_title = cleaned_data.get("book_title")
@@ -166,14 +174,14 @@ class BiblioForm(forms.ModelForm):
 
         msg = _("Ce champ est obligatoire.")
         if doctype:
-            # Example logic from your old code:
-            if doctype.id == 2 and not book_title:
+            # Each document type requires its own title/type field.
+            if doctype.id == DOCTYPE_BOOK and not book_title:
                 self.add_error("book_title", msg)
-            elif doctype.id == 3 and not journal_title:
+            elif doctype.id == DOCTYPE_JOURNAL and not journal_title:
                 self.add_error("journal_title", msg)
-            elif doctype.id == 4 and not dictionary_title:
+            elif doctype.id == DOCTYPE_DICTIONARY and not dictionary_title:
                 self.add_error("dictionary_title", msg)
-            elif doctype.id == 5 and not manuscript_type:
+            elif doctype.id == DOCTYPE_MANUSCRIPT and not manuscript_type:
                 self.add_error("manuscript_type", msg)
 
         primary_kw_msg = _("Au moins un mot-clé primaire est obligatoire.")
@@ -183,10 +191,10 @@ class BiblioForm(forms.ModelForm):
         return cleaned_data
 
     def clean_subj_person(self):
-        """
+        """Return Person instances for the subj_person M2M field.
+
         Accepts a list of person PKs, legacy 'pk|label' strings, or '|label'
         strings submitted by the DynamicList widget for newly typed people.
-        Returns a list of Person instances for the M2M field.
         """
         raw_list = self.data.getlist("subj_person")
         persons = []
@@ -229,6 +237,8 @@ class BiblioForm(forms.ModelForm):
 # Other Form Definitions
 # ===============================
 class ManuscriptForm(forms.ModelForm):
+    """Form for editing the Manuscript model."""
+
     title = forms.CharField(
         label=Manuscript._meta.get_field("title").verbose_name,
         widget=forms.Textarea(attrs={"cols": "64", "rows": "3"}),
@@ -279,6 +289,8 @@ class ManuscriptForm(forms.ModelForm):
 
 
 class ContributionManForm(forms.ModelForm):
+    """Form for a manuscript contribution (person and contribution type)."""
+
     person = forms.ModelChoiceField(
         queryset=Person.objects.all(),
         widget=PersonWidget(
@@ -299,6 +311,8 @@ class ContributionManForm(forms.ModelForm):
 
 
 class ContributionDocForm(forms.ModelForm):
+    """Form for a document contribution (person and contribution type)."""
+
     # 1) Use a simple CharField, not ModelChoiceField
     person = forms.CharField(
         widget=PersonWidget(
@@ -318,6 +332,7 @@ class ContributionDocForm(forms.ModelForm):
         fields = "__all__"
 
     def __init__(self, *args, litterature_type=None, **kwargs):
+        """Resolve the contribution's litterature type from the linked document."""
         self.litterature_type = litterature_type
         super().__init__(*args, **kwargs)
         if not self.litterature_type and getattr(self.instance, "document_id", None):
@@ -328,6 +343,7 @@ class ContributionDocForm(forms.ModelForm):
     # 2) Parse out pk from “123|Name” in clean_person()
     #
     def clean_person(self):
+        """Resolve the submitted "pk|name" person value to a Person instance."""
         raw_value = self.cleaned_data.get("person", "")
         if not raw_value.strip():
             return None
@@ -360,8 +376,8 @@ class ContributionDocForm(forms.ModelForm):
         return person
 
     def _apply_person_defaults(self, person):
-        """
-        Ensure a freshly created Person mirrors the bibliography type:
+        """Ensure a freshly created Person mirrors the bibliography type.
+
         - Secondary literature => modern=True
         - Primary literature (default) => modern=False
         In both cases, keep them without biography by default.
@@ -383,6 +399,7 @@ class ContributionDocForm(forms.ModelForm):
     # 3) Optionally skip entire row if no person was set
     #
     def clean(self):
+        """Drop the contribution row when no person is provided."""
         cleaned_data = super().clean()
         person = cleaned_data.get("person")
         # On retire la ligne seulement si aucun auteur n'est renseigné

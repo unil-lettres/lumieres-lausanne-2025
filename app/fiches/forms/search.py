@@ -33,7 +33,10 @@ from fiches.models.person import Person
 
 
 class FichesSearchForm(ModelSearchForm):
+    """Haystack search form scoping results by indexed model and user access."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the Haystack model search form."""
         super().__init__(*args, **kwargs)
 
     def get_models(self):
@@ -45,6 +48,7 @@ class FichesSearchForm(ModelSearchForm):
         return search_models
 
     def search(self):
+        """Run the search, restricting results to what the user may access."""
         if not self.is_valid():
             return self.no_query_found()
 
