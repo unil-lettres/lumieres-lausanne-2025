@@ -18,17 +18,40 @@
 #
 # This copyright notice MUST APPEAR in all copies of the file.
 
-from types import SimpleNamespace
-from unittest.mock import patch
+"""Form for editing projects."""
 
-from django.test import SimpleTestCase
-from fiches.forms import TranscriptionForm
-from fiches.models.documents.document import Transcription
+from django import forms
+from django.utils.translation import gettext_lazy as _
+
+from fiches.models.misc.project import Project
 
 
-class TranscriptionFormDefaultsTest(SimpleTestCase):
-    def test_published_by_defaults_to_configured_user_when_empty(self):
-        instance = Transcription()
-        with patch("fiches.forms.transcription.get_default_publisher_user", return_value=SimpleNamespace(pk=12)):
-            form = TranscriptionForm(instance=instance)
-        self.assertEqual(form.initial.get("published_by"), 12)
+# ===============================
+# ProjectForm Definition
+# ===============================
+class ProjectForm(forms.ModelForm):
+    url = forms.SlugField(
+        label=_("Url"),
+        help_text=_(
+            "ATTENTION, doit être unique. Uniquement caractères non-accentués, tiret et chiffres. Pas d'espaces ni de ponctuation."
+        ),
+        required=True,
+        widget=forms.TextInput(
+            attrs={
+                "size": 40,
+                "style": "width: 60%;",
+                "data-slug-source": "name",
+                "autocomplete": "off",
+            }
+        ),
+    )
+
+    class Meta:
+        model = Project
+        fields = "__all__"
+
+    class Media:
+        js = (
+            "js/lib/urlify.js",
+            "js/admin/project_url_tools.js",
+        )

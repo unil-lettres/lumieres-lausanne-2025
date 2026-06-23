@@ -18,49 +18,28 @@
 #
 # This copyright notice MUST APPEAR in all copies of the file.
 
+"""Forms for the bibliographic and document fiches (Biblio, Manuscript, contributions, files)."""
+
 from ckeditor.widgets import CKEditorWidget
 from django import forms
-from django.contrib.auth.models import User
-from django.db.models import Q
 from django.forms.widgets import RadioSelect
 from django.utils.translation import gettext_lazy as _
 
-from fiches.models.misc.project import Project
-
-from .constants import DATE_DISPLAY_FORMAT, DATE_INPUT_FORMATS
-from .fields import MultiplePersonField, MultipleUserField
-from .models.contributions import PrimaryKeyword, SecondaryKeyword
-from .models.contributiontype import ContributionType
-from .models.documents import (
-    TRANSCRIPTION_CHOICES,
+from fiches.constants import DATE_DISPLAY_FORMAT, DATE_INPUT_FORMATS
+from fiches.fields import MultiplePersonField
+from fiches.models.contributions import PrimaryKeyword, SecondaryKeyword
+from fiches.models.contributiontype import ContributionType
+from fiches.models.documents import (
     Biblio,
     ContributionDoc,
     ContributionMan,
     DocumentFile,
     Manuscript,
     ManuscriptType,
-    NoteBiblio,
-    NoteTranscription,
-    Transcription,
 )
-from .models.documents.document import TranscriptionReviewer
-from .models.misc import NotePlace, ObjectCollection, PlaceRecord, Society
-from .models.person import Person
-from .utils import get_default_publisher_user
-from .widgets import DynamicList, PersonWidget, StaticList
-
-
-# ===============================
-# Base Form for Notes
-# ===============================
-class NoteFormBase(forms.ModelForm):
-    def clean_text(self):
-        data = self.cleaned_data.get("text", "")
-        return data
-
-    class Meta:
-        # "abstract" might be omitted, etc.
-        fields = []  # or define shared fields here if you want
+from fiches.models.misc import Society
+from fiches.models.person import Person
+from fiches.widgets import DynamicList, PersonWidget, StaticList
 
 
 # ===============================
@@ -247,71 +226,6 @@ class BiblioForm(forms.ModelForm):
 
 
 # ===============================
-# NoteFormBiblio Definition
-# ===============================
-class NoteFormBiblio(NoteFormBase):
-    """
-    Form for editing the NoteBiblio model (notes referencing a Biblio).
-    It should NOT contain fields that belong to Biblio, like subj_person, etc.
-    """
-
-    # Add virtual rte_type field for template compatibility
-    rte_type = forms.CharField(initial="CKE", widget=forms.HiddenInput(), required=False)
-
-    class Meta(NoteFormBase.Meta):
-        model = NoteBiblio
-        fields = "__all__"  # Or just ['text', 'owner'] if that's all you need
-
-
-# ===============================
-# NoteFormTranscription Definition
-# ===============================
-class NoteFormTranscription(NoteFormBase):
-    """
-    Form for editing the NoteTranscription model (notes referencing a Transcription).
-    """
-
-    class Meta(NoteFormBase.Meta):
-        model = NoteTranscription
-        fields = "__all__"  # Or just ['text', 'owner'] if that's all you need
-
-
-# ===============================
-# Place fiche forms (Lieux)
-# ===============================
-class NoteFormPlace(NoteFormBase):
-    """Form for a NotePlace (rich-text note attached to a place fiche)."""
-
-    # Virtual field for note_formset.html template compatibility (cf. NoteFormBiblio).
-    rte_type = forms.CharField(initial="CKE", widget=forms.HiddenInput(), required=False)
-
-    class Meta(NoteFormBase.Meta):
-        model = NotePlace
-        fields = "__all__"
-
-
-class PlaceRecordForm(forms.ModelForm):
-    """Main form for creating/editing a place fiche (Lieu).
-
-    Like the biblio and biography fiche forms, this exposes only the fiche's
-    own content fields. A place fiche is publicly readable; access control is
-    carried by its notes, not by the fiche, so no access field is shown here
-    and ``access_owner`` is set programmatically to the current editor.
-    """
-
-    class Meta:
-        model = PlaceRecord
-        fields = ["name", "category", "related_places"]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["related_places"].required = False
-        # A place cannot be associated with itself.
-        if self.instance and self.instance.pk:
-            self.fields["related_places"].queryset = PlaceRecord.objects.exclude(pk=self.instance.pk)
-
-
-# ===============================
 # Other Form Definitions
 # ===============================
 class ManuscriptForm(forms.ModelForm):
@@ -364,124 +278,6 @@ class ManuscriptForm(forms.ModelForm):
         )  # Ensure these fields exist and are correctly excluded
 
 
-class TranscriptionForm(forms.ModelForm):
-    manuscript = forms.CharField(widget=forms.HiddenInput(), required=False)
-    manuscript_b = forms.CharField(widget=forms.HiddenInput(), required=False)
-    author = forms.ModelChoiceField(queryset=User.objects.all().order_by("username"))
-    author2 = forms.ModelChoiceField(queryset=User.objects.all().order_by("username"), required=False)
-    reviewers = MultipleUserField(
-        queryset=User.objects.all().order_by("username"),
-        widget=DynamicList(
-            rel=TranscriptionReviewer.user,
-            add_title="Ajouter un relecteur",
-            placeholder="nom d'utilisateur",
-        ),
-        required=False,
-    )
-    status = forms.IntegerField(
-        widget=forms.RadioSelect(choices=TRANSCRIPTION_CHOICES["status"]),
-        label=_("État"),
-        initial=0,
-    )
-    scope = forms.IntegerField(
-        widget=forms.RadioSelect(choices=TRANSCRIPTION_CHOICES["scope"]),
-        label=_("Transcription"),
-        initial=0,
-    )
-    published_date = forms.DateTimeField(
-        label=_("Date de mise en ligne"),
-        required=False,
-        input_formats=["%d/%m/%Y, %H:%M", "%d/%m/%Y %H:%M", "%Y-%m-%dT%H:%M"],
-        widget=forms.DateTimeInput(
-            attrs={
-                "type": "text",
-                "placeholder": "jj/mm/aaaa",
-                "class": "datetimepicker-fr",
-            },
-            format="%d/%m/%Y, %H:%M",
-        ),
-    )
-    published_by = forms.ModelChoiceField(
-        queryset=User.objects.all().order_by("username"),
-        label=_("Mis en ligne par"),
-        required=False,
-    )
-
-    class Meta:
-        model = Transcription
-        exclude = ("modified_by",)
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if self.instance and self.instance.pk and not self.is_bound:
-            reviewer_ids = list(
-                TranscriptionReviewer.objects.filter(transcription_id=self.instance.pk).values_list(
-                    "user_id", flat=True
-                )
-            )
-            self.initial.setdefault("reviewers", reviewer_ids)
-
-            # Legacy rows can be public and dated but still miss "published_by".
-            # Prefill with the default publisher in the form UI without mutating DB.
-            if self.instance.access_public and self.instance.published_date and not self.instance.published_by_id:
-                default_publisher = get_default_publisher_user()
-                if default_publisher and not self.initial.get("published_by"):
-                    self.initial["published_by"] = default_publisher.pk
-
-        if (
-            not self.is_bound
-            and not self.initial.get("published_by")
-            and not getattr(self.instance, "published_by_id", None)
-        ):
-            default_publisher = get_default_publisher_user()
-            if default_publisher:
-                self.initial["published_by"] = default_publisher.pk
-
-    def save_reviewers(self, transcription):
-        """
-        Persist the explicit reviewers selection in the through table.
-        """
-        selected_reviewers = self.cleaned_data.get("reviewers")
-        if selected_reviewers is None:
-            return
-
-        selected_ids = set(selected_reviewers.values_list("id", flat=True))
-        TranscriptionReviewer.objects.filter(transcription=transcription).exclude(user_id__in=selected_ids).delete()
-        existing_ids = set(
-            TranscriptionReviewer.objects.filter(transcription=transcription).values_list("user_id", flat=True)
-        )
-        missing_ids = selected_ids - existing_ids
-        TranscriptionReviewer.objects.bulk_create(
-            [TranscriptionReviewer(transcription=transcription, user_id=user_id) for user_id in missing_ids]
-        )
-
-    def clean(self):
-        cleaned_data = super().clean()
-
-        manuscript_id = cleaned_data.get("manuscript")
-        manuscript_b_id = cleaned_data.get("manuscript_b")
-
-        if manuscript_id:
-            try:
-                cleaned_data["manuscript"] = Manuscript.objects.get(pk=manuscript_id)
-            except Manuscript.DoesNotExist:
-                self.add_error("manuscript", _("Manuscript does not exist."))
-                del cleaned_data["manuscript"]
-        else:
-            del cleaned_data["manuscript"]
-
-        if manuscript_b_id:
-            try:
-                cleaned_data["manuscript_b"] = Biblio.objects.get(pk=manuscript_b_id)
-            except Biblio.DoesNotExist:
-                self.add_error("manuscript_b", _("Bibliography does not exist."))
-                del cleaned_data["manuscript_b"]
-        else:
-            del cleaned_data["manuscript_b"]
-
-        return cleaned_data
-
-
 class ContributionManForm(forms.ModelForm):
     person = forms.ModelChoiceField(
         queryset=Person.objects.all(),
@@ -500,142 +296,6 @@ class ContributionManForm(forms.ModelForm):
     class Meta:
         model = ContributionMan
         fields = "__all__"
-
-
-class ObjectCollectionForm(forms.ModelForm):
-    """
-    Form for the ObjectCollection model.
-    """
-
-    def __init__(self, *args, **kwargs):
-        self.request_user = kwargs.pop("user", None)
-        self.can_edit_details = kwargs.pop("can_edit_details", True)
-        super().__init__(*args, **kwargs)
-
-        can_change_owner = bool(self.request_user and self.request_user.has_perm("fiches.change_collection_owner"))
-
-        if can_change_owner:
-            owner_queryset = User.objects.order_by("last_name", "first_name", "username")
-            self.fields["owner"] = forms.ModelChoiceField(
-                queryset=owner_queryset,
-                label=_("Propriétaire"),
-                help_text=_("L'utilisateur qui possédera cette collection."),
-                required=True,
-            )
-            if self.instance and self.instance.pk:
-                self.initial.setdefault("owner", self.instance.owner_id)
-            elif self.request_user:
-                self.initial.setdefault("owner", self.request_user.pk)
-            self.order_fields(["owner"] + [f for f in self.fields if f != "owner"])
-        else:
-            self.fields.pop("owner", None)
-
-        if not self.can_edit_details:
-            for field_name, field in self.fields.items():
-                if field_name == "owner":
-                    continue
-                field.disabled = True
-
-    class Meta:
-        model = ObjectCollection
-        # Exclude the owner field so it won't be rendered or expected in POST data.
-        exclude = ["owner", "persons", "bibliographies", "transcriptions"]
-        widgets = {
-            "name": forms.TextInput(attrs={"placeholder": _("Enter collection name")}),
-            # Add other widgets as needed
-        }
-
-    def clean(self):
-        cleaned_data = super().clean()
-        return cleaned_data
-
-    def save(self, commit=True):
-        collection = super().save(commit=False)
-
-        can_change_owner = (
-            hasattr(self, "request_user")
-            and self.request_user
-            and self.request_user.has_perm("fiches.change_collection_owner")
-            and "owner" in self.cleaned_data
-        )
-        if can_change_owner:
-            new_owner = self.cleaned_data["owner"]
-            if new_owner:
-                collection.owner = new_owner
-                if hasattr(collection, "access_owner"):
-                    collection.access_owner = new_owner
-
-        if commit:
-            collection.save()
-            self.save_m2m()
-        return collection
-
-
-from haystack import connections
-from haystack.forms import ModelSearchForm
-from haystack.query import RelatedSearchQuerySet
-
-from fiches.models import Biblio, Person, Transcription
-
-
-class FichesSearchForm(ModelSearchForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    def get_models(self):
-        """Return an alphabetical list of model classes in the index."""
-        search_models = super().get_models()
-        if not search_models:
-            # If no models are found, retrieve them from the Haystack unified index
-            search_models = connections["default"].get_unified_index().get_indexed_models()
-        return search_models
-
-    def search(self):
-        if not self.is_valid():
-            return self.no_query_found()
-
-        query = self.cleaned_data.get("q")
-        if not query:
-            return self.no_query_found()
-
-        # Restrict results based on user permissions and access
-        if self.request and self.request.user.is_authenticated:
-            if not self.request.user.has_perm("fiches.access_unpublished_transcription"):
-                self.searchqueryset = RelatedSearchQuerySet().load_all_queryset(
-                    Transcription,
-                    Transcription.objects.filter(
-                        Q(access_public=True)
-                        | Q(author=self.request.user)
-                        | Q(author2=self.request.user)
-                        | Q(access_groups__users=self.request.user)
-                        | Q(access_groups__groups__user=self.request.user)
-                        | Q(project__members=self.request.user)
-                        | Q(
-                            access_public=False,
-                            access_private=False,
-                            access_groups__isnull=True,
-                        )
-                    ),
-                )
-        else:
-            self.searchqueryset = RelatedSearchQuerySet()
-
-        # Apply the search query
-        sqs = self.searchqueryset.auto_query(query)
-
-        if self.load_all:
-            sqs = sqs.load_all()
-
-        # Filter and order results based on models
-        models = self.get_models()
-        ordered_models = [m for m in (Person, Biblio, Transcription) if m in models]
-
-        result_list = []
-        for model in ordered_models:
-            model_results = sqs.models(model)
-            result_list.extend(list(model_results))
-
-        return result_list
 
 
 class ContributionDocForm(forms.ModelForm):
@@ -759,34 +419,3 @@ class ContributionDocSecForm(ContributionDocForm):
         if hasattr(Person, "modern"):
             self.fields["person"].widget.attrs["data-modern"] = "true"
         # Optionally, you could add logic here to filter choices if using a ModelChoiceField
-
-
-# ===============================
-# ProjectForm Definition
-# ===============================
-class ProjectForm(forms.ModelForm):
-    url = forms.SlugField(
-        label=_("Url"),
-        help_text=_(
-            "ATTENTION, doit être unique. Uniquement caractères non-accentués, tiret et chiffres. Pas d'espaces ni de ponctuation."
-        ),
-        required=True,
-        widget=forms.TextInput(
-            attrs={
-                "size": 40,
-                "style": "width: 60%;",
-                "data-slug-source": "name",
-                "autocomplete": "off",
-            }
-        ),
-    )
-
-    class Meta:
-        model = Project
-        fields = "__all__"
-
-    class Media:
-        js = (
-            "js/lib/urlify.js",
-            "js/admin/project_url_tools.js",
-        )

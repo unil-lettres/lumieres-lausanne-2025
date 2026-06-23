@@ -18,17 +18,19 @@
 #
 # This copyright notice MUST APPEAR in all copies of the file.
 
-from types import SimpleNamespace
-from unittest.mock import patch
+"""Base form shared by the per-fiche note forms."""
 
-from django.test import SimpleTestCase
-from fiches.forms import TranscriptionForm
-from fiches.models.documents.document import Transcription
+from django import forms
 
 
-class TranscriptionFormDefaultsTest(SimpleTestCase):
-    def test_published_by_defaults_to_configured_user_when_empty(self):
-        instance = Transcription()
-        with patch("fiches.forms.transcription.get_default_publisher_user", return_value=SimpleNamespace(pk=12)):
-            form = TranscriptionForm(instance=instance)
-        self.assertEqual(form.initial.get("published_by"), 12)
+# ===============================
+# Base Form for Notes
+# ===============================
+class NoteFormBase(forms.ModelForm):
+    def clean_text(self):
+        data = self.cleaned_data.get("text", "")
+        return data
+
+    class Meta:
+        # "abstract" might be omitted, etc.
+        fields = []  # or define shared fields here if you want
