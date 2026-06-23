@@ -43,7 +43,7 @@ from fiches.models.misc.notes import NoteBase
 class PlaceCategory(models.Model):
     """Admin-managed list of place categories (catégories de lieux).
 
-    Seeded by migration ``0006`` with seven default categories — Pays,
+    Seeded with seven default categories — Pays,
     Canton/Département, Région, Ville/Village, Domaine, Maison de campagne,
     Quartier — which admins can edit afterwards.
     """
