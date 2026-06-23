@@ -133,3 +133,36 @@ def test_delete_place(client, editor, category):
     response = client.post(reverse("place-delete", args=[place.pk]))
     assert response.status_code == 302
     assert not PlaceRecord.objects.filter(pk=place.pk).exists()
+
+
+@pytest.mark.django_db
+def test_workspace_shows_place_creation_for_admin(client, editor):
+    client.force_login(editor)
+    response = client.get(reverse("workspace-main"))
+    assert response.status_code == 200
+    assert "Créer une fiche lieu".encode() in response.content
+    assert reverse("place-create").encode() in response.content
+
+
+@pytest.mark.django_db
+def test_workspace_hides_place_creation_without_perm(client, django_user_model):
+    user = django_user_model.objects.create_user(username="plain", password="pw")
+    client.force_login(user)
+    response = client.get(reverse("workspace-main"))
+    assert response.status_code == 200
+    assert "Créer une fiche lieu".encode() not in response.content
+
+
+@pytest.mark.django_db
+def test_display_shows_create_button_for_admin(client, editor, category):
+    place = PlaceRecord.objects.create(name="Lausanne", category=category)
+    client.force_login(editor)
+    response = client.get(reverse("place-display", args=[place.pk]))
+    assert reverse("place-create").encode() in response.content
+
+
+@pytest.mark.django_db
+def test_display_hides_create_button_for_anonymous(client, category):
+    place = PlaceRecord.objects.create(name="Lausanne", category=category)
+    response = client.get(reverse("place-display", args=[place.pk]))
+    assert reverse("place-create").encode() not in response.content

@@ -10,6 +10,9 @@
 {% block main_header_title %}{% trans "Fiche lieu" %}{% endblock main_header_title %}
 
 {% block main_content %}
+{% if perms.fiches.add_placerecord %}
+<p class="place-actions"><a class="external" href="{% url 'place-create' %}">{% trans "Créer une nouvelle fiche lieu" %}</a></p>
+{% endif %}
 <h2>{{ place.name }}</h2>
 <dl class="place-detail">
 	<dt>{% trans "Catégorie" %}</dt>
