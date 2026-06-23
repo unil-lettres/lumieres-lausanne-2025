@@ -1,0 +1,60 @@
+{% extends ext_template %}
+{% comment %}<!--
+   Copyright (C) 2010-2026 Université de Lausanne, SIER
+   Service Infrastructure Enseignement et Recherche
+
+   This file is part of Lumières.Lausanne.
+   Lumières.Lausanne is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This copyright notice MUST APPEAR in all copies of the file.
+-->{% endcomment %}
+{% load i18n fiches_extras %}
+
+{% block head %}
+	{{ block.super }}
+	{{ form.media }}
+{% endblock head %}
+
+{% block main_menu %}{% with "lieu" as fiche_type %}{{ block.super }}{% endwith %}{% endblock %}
+{% block main_header_title %}{{ new_object|yesno:"Nouvelle fiche lieu,Modification de fiche lieu" }}{% endblock %}
+
+{% block but_cancel_onclick %}
+	{% if new_object %}
+		{% if prev_url %}return fiches_edit.cancelEdition('{{ prev_url }}');
+		{% else %}return fiches_edit.cancelEdition('{% url 'workspace-main' %}');{% endif %}
+	{% else %}return fiches_edit.cancelEdition('{% url 'place-display' form.instance.pk %}');{% endif %}
+{% endblock %}
+
+{% block main_content %}
+<h2>{{ form.instance }}</h2>
+<form method="post" action="" id="place-form-id" class="edit-form">{% csrf_token %}
+	{{ form.id }}
+	{% for fs in place_formdef.fieldsets %}
+		{% if fs.template %}
+			{% with fs as fieldset %}{% include fs.template %}{% endwith %}
+		{% else %}
+		<fieldset>
+			{% if fs.title %}<div class="legend">{{ fs.title }}</div>{% endif %}
+			{% for f in fs.fields %}
+				{% if f.template %}
+					{% include f.template %}
+				{% else %}{% if f.field %}
+					{% with f.field as field %}
+					<div class="fieldWrapper {{ field.html_name }}">
+						{{ field.errors }}
+						<label for="{{ field.auto_id }}"{% if f.class %} class="{{ f.class }}"{% endif %}>{{ field.label }}
+							{% if field.help_text %} <span class="help_text">{{ field.help_text }}</span>{% endif %}</label>
+						{{ field }}
+					</div>
+					<div class="fixclear"></div>
+					{% endwith %}
+				{% endif %}{% endif %}
+			{% endfor %}
+		</fieldset>
+		{% endif %}
+	{% endfor %}
+</form>
+{% endblock main_content %}

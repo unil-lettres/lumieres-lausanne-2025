@@ -1,0 +1,57 @@
+{% comment %}<!--
+   Copyright (C) 2010-2026 Université de Lausanne, SIER
+   This file is part of Lumières.Lausanne (GNU AGPL v3 or later).
+   This copyright notice MUST APPEAR in all copies of the file.
+-->{% endcomment %}
+<div class="formset reference-formset">
+	<div class="form-header">
+		<div class="field reference_site">{{ referenceFormset.empty_form.reference_site.label }}</div>
+		<div class="field identifier">{{ referenceFormset.empty_form.identifier.label }}</div>
+		<div class="field cmd">Supprimer</div>
+	</div>
+	{{ referenceFormset.management_form }}
+	{% for reference_form in referenceFormset.forms %}
+	<div class="form-instance reference-form{% if reference_form.errors %} error-in-form{% endif %}">
+		{{ reference_form.id }}
+		<div class="field reference_site">{{ reference_form.reference_site.errors }}{{ reference_form.reference_site }}</div>
+		<div class="field identifier">{{ reference_form.identifier.errors }}{{ reference_form.identifier }}</div>
+		{% if reference_form.instance.id %}<div class="field delete-field">{{ reference_form.DELETE }}</div>{% endif %}
+	</div>
+	{% endfor %}
+	{% with referenceFormset.empty_form as reference_form %}
+	<div id="reference-empty_form" class="empty_form" style="display:none">
+		<div class="form-instance reference-form">
+			{{ reference_form.id }}
+			<div class="field reference_site">{{ reference_form.reference_site }}</div>
+			<div class="field identifier">{{ reference_form.identifier }}</div>
+			<div class="field delete-field"><input type="checkbox" name="extra_form_DELETE" class="formset_delete_but"></div>
+		</div>
+	</div>
+	{% endwith %}
+</div>
+<div class="formset-new-field-bar" id="reference-formset-new-field-bar">
+	<button type="button" class="formset-add-new-field" id="id_but_reference_add_field">Ajouter un site de référence</button>
+</div>
+
+<script type="text/javascript">
+(function ($) {
+	function __init__() {
+		var formset = $(".reference-formset");
+		formset.find(".reference-form").not(".empty_form .reference-form").each(function () {
+			fiches_edit.addRemoveFormBut(this, "Supprimer le site de référence");
+		});
+		$("#id_but_reference_add_field").bind("click", add_reference_field);
+		fiches_edit.applyAddFieldButtonUI($("#id_but_reference_add_field"));
+	}
+	__init__();
+
+	function add_reference_field() {
+		var emptyFormHtml = $("#reference-empty_form").html(),
+			newIdx = parseInt($("#id_reference_links-TOTAL_FORMS").val()),
+			newForm = $(emptyFormHtml.replace(/__prefix__/g, newIdx));
+		$("#id_reference_links-TOTAL_FORMS").val(newIdx + 1);
+		$(".reference-form").not("#reference-empty_form .reference-form").last().after(newForm);
+		fiches_edit.addRemoveFormBut(newForm, "Supprimer le site de référence");
+	}
+})(jQuery);
+</script>

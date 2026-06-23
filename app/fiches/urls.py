@@ -33,6 +33,7 @@ from fiches.views import (
     workspace_collections,
 )
 from fiches.views import collections as views_collections
+from fiches.views import place as views_place
 from fiches.views import transcription as views_transcription
 from fiches.views.bibliography import cancel_new_bibliography as bibliography_cancel
 from fiches.views.bibliography import create as bibliography_create
@@ -102,6 +103,11 @@ urlpatterns = [
     path("bio/<int:person_id>/relations/", biography_relations_list, name="biography-relations-list"),
     path("bio/pfnb/", biography_person_without_bio, name="persons-for-new-biography"),
     path("bio/ajax/add_person/", biography_ajax_add_person, name="biography-ajax-add-person"),
+    # Place (Lieu) URLs ===============================================================================================
+    path("lieu/<int:place_id>/", views_place.display, name="place-display"),
+    path("lieu/edit/<int:place_id>/", views_place.edit, name="place-edit"),
+    path("lieu/new/", views_place.create, name="place-create"),
+    path("lieu/delete/<int:place_id>/", views_place.delete, name="place-delete"),
     # Manuscript URLs =================================================================================================
     path("man/<int:man_id>/", bibliography_display_man, name="manuscript-display"),
     # Transcription URLs ==============================================================================================

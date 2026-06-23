@@ -109,7 +109,9 @@ class PlaceRecord(ACModel):
         ]
 
     def __str__(self):
-        return f"{self.name} ({self.category})"
+        if self.category_id:
+            return f"{self.name} ({self.category})"
+        return self.name
 
 
 class PlaceVariant(models.Model):

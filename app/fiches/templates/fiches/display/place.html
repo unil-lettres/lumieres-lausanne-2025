@@ -1,0 +1,40 @@
+{% extends "fiches/fiche_base2.html" %}
+{% comment %}<!--
+   Copyright (C) 2010-2026 Université de Lausanne, SIER
+   This file is part of Lumières.Lausanne (GNU AGPL v3 or later).
+   This copyright notice MUST APPEAR in all copies of the file.
+-->{% endcomment %}
+{% load i18n %}
+
+{% block page_title %} | {{ place.name }}{% endblock page_title %}
+{% block main_header_title %}{% trans "Fiche lieu" %}{% endblock main_header_title %}
+
+{% block main_content %}
+<h2>{{ place.name }}</h2>
+<dl class="place-detail">
+	<dt>{% trans "Catégorie" %}</dt>
+	<dd>{{ place.category }}</dd>
+
+	{% if place.variants.all %}
+	<dt>{% trans "Variantes" %}</dt>
+	<dd>{% for variant in place.variants.all %}{{ variant.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</dd>
+	{% endif %}
+
+	{% if place.related_places.all %}
+	<dt>{% trans "Lieux associés" %}</dt>
+	<dd>{% for related in place.related_places.all %}<a href="{% url 'place-display' related.pk %}">{{ related.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</dd>
+	{% endif %}
+
+	{% if place.reference_links.all %}
+	<dt>{% trans "Sites de référence" %}</dt>
+	<dd>
+		<ul>
+		{% for reference in place.reference_links.all %}
+			<li>{{ reference.reference_site }} : <a href="{{ reference.url }}" target="_blank" rel="noopener">{{ reference.identifier }}</a></li>
+		{% endfor %}
+		</ul>
+	</dd>
+	{% endif %}
+</dl>
+{% comment %} Automatic listings (biographies, publications, transcriptions) are added in spec 3.4. {% endcomment %}
+{% endblock main_content %}
