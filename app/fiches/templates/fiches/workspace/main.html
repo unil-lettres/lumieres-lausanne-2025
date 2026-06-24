@@ -90,13 +90,6 @@
                         {% endspaceless %}
                     </dd>
                     {% endif %}
-                    {% if perms.fiches.add_placerecord %}
-                    <dt>Créer une fiche lieu</dt>
-                    <dd>
-                        <p>Avant de créer une fiche lieu, <strong>veuillez vous assurer qu'elle n'existe pas déjà</strong> dans la base.</p>
-                        <p><a class="external" href="{% url 'place-create' %}">Créer une nouvelle fiche lieu</a></p>
-                    </dd>
-                    {% endif %}
                     {% if perms.fiches.add_biography %}
                     <dt>Créer une fiche biographique</dt>
                     <dd>
@@ -107,6 +100,14 @@
                                 <div class="loader"></div>
                             </div>
                         </div>
+                    </dd>
+                    {% endif %}
+                    {% if perms.fiches.add_placerecord %}
+                    <dt>Créer une fiche lieu</dt>
+                    <dd>
+                        {% comment %}TODO: provisional wording — review and finalise this message before going to production (pending client review).{% endcomment %}
+                        <p>Avant de créer une fiche lieu, <strong>veuillez vous assurer qu'elle n'existe pas déjà</strong> dans la base.</p>
+                        <p><a class="external" href="{% url 'place-create' %}">Créer une nouvelle fiche lieu</a></p>
                     </dd>
                     {% endif %}
                     <dt>Consignes d'utilisation</dt>
