@@ -108,6 +108,7 @@ urlpatterns = [
     path("lieu/edit/<int:place_id>/", views_place.edit, name="place-edit"),
     path("lieu/new/", views_place.create, name="place-create"),
     path("lieu/delete/<int:place_id>/", views_place.delete, name="place-delete"),
+    path("lieu/autocomplete/", views_place.place_autocomplete, name="place-autocomplete"),
     # Manuscript URLs =================================================================================================
     path("man/<int:man_id>/", bibliography_display_man, name="manuscript-display"),
     # Transcription URLs ==============================================================================================

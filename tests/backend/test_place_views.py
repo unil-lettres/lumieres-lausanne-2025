@@ -58,7 +58,7 @@ def _management(prefix, total=0):
 
 def _empty_formsets():
     data = {}
-    for prefix in ("variants", "reference_links", "notes"):
+    for prefix in ("notes",):
         data.update(_management(prefix))
     return data
 
@@ -100,11 +100,8 @@ def test_create_post_sets_owner_and_redirects(client, editor, category):
 def test_create_post_saves_inlines(client, editor, category, geonames):
     client.force_login(editor)
     data = {"name": "Lausanne", "category": category.pk, **_empty_formsets()}
-    data.update(_management("variants", 1))
-    data["variants-0-name"] = "Losanna"
-    data.update(_management("reference_links", 1))
-    data["reference_links-0-reference_site"] = geonames.pk
-    data["reference_links-0-identifier"] = "2659994"
+    data["variants"] = ["|Losanna"]
+    data["reference_links"] = [f"{geonames.pk}|2659994"]
     data.update(_management("notes", 1))
     data["notes-0-text"] = "<p>capitale vaudoise</p>"
     response = client.post(reverse("place-create"), data)
@@ -133,6 +130,27 @@ def test_delete_place(client, editor, category):
     response = client.post(reverse("place-delete", args=[place.pk]))
     assert response.status_code == 302
     assert not PlaceRecord.objects.filter(pk=place.pk).exists()
+
+
+@pytest.mark.django_db
+def test_place_autocomplete_searches_by_name(client, editor, category):
+    PlaceRecord.objects.create(name="Fribourg", category=category)
+    PlaceRecord.objects.create(name="Lausanne", category=category)
+    client.force_login(editor)
+    body = client.get(reverse("place-autocomplete"), {"q": "frib"}).content.decode()
+    assert "Fribourg" in body
+    assert "Lausanne" not in body
+
+
+@pytest.mark.django_db
+def test_related_places_saved_via_widget(client, editor, category):
+    other = PlaceRecord.objects.create(name="Genève", category=category)
+    client.force_login(editor)
+    data = {"name": "Lausanne", "category": category.pk, **_empty_formsets()}
+    data["related_places"] = [f"{other.id}|Genève"]
+    response = client.post(reverse("place-create"), data)
+    assert response.status_code == 302
+    assert other in PlaceRecord.objects.get(name="Lausanne").related_places.all()
 
 
 @pytest.mark.django_db

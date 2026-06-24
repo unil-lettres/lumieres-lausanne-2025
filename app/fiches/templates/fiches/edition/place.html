@@ -11,11 +11,33 @@
 
    This copyright notice MUST APPEAR in all copies of the file.
 -->{% endcomment %}
-{% load i18n fiches_extras %}
+{% load i18n fiches_extras static %}
 
 {% block head %}
 	{{ block.super }}
 	{{ form.media }}
+	<script type="text/javascript" src="{% static 'js/list_widget.js' %}"></script>
+	<link rel="stylesheet" href="{% static 'css/jquery.autocomplete.css' %}" />
+	<script type="text/javascript" src="{% static 'js/lib/jquery/jquery.bgiframe.min.js' %}"></script>
+	<script type="text/javascript" src="{% static 'js/lib/jquery/jquery.ajaxQueue.js' %}"></script>
+	<script type="text/javascript" src="{% static 'js/lib/jquery/jquery.autocomplete.min.js' %}"></script>
+	<style>
+		/* Narrower Name input — scoped to this page only (no impact on other forms). */
+		#place-form-id .fieldWrapper.name input { width: 448px; }
+		/* Reference sites: référentiel dropdown + identifier + button on one line. */
+		.fieldWrapper.reference_links .reflist_site_select,
+		.fieldWrapper.reference_links .reflist_id_input,
+		.fieldWrapper.reference_links .reflist_addbut {
+			display: inline-block; vertical-align: middle;
+		}
+		.fieldWrapper.reference_links .reflist_site_select,
+		.fieldWrapper.reference_links .reflist_id_input { margin-right: 6px; }
+		.fieldWrapper.reference_links .reflist_id_input { width: 204px; }
+		.fieldWrapper.reference_links .reflist_addbut { margin-right: 0; }
+		/* Variants and related-places: wider add input, reaching toward the button. */
+		.fieldWrapper.variants .dynamiclist_helper_input,
+		.fieldWrapper.related_places .dynamiclist_helper_input { width: 415px; }
+	</style>
 {% endblock head %}
 
 {% block main_menu %}{% with "lieu" as fiche_type %}{{ block.super }}{% endwith %}{% endblock %}
@@ -57,4 +79,88 @@
 		{% endif %}
 	{% endfor %}
 </form>
+<script type="text/javascript">
+(function ($) {
+	// Reference-site chip widget: référentiel + identifier -> clickable permalink chip.
+	window.placeRefWidget = {
+		addToList: function (btn, name) {
+			var c = $(btn).closest(".reflist_container"),
+				sel = c.find(".reflist_site_select"),
+				opt = sel.find("option:selected"),
+				siteId = sel.val(),
+				siteName = $.trim(opt.text()),
+				baseUrl = opt.attr("data-base-url") || "",
+				ident = $.trim(c.find(".reflist_id_input").val());
+			if (!siteId || !ident) { return; }
+			var url = baseUrl.indexOf("{id}") >= 0
+				? baseUrl.replace("{id}", ident)
+				: (baseUrl.replace(/\/+$/, "") + "/" + ident);
+			var chip = $('<span class="reflist_value_entry dynamiclist_value_entry">'
+				+ '<span class="reflist_value_label"></span> '
+				+ '<a class="reflist_value_link" target="_blank" rel="noopener"></a>'
+				+ '<input type="hidden">'
+				+ '</span>');
+			chip.find(".reflist_value_label").text(siteName + " " + ident);
+			chip.find(".reflist_value_link").attr("href", url).text(url);
+			chip.find("input").attr("name", name).val(siteId + "|" + ident);
+			c.find(".dynamiclist_values").append(chip);
+			dynamiclist_widget.appendDeleteButton(chip[0]);
+			sel.val("");
+			c.find(".reflist_id_input").val("");
+		}
+	};
+
+	// Related places: search existing places by name and add them as chips.
+	function placeAutocomplete($input) {
+		$input.autocomplete("{% url 'place-autocomplete' %}", {
+			extraParams: { exclude: "{{ form.instance.pk|default:'' }}" },
+			mustMatch: true, autoFill: false, selectFirst: true
+		})
+		.result(function (event, data) {
+			var $this = $(this);
+			if (data) {
+				if (isNaN(parseInt(data[0]))) { data.reverse(); }
+				$this.siblings(".helper_input_value").val(data[0]);
+				$this.parents(".dynamiclist_container").find(".dynamiclist_helper_addbut").removeAttr("disabled");
+			}
+		})
+		.blur(function () { $(this).search(); });
+	}
+
+	$(document).ready(function () {
+		// Variants: free-text chips.
+		var $variants = $(".fieldWrapper.variants");
+		$variants.find(".dynamiclist_value_entry").each(function () {
+			dynamiclist_widget.appendDeleteButton(this);
+		});
+		$variants.find(".dynamiclist_helper_input").on("input", function () {
+			var v = $(this).val();
+			$(this).siblings(".helper_input_value").val(v ? "|" + v : "");
+			$(this).parents(".dynamiclist_container").find(".dynamiclist_helper_addbut").removeAttr("disabled");
+		});
+		if ($.fn.button) {
+			$variants.find(".dynamiclist_helper_addbut").button({ icons: { primary: "ui-icon-plusthick" } });
+		}
+
+		// Reference sites: référentiel + identifier chips with derived permalink.
+		var $refs = $(".fieldWrapper.reference_links");
+		$refs.find(".reflist_value_entry").each(function () {
+			dynamiclist_widget.appendDeleteButton(this);
+		});
+		if ($.fn.button) {
+			$refs.find(".reflist_addbut").button({ icons: { primary: "ui-icon-plusthick" } });
+		}
+
+		// Related places: autocomplete search + chips.
+		var $related = $(".fieldWrapper.related_places");
+		$related.find(".dynamiclist_value_entry").each(function () {
+			dynamiclist_widget.appendDeleteButton(this);
+		});
+		placeAutocomplete($related.find(".dynamiclist_helper_input"));
+		if ($.fn.button) {
+			$related.find(".dynamiclist_helper_addbut").button({ icons: { primary: "ui-icon-plusthick" } });
+		}
+	});
+})(jQuery);
+</script>
 {% endblock main_content %}

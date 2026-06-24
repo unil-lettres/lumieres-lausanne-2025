@@ -22,18 +22,15 @@
 
 from django.db.models import Q
 from django.forms.models import inlineformset_factory
-from django.http import HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 
 from fiches.forms import NoteFormPlace, PlaceRecordForm
 from fiches.models import NotePlace, PlaceRecord, PlaceReferenceSite, PlaceVariant
 
-# Inline formsets for the satellite tables edited alongside a place fiche.
-PlaceVariantFormSet = inlineformset_factory(PlaceRecord, PlaceVariant, fields=["name"], extra=1, can_delete=True)
-PlaceReferenceSiteFormSet = inlineformset_factory(
-    PlaceRecord, PlaceReferenceSite, fields=["reference_site", "identifier"], extra=1, can_delete=True
-)
+# Inline formset for the notes. Variants and reference links use widget fields on
+# the form (free-text / référentiel chips), not formsets.
 NotePlaceFormSet = inlineformset_factory(PlaceRecord, NotePlace, form=NoteFormPlace, extra=0, can_delete=True)
 
 
@@ -45,16 +42,16 @@ def get_place_form_def(form):
     """
     formdef = {
         "fieldsets": (
-            {"title": None, "fields": ({"name": "name"}, {"name": "category"})},
             {
-                "title": "Variantes",
-                "fields": ({"name": None, "template": "fiches/edition/place/variant_formset.html"},),
+                "title": None,
+                "fields": (
+                    {"name": "name"},
+                    {"name": "category"},
+                    {"name": "variants", "class": "single-line"},
+                ),
             },
-            {"title": "Lieux associés", "fields": ({"name": "related_places"},)},
-            {
-                "title": "Sites de référence",
-                "fields": ({"name": None, "template": "fiches/edition/place/reference_formset.html"},),
-            },
+            {"title": None, "fields": ({"name": "related_places", "class": "single-line"},)},
+            {"title": None, "fields": ({"name": "reference_links", "class": "single-line"},)},
             {"title": "Notes", "fields": ({"name": None, "template": "fiches/edition/note_formset.html"},)},
         )
     }
@@ -80,8 +77,25 @@ def _visible_notes(place, user):
     return notes
 
 
+def _sync_variants(place, names):
+    """Replace the place's variants with the submitted free-text names."""
+    place.variants.all().delete()
+    PlaceVariant.objects.bulk_create([PlaceVariant(place=place, name=name) for name in names])
+
+
+def _sync_reference_links(place, pairs):
+    """Replace the place's reference-site links with the submitted (site, identifier) pairs."""
+    place.reference_links.all().delete()
+    PlaceReferenceSite.objects.bulk_create(
+        [
+            PlaceReferenceSite(place=place, reference_site_id=site_id, identifier=identifier)
+            for site_id, identifier in pairs
+        ]
+    )
+
+
 def _save_place(form, formsets, user):
-    """Persist the place and its inline formsets; set the owner on creation."""
+    """Persist the place, its note formset and its variant/reference widgets; set the owner on creation."""
     place = form.save(commit=False)
     if not place.access_owner_id:
         place.access_owner = user
@@ -90,6 +104,8 @@ def _save_place(form, formsets, user):
     for formset in formsets:
         formset.instance = place
         formset.save()
+    _sync_variants(place, form.cleaned_data.get("variants", []))
+    _sync_reference_links(place, form.cleaned_data.get("reference_links", []))
     return place
 
 
@@ -109,10 +125,8 @@ def edit(request, place_id=None, create_place=False):
     place = PlaceRecord() if create_place else get_object_or_404(PlaceRecord, pk=place_id)
     posted = (request.POST,) if request.method == "POST" else ()
     form = PlaceRecordForm(*posted, instance=place)
-    variant_formset = PlaceVariantFormSet(*posted, instance=place)
-    reference_formset = PlaceReferenceSiteFormSet(*posted, instance=place)
     note_formset = NotePlaceFormSet(*posted, instance=place, queryset=_visible_notes(place, request.user))
-    formsets = (variant_formset, reference_formset, note_formset)
+    formsets = (note_formset,)
 
     if request.method == "POST" and all([form.is_valid(), *[fs.is_valid() for fs in formsets]]):
         place = _save_place(form, formsets, request.user)
@@ -130,8 +144,6 @@ def edit(request, place_id=None, create_place=False):
         "model": PlaceRecord,
         "new_object": create_place,
         "place_formdef": get_place_form_def(form),
-        "variantFormset": variant_formset,
-        "referenceFormset": reference_formset,
         "noteFormset": note_formset,
         "publicNotes": public_notes,
         "prev_url": request.META.get("HTTP_REFERER", None),
@@ -142,6 +154,23 @@ def edit(request, place_id=None, create_place=False):
 def create(request):
     """Entry point for creating a new place fiche (blank edit form)."""
     return edit(request, place_id=None, create_place=True)
+
+
+def place_autocomplete(request):
+    """Search place fiches by name for the related-places association field.
+
+    Returns ``Name (Category)|id`` lines (jquery.autocomplete format). A dedicated
+    endpoint is needed because the generic ajax search refuses ACModel subclasses.
+    """
+    query = request.GET.get("q", "").strip()
+    places = PlaceRecord.objects.all()
+    if query:
+        places = places.filter(name__icontains=query)
+    exclude_id = request.GET.get("exclude", "")
+    if exclude_id.isdigit():
+        places = places.exclude(pk=int(exclude_id))
+    lines = [f"{place.name} ({place.category})|{place.id}" for place in places.order_by("name")[:20]]
+    return HttpResponse("\n".join(lines), content_type="text/plain; charset=utf-8")
 
 
 def delete(request, place_id):
