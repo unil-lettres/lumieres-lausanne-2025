@@ -74,3 +74,19 @@ def test_note_form_place_has_rte_type_and_text():
     form = NoteFormPlace()
     assert form.fields["rte_type"].initial == "CKE"
     assert "text" in form.fields
+
+
+@pytest.mark.django_db
+def test_form_rejects_duplicate_name_in_same_category(category):
+    # Spec 3.3: no duplicate (same name + same category).
+    PlaceRecord.objects.create(name="Ecublens (VD)", category=category)
+    form = PlaceRecordForm(data={"name": "Ecublens (VD)", "category": category.pk})
+    assert not form.is_valid()
+
+
+@pytest.mark.django_db
+def test_form_allows_same_name_when_disambiguated(category):
+    # Spec 3.3 example: Ecublens (VD) and Ecublens (FR) coexist via distinct names.
+    PlaceRecord.objects.create(name="Ecublens (VD)", category=category)
+    form = PlaceRecordForm(data={"name": "Ecublens (FR)", "category": category.pk})
+    assert form.is_valid(), form.errors
