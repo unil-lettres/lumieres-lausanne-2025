@@ -25,9 +25,48 @@ Built brick by brick on this branch; full status + commit table in the local dra
 - [ ] 3.4.2 publications listings, 3 sections (← §4: biblio « Lieu » / « Lieu 2 » → `PlaceRecord`)
 - [ ] 3.4.3 transcriptions listing (← §1: « Sujets › Lieu(x) » in transcriptions)
 
+### Place tagging (§1 / §2 / §4) — the prerequisite for 3.4
+
+Today the lieu fields in bio/biblio are free-text `CharField`s (no link to `PlaceRecord`);
+biblio/transcription already have a « Sujets » M2M pattern (`subj_person`, `subj_primary_kw`, …).
+Tagging = link these to `PlaceRecord` so the 3.4 reverse-lookup listings can be built. Two
+mechanisms: **(a)** « Sujets » M2M (`subj_place`, like `subj_person`); **(b)** typed per-field
+links (keep the legacy text, add a FK + a « Lieu » selector per field). The place-autocomplete
+endpoint + DynamicList chip widget (built for the place form's « lieux associés ») are reusable.
+
+> **Architecture decision (open, decide before §2/§4):** per-field nullable FK to `PlaceRecord`
+> (keeps the role — naissance/décès/fonction/impression/rédaction — needed for the 3.4 display
+> format) **vs** a generic `PlaceTag(content_type, object_id, role, place)` table. Per-field FK
+> is simpler and matches the « Lieu » button per field; the tag table is more flexible.
+
+**▶ Start here — §1 Transcriptions** (→ feeds 3.4.3 and 3.4.2 « Publications - Lieu mentionné »)
+
+- [ ] Add « Lieu(x) » to the transcription « Sujets » block, under « Mot(s)-clé(s) » and before
+      « Personne(s) » — `subj_place` M2M to `PlaceRecord`, indexed like `subj_person`.
+- [ ] Migration for `subj_place` (M2M; legacy INT-PK compat → `db_constraint=False`).
+- [ ] Editor UI: « Lieu » selector (reuse place-autocomplete + DynamicList chip widget).
+- [ ] Read mode: tagged places as clickable links → place fiche.
+- [ ] (§1.1/1.2) inline tagging of place names *in the transcription text* (« Lieu » button, like
+      person tags) — the richer editor feature; scope separately.
+- [ ] Tests.
+
+**§2 Biographies** (→ feeds 3.4.1)
+
+- [ ] Link `birth_place` / `death_place` / function (`Profession.place`) to `PlaceRecord`
+      (keep the legacy text). Migration(s).
+- [ ] Editor UI: « Lieu » selector per place field. Read mode: clickable links. Tests.
+
+**§4 Bibliographies** (→ feeds 3.4.2 « Lieu d'impression » / « Lieu de rédaction »)
+
+- [ ] Link biblio `place` / `place2` (and manuscript `place`) to `PlaceRecord`; possibly a
+      `subj_place` M2M too. Migration(s), editor UI, read-mode links, tests.
+
+**Then 3.4 (now unblocked):** reverse-lookup listings on the place read view — 3.4.1
+(biographies), 3.4.2 (3 listings), 3.4.3 (transcriptions); « 20 premiers + afficher la suite »,
+chronological/alphabetical per spec.
+
 **Other pending (independent of tagging)**
 
-- [ ] Place **tagging** in transcriptions / bio / biblio (§1 / §2 / §4) — prerequisite for 3.4.
 - [ ] « Liste des lieux » advanced-search tab (§5) — also gives the place list page + `add_url`.
 - [ ] Wire places into the global search results UI (the Solr index foundation is in place).
 - [ ] Read-view note gating (#109), template comment (#110), public labels (#111).
