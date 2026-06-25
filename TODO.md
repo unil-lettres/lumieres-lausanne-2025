@@ -1,5 +1,37 @@
 # TODO
 
+## Named entities — place fiches (Lieux, section 3)
+
+Built brick by brick on this branch; full status + commit table in the local draft
+`PR-named-entities-section-3.md`.
+
+**Done ✅**
+
+- [x] Data model (migrations 0006–0012): `PlaceCategory`, `ReferenceSite` (+seeds),
+      `PlaceRecord`, `PlaceVariant`, `PlaceReferenceSite`, `NotePlace`; drop of the phantom
+      `django_content_type.name` column (0006).
+- [x] Search (Solr) foundation: `PlaceRecordIndex` + variant/reference reindex signals
+      (variants and reference sites searchable in 3 forms).
+- [x] Uniqueness (3.3): name + category, enforced at the model **and** the form.
+- [x] Editing interface (3.2): create/edit views + `lieu/` URLs + templates; chip/autocomplete
+      widgets (variants, reference permalink, related-places search) replacing the inline
+      formsets; dedicated `place-autocomplete` endpoint (`ajax_search` refuses ACModels).
+- [x] Creation entry points: workspace « Création de fiches » + read-view button.
+- [x] Read-view page (3.4 *page*): proper fiche display (extends `display_base2`).
+
+**Blocked 🔒 — needs cross-section place tagging (§1 / §2 / §4)**
+
+- [ ] 3.4.1 linked biographies listing (← §2: bio lieu de naissance/décès/fonction → `PlaceRecord`)
+- [ ] 3.4.2 publications listings, 3 sections (← §4: biblio « Lieu » / « Lieu 2 » → `PlaceRecord`)
+- [ ] 3.4.3 transcriptions listing (← §1: « Sujets › Lieu(x) » in transcriptions)
+
+**Other pending (independent of tagging)**
+
+- [ ] Place **tagging** in transcriptions / bio / biblio (§1 / §2 / §4) — prerequisite for 3.4.
+- [ ] « Liste des lieux » advanced-search tab (§5) — also gives the place list page + `add_url`.
+- [ ] Wire places into the global search results UI (the Solr index foundation is in place).
+- [ ] Read-view note gating (#109), template comment (#110), public labels (#111).
+
 ## Lint & types (ruff + ty migration)
 
 Tooling switched to astral-sh: **ruff** (lint + format + import sort, replacing
@@ -145,8 +177,9 @@ Backend suite lives in `tests/backend/` (pytest, SQLite `settings_test`,
 `--no-migrations`). Run with `make dev/tests/run` (container) or
 `make dev/tests/local` (host). Coverage: `make dev/tests/local/html` → `htmlcov/`.
 
-Current state: **292 tests, 57% coverage** (5 302 stmts, 2 274 missing).
-Original baseline was 34 tests / 42%.
+Current state: **391 tests** (the place-fiches work added ~99 to the previous 292).
+Coverage was last measured at 57% before that work — re-run `make dev/tests/local/html` to
+refresh. Original baseline was 34 tests / 42%.
 
 ### Backend
 
