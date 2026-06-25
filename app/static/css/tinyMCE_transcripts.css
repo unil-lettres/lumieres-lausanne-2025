@@ -159,3 +159,10 @@ div.note-editorial:before, p.note-editorial:before {content: counter(noteeditori
 div.note-document:before, p.note-document:before {content: counter(notedocument,lower-roman);padding-right:1em;  }
 
 .ia-content span.note-editorial, .ia-content span.note-document {background: white; color: #f0750b; border: none;}
+
+/* Named-entity tags (person / place). This baseline applies both in the editor
+   (.cked-content) and on the transcription view (.transcription-data); the full
+   read-mode treatment (tooltip, édité/diplomatique) is refined later. */
+a.ll-tag {text-decoration: none; border-bottom: 1px dotted; cursor: pointer;}
+a.ll-tag-person {color: #1a6b3c; background: #e9f5ee;}
+a.ll-tag-place {color: #1f4e8c; background: #e7eff8;}

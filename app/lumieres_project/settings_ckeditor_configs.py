@@ -66,7 +66,7 @@ CKEDITOR_CONFIGS = {
         "bodyClass": "cked-content",
         "width": 880,
         "height": 500,
-        "extraPlugins": "overline,transcription,correction,notes,illeg,footnote",
+        "extraPlugins": "overline,transcription,correction,notes,illeg,footnote,nametag",
         "language": "fr",
         "removePlugins": "flash,iframe,bidi,scayt",
         "removeFormatTags": "font",
@@ -101,6 +101,7 @@ CKEDITOR_CONFIGS = {
             "/",
             ["Added", "Suppressed", "Notes", "Footnote"],
             ["Supplied", "Unclear", "Illeg", "Correction"],
+            ["TagPerson", "TagPlace"],
         ),
         "keystrokes": [
             [CKEDITOR_CTRL + CKEDITOR_SHIFT + 85, "superscript"],  # ctrl+shift+u
