@@ -24,6 +24,7 @@ from django.db.models import Q
 from django.forms.models import inlineformset_factory
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.cache import never_cache
 
 from fiches.forms import NoteFormPlace, PlaceRecordForm
@@ -112,7 +113,16 @@ def _save_place(form, formsets, user):
 def display(request, place_id):
     """Public read view for a place fiche (visitors may consult it via tags)."""
     place = get_object_or_404(PlaceRecord, pk=place_id)
-    return render(request, "fiches/display/place.html", {"place": place})
+    user = request.user
+    context = {
+        "place": place,
+        "model": PlaceRecord,
+        "visible_notes": [note for note in place.notes.all() if note.user_access(user)],
+        "add_url": reverse("place-create") if user.has_perm("fiches.add_placerecord") else None,
+        "edit_url": reverse("place-edit", args=[place.pk]) if user.has_perm("fiches.change_placerecord") else None,
+        "delete_url": reverse("place-delete", args=[place.pk]) if user.has_perm("fiches.delete_placerecord") else None,
+    }
+    return render(request, "fiches/display/place.html", context)
 
 
 @never_cache

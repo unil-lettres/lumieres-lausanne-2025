@@ -1,4 +1,4 @@
-{% extends "fiches/fiche_base2.html" %}
+{% extends "fiches/display/display_base2.html" %}
 {% comment %}<!--
    Copyright (C) 2010-2026 Université de Lausanne, SIER
    This file is part of Lumières.Lausanne (GNU AGPL v3 or later).
@@ -10,34 +10,55 @@
 {% block main_header_title %}{% trans "Fiche lieu" %}{% endblock main_header_title %}
 
 {% block main_content %}
-{% if perms.fiches.add_placerecord %}
-<p class="place-actions"><a class="external" href="{% url 'place-create' %}">{% trans "Créer une nouvelle fiche lieu" %}</a></p>
-{% endif %}
 <h2>{{ place.name }}</h2>
-<dl class="place-detail">
-	<dt>{% trans "Catégorie" %}</dt>
-	<dd>{{ place.category }}</dd>
+
+<div class="field_group">
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Catégorie" %}</div>
+		<div class="field_value">{{ place.category }}</div>
+		<div class="fixclear"></div>
+	</div>
 
 	{% if place.variants.all %}
-	<dt>{% trans "Variantes" %}</dt>
-	<dd>{% for variant in place.variants.all %}{{ variant.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</dd>
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Variantes" %}</div>
+		<div class="field_value">{% for variant in place.variants.all %}{{ variant.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+		<div class="fixclear"></div>
+	</div>
 	{% endif %}
 
 	{% if place.related_places.all %}
-	<dt>{% trans "Lieux associés" %}</dt>
-	<dd>{% for related in place.related_places.all %}<a href="{% url 'place-display' related.pk %}">{{ related.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</dd>
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Lieux associés" %}</div>
+		<div class="field_value">{% for related in place.related_places.all %}<a href="{% url 'place-display' related.pk %}">{{ related.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+		<div class="fixclear"></div>
+	</div>
 	{% endif %}
 
 	{% if place.reference_links.all %}
-	<dt>{% trans "Sites de référence" %}</dt>
-	<dd>
-		<ul>
-		{% for reference in place.reference_links.all %}
-			<li>{{ reference.reference_site }} : <a href="{{ reference.url }}" target="_blank" rel="noopener">{{ reference.identifier }}</a></li>
-		{% endfor %}
-		</ul>
-	</dd>
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Sites de référence" %}</div>
+		<div class="field_value">
+			<ul>
+			{% for reference in place.reference_links.all %}
+				<li>{{ reference.reference_site }} : <a href="{{ reference.url }}" target="_blank" rel="noopener">{{ reference.identifier }}</a></li>
+			{% endfor %}
+			</ul>
+		</div>
+		<div class="fixclear"></div>
+	</div>
 	{% endif %}
-</dl>
-{% comment %} Automatic listings (biographies, publications, transcriptions) are added in spec 3.4. {% endcomment %}
+</div>
+
+{% for note in visible_notes %}
+<div class="field_group">
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Note" %}</div>
+		<div class="field_value rich-text-content"><div class="rich-text-body">{{ note.text|safe }}</div></div>
+		<div class="fixclear"></div>
+	</div>
+</div>
+{% endfor %}
+
+{% comment %} 3.4 automatic listings (linked biographies / publications / transcriptions) require place tagging and are added later. {% endcomment %}
 {% endblock main_content %}
