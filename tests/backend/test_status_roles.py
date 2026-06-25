@@ -66,6 +66,23 @@ class SyncStatusRolesTest(TestCase):
             & self._director_permission_codenames()
         )
 
+    def test_apply_grants_fiche_creation_permissions_to_directors(self):
+        # §1: only Directeurs may create person/place fiches while tagging.
+        out = StringIO()
+
+        call_command("sync_status_roles", apply=True, stdout=out)
+        self.directeurs.refresh_from_db()
+
+        self.assertTrue({"add_person", "add_placerecord"}.issubset(self._director_permission_codenames()))
+
+    def test_dry_run_does_not_grant_fiche_creation_permissions_to_directors(self):
+        out = StringIO()
+
+        call_command("sync_status_roles", stdout=out)
+        self.directeurs.refresh_from_db()
+
+        self.assertFalse({"add_person", "add_placerecord"} & self._director_permission_codenames())
+
     def test_user_profile_inline_is_available_to_directors_after_sync(self):
         user = User.objects.create_user("director", is_staff=True)
         user.groups.add(self.directeurs)

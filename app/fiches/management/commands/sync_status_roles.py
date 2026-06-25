@@ -29,6 +29,8 @@ from django.db.models import Q
 from fiches.models.core.user_profile import UserProfile
 from fiches.models.documents.document_file import DocumentFile
 from fiches.models.misc.object_collection import ObjectCollection
+from fiches.models.misc.place import PlaceRecord
+from fiches.models.person.person import Person
 
 
 class Command(BaseCommand):
@@ -37,6 +39,7 @@ class Command(BaseCommand):
         " - doctorants gain the ability to manage bibliography attachments\n"
         " - directeurs may reassign collection owners\n"
         " - directeurs may manage user profile extra information\n"
+        " - directeurs may create person & place fiches (named-entity tagging)\n"
         " - assistants status is retired\n"
         "Run without --apply for a dry-run preview."
     )
@@ -75,6 +78,8 @@ class Command(BaseCommand):
                 self._update_director_permissions([collection_owner_perm], apply_changes)
             user_profile_perms = self._ensure_user_profile_permissions()
             self._update_director_permissions(user_profile_perms, apply_changes)
+            fiche_creation_perms = self._ensure_fiche_creation_permissions()
+            self._update_director_permissions(fiche_creation_perms, apply_changes)
             self._retire_assistant_group(apply_changes)
 
         self.stdout.write(self.style.SUCCESS("Status synchronisation complete."))
@@ -176,6 +181,20 @@ class Command(BaseCommand):
                     )
                 )
                 return None
+
+    def _ensure_fiche_creation_permissions(self):
+        """Fetch the person/place 'add' permissions used to create fiches while tagging."""
+        permissions = []
+        for model, codename in ((Person, "add_person"), (PlaceRecord, "add_placerecord")):
+            ct = ContentType.objects.get_for_model(model)
+            perm = Permission.objects.filter(content_type=ct, codename=codename).first()
+            if perm:
+                permissions.append(perm)
+            else:
+                self.stdout.write(
+                    self.style.WARNING(f"Missing permission '{codename}'. Please run migrations before applying.")
+                )
+        return permissions
 
     def _update_director_permissions(self, permissions, apply_changes):
         """Ensure directors hold the required administrative permissions."""
