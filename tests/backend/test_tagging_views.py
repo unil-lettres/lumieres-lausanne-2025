@@ -129,3 +129,24 @@ def test_create_person_succeeds_for_director(client, director):
 def test_create_person_requires_name(client, director):
     client.login(username="director", password="pw")
     assert client.post(reverse("tagging-person-create"), {"name": ""}).status_code == 400
+
+
+# -- bio display for a person without a biography yet --------------------------
+
+
+@pytest.mark.django_db
+def test_bio_display_without_biography_shows_dedicated_page(client):
+    # A person created from the tagging window has no biography yet: the fiche
+    # link must show an explanatory page, not a bare 404.
+    person = Person.objects.create(name="Barbeyrac, Jean", modern=False)
+    response = client.get(reverse("biography-display", args=[person.id]))
+    assert response.status_code == 404
+    assert "n'a pas encore été rédigée" in response.content.decode()
+    assert person.name in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_bio_display_unknown_person_is_plain_404(client):
+    response = client.get(reverse("biography-display", args=[999999]))
+    assert response.status_code == 404
+    assert "n'a pas encore été rédigée" not in response.content.decode()
