@@ -163,3 +163,8 @@ div.note-document:before, p.note-document:before {content: counter(notedocument,
 /* Named-entity tags (person / place) render as ordinary clickable links: no
    special colour was requested, so they inherit the site anchor style. The
    data-person / data-place attributes carry the link semantics. */
+
+/* When a tag wraps an editorial correction, keep the diplomatic/edited toggle
+   (.sic / .corr display) but neutralise the sic decoration so the tagged word
+   reads as a plain link rather than a corrected span. */
+a.ll-tag .sic {color: inherit; border-bottom: none;}

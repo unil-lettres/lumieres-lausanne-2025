@@ -104,12 +104,54 @@
     return null;
   }
 
+  // If the selection sits on an editorial correction, return its <span class="sic">
+  // and the adjacent <span class="corr"> so a tag can wrap the whole unit — the
+  // link must stay clickable in both the diplomatic and edited renderings.
+  function findCorrection(selection) {
+    if (!selection) {
+      return null;
+    }
+    var nodes = [selection.getStartElement()];
+    var ranges = selection.getRanges();
+    if (ranges && ranges.length) {
+      var start = ranges[0].startContainer;
+      nodes.push(start && start.type === CKEDITOR.NODE_ELEMENT ? start : start && start.getParent());
+    }
+    var span = null;
+    for (var i = 0; i < nodes.length && !span; i++) {
+      var parents = nodes[i] ? nodes[i].getParents(true) : [];
+      for (var j = 0; j < parents.length; j++) {
+        var p = parents[j];
+        if (p.type === CKEDITOR.NODE_ELEMENT && p.getName() === 'span' && (p.hasClass('sic') || p.hasClass('corr'))) {
+          span = p;
+          break;
+        }
+      }
+    }
+    if (!span) {
+      return null;
+    }
+    var sic = span.hasClass('sic') ? span : null;
+    var corr = span.hasClass('corr') ? span : null;
+    if (sic) {
+      var next = sic.getNext();
+      if (next && next.type === CKEDITOR.NODE_ELEMENT && next.hasClass('corr')) {
+        corr = next;
+      }
+    } else if (corr) {
+      var prev = corr.getPrevious();
+      if (prev && prev.type === CKEDITOR.NODE_ELEMENT && prev.hasClass('sic')) {
+        sic = prev;
+      }
+    }
+    return sic ? { sic: sic, corr: corr } : null;
+  }
+
   // Wrap the current selection in a fresh tagged link. Links are a special case
   // in CKEditor's style system, so we build the <a> by hand (like the native
   // link plugin) instead of CKEDITOR.style().apply, which would be a no-op here.
   function applyTag(editor, conf, id, label) {
     var selection = editor.getSelection();
-    var ranges = selection ? selection.getRanges() : [];
     var link = editor.document.createElement('a');
     link.setAttributes({
       'class': 'll-tag ' + conf.cssClass,
@@ -118,6 +160,25 @@
     });
     link.setAttribute(conf.dataAttr, String(id));
 
+    var correction = findCorrection(selection);
+    if (correction) {
+      // Embed the whole sic[/corr] correction in the link so it stays clickable
+      // in the diplomatic ("Greg.") and edited ("Grégoire") views; the sic
+      // decoration is neutralised in CSS so the tagged word reads as a link.
+      link.insertBefore(correction.sic);
+      correction.sic.appendTo(link);
+      // Drop the correction's own tooltip so hovering shows the person/place
+      // tooltip (the link title), not the editorial reading — kept in data-corr.
+      correction.sic.removeAttribute('title');
+      if (correction.corr) {
+        correction.corr.appendTo(link);
+        correction.corr.removeAttribute('title');
+      }
+      selection.selectElement(link);
+      return;
+    }
+
+    var ranges = selection ? selection.getRanges() : [];
     if (ranges.length && !ranges[0].collapsed) {
       // Keep the selected text (and any inline markup) inside the link.
       var range = ranges[0];
@@ -194,7 +255,10 @@
           if (sep === -1) {
             return;
           }
-          items.push({ label: line.substring(0, sep), id: line.substring(sep + 1) });
+          // Parenthesise the trailing birth-death dates that format_for_ajax_search
+          // emits bracketed: "Nom, Prénom [1698-1756]" -> "Nom, Prénom (1698-1756)".
+          var label = line.substring(0, sep).replace(/\s*\[(\d{0,4}-\d{0,4})\]\s*$/, ' ($1)');
+          items.push({ label: label, id: line.substring(sep + 1) });
         });
       }
       callback(items, xhr.status);
