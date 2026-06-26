@@ -18,7 +18,7 @@
 #
 # This copyright notice MUST APPEAR in all copies of the file.
 
-# fiches/urls.py
+"""URL routing for the fiches app."""
 
 from django.urls import path, re_path
 
@@ -34,6 +34,7 @@ from fiches.views import (
 )
 from fiches.views import collections as views_collections
 from fiches.views import place as views_place
+from fiches.views import tagging as views_tagging
 from fiches.views import transcription as views_transcription
 from fiches.views.bibliography import cancel_new_bibliography as bibliography_cancel
 from fiches.views.bibliography import create as bibliography_create
@@ -109,6 +110,10 @@ urlpatterns = [
     path("lieu/new/", views_place.create, name="place-create"),
     path("lieu/delete/<int:place_id>/", views_place.delete, name="place-delete"),
     path("lieu/autocomplete/", views_place.place_autocomplete, name="place-autocomplete"),
+    # Inline fiche creation from the transcription tagging window (Directeurs only).
+    path("tagging/place/categories/", views_tagging.place_categories, name="tagging-place-categories"),
+    path("tagging/place/create/", views_tagging.create_place, name="tagging-place-create"),
+    path("tagging/person/create/", views_tagging.create_person, name="tagging-person-create"),
     # Manuscript URLs =================================================================================================
     path("man/<int:man_id>/", bibliography_display_man, name="manuscript-display"),
     # Transcription URLs ==============================================================================================
