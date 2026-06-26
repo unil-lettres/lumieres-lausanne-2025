@@ -26,7 +26,13 @@
             buttonTitle: 'Lier une personne (biographie)',
             icon: 'icons/person.png',
             dialogTitle: 'Lier une personne',
-            idLabel: 'Identifiant de la biographie'
+            searchLabel: 'Rechercher une personne',
+            statusId: 'nametag-status-person',
+            searchUrl: '/fiches/ajax_search/',
+            searchParams: 'app_label=fiches&model_name=Person&search_field=name&outf=_m__format_for_ajax_search',
+            // ajax_search ORs the words of `q`; AND the extra words via and_queries
+            // so "Jean Barbeyrac" matches the person whose name holds both terms.
+            andSearchField: 'name'
         },
         place: {
             cssClass: 'll-tag-place',
@@ -40,7 +46,10 @@
             buttonTitle: 'Lier un lieu',
             icon: 'icons/place.png',
             dialogTitle: 'Lier un lieu',
-            idLabel: 'Identifiant du lieu'
+            searchLabel: 'Rechercher un lieu',
+            statusId: 'nametag-status-place',
+            searchUrl: '/fiches/lieu/autocomplete/',
+            searchParams: ''
         }
     };
 
@@ -56,15 +65,59 @@
         return null;
     }
 
-    // Wrap the current selection in a fresh tagged link.
+    // Robustly find the tag link for the current selection, whether the caret sits
+    // inside it, the link itself is selected, or the selection starts within it.
+    // This is what lets "edit" update a tag in place instead of nesting a new one.
+    function findTag(conf, selection) {
+        if (!selection) {
+            return null;
+        }
+        var candidates = [];
+        if (selection.getSelectedElement) {
+            candidates.push(selection.getSelectedElement());
+        }
+        candidates.push(selection.getStartElement());
+        var ranges = selection.getRanges();
+        if (ranges && ranges.length) {
+            var node = ranges[0].startContainer;
+            if (node) {
+                candidates.push(node.type === CKEDITOR.NODE_ELEMENT ? node : node.getParent());
+            }
+        }
+        for (var i = 0; i < candidates.length; i++) {
+            var found = getContainer(conf, candidates[i]);
+            if (found) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    // Wrap the current selection in a fresh tagged link. Links are a special case
+    // in CKEditor's style system, so we build the <a> by hand (like the native
+    // link plugin) instead of CKEDITOR.style().apply, which would be a no-op here.
     function applyTag(editor, conf, id, label) {
-        var attributes = {
+        var selection = editor.getSelection();
+        var ranges = selection ? selection.getRanges() : [];
+        var link = editor.document.createElement('a');
+        link.setAttributes({
             'class': 'll-tag ' + conf.cssClass,
             'href': conf.hrefBase + id + '/',
             'title': label || ''
-        };
-        attributes[conf.dataAttr] = String(id);
-        new CKEDITOR.style({ element: 'a', attributes: attributes }).apply(editor.document);
+        });
+        link.setAttribute(conf.dataAttr, String(id));
+
+        if (ranges.length && !ranges[0].collapsed) {
+            // Keep the selected text (and any inline markup) inside the link.
+            var range = ranges[0];
+            link.append(range.extractContents());
+            range.insertNode(link);
+            selection.selectElement(link);
+        } else {
+            // No selection: drop the label text as the link content.
+            link.setText(label || String(id));
+            editor.insertElement(link);
+        }
     }
 
     // Refresh an existing tagged link in place.
@@ -74,60 +127,234 @@
         element.setAttribute('title', label || '');
     }
 
+    // Trim helper that does not rely on String.prototype.trim (old browsers).
+    function trim(value) {
+        return (value || '').replace(/^\s+|\s+$/g, '');
+    }
+
+    // Split a query into plain search words: drop bracketed dates "[1674-1744]",
+    // parenthetical qualifiers "(canton)" and punctuation so a prefilled label
+    // ("Barbeyrac, Jean [1674-1744]") becomes usable terms ("Barbeyrac", "Jean").
+    function searchWords(query) {
+        return trim(query)
+            .replace(/\[[^\]]*\]/g, ' ')
+            .replace(/\([^)]*\)/g, ' ')
+            .replace(/[,.;:]/g, ' ')
+            .split(/\s+/)
+            .filter(function (word) {
+                return word.length > 0;
+            });
+    }
+
+    // Query a search endpoint; call back with [{label, id}] and the HTTP status.
+    // Both endpoints answer with one "Label|id" line per match.
+    function fetchResults(conf, query, callback) {
+        var words = searchWords(query);
+        if (!words.length) {
+            callback([], 200);
+            return;
+        }
+        var url = conf.searchUrl + '?' + (conf.searchParams ? conf.searchParams + '&' : '');
+        if (conf.andSearchField) {
+            // ajax_search ORs the words of `q`; keep the first as `q` and AND the
+            // rest via and_queries so every term must match.
+            url += 'q=' + encodeURIComponent(words[0]);
+            if (words.length > 1) {
+                var andQueries = [];
+                for (var i = 1; i < words.length; i++) {
+                    andQueries.push({ field: conf.andSearchField, value: words[i] });
+                }
+                url += '&and_queries=' + encodeURIComponent(JSON.stringify(andQueries));
+            }
+        } else {
+            url += 'q=' + encodeURIComponent(words.join(' '));
+        }
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState !== 4) {
+                return;
+            }
+            var items = [];
+            if (xhr.status === 200) {
+                xhr.responseText.split('\n').forEach(function (line) {
+                    line = trim(line);
+                    var sep = line.lastIndexOf('|');
+                    if (sep === -1) {
+                        return;
+                    }
+                    items.push({ label: line.substring(0, sep), id: line.substring(sep + 1) });
+                });
+            }
+            callback(items, xhr.status);
+        };
+        xhr.send();
+    }
+
+    function setStatus(conf, message) {
+        var node = CKEDITOR.document.getById(conf.statusId);
+        if (node) {
+            node.setHtml(message);
+        }
+    }
+
+    // Refresh the results listbox; keepId/keepLabel preserve the currently linked
+    // fiche when editing an existing tag, even if it is not in the search hits.
+    function populateResults(dialog, conf, items, keepId, keepLabel) {
+        var results = dialog.getContentElement('tab1', 'results');
+        results.clear();
+        dialog._nametagMap = {};
+        items.forEach(function (item) {
+            results.add(item.label, item.id);
+            dialog._nametagMap[item.id] = item.label;
+        });
+        if (keepId && !dialog._nametagMap[keepId]) {
+            results.add(keepLabel || ('#' + keepId), keepId);
+            dialog._nametagMap[keepId] = keepLabel || ('#' + keepId);
+        }
+        if (keepId) {
+            results.setValue(keepId);
+        }
+        setStatus(conf, items.length ? (items.length + ' résultat(s).') : 'Aucune fiche trouvée.');
+    }
+
+    function runSearch(dialog, conf, query, keepId, keepLabel) {
+        query = trim(query);
+        if (!query) {
+            dialog.getContentElement('tab1', 'results').clear();
+            dialog._nametagMap = {};
+            setStatus(conf, 'Saisissez un terme de recherche.');
+            return;
+        }
+        setStatus(conf, 'Recherche…');
+        fetchResults(conf, query, function (items, status) {
+            if (status !== 200) {
+                setStatus(conf, 'Erreur de recherche (HTTP ' + status + ').');
+                return;
+            }
+            populateResults(dialog, conf, items, keepId, keepLabel);
+        });
+    }
+
     function makeDialog(conf) {
         return function (editor) {
             return {
                 title: conf.dialogTitle,
-                minWidth: 450,
-                minHeight: 140,
+                minWidth: 480,
+                minHeight: 260,
                 contents: [{
                     id: 'tab1',
                     label: conf.dialogTitle,
                     elements: [
                         {
                             type: 'text',
-                            id: 'fiche_id',
-                            label: conf.idLabel,
-                            validate: CKEDITOR.dialog.validate.notEmpty('Indiquez l’identifiant de la fiche.'),
-                            setup: function (data) {
-                                this.setValue(data ? data.id : '');
-                            }
+                            id: 'search',
+                            label: conf.searchLabel
                         },
                         {
-                            type: 'text',
-                            id: 'fiche_label',
-                            label: 'Libellé affiché au survol (title)',
-                            setup: function (data) {
-                                this.setValue(data ? data.label : '');
-                            }
+                            type: 'select',
+                            id: 'results',
+                            label: 'Résultats',
+                            size: 8,
+                            items: [],
+                            style: 'width:100%;'
+                        },
+                        {
+                            type: 'html',
+                            html: '<div id="' + conf.statusId + '" class="nametag-status" ' +
+                                'style="color:#666;font-size:11px;margin-top:2px;"></div>'
                         }
                     ]
                 }],
+                // Wire the debounced search once, when the dialog DOM is first built.
+                onLoad: function () {
+                    var dialog = this;
+                    var searchEl = dialog.getContentElement('tab1', 'search');
+                    var timer = null;
+                    searchEl.getInputElement().on('keyup', function () {
+                        if (timer) {
+                            clearTimeout(timer);
+                        }
+                        timer = setTimeout(function () {
+                            runSearch(dialog, conf, searchEl.getValue());
+                        }, 250);
+                    });
+                    dialog.getContentElement('tab1', 'results').getInputElement().on('dblclick', function () {
+                        var ok = dialog.getButton('ok');
+                        if (ok) {
+                            ok.click();
+                        }
+                    });
+                },
                 onShow: function () {
-                    var element = getContainer(conf, editor.getSelection().getStartElement());
-                    this.element = element;
-                    this.insertMode = !element;
+                    var dialog = this;
+                    var selection = editor.getSelection();
+                    var container = findTag(conf, selection);
+                    this.element = container;
+                    this.insertMode = !container;
+                    this._nametagMap = {};
+                    this._nametagBookmarks = null;
+                    this.getContentElement('tab1', 'results').clear();
+                    // The "remove" button only makes sense when editing a tag.
+                    var removeButton = this.getButton('nametagRemove');
+                    if (removeButton) {
+                        removeButton.getElement()[this.insertMode ? 'hide' : 'show']();
+                    }
                     if (this.insertMode) {
-                        this.setupContent({ id: '', label: editor.getSelection().getSelectedText() });
+                        var selected = trim(selection.getSelectedText());
+                        // Remember the selection so the tag still wraps it after the
+                        // focus has moved to the dialog fields.
+                        this._nametagBookmarks = selection.getRanges().length ? selection.createBookmarks(true) : null;
+                        this.getContentElement('tab1', 'search').setValue(selected);
+                        runSearch(dialog, conf, selected);
                     } else {
-                        this.setupContent({
-                            id: element.getAttribute(conf.dataAttr),
-                            label: element.getAttribute('title')
-                        });
+                        var curId = container.getAttribute(conf.dataAttr);
+                        var curLabel = container.getAttribute('title') || container.getText();
+                        this.getContentElement('tab1', 'search').setValue(curLabel);
+                        runSearch(dialog, conf, curLabel, curId, curLabel);
                     }
                 },
                 onOk: function () {
-                    var id = CKEDITOR.tools.trim(this.getContentElement('tab1', 'fiche_id').getValue());
-                    var label = this.getContentElement('tab1', 'fiche_label').getValue();
+                    var id = this.getContentElement('tab1', 'results').getValue();
                     if (!id) {
-                        return;
+                        setStatus(conf, 'Sélectionnez une fiche dans la liste.');
+                        return false;
                     }
+                    var label = (this._nametagMap && this._nametagMap[id]) || '';
                     if (this.insertMode) {
+                        if (this._nametagBookmarks) {
+                            editor.getSelection().selectBookmarks(this._nametagBookmarks);
+                            this._nametagBookmarks = null;
+                        }
                         applyTag(editor, conf, id, label);
                     } else {
                         updateTag(this.element, conf, id, label);
                     }
-                }
+                },
+                // Remove leftover bookmark markers if the user closes without tagging.
+                onCancel: function () {
+                    if (this._nametagBookmarks) {
+                        editor.getSelection().selectBookmarks(this._nametagBookmarks);
+                        this._nametagBookmarks = null;
+                    }
+                },
+                buttons: [
+                    {
+                        type: 'button',
+                        id: 'nametagRemove',
+                        label: 'Retirer le lien',
+                        title: 'Retirer ce lien (garde le texte)',
+                        onClick: function () {
+                            var dialog = this.getDialog();
+                            if (dialog.element) {
+                                dialog.element.remove(true); // unwrap: keep the inner text
+                            }
+                            dialog.hide();
+                        }
+                    },
+                    CKEDITOR.dialog.cancelButton,
+                    CKEDITOR.dialog.okButton
+                ]
             };
         };
     }
@@ -137,7 +364,7 @@
 
         editor.addCommand(conf.removeCommand, {
             exec: function (ed) {
-                var container = getContainer(conf, ed.getSelection().getStartElement());
+                var container = findTag(conf, ed.getSelection());
                 if (container) {
                     container.remove(true); // keep the inner text, drop the link
                 }

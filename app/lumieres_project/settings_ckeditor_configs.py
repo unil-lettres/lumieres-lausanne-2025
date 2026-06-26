@@ -18,7 +18,10 @@
 #
 # This copyright notice MUST APPEAR in all copies of the file.
 
-# settings_ckeditor_configs.py
+"""CKEditor editor configurations: toolbars, plugins and content styles."""
+
+import hashlib
+from pathlib import Path
 
 from django.conf import settings
 
@@ -29,10 +32,30 @@ from django.conf import settings
 CKEDITOR_CTRL = 0x110000
 CKEDITOR_SHIFT = 0x220000
 
+# Source static directory (…/static), sibling of this package's parent. Used to
+# hash CSS files so contentsCss can carry a content-based cache buster.
+_STATIC_SRC = Path(__file__).resolve().parent.parent / "static"
+
+
+def _contents_css(relative_path):
+    """STATIC_URL of a CSS file with a content-hash cache buster (``?v=<hash>``).
+
+    CKEditor loads contentsCss inside its editing iframe without any cache token,
+    so editors keep a stale stylesheet until the URL changes. Hashing the file
+    contents busts that cache automatically whenever the stylesheet is edited.
+    """
+    url = f"{settings.STATIC_URL}{relative_path}"
+    try:
+        digest = hashlib.sha256((_STATIC_SRC / relative_path).read_bytes()).hexdigest()[:8]
+    except OSError:
+        return url
+    return f"{url}?v={digest}"
+
+
 CKEDITOR_CONFIGS = {
     "project_ckeditor": {
         "skin": "v2",
-        "contentsCss": f"{settings.STATIC_URL}css/project_description.css",
+        "contentsCss": _contents_css("css/project_description.css"),
         "bodyClass": "project-description-content",
         "bodyId": "project-description-content-id",
         "width": 750,
@@ -62,7 +85,7 @@ CKEDITOR_CONFIGS = {
     },
     "transcription_ckeditor": {
         "skin": "v2",
-        "contentsCss": f"{settings.STATIC_URL}css/tinyMCE_transcripts.css",
+        "contentsCss": _contents_css("css/tinyMCE_transcripts.css"),
         "bodyClass": "cked-content",
         "width": 880,
         "height": 500,
@@ -192,7 +215,7 @@ CKEDITOR_CONFIGS = {
     },
     "note_ckeditor": {
         "skin": "v2",
-        "contentsCss": f"{settings.STATIC_URL}css/main2.css",
+        "contentsCss": _contents_css("css/main2.css"),
         "bodyClass": "note-content",
         "width": 650,
         "height": 120,
