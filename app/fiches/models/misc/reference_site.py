@@ -54,6 +54,16 @@ class ReferenceSite(models.Model):
         ),
     )
     is_active = models.BooleanField(_("Actif"), default=True)
+    applies_to_person = models.BooleanField(
+        _("Pour les personnes"),
+        default=True,
+        help_text=_("Proposer ce référentiel dans les fiches biographiques."),
+    )
+    applies_to_place = models.BooleanField(
+        _("Pour les lieux"),
+        default=True,
+        help_text=_("Proposer ce référentiel dans les fiches de lieux."),
+    )
 
     class Meta:
         app_label = "fiches"
