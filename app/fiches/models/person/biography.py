@@ -398,3 +398,49 @@ class SocietyMembershipForm(ModelForm):
             for k in ("begin_date", "begin_date_f", "begin_date_approx", "end_date", "end_date_f", "end_date_approx"):
                 cleaned_data.pop(k, None)
         return cleaned_data
+
+
+class BiographyReferenceSite(models.Model):
+    """A biography's permalink on an external reference site (référentiel).
+
+    Mirrors the place-to-référentiel pivot: one row per (biography, référentiel)
+    holding the external identifier, from which the full permalink is built.
+    """
+
+    biography = models.ForeignKey(
+        Biography,
+        verbose_name=_("Biographie"),
+        on_delete=models.CASCADE,
+        related_name="reference_links",
+        # Biography is a legacy INT-PK table; target it without a DB-level FK
+        # constraint (the cascade stays ORM-level), per the db_constraint
+        # convention used for the other legacy-table relations.
+        db_constraint=False,
+    )
+    reference_site = models.ForeignKey(
+        "fiches.ReferenceSite",
+        verbose_name=_("Site de référence"),
+        on_delete=models.PROTECT,
+        related_name="biography_links",
+    )
+    identifier = models.CharField(_("Identifiant"), max_length=255)
+
+    class Meta:
+        app_label = "fiches"
+        verbose_name = _("Site de référence de la biographie")
+        verbose_name_plural = _("Sites de référence de la biographie")
+        ordering = ("reference_site__name",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["biography", "reference_site"],
+                name="unique_reference_site_per_biography",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.reference_site}: {self.identifier}"
+
+    @property
+    def url(self):
+        """Return the permalink built from the reference site and identifier."""
+        return self.reference_site.build_url(self.identifier)

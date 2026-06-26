@@ -62,7 +62,7 @@ from .misc.place import NotePlace, PlaceCategory, PlaceRecord, PlaceReferenceSit
 from .misc.project import Project
 from .misc.reference_site import ReferenceSite
 from .misc.society import Society
-from .person.biography import Biography, Nationality, Relation, RelationType, Religion
+from .person.biography import Biography, BiographyReferenceSite, Nationality, Relation, RelationType, Religion
 
 # Person Models
 from .person.person import Person
@@ -101,6 +101,7 @@ __all__ = [
     "NoteBase",
     "Person",
     "Biography",
+    "BiographyReferenceSite",
     "RelationType",
     "Relation",
     "Nationality",
