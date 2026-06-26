@@ -137,10 +137,10 @@ def test_create_person_requires_name(client, director):
 @pytest.mark.django_db
 def test_bio_display_without_biography_shows_dedicated_page(client):
     # A person created from the tagging window has no biography yet: the fiche
-    # link must show an explanatory page, not a bare 404.
+    # link must show a consultable explanatory page (HTTP 200), not a 404.
     person = Person.objects.create(name="Barbeyrac, Jean", modern=False)
     response = client.get(reverse("biography-display", args=[person.id]))
-    assert response.status_code == 404
+    assert response.status_code == 200
     assert "n'a pas encore été rédigée" in response.content.decode()
     assert person.name in response.content.decode()
 

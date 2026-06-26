@@ -274,14 +274,13 @@ def display(request, person_id, version=0):
 
     if bio is None:
         # The person exists (e.g. just created from the tagging window) but no
-        # biography has been written yet, so the fiche cannot be displayed.
-        # Show a dedicated, explanatory page rather than a bare 404 — the link
-        # becomes live once an editor creates the fiche.
+        # biography has been written yet. Serve a dedicated, consultable page
+        # (HTTP 200, per the client's request) instead of a 404 so a tag link is
+        # never a dead end; it offers to create the fiche to users allowed to.
         return render(
             request,
             "fiches/display/biography_not_created.html",
             {"person": person, "can_create_bio": request.user.has_perm("fiches.add_biography")},
-            status=404,
         )
 
     referer = request.META.get("HTTP_REFERER")
