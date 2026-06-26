@@ -199,6 +199,28 @@
     element.setAttribute('title', label || '');
   }
 
+  // Unwrap a tag link, keeping its inner text. When the link wrapped an
+  // editorial correction, applyTag dropped the <span class="sic"> title so the
+  // tooltip would show the person/place rather than the correction. Restore it
+  // from data-corr here, otherwise the diplomatic tooltip stays gone once the
+  // link is removed (the correction itself survives in data-corr regardless).
+  function removeTag(container) {
+    if (!container) {
+      return;
+    }
+    var spans = container.getElementsByTag('span');
+    for (var i = 0; i < spans.count(); i++) {
+      var span = spans.getItem(i);
+      if (span.hasClass('sic')) {
+        var corr = span.getAttribute('data-corr');
+        if (corr && !span.getAttribute('title')) {
+          span.setAttribute('title', corr);
+        }
+      }
+    }
+    container.remove(true); // unwrap: keep the inner text, drop the link
+  }
+
   // Trim helper that does not rely on String.prototype.trim (old browsers).
   function trim(value) {
     return (value || '').replace(/^\s+|\s+$/g, '');
@@ -580,7 +602,7 @@
             onClick: function () {
               var dialog = this.getDialog();
               if (dialog.element) {
-                dialog.element.remove(true); // unwrap: keep the inner text
+                removeTag(dialog.element);
               }
               dialog.hide();
             }
@@ -597,10 +619,7 @@
 
     editor.addCommand(conf.removeCommand, {
       exec: function (ed) {
-        var container = findTag(conf, ed.getSelection());
-        if (container) {
-          container.remove(true); // keep the inner text, drop the link
-        }
+        removeTag(findTag(conf, ed.getSelection()));
       }
     });
 
