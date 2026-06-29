@@ -398,6 +398,27 @@
 
     {% comment %}
     =======================================
+    ==    Sites de référence (référentiels)
+    =======================================
+    {% endcomment %}
+    {% if bio.reference_links.all %}
+    <div class="field_group">
+        <div class="field_wrap">
+            <div class="field_label">{% trans "Sites de référence" %}</div>
+            <div class="field_value">
+                <ul>
+                {% for reference in bio.reference_links.all %}
+                    <li>{{ reference.reference_site }} : <a href="{{ reference.url }}" target="_blank" rel="noopener">{{ reference.identifier }}</a></li>
+                {% endfor %}
+                </ul>
+            </div>
+            <div class="fixclear"></div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% comment %}
+    =======================================
     ==    Bibliographie
     =======================================
     {% endcomment %}
