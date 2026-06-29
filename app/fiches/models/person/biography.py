@@ -31,6 +31,7 @@ from fiches.constants import DATE_DISPLAY_FORMAT, DATE_INPUT_FORMATS
 from fiches.models.misc.notes import NoteBase
 from fiches.models.person import Person
 from fiches.models.person.relation import Relation, RelationType
+from fiches.reference_forms import ReferenceLinkField
 from fiches.widgets import PersonWidget
 
 
@@ -165,8 +166,24 @@ class BiographyForm(ModelForm):
     )
     death_date_f = forms.CharField(widget=forms.HiddenInput(attrs={"class": "vardateformat"}), required=False)
 
+    # External reference-site permalinks (référentiels), scoped to person fiches.
+    reference_links = ReferenceLinkField(
+        applies="person",
+        required=False,
+        label=_("Sites de référence"),
+    )
+
     def person_name(self):
         return self.instance.person_name()
+
+    def __init__(self, *args, **kwargs):
+        """Preload the biography's external reference-site links into the widget."""
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            self.initial.setdefault(
+                "reference_links",
+                [f"{link.reference_site_id}|{link.identifier}" for link in self.instance.reference_links.all()],
+            )
 
     class Meta:
         model = Biography
@@ -181,6 +198,7 @@ class BiographyForm(ModelForm):
             "js/lib/jquery/jquery.bgiframe.min.js",
             "js/lib/jquery/jquery.ajaxQueue.js",
             "js/lib/jquery/jquery.autocomplete.min.js",
+            "js/list_widget.js",
         )
 
 

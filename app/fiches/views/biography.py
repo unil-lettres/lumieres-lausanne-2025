@@ -38,7 +38,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
 from utils import dbg_logger
 
-from fiches.models import Biblio, Biography, ContributionDoc, Person, Relation
+from fiches.models import Biblio, Biography, BiographyReferenceSite, ContributionDoc, Person, Relation
 from fiches.models.person.biography import (
     BiographyForm,
     NoteBiography,
@@ -128,6 +128,10 @@ def get_bio_form_def(bioForm):
             {"title": "Notes", "fields": ({"name": None, "template": "fiches/edition/note_formset.html"},)},
             {
                 "title": None,
+                "fields": ({"name": "reference_links", "class": "single-line"},),
+            },
+            {
+                "title": None,
                 "fields": (
                     {"name": "archive", "class": "single-line", "tooltip_id": "ctxt-help-bio-archive"},
                     {
@@ -147,6 +151,21 @@ def get_bio_form_def(bioForm):
                 except (KeyError, IndexError):
                     del f
     return formdef
+
+
+def _sync_bio_reference_links(bio, pairs):
+    """Replace the biography's reference-site links with the submitted (site, identifier) pairs.
+
+    Editing a biography saves a new version (a fresh Biography row); the links are
+    therefore (re)created on that new instance from the widget's cleaned payload.
+    """
+    bio.reference_links.all().delete()
+    BiographyReferenceSite.objects.bulk_create(
+        [
+            BiographyReferenceSite(biography=bio, reference_site_id=site_id, identifier=identifier)
+            for site_id, identifier in pairs
+        ]
+    )
 
 
 DISPLAY_COLLECTOR = True
@@ -411,6 +430,8 @@ def edit(request, person_id, version=0, create_bio=False):
                 bio.version = 0
                 bio.save()
                 person.renum_bio()
+
+            _sync_bio_reference_links(bio, bioForm.cleaned_data.get("reference_links", []))
 
             posted_data = request.POST.copy()
             for excluded_modelname in exclude_from_duplication:

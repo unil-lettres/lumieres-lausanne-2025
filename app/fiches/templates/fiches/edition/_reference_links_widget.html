@@ -1,0 +1,59 @@
+{% comment %}<!--
+   Shared reference-site chip widget assets (référentiels), included by the place
+   and biography fiche edit forms. Requires jQuery and list_widget.js
+   (dynamiclist_widget) to be loaded by the including page.
+-->{% endcomment %}
+<style>
+	/* Reference sites: référentiel dropdown + identifier + button on one line. */
+	.fieldWrapper.reference_links .reflist_site_select,
+	.fieldWrapper.reference_links .reflist_id_input,
+	.fieldWrapper.reference_links .reflist_addbut {
+		display: inline-block; vertical-align: middle;
+	}
+	.fieldWrapper.reference_links .reflist_site_select,
+	.fieldWrapper.reference_links .reflist_id_input { margin-right: 6px; }
+	.fieldWrapper.reference_links .reflist_id_input { width: 204px; }
+	.fieldWrapper.reference_links .reflist_addbut { margin-right: 0; }
+</style>
+<script type="text/javascript">
+(function ($) {
+	// Reference-site chip widget: référentiel + identifier -> clickable permalink chip.
+	window.refLinkWidget = {
+		addToList: function (btn, name) {
+			var c = $(btn).closest(".reflist_container"),
+				sel = c.find(".reflist_site_select"),
+				opt = sel.find("option:selected"),
+				siteId = sel.val(),
+				siteName = $.trim(opt.text()),
+				baseUrl = opt.attr("data-base-url") || "",
+				ident = $.trim(c.find(".reflist_id_input").val());
+			if (!siteId || !ident) { return; }
+			var url = baseUrl.indexOf("{id}") >= 0
+				? baseUrl.replace("{id}", ident)
+				: (baseUrl.replace(/\/+$/, "") + "/" + ident);
+			var chip = $('<span class="reflist_value_entry dynamiclist_value_entry">'
+				+ '<span class="reflist_value_label"></span> '
+				+ '<a class="reflist_value_link" target="_blank" rel="noopener"></a>'
+				+ '<input type="hidden">'
+				+ '</span>');
+			chip.find(".reflist_value_label").text(siteName + " " + ident);
+			chip.find(".reflist_value_link").attr("href", url).text(url);
+			chip.find("input").attr("name", name).val(siteId + "|" + ident);
+			c.find(".dynamiclist_values").append(chip);
+			dynamiclist_widget.appendDeleteButton(chip[0]);
+			sel.val("");
+			c.find(".reflist_id_input").val("");
+		}
+	};
+
+	$(document).ready(function () {
+		var $refs = $(".fieldWrapper.reference_links");
+		$refs.find(".reflist_value_entry").each(function () {
+			dynamiclist_widget.appendDeleteButton(this);
+		});
+		if ($.fn.button) {
+			$refs.find(".reflist_addbut").button({ icons: { primary: "ui-icon-plusthick" } });
+		}
+	});
+})(jQuery);
+</script>
