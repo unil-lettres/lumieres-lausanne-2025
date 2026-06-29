@@ -194,7 +194,13 @@
 
   // Refresh an existing tagged link in place.
   function updateTag(element, conf, id, label) {
-    element.setAttribute('href', conf.hrefBase + id + '/');
+    var href = conf.hrefBase + id + '/';
+    element.setAttribute('href', href);
+    // CKEditor shadows href as data-cke-saved-href on load and, on output, the
+    // html data processor drops the live href and re-emits the saved one. Update
+    // both, otherwise the saved copy would resurrect the previous fiche's href
+    // while data-* and title already point to the new one (issue #122).
+    element.setAttribute('data-cke-saved-href', href);
     element.setAttribute(conf.dataAttr, String(id));
     element.setAttribute('title', label || '');
   }
