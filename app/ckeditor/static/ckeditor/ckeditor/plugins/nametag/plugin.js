@@ -104,92 +104,184 @@
     return null;
   }
 
-  // If the selection sits on an editorial correction, return its <span class="sic">
-  // and the adjacent <span class="corr"> so a tag can wrap the whole unit — the
-  // link must stay clickable in both the diplomatic and edited renderings.
-  function findCorrection(selection) {
-    if (!selection) {
+  // Return the enclosing editorial-correction span (<span class="sic" data-corr>)
+  // of a node, if any, so a tag can swallow the whole correction instead of
+  // splitting it — the corrected word must stay clickable in both renderings.
+  function correctionAncestor(node) {
+    if (!node) {
       return null;
     }
-    var nodes = [selection.getStartElement()];
-    var ranges = selection.getRanges();
-    if (ranges && ranges.length) {
-      var start = ranges[0].startContainer;
-      nodes.push(start && start.type === CKEDITOR.NODE_ELEMENT ? start : start && start.getParent());
+    var parents = node.getParents(true);
+    for (var i = 0; i < parents.length; i++) {
+      var p = parents[i];
+      if (p.type === CKEDITOR.NODE_ELEMENT && p.getName() === 'span' && p.hasClass('sic')) {
+        return p;
+      }
     }
-    var span = null;
-    for (var i = 0; i < nodes.length && !span; i++) {
-      var parents = nodes[i] ? nodes[i].getParents(true) : [];
-      for (var j = 0; j < parents.length; j++) {
-        var p = parents[j];
-        if (p.type === CKEDITOR.NODE_ELEMENT && p.getName() === 'span' && (p.hasClass('sic') || p.hasClass('corr'))) {
-          span = p;
-          break;
+    return null;
+  }
+
+  // Grow a range so neither boundary cuts through an editorial correction:
+  // tagging a corrected word must keep its <span class="sic"> intact.
+  function expandRangeOverCorrections(range) {
+    var startSic = correctionAncestor(range.startContainer);
+    if (startSic) {
+      range.setStartBefore(startSic);
+    }
+    var endSic = correctionAncestor(range.endContainer);
+    if (endSic) {
+      range.setEndAfter(endSic);
+    }
+  }
+
+  // Give every editorial correction inside a node back its diplomatic tooltip
+  // (kept in data-corr), so the sic popup reappears once it leaves a tag.
+  function restoreCorrectionTitles(node) {
+    var spans = node.getElementsByTag('span');
+    for (var i = 0; i < spans.count(); i++) {
+      var span = spans.getItem(i);
+      if (span.hasClass('sic')) {
+        var corr = span.getAttribute('data-corr');
+        if (corr && !span.getAttribute('title')) {
+          span.setAttribute('title', corr);
         }
       }
     }
-    if (!span) {
-      return null;
-    }
-    var sic = span.hasClass('sic') ? span : null;
-    var corr = span.hasClass('corr') ? span : null;
-    if (sic) {
-      var next = sic.getNext();
-      if (next && next.type === CKEDITOR.NODE_ELEMENT && next.hasClass('corr')) {
-        corr = next;
-      }
-    } else if (corr) {
-      var prev = corr.getPrevious();
-      if (prev && prev.type === CKEDITOR.NODE_ELEMENT && prev.hasClass('sic')) {
-        sic = prev;
-      }
-    }
-    return sic ? { sic: sic, corr: corr } : null;
   }
 
-  // Wrap the current selection in a fresh tagged link. Links are a special case
-  // in CKEditor's style system, so we build the <a> by hand (like the native
-  // link plugin) instead of CKEDITOR.style().apply, which would be a no-op here.
-  function applyTag(editor, conf, id, label) {
-    var selection = editor.getSelection();
+  // Hide the diplomatic tooltip of every correction now inside a tag, so
+  // hovering shows the person/place tooltip; the reading survives in data-corr.
+  function hideCorrectionTitles(node) {
+    var spans = node.getElementsByTag('span');
+    for (var i = 0; i < spans.count(); i++) {
+      var span = spans.getItem(i);
+      if ((span.hasClass('sic') || span.hasClass('corr')) && span.getAttribute('title')) {
+        span.removeAttribute('title');
+      }
+    }
+  }
+
+  // Same-kind tags whose bounds the selection straddles (an ancestor of either
+  // boundary). Used to preselect the fiche when a selection re-bounds a tag.
+  function overlappingTags(conf, selection) {
+    var ranges = selection ? selection.getRanges() : [];
+    if (!ranges.length) {
+      return [];
+    }
+    var range = ranges[0];
+    var tags = [];
+    function climb(node) {
+      if (!node) {
+        return;
+      }
+      var parents = node.getParents(true);
+      for (var i = 0; i < parents.length; i++) {
+        var el = parents[i];
+        if (el.type === CKEDITOR.NODE_ELEMENT && el.getName() === 'a' && el.hasClass(conf.cssClass)) {
+          var seen = false;
+          for (var k = 0; k < tags.length; k++) {
+            if (tags[k].equals(el)) {
+              seen = true;
+              break;
+            }
+          }
+          if (!seen) {
+            tags.push(el);
+          }
+        }
+      }
+    }
+    climb(range.startContainer);
+    climb(range.endContainer);
+    return tags;
+  }
+
+  // Unwrap any same-kind tag that is an ancestor of the given bookmark marker,
+  // i.e. a tag the new selection only partially covers. Unwrapping frees the
+  // whole tag — including the part outside the selection — to plain text, which
+  // is what shrinking a tag to a sub-selection requires. Correction tooltips are
+  // restored; the ones that end up back inside the new tag are hidden afterwards.
+  function absorbAncestorTags(conf, marker) {
+    if (!marker) {
+      return;
+    }
+    var parents = marker.getParents(true);
+    for (var i = 0; i < parents.length; i++) {
+      var el = parents[i];
+      if (el.type === CKEDITOR.NODE_ELEMENT && el.getName() === 'a' && el.hasClass(conf.cssClass)) {
+        restoreCorrectionTitles(el);
+        el.remove(true);
+      }
+    }
+  }
+
+  // Unwrap any same-kind tag fully enclosed in a node (a tag the selection
+  // swallowed whole), merging its text into the node.
+  function unwrapEnclosedTags(conf, node) {
+    var links = node.getElementsByTag('a');
+    var hits = [];
+    for (var i = 0; i < links.count(); i++) {
+      var a = links.getItem(i);
+      if (a.hasClass(conf.cssClass)) {
+        hits.push(a);
+      }
+    }
+    for (var j = 0; j < hits.length; j++) {
+      hits[j].remove(true);
+    }
+  }
+
+  // Build a fresh tagged <a> (without inserting it). Mirrors updateTag so the
+  // href shadow stays consistent (see issue #122). Links are built by hand (like
+  // the native link plugin) because CKEditor's style system treats <a> specially.
+  function newTagElement(editor, conf, id, label) {
+    var href = conf.hrefBase + id + '/';
     var link = editor.document.createElement('a');
     link.setAttributes({
       'class': 'll-tag ' + conf.cssClass,
-      'href': conf.hrefBase + id + '/',
+      'href': href,
+      'data-cke-saved-href': href,
       'title': label || ''
     });
     link.setAttribute(conf.dataAttr, String(id));
+    return link;
+  }
 
-    var correction = findCorrection(selection);
-    if (correction) {
-      // Embed the whole sic[/corr] correction in the link so it stays clickable
-      // in the diplomatic ("Greg.") and edited ("Grégoire") views; the sic
-      // decoration is neutralised in CSS so the tagged word reads as a link.
-      link.insertBefore(correction.sic);
-      correction.sic.appendTo(link);
-      // Drop the correction's own tooltip so hovering shows the person/place
-      // tooltip (the link title), not the editorial reading — kept in data-corr.
-      correction.sic.removeAttribute('title');
-      if (correction.corr) {
-        correction.corr.appendTo(link);
-        correction.corr.removeAttribute('title');
-      }
-      selection.selectElement(link);
+  // Apply a tag to the current selection, normalising the result to a single
+  // link that spans exactly the selection. Any same-kind tag the selection
+  // touches is absorbed: enclosed ones are merged in, partially-covered ones are
+  // freed (their outside part becomes plain text again). Editorial corrections
+  // inside the new tag get their diplomatic tooltip hidden. With no selection,
+  // the label text is dropped in as a fresh tag.
+  function applyTag(editor, conf, id, label) {
+    var selection = editor.getSelection();
+    var ranges = selection ? selection.getRanges() : [];
+
+    if (!ranges.length || ranges[0].collapsed) {
+      // No selection: drop the label text as the link content.
+      var bare = newTagElement(editor, conf, id, label);
+      bare.setText(label || String(id));
+      editor.insertElement(bare);
       return;
     }
 
-    var ranges = selection ? selection.getRanges() : [];
-    if (ranges.length && !ranges[0].collapsed) {
-      // Keep the selected text (and any inline markup) inside the link.
-      var range = ranges[0];
-      link.append(range.extractContents());
-      range.insertNode(link);
-      selection.selectElement(link);
-    } else {
-      // No selection: drop the label text as the link content.
-      link.setText(label || String(id));
-      editor.insertElement(link);
-    }
+    // Keep whole corrections inside the new bounds, then bookmark with real
+    // markers so the boundaries survive the unwrapping that follows.
+    var range = ranges[0];
+    expandRangeOverCorrections(range);
+    selection.selectRanges([range]);
+    var bookmark = selection.createBookmarks(false);
+    absorbAncestorTags(conf, bookmark[0].startNode);
+    absorbAncestorTags(conf, bookmark[0].endNode);
+    selection.selectBookmarks(bookmark);
+
+    var wrapRange = selection.getRanges()[0];
+    var link = newTagElement(editor, conf, id, label);
+    link.append(wrapRange.extractContents());
+    unwrapEnclosedTags(conf, link); // same-kind tags swallowed whole
+    hideCorrectionTitles(link); // corrections now under the tag
+    wrapRange.insertNode(link);
+    selection.selectElement(link);
   }
 
   // Refresh an existing tagged link in place.
@@ -205,25 +297,16 @@
     element.setAttribute('title', label || '');
   }
 
-  // Unwrap a tag link, keeping its inner text. When the link wrapped an
-  // editorial correction, applyTag dropped the <span class="sic"> title so the
-  // tooltip would show the person/place rather than the correction. Restore it
-  // from data-corr here, otherwise the diplomatic tooltip stays gone once the
-  // link is removed (the correction itself survives in data-corr regardless).
+  // Unwrap a tag link, keeping its inner text. When the link wrapped an editorial
+  // correction, applyTag hid the <span class="sic"> title so the tooltip would
+  // show the person/place rather than the correction; restore it from data-corr
+  // here, otherwise the diplomatic tooltip stays gone once the link is removed
+  // (the correction itself survives in data-corr regardless).
   function removeTag(container) {
     if (!container) {
       return;
     }
-    var spans = container.getElementsByTag('span');
-    for (var i = 0; i < spans.count(); i++) {
-      var span = spans.getItem(i);
-      if (span.hasClass('sic')) {
-        var corr = span.getAttribute('data-corr');
-        if (corr && !span.getAttribute('title')) {
-          span.setAttribute('title', corr);
-        }
-      }
-    }
+    restoreCorrectionTitles(container);
     container.remove(true); // unwrap: keep the inner text, drop the link
   }
 
@@ -543,16 +626,20 @@
         onShow: function () {
           var dialog = this;
           var selection = editor.getSelection();
+          var ranges = selection ? selection.getRanges() : [];
+          var hasSelection = !!(ranges.length && !ranges[0].collapsed);
           var container = findTag(conf, selection);
-          this.element = container;
-          this.insertMode = !container;
+          // Edit a tag in place only when the caret sits in it without a
+          // selection; any selection (re)bounds a tag to the selected text.
+          this.element = (!hasSelection && container) ? container : null;
+          this.insertMode = !this.element;
           this._nametagMap = {};
           this._nametagBookmarks = null;
           this.getContentElement('tab1', 'results').clear();
-          // The "remove" button only makes sense when editing a tag.
+          // The "remove" button only makes sense when editing a tag in place.
           var removeButton = this.getButton('nametagRemove');
           if (removeButton) {
-            removeButton.getElement()[this.insertMode ? 'hide' : 'show']();
+            removeButton.getElement()[this.element ? 'show' : 'hide']();
           }
           // Offer inline creation only to users allowed to create.
           var createBox = this.getContentElement('tab1', 'createBox');
@@ -560,19 +647,39 @@
             createBox.getElement()[canCreate(conf) ? 'show' : 'hide']();
           }
           setCreateStatus(conf, '');
-          var prefill = this.insertMode ? trim(selection.getSelectedText()) : '';
-          this.getContentElement('tab1', 'create_name').setValue(prefill);
-          if (this.insertMode) {
-            // Remember the selection so the tag still wraps it after the
-            // focus has moved to the dialog fields.
-            this._nametagBookmarks = selection.getRanges().length ? selection.createBookmarks(true) : null;
-            this.getContentElement('tab1', 'search').setValue(prefill);
-            runSearch(dialog, conf, prefill);
-          } else {
-            var curId = container.getAttribute(conf.dataAttr);
-            var curLabel = container.getAttribute('title') || container.getText();
+
+          if (this.element) {
+            // Edit in place: prefill with the tag's current fiche.
+            this.getContentElement('tab1', 'create_name').setValue('');
+            var curId = this.element.getAttribute(conf.dataAttr);
+            var curLabel = this.element.getAttribute('title') || this.element.getText();
             this.getContentElement('tab1', 'search').setValue(curLabel);
             runSearch(dialog, conf, curLabel, curId, curLabel);
+            return;
+          }
+
+          var selText = hasSelection ? trim(selection.getSelectedText()) : '';
+          this.getContentElement('tab1', 'create_name').setValue(selText);
+          if (!hasSelection) {
+            // Caret in plain text, no tag: a fresh tag from the label text.
+            this.getContentElement('tab1', 'search').setValue('');
+            runSearch(dialog, conf, '');
+            return;
+          }
+          // Remember the selection so the tag still wraps it after focus moves
+          // to the dialog fields.
+          this._nametagBookmarks = selection.createBookmarks(true);
+          // If the selection re-bounds exactly one existing tag, keep that fiche
+          // preselected so confirming just changes the bounds.
+          var overlap = overlappingTags(conf, selection);
+          if (overlap.length === 1) {
+            var oid = overlap[0].getAttribute(conf.dataAttr);
+            var olabel = overlap[0].getAttribute('title') || overlap[0].getText();
+            this.getContentElement('tab1', 'search').setValue(olabel);
+            runSearch(dialog, conf, olabel, oid, olabel);
+          } else {
+            this.getContentElement('tab1', 'search').setValue(selText);
+            runSearch(dialog, conf, selText);
           }
         },
         onOk: function () {
