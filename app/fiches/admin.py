@@ -49,6 +49,9 @@ from fiches.models import (
     Nationality,
     Person,
     PlaceCategory,
+    PlaceRecord,
+    PlaceReferenceSite,
+    PlaceVariant,
     PlaceView,
     PrimaryKeyword,
     RelationType,
@@ -480,6 +483,48 @@ class PlaceCategoryAdmin(admin.ModelAdmin):
     ordering = ("name",)
 
 
+class PlaceVariantInline(admin.TabularInline):
+    """Inline admin for a place's alternate spellings (variantes de lieu)."""
+
+    model = PlaceVariant
+    extra = 0
+
+
+class PlaceReferenceSiteInline(admin.TabularInline):
+    """Inline admin for a place's reference-site permalinks (référentiels)."""
+
+    model = PlaceReferenceSite
+    extra = 0
+
+
+class PlaceRecordAdmin(admin.ModelAdmin):
+    """Admin interface for the PlaceRecord model (fiche lieu).
+
+    Registered per issue #118 so existing place fiches can be browsed, searched,
+    opened and corrected from the admin without knowing their id.
+    """
+
+    list_display = ("id", "name", "category", "variants_count", "updated_at", "fiche_link")
+    list_display_links = ("name",)
+    list_filter = ("category",)
+    search_fields = ("name", "variants__name")
+    ordering = ("name",)
+    autocomplete_fields = ("category", "related_places", "access_owner")
+    filter_horizontal = ("access_groups",)
+    inlines = [PlaceVariantInline, PlaceReferenceSiteInline]
+
+    @admin.display(description=_("Variantes"))
+    def variants_count(self, obj):
+        """Return the number of alternate spellings recorded for the place."""
+        return obj.variants.count()
+
+    @admin.display(description=_("Fiche"))
+    def fiche_link(self, obj):
+        """Return a link to the public place fiche (read view)."""
+        url = reverse_url("place-display", args=[obj.id])
+        return format_html('<a href="{}" target="_blank">{}</a>', url, _("Afficher"))
+
+
 class ManuscriptAdmin(admin.ModelAdmin):
     """Admin interface for Manuscript model."""
 
@@ -627,6 +672,7 @@ fiches_admin.register(DocumentType, DocumentTypeAdmin)
 fiches_admin.register(RelationType, RelationTypeAdmin)
 fiches_admin.register(ManuscriptType, ManuscriptTypeAdmin)
 fiches_admin.register(PlaceCategory, PlaceCategoryAdmin)
+fiches_admin.register(PlaceRecord, PlaceRecordAdmin)
 fiches_admin.register(User, UserAdmin)
 fiches_admin.register(Group, GroupAdmin)
 fiches_admin.register(Site, SiteAdmin)
