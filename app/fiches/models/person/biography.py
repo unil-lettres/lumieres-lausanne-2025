@@ -31,6 +31,7 @@ from fiches.constants import DATE_DISPLAY_FORMAT, DATE_INPUT_FORMATS
 from fiches.models.misc.notes import NoteBase
 from fiches.models.person import Person
 from fiches.models.person.relation import Relation, RelationType
+from fiches.place_tag import PlaceTagWidget
 from fiches.reference_forms import ReferenceLinkField
 from fiches.widgets import PersonWidget
 
@@ -77,12 +78,14 @@ class Biography(models.Model):
     version = models.IntegerField(editable=False, default=0)
     valid = models.BooleanField(default=False)
 
-    birth_place = models.CharField(max_length=256, verbose_name=_("Lieu de naissance"), blank=True)
+    # Place fields hold tagged HTML (<a class="ll-tag ll-tag-place" …>) per §2.2,
+    # like the transcription tags, so they are TextField rather than CharField.
+    birth_place = models.TextField(verbose_name=_("Lieu de naissance"), blank=True)
     birth_date = models.DateField(verbose_name=_("Date de naissance"), blank=True, null=True)
     birth_date_f = models.CharField(max_length=15, blank=True)
     birth_date_approx = models.BooleanField(_("Date de naissance approximative"), default=False)
 
-    death_place = models.CharField(max_length=256, verbose_name=_("Lieu de décès"), blank=True)
+    death_place = models.TextField(verbose_name=_("Lieu de décès"), blank=True)
     death_date = models.DateField(verbose_name=_("Date de décès"), blank=True, null=True)
     death_date_f = models.CharField(max_length=15, blank=True)
     death_date_approx = models.BooleanField(_("Date de décès approximative"), default=False)
@@ -90,7 +93,7 @@ class Biography(models.Model):
     religion = models.ForeignKey(
         Religion, verbose_name=_("Confession"), blank=True, null=True, on_delete=models.SET_NULL
     )
-    origin = models.CharField(_("Lieu d'origine"), max_length=512, blank=True)
+    origin = models.TextField(_("Lieu d'origine"), blank=True)
     nationality = models.ForeignKey(
         Nationality, verbose_name=_("Nationalité"), blank=True, null=True, on_delete=models.SET_NULL
     )
@@ -148,7 +151,7 @@ class Biography(models.Model):
 
 
 class BiographyForm(ModelForm):
-    birth_place = forms.CharField(label=_("Lieu"), required=False)
+    birth_place = forms.CharField(label=_("Lieu"), required=False, widget=PlaceTagWidget())
     birth_date = forms.DateField(
         widget=forms.DateInput(format=DATE_DISPLAY_FORMAT),
         input_formats=DATE_INPUT_FORMATS,
@@ -157,7 +160,7 @@ class BiographyForm(ModelForm):
     )
     birth_date_f = forms.CharField(widget=forms.HiddenInput(attrs={"class": "vardateformat"}), required=False)
 
-    death_place = forms.CharField(label=_("Lieu"), required=False)
+    death_place = forms.CharField(label=_("Lieu"), required=False, widget=PlaceTagWidget())
     death_date = forms.DateField(
         widget=forms.DateInput(format=DATE_DISPLAY_FORMAT),
         input_formats=DATE_INPUT_FORMATS,
@@ -188,7 +191,7 @@ class BiographyForm(ModelForm):
     class Meta:
         model = Biography
         fields = "__all__"
-        widgets = {"archive": forms.Textarea()}
+        widgets = {"archive": forms.Textarea(), "origin": PlaceTagWidget()}
 
     class Media:
         css = {
@@ -293,7 +296,7 @@ class Profession(models.Model):
     end_date_f = models.CharField(max_length=15, blank=True, null=True)
     end_date_approx = models.BooleanField(_("Date de fin approximative"), default=False)
     position = models.CharField(_("Poste"), max_length=256)
-    place = models.CharField(_("Lieu"), max_length=256, blank=True)
+    place = models.TextField(_("Lieu"), blank=True)
 
     def get_formatted_dates(self):
         if self.begin_date:
@@ -340,9 +343,7 @@ class ProfessionForm(ModelForm):
     end_date_f = forms.CharField(widget=forms.HiddenInput(attrs={"class": "vardateformat"}), required=False)
     end_date_approx = forms.BooleanField(required=False)
     position = forms.CharField(label=_("Poste"))
-    place = forms.CharField(
-        widget=forms.TextInput(attrs={"class": "profession-place"}), label=_("Lieu"), required=False
-    )
+    place = forms.CharField(widget=PlaceTagWidget(), label=_("Lieu"), required=False)
 
 
 # ===============================================================================

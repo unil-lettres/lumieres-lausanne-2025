@@ -108,14 +108,8 @@
 
         $(".profession-form").not("#profession-empty_form .profession-form").last().after(newForm);
 
-        newForm.find(".profession-place").autocomplete("{% url 'ajax-search' %}", {
-            extraParams: {
-            search_field : "place",
-                app_label    : "fiches",
-                model_name   : "PlaceView",
-                outf: "u"
-            }
-        });
+        // The "Lieu" field is a place-tag widget (§2.2); init the cloned row.
+        if (window.placeTagWidget) { window.placeTagWidget.initAll(newForm); }
 
         fiches_edit.addRemoveFormBut(newForm, "Supprimer la profession");
 

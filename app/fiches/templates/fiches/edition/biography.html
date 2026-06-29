@@ -31,6 +31,10 @@
 		display: none !important;
 	}
 	</style>
+	<script type="text/javascript">
+		// Gate inline place creation in the "Lieu" widget (re-checked server-side).
+		window.LL_NAMETAG = { place: {% if perms.fiches.add_placerecord %}true{% else %}false{% endif %} };
+	</script>
 {% endblock head %}
 
 {% block page_title %}{{ form.instance.person_name|truncatewords:6|slice:"65"}}{{ block.super }}{% endblock page_title %}
@@ -87,6 +91,7 @@
 	<button type="submit" >Enregistrer</button-->
 </form>
 {% include "fiches/edition/_reference_links_widget.html" %}
+{% include "fiches/edition/_place_tag_widget.html" %}
 <div id="ctxt-help-bio-origin" style="display:none">
   <h6>Lieu d'origine</h6>
 	<p>Ville (Abréviation du canton). La mention du canton correspond aux frontières

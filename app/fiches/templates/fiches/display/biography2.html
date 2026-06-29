@@ -189,7 +189,7 @@
             <div class="field_value">
                 {% if bio.birth_date_approx %}v. {% endif %}
                 {{ bio|date_f:"birth_date" }}
-                {% if bio.birth_place %} à {{ bio.birth_place }}{% endif %}
+                {% if bio.birth_place %} à {{ bio.birth_place|safe }}{% endif %}
             </div>
             <div class="fixclear"></div>
         </div>
@@ -199,7 +199,7 @@
             <div class="field_value">
                 {% if bio.death_date_approx %}v. {% endif %}
                 {{ bio|date_f:"death_date" }}
-                {% if bio.death_place %} à {{ bio.death_place }}{% endif %}
+                {% if bio.death_place %} à {{ bio.death_place|safe }}{% endif %}
             </div>
             <div class="fixclear"></div>
         </div>
@@ -218,7 +218,7 @@
         </div>
         <div class="field_wrap">
             <div class="field_label">{{ bio|field_verbose_name:"origin" }}</div>
-            <div class="field_value">{{ bio.origin|default:"" }}</div>
+            <div class="field_value">{{ bio.origin|default:""|safe }}</div>
             <div class="fixclear"></div>
         </div>
         <div class="field_wrap">
@@ -258,7 +258,7 @@
                 {% for p in bio.profession_set.all %}
                     <li>
                         {{ p.get_formatted_dates|join:" - " }}
-                        &nbsp;&nbsp;{{ p.position }}&nbsp;à&nbsp;{{ p.place }}
+                        &nbsp;&nbsp;{{ p.position }}&nbsp;à&nbsp;{{ p.place|safe }}
                     </li>
                 {% endfor %}
                 </ul>
