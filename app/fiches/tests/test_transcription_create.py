@@ -27,6 +27,25 @@ class TranscriptionCreateTest(TestCase):
         )
         self.client.force_login(self.user)
 
+    def test_biblio_edit_page_does_not_render_nested_transcription_form(self):
+        for codename in ("change_biblio", "add_transcription"):
+            self.user.user_permissions.add(
+                Permission.objects.get(
+                    content_type__app_label="fiches",
+                    codename=codename,
+                )
+            )
+
+        response = self.client.get(reverse("bibliography-edit", args=[self.biblio.id]))
+
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        main_form_start = html.index('id="biblio-form-id"')
+        main_form_end = html.index("</form>", main_form_start)
+        main_form = html[main_form_start:main_form_end]
+        self.assertNotIn("<form", main_form)
+        self.assertIn(reverse("transcription-b-add", args=[self.biblio.id]), main_form)
+
     def test_get_create_url_does_not_create_transcription(self):
         response = self.client.get(reverse("transcription-b-add", args=[self.biblio.id]))
 
