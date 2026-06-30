@@ -98,7 +98,11 @@
     <field name="sort2" type="string" indexed="true" stored="true" multiValued="false" docValues="true" />
     
     <field name="person_name" type="text_en" indexed="true" stored="true" multiValued="false" />
-    
+
+    <field name="place_name" type="text_en" indexed="true" stored="true" multiValued="false" />
+
+    <field name="category" type="text_en" indexed="true" stored="true" multiValued="false" />
+
     <uniqueKey>id</uniqueKey>
 
     <!--
