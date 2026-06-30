@@ -39,6 +39,7 @@ from django.http import (
     Http404,
     HttpResponseBadRequest,
     HttpResponseForbidden,
+    HttpResponseNotAllowed,
     HttpResponseRedirect,
     HttpResponseServerError,
 )
@@ -174,9 +175,11 @@ def display(request, trans_id):
         HttpResponse rendering the transcription display template.
     """
     trans = get_object_or_404(Transcription, pk=trans_id)
-    trans_user_access = request.user.has_perm(
-        "fiches.access_unpublished_transcription"
-    ) or trans.user_access(request.user)
+    trans_user_access = (
+        request.user.has_perm("fiches.change_any_transcription")
+        or request.user.has_perm("fiches.access_unpublished_transcription")
+        or trans.user_access(request.user)
+    )
     last_activity = get_last_model_activity(trans)
     facsimile_tile_sources = get_facsimile_tile_sources(trans.facsimile_iiif_url)
 
@@ -223,11 +226,22 @@ def create(request, man_id=None, doc_id=None):
     Returns:
         HttpResponseBadRequest if neither or both IDs are provided, otherwise calls edit to create the transcription.
     """
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
     if not (bool(man_id) ^ bool(doc_id)):
         return HttpResponseBadRequest(
             "one and only one of 'man_id', 'doc_id' is required"
         )
-    return edit(request, man_id=man_id, doc_id=doc_id, trans_id=None, new_trans=True)
+
+    doc = get_object_or_404(Biblio, pk=doc_id) if doc_id else None
+    trans = Transcription.objects.create(
+        manuscript_b=doc,
+        author=request.user,
+        access_owner=request.user,
+        access_public=False,
+    )
+    return HttpResponseRedirect(reverse("transcription-edit", args=[trans.id]))
 
 
 @permission_required(perm="fiches.delete_transcription")
@@ -284,6 +298,7 @@ def edit(
 
     trans_user_access = (
         new_trans
+        or request.user.has_perm("fiches.change_any_transcription")
         or request.user.has_perm("fiches.access_unpublished_transcription")
         or trans.user_access(request.user)
     )

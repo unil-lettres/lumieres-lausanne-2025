@@ -28,6 +28,7 @@
 
 ## Adding/Checking the custom permissions
 - The same `sync_status_roles` command also ensures doctorants receive document attachment permissions (`add/change/delete_documentfile`).
+- It also ensures doctorants can access and edit third-party transcriptions (`access_unpublished_transcription`, `change_any_transcription`).
 - Run the command after an exceptional DB restore, auth-table refresh, or environment rebuild so groups stay aligned.
 
 ## Allowing staff to manage user profiles

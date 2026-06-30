@@ -526,7 +526,10 @@
                 </ul>
                 {% endif %}
                 {% if perms.fiches.add_transcription %}
-                <button class="transcription-add-but" type="button">Ajouter une transcription</button>
+                <form class="transcription-add-form" method="post" action="{% url 'transcription-b-add' doc.id %}">
+                    {% csrf_token %}
+                    <button class="transcription-add-but" type="submit">Ajouter une transcription</button>
+                </form>
                 {% endif %}
             </div>
             <div class="fixclear"></div>
@@ -534,12 +537,10 @@
     </div>
     <script type="text/javascript">
         (function($){$(document).ready(function(){
-            var  but = $("button.transcription-add-but"),
-                 click_handler = function() { document.location='{% url 'transcription-b-add' doc.id %}'; };
+            var  but = $("button.transcription-add-but");
             if (typeof $.fn.button == 'function') {
                 but.css({"fontSize":"12px","marginTop":"7px"}).button({icons: { primary: "ui-icon-plusthick" }});
             }
-            but.click(click_handler);
         })})(jQuery);
     </script>
     {% endif %}

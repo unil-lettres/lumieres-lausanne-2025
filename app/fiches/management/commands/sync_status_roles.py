@@ -15,6 +15,7 @@ class Command(BaseCommand):
     help = (
         "Synchronise Lumières status groups with the latest permission policy:\n"
         " - doctorants gain the ability to manage bibliography attachments\n"
+        " - doctorants may access and edit third-party transcriptions\n"
         " - directeurs may reassign collection owners\n"
         " - directeurs may manage user profile extra information\n"
         " - assistants status is retired\n"
@@ -22,6 +23,10 @@ class Command(BaseCommand):
     )
 
     DOCFILE_PERMS = ("add_documentfile", "change_documentfile", "delete_documentfile")
+    DOCTORANT_TRANSCRIPTION_PERMS = (
+        "access_unpublished_transcription",
+        "change_any_transcription",
+    )
     DIRECTOR_USER_PROFILE_PERMS = (
         "add_userprofile",
         "change_userprofile",
@@ -49,7 +54,11 @@ class Command(BaseCommand):
         context_manager = transaction.atomic if apply_changes else nullcontext
         with context_manager():
             docfile_perms = self._ensure_docfile_permissions()
-            self._update_doctorant_permissions(docfile_perms, apply_changes)
+            transcription_perms = self._ensure_transcription_permissions()
+            self._update_doctorant_permissions(
+                [*docfile_perms.values(), *transcription_perms.values()],
+                apply_changes,
+            )
             collection_owner_perm = self._ensure_collection_owner_permission(apply_changes)
             if collection_owner_perm is not None:
                 self._update_director_permissions([collection_owner_perm], apply_changes)
@@ -81,6 +90,27 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(warning))
         return perms
 
+    def _ensure_transcription_permissions(self):
+        """Fetch Transcription permissions required for third-party editing."""
+        from fiches.models.documents.document import Transcription
+
+        ct = ContentType.objects.get_for_model(Transcription)
+        perms = {
+            perm.codename: perm
+            for perm in Permission.objects.filter(
+                content_type=ct,
+                codename__in=self.DOCTORANT_TRANSCRIPTION_PERMS,
+            )
+        }
+        missing = sorted(set(self.DOCTORANT_TRANSCRIPTION_PERMS) - set(perms))
+        if missing:
+            warning = (
+                "Missing Transcription permissions: "
+                f"{', '.join(missing)}. Please run migrations before applying changes."
+            )
+            self.stdout.write(self.style.WARNING(warning))
+        return perms
+
     def _ensure_user_profile_permissions(self):
         """Fetch UserProfile permissions required by the user admin inline."""
         ct = ContentType.objects.get_for_model(UserProfile)
@@ -104,8 +134,8 @@ class Command(BaseCommand):
             if codename in perms
         ]
 
-    def _update_doctorant_permissions(self, docfile_perms, apply_changes):
-        """Grant document-file management to doctorants."""
+    def _update_doctorant_permissions(self, required_permissions, apply_changes):
+        """Grant required working permissions to doctorants."""
         group = self._get_group(self.DOCTORANT_NAME)
         if not group:
             message = f"Group '{self.DOCTORANT_NAME}' not found."
@@ -116,10 +146,11 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f"{message} Would create it in apply mode."))
                 return
 
+        existing_ids = set(group.permissions.values_list("id", flat=True))
         missing_perms = [
-            docfile_perms[codename]
-            for codename in self.DOCFILE_PERMS
-            if codename in docfile_perms and docfile_perms[codename] not in group.permissions.all()
+            permission
+            for permission in required_permissions
+            if permission.id not in existing_ids
         ]
         if missing_perms:
             perm_labels = ", ".join(p.codename for p in missing_perms)
@@ -127,18 +158,18 @@ class Command(BaseCommand):
                 group.permissions.add(*missing_perms)
                 self.stdout.write(
                     self.style.SUCCESS(
-                        f"Granted document attachment permissions to '{group.name}': {perm_labels}"
+                        f"Granted doctorant permissions to '{group.name}': {perm_labels}"
                     )
                 )
             else:
                 self.stdout.write(
                     self.style.WARNING(
-                        f"Would grant document attachment permissions to '{group.name}': {perm_labels}"
+                        f"Would grant doctorant permissions to '{group.name}': {perm_labels}"
                     )
                 )
         else:
             self.stdout.write(
-                self.style.SUCCESS(f"'{group.name}' already has document attachment permissions.")
+                self.style.SUCCESS(f"'{group.name}' already has required doctorant permissions.")
             )
 
     def _ensure_collection_owner_permission(self, apply_changes):
