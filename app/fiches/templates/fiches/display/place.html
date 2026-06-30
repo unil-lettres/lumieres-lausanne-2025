@@ -60,7 +60,9 @@
 </div>
 {% endfor %}
 
-{% comment %} 3.4 automatic listings: what references this place (via place tags). {% endcomment %}
+{% comment %} 3.4 automatic listings: what references this place (via place tags).
+Each listing paginates independently; {% templatetag openblock %} querystring {% templatetag closeblock %}
+preserves the other listings' page params while overriding its own. {% endcomment %}
 {% if tagged_persons.paginator.count %}
 <div class="field_group" id="personnes">
 	<div class="field_wrap">
@@ -72,7 +74,64 @@
 			{% endfor %}
 			</ul>
 			{% if tagged_persons.has_next %}
-			<a class="listing-more" href="?personnes_page={{ tagged_persons.next_page_number }}&amp;manuscrits_page={{ tagged_transcriptions.number }}#personnes">{% blocktrans count n=personnes_remaining %}afficher la fiche suivante{% plural %}afficher les {{ n }} fiches suivantes{% endblocktrans %}</a>
+			<a class="listing-more" href="{% querystring personnes_page=tagged_persons.next_page_number %}#personnes">{% blocktrans count n=personnes_remaining %}afficher la fiche suivante{% plural %}afficher les {{ n }} fiches suivantes{% endblocktrans %}</a>
+			{% endif %}
+		</div>
+		<div class="fixclear"></div>
+	</div>
+</div>
+{% endif %}
+
+{% if tagged_printing.paginator.count %}
+<div class="field_group" id="impression">
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Lieu d'impression" %}</div>
+		<div class="field_value">
+			<ul>
+			{% for biblio in tagged_printing %}
+				<li><a href="{% url 'display-bibliography' biblio.id %}">{% firstof biblio.title biblio.short_title "[Sans titre]" %}</a></li>
+			{% endfor %}
+			</ul>
+			{% if tagged_printing.has_next %}
+			<a class="listing-more" href="{% querystring impression_page=tagged_printing.next_page_number %}#impression">{% blocktrans count n=impression_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+			{% endif %}
+		</div>
+		<div class="fixclear"></div>
+	</div>
+</div>
+{% endif %}
+
+{% if tagged_writing.paginator.count %}
+<div class="field_group" id="redaction">
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Lieu de rédaction" %}</div>
+		<div class="field_value">
+			<ul>
+			{% for biblio in tagged_writing %}
+				<li><a href="{% url 'display-bibliography' biblio.id %}">{% firstof biblio.title biblio.short_title "[Sans titre]" %}</a></li>
+			{% endfor %}
+			</ul>
+			{% if tagged_writing.has_next %}
+			<a class="listing-more" href="{% querystring redaction_page=tagged_writing.next_page_number %}#redaction">{% blocktrans count n=redaction_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+			{% endif %}
+		</div>
+		<div class="fixclear"></div>
+	</div>
+</div>
+{% endif %}
+
+{% if tagged_subject.paginator.count %}
+<div class="field_group" id="mention">
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Publications - Lieu mentionné" %}</div>
+		<div class="field_value">
+			<ul>
+			{% for biblio in tagged_subject %}
+				<li><a href="{% url 'display-bibliography' biblio.id %}">{% firstof biblio.title biblio.short_title "[Sans titre]" %}</a></li>
+			{% endfor %}
+			</ul>
+			{% if tagged_subject.has_next %}
+			<a class="listing-more" href="{% querystring mention_page=tagged_subject.next_page_number %}#mention">{% blocktrans count n=mention_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
 			{% endif %}
 		</div>
 		<div class="fixclear"></div>
@@ -91,7 +150,7 @@
 			{% endfor %}
 			</ul>
 			{% if tagged_transcriptions.has_next %}
-			<a class="listing-more" href="?personnes_page={{ tagged_persons.number }}&amp;manuscrits_page={{ tagged_transcriptions.next_page_number }}#manuscrits">{% blocktrans count n=manuscrits_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+			<a class="listing-more" href="{% querystring manuscrits_page=tagged_transcriptions.next_page_number %}#manuscrits">{% blocktrans count n=manuscrits_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
 			{% endif %}
 		</div>
 		<div class="fixclear"></div>

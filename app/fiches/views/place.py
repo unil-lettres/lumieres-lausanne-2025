@@ -29,12 +29,22 @@ from django.urls import reverse
 from django.utils.html import strip_tags
 from django.views.decorators.cache import never_cache
 
+from fiches.constants import DOCTYPE
 from fiches.forms import NoteFormPlace, PlaceRecordForm
 from fiches.models import Biography, NotePlace, PlaceRecord, PlaceReferenceSite, PlaceVariant
-from fiches.models.documents.document import Transcription
+from fiches.models.documents.document import Biblio, Transcription
 
 # How many entries each automatic listing on a place fiche shows per page (§3.4).
 LISTING_PAGE_SIZE = 20
+
+# Document types of the printed "Lieu d'impression" listing (§3.4.2): everything
+# except manuscripts (book, book chapter, journal article, dictionary article).
+PRINTING_DOCTYPE_IDS = (
+    DOCTYPE["LIVRE"],
+    DOCTYPE["CHAPITRE_LIVRE"],
+    DOCTYPE["ARTICLE_REVUE"],
+    DOCTYPE["ARTICLE_DICO"],
+)
 
 # Inline formset for the notes. Variants and reference links use widget fields on
 # the form (free-text / référentiel chips), not formsets.
@@ -178,6 +188,36 @@ def tagged_transcriptions(place, user):
     return qs.select_related("manuscript_b", "manuscript").order_by("manuscript_b__date", "id")
 
 
+def _biblios_tagging_location(place, document_type_ids):
+    """Primary-literature biblios of these document types tagging this place in Lieu / 2e Lieu.
+
+    Both location fields are scanned (they may hold different places); a biblio is
+    listed when the place tag appears in either. Chronological order (§3.4.2).
+    """
+    needle = _place_tag_needle(place.pk)
+    return (
+        Biblio.objects.filter(litterature_type="p", document_type_id__in=document_type_ids)
+        .filter(Q(place__contains=needle) | Q(place2__contains=needle))
+        .order_by("date", "id")
+        .distinct()
+    )
+
+
+def tagged_biblios_printing(place):
+    """Primary-lit printed publications tagging this place (§3.4.2 — Lieu d'impression)."""
+    return _biblios_tagging_location(place, PRINTING_DOCTYPE_IDS)
+
+
+def tagged_biblios_writing(place):
+    """Primary-lit manuscripts tagging this place (§3.4.2 — Lieu de rédaction)."""
+    return _biblios_tagging_location(place, (DOCTYPE["MANUSCRIT"],))
+
+
+def tagged_biblios_subject(place):
+    """Publications indexing this place in Sujets — Lieu(x) (§3.4.2 — Publications - Lieu mentionné)."""
+    return Biblio.objects.filter(subj_place=place).order_by("date", "id").distinct()
+
+
 def _listing_page(items, number):
     """Return the requested page (1-based, fallback to first) of a listing."""
     paginator = Paginator(items, LISTING_PAGE_SIZE)
@@ -187,20 +227,35 @@ def _listing_page(items, number):
         return paginator.page(1)
 
 
+def _remaining(page):
+    """Entries left after the current page (drives the "show next" link wording)."""
+    return max(page.paginator.count - page.end_index(), 0)
+
+
 def display(request, place_id):
     """Public read view for a place fiche (visitors may consult it via tags)."""
     place = get_object_or_404(PlaceRecord, pk=place_id)
     user = request.user
-    persons_page = _listing_page(tagged_persons(place), request.GET.get("personnes_page"))
-    trans_page = _listing_page(tagged_transcriptions(place, user), request.GET.get("manuscrits_page"))
+    get = request.GET.get
+    persons_page = _listing_page(tagged_persons(place), get("personnes_page"))
+    trans_page = _listing_page(tagged_transcriptions(place, user), get("manuscrits_page"))
+    printing_page = _listing_page(tagged_biblios_printing(place), get("impression_page"))
+    writing_page = _listing_page(tagged_biblios_writing(place), get("redaction_page"))
+    subject_page = _listing_page(tagged_biblios_subject(place), get("mention_page"))
     context = {
         "place": place,
         "model": PlaceRecord,
         "visible_notes": [note for note in place.notes.all() if note.user_access(user)],
         "tagged_persons": persons_page,
         "tagged_transcriptions": trans_page,
-        "personnes_remaining": max(persons_page.paginator.count - persons_page.end_index(), 0),
-        "manuscrits_remaining": max(trans_page.paginator.count - trans_page.end_index(), 0),
+        "tagged_printing": printing_page,
+        "tagged_writing": writing_page,
+        "tagged_subject": subject_page,
+        "personnes_remaining": _remaining(persons_page),
+        "manuscrits_remaining": _remaining(trans_page),
+        "impression_remaining": _remaining(printing_page),
+        "redaction_remaining": _remaining(writing_page),
+        "mention_remaining": _remaining(subject_page),
         "add_url": reverse("place-create") if user.has_perm("fiches.add_placerecord") else None,
         "edit_url": reverse("place-edit", args=[place.pk]) if user.has_perm("fiches.change_placerecord") else None,
         "delete_url": reverse("place-delete", args=[place.pk]) if user.has_perm("fiches.delete_placerecord") else None,

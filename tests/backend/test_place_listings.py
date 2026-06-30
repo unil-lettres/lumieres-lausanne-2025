@@ -27,10 +27,17 @@ from datetime import UTC, date, datetime
 import pytest
 from django.urls import reverse
 from fiches.models import Biography, PlaceCategory, PlaceRecord
-from fiches.models.documents.document import Transcription
+from fiches.models.documents import Biblio, DocumentLanguage
+from fiches.models.documents.document import DocumentType, Transcription
 from fiches.models.person.biography import Profession
 from fiches.models.person.person import Person
-from fiches.views.place import tagged_persons, tagged_transcriptions
+from fiches.views.place import (
+    tagged_biblios_printing,
+    tagged_biblios_subject,
+    tagged_biblios_writing,
+    tagged_persons,
+    tagged_transcriptions,
+)
 
 
 @pytest.fixture
@@ -116,6 +123,51 @@ def test_transcriptions_lists_published_with_tag_only(place):
 
     visible = list(tagged_transcriptions(place, Anon()))
     assert visible == [published]
+
+
+# -- §3.4.2 bibliographic listings --------------------------------------------
+
+LIVRE, MANUSCRIT = 1, 5  # DOCTYPE ids
+
+
+def make_biblio(doctype_id, title, litt="p", **kwargs):
+    # Biblio.language defaults to a "Français" DocumentLanguage created on the fly;
+    # seed it with a valid ordering so the default lookup doesn't hit a NOT NULL error.
+    DocumentLanguage.objects.get_or_create(name="Français", defaults={"ordering": 1})
+    doctype, _ = DocumentType.objects.get_or_create(
+        id=doctype_id, defaults={"name": f"type{doctype_id}", "code": doctype_id}
+    )
+    return Biblio.objects.create(title=title, litterature_type=litt, document_type=doctype, **kwargs)
+
+
+@pytest.mark.django_db
+def test_printing_lists_primary_books_tagging_lieu_or_lieu2(place):
+    make_biblio(LIVRE, "Imprimé Lieu", place=tag(place))
+    make_biblio(LIVRE, "Imprimé Lieu2", place2=tag(place))
+    other = PlaceRecord.objects.create(name="Berne", category=place.category)
+    make_biblio(LIVRE, "Autre lieu", place=tag(other))  # different place
+    make_biblio(LIVRE, "Secondaire", litt="s", place=tag(place))  # secondary literature excluded
+    make_biblio(MANUSCRIT, "Manuscrit", place=tag(place))  # manuscript belongs to "Lieu de rédaction"
+
+    assert sorted(b.title for b in tagged_biblios_printing(place)) == ["Imprimé Lieu", "Imprimé Lieu2"]
+
+
+@pytest.mark.django_db
+def test_writing_lists_primary_manuscripts_only(place):
+    make_biblio(MANUSCRIT, "Manuscrit primaire", place=tag(place))
+    make_biblio(MANUSCRIT, "Manuscrit secondaire", litt="s", place=tag(place))  # secondary excluded
+    make_biblio(LIVRE, "Livre", place=tag(place))  # not a manuscript
+
+    assert [b.title for b in tagged_biblios_writing(place)] == ["Manuscrit primaire"]
+
+
+@pytest.mark.django_db
+def test_subject_lists_biblios_indexing_the_place(place):
+    indexed = make_biblio(LIVRE, "Indexé")
+    indexed.subj_place.set([place])
+    make_biblio(LIVRE, "Non indexé")
+
+    assert [b.title for b in tagged_biblios_subject(place)] == ["Indexé"]
 
 
 # -- read view integration ----------------------------------------------------
