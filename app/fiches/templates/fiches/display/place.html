@@ -11,9 +11,7 @@
 
 {% block main_content %}
 <style>
-	.listing-title { font-weight: bold; }
-	.listing-citation { margin: 2px 0 8px 1.2em; font-size: 0.9em; color: #444; }
-	.listing-citation .biblioref-item { display: inline; }
+	.listing-ref .biblioref-item { display: inline; }
 </style>
 <h2>{{ place.name }}</h2>
 
@@ -94,10 +92,7 @@ preserves the other listings' page params while overriding its own. {% endcommen
 		<div class="field_value">
 			<ul>
 			{% for biblio in tagged_printing %}
-				<li>
-					<a class="listing-title" href="{% url 'display-bibliography' biblio.id %}">{% firstof biblio.title biblio.short_title "[Sans titre]" %}</a>
-					<div class="listing-citation">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</div>
-				</li>
+				<li><a class="listing-ref" href="{% url 'display-bibliography' biblio.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</a></li>
 			{% endfor %}
 			</ul>
 			{% if tagged_printing.has_next %}
@@ -116,10 +111,7 @@ preserves the other listings' page params while overriding its own. {% endcommen
 		<div class="field_value">
 			<ul>
 			{% for biblio in tagged_writing %}
-				<li>
-					<a class="listing-title" href="{% url 'display-bibliography' biblio.id %}">{% firstof biblio.title biblio.short_title "[Sans titre]" %}</a>
-					<div class="listing-citation">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</div>
-				</li>
+				<li><a class="listing-ref" href="{% url 'display-bibliography' biblio.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</a></li>
 			{% endfor %}
 			</ul>
 			{% if tagged_writing.has_next %}
@@ -138,10 +130,7 @@ preserves the other listings' page params while overriding its own. {% endcommen
 		<div class="field_value">
 			<ul>
 			{% for biblio in tagged_subject %}
-				<li>
-					<a class="listing-title" href="{% url 'display-bibliography' biblio.id %}">{% firstof biblio.title biblio.short_title "[Sans titre]" %}</a>
-					<div class="listing-citation">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</div>
-				</li>
+				<li><a class="listing-ref" href="{% url 'display-bibliography' biblio.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</a></li>
 			{% endfor %}
 			</ul>
 			{% if tagged_subject.has_next %}
@@ -160,10 +149,7 @@ preserves the other listings' page params while overriding its own. {% endcommen
 		<div class="field_value">
 			<ul>
 			{% for trans in tagged_transcriptions %}
-				<li>
-					<a class="listing-title" href="{% url 'transcription-display' trans.id %}">{{ trans }}</a>
-					<div class="listing-citation">{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 noManBiblioLink=1 only %}</div>
-				</li>
+				<li><a class="listing-ref" href="{% url 'transcription-display' trans.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 noManBiblioLink=1 only %}</a></li>
 			{% endfor %}
 			</ul>
 			{% if tagged_transcriptions.has_next %}

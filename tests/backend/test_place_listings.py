@@ -193,6 +193,10 @@ def test_place_page_renders_book_citation(client, place):
     assert "Lieu d'impression" in body
     assert "Mon Livre" in body
     assert "biblioref-item" in body  # the full citation block is rendered
+    # The place field holds tag HTML (§4.2); the citation must show the place name
+    # as text, never the raw tag markup.
+    assert "data-place=" not in body
+    assert "ll-tag-place" not in body
 
 
 @pytest.mark.django_db
