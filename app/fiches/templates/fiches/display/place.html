@@ -60,5 +60,42 @@
 </div>
 {% endfor %}
 
-{% comment %} 3.4 automatic listings (linked biographies / publications / transcriptions) require place tagging and are added later. {% endcomment %}
+{% comment %} 3.4 automatic listings: what references this place (via place tags). {% endcomment %}
+{% if tagged_persons.paginator.count %}
+<div class="field_group" id="personnes">
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Personnes" %}</div>
+		<div class="field_value">
+			<ul>
+			{% for entry in tagged_persons %}
+				<li><a href="{% url 'biography-display' entry.person.id %}">{{ entry.name }}</a>{% if entry.detail %} ({{ entry.detail }}){% endif %}</li>
+			{% endfor %}
+			</ul>
+			{% if tagged_persons.has_next %}
+			<a class="listing-more" href="?personnes_page={{ tagged_persons.next_page_number }}&amp;manuscrits_page={{ tagged_transcriptions.number }}#personnes">{% blocktrans count n=personnes_remaining %}afficher la fiche suivante{% plural %}afficher les {{ n }} fiches suivantes{% endblocktrans %}</a>
+			{% endif %}
+		</div>
+		<div class="fixclear"></div>
+	</div>
+</div>
+{% endif %}
+
+{% if tagged_transcriptions.paginator.count %}
+<div class="field_group" id="manuscrits">
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Manuscrits - Lieu mentionné" %}</div>
+		<div class="field_value">
+			<ul>
+			{% for trans in tagged_transcriptions %}
+				<li><a href="{% url 'transcription-display' trans.id %}">{{ trans }}</a></li>
+			{% endfor %}
+			</ul>
+			{% if tagged_transcriptions.has_next %}
+			<a class="listing-more" href="?personnes_page={{ tagged_persons.number }}&amp;manuscrits_page={{ tagged_transcriptions.next_page_number }}#manuscrits">{% blocktrans count n=manuscrits_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+			{% endif %}
+		</div>
+		<div class="fixclear"></div>
+	</div>
+</div>
+{% endif %}
 {% endblock main_content %}

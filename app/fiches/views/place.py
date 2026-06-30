@@ -20,15 +20,21 @@
 
 """Views for the place fiche (Lieu): public read view and the create/edit form."""
 
+from django.core.paginator import InvalidPage, Paginator
 from django.db.models import Q
 from django.forms.models import inlineformset_factory
 from django.http import HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.html import strip_tags
 from django.views.decorators.cache import never_cache
 
 from fiches.forms import NoteFormPlace, PlaceRecordForm
-from fiches.models import NotePlace, PlaceRecord, PlaceReferenceSite, PlaceVariant
+from fiches.models import Biography, NotePlace, PlaceRecord, PlaceReferenceSite, PlaceVariant
+from fiches.models.documents.document import Transcription
+
+# How many entries each automatic listing on a place fiche shows per page (§3.4).
+LISTING_PAGE_SIZE = 20
 
 # Inline formset for the notes. Variants and reference links use widget fields on
 # the form (free-text / référentiel chips), not formsets.
@@ -110,14 +116,91 @@ def _save_place(form, formsets, user):
     return place
 
 
+# -- §3.4 automatic listings: what references this place (via place tags) --------
+
+
+def _place_tag_needle(place_id):
+    """Substring identifying a tag pointing at this place in the stored HTML."""
+    return f'data-place="{place_id}"'
+
+
+def _format_place_year(place_html, when):
+    """Build a "Place, year" fragment from a tagged place field and a date."""
+    place = strip_tags(place_html or "").strip()
+    year = when.year if when else None
+    if place and year:
+        return f"{place}, {year}"
+    return place or (str(year) if year else "")
+
+
+def tagged_persons(place):
+    """Persons whose current biography tags this place (§3.4.1).
+
+    A person is listed when their displayed biography — validated or the current
+    version 0, the codebase convention (cf. ``Person.get_relations``) — has the
+    place tagged in the birth place, death place or a profession place; origin is
+    excluded per spec. Returns alphabetically sorted entries (one per person).
+    """
+    needle = _place_tag_needle(place.pk)
+    bios = (
+        Biography.objects.filter(Q(valid=True) | Q(version=0))
+        .filter(
+            Q(birth_place__contains=needle)
+            | Q(death_place__contains=needle)
+            | Q(profession__place__contains=needle)
+        )
+        .select_related("person")
+        .distinct()
+    )
+    entries, seen = [], set()
+    for bio in bios:
+        if bio.person_id in seen:
+            continue
+        seen.add(bio.person_id)
+        birth = _format_place_year(bio.birth_place, bio.birth_date)
+        death = _format_place_year(bio.death_place, bio.death_date)
+        detail = f"{birth} – {death}" if (birth and death) else (birth or death)
+        entries.append({"person": bio.person, "name": bio.person.name, "detail": detail})
+    entries.sort(key=lambda e: e["name"].lower())
+    return entries
+
+
+def tagged_transcriptions(place, user):
+    """Transcriptions whose text tags this place, chronologically (§3.4.3).
+
+    Only published transcriptions are listed, unless the user may see
+    unpublished ones; order is by the related bibliographic record's date.
+    """
+    needle = _place_tag_needle(place.pk)
+    qs = Transcription.objects.filter(text__contains=needle)
+    if not user.has_perm("fiches.access_unpublished_transcription"):
+        qs = qs.filter(published_date__isnull=False)
+    return qs.select_related("manuscript_b", "manuscript").order_by("manuscript_b__date", "id")
+
+
+def _listing_page(items, number):
+    """Return the requested page (1-based, fallback to first) of a listing."""
+    paginator = Paginator(items, LISTING_PAGE_SIZE)
+    try:
+        return paginator.page(int(number or 1))
+    except (InvalidPage, ValueError, TypeError):
+        return paginator.page(1)
+
+
 def display(request, place_id):
     """Public read view for a place fiche (visitors may consult it via tags)."""
     place = get_object_or_404(PlaceRecord, pk=place_id)
     user = request.user
+    persons_page = _listing_page(tagged_persons(place), request.GET.get("personnes_page"))
+    trans_page = _listing_page(tagged_transcriptions(place, user), request.GET.get("manuscrits_page"))
     context = {
         "place": place,
         "model": PlaceRecord,
         "visible_notes": [note for note in place.notes.all() if note.user_access(user)],
+        "tagged_persons": persons_page,
+        "tagged_transcriptions": trans_page,
+        "personnes_remaining": max(persons_page.paginator.count - persons_page.end_index(), 0),
+        "manuscrits_remaining": max(trans_page.paginator.count - trans_page.end_index(), 0),
         "add_url": reverse("place-create") if user.has_perm("fiches.add_placerecord") else None,
         "edit_url": reverse("place-edit", args=[place.pk]) if user.has_perm("fiches.change_placerecord") else None,
         "delete_url": reverse("place-delete", args=[place.pk]) if user.has_perm("fiches.delete_placerecord") else None,
