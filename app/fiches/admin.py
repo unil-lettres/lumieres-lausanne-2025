@@ -512,6 +512,15 @@ class PlaceRecordAdmin(admin.ModelAdmin):
     autocomplete_fields = ("category", "related_places", "access_owner")
     filter_horizontal = ("access_groups",)
     inlines = [PlaceVariantInline, PlaceReferenceSiteInline]
+    # Business fields first; the access metadata block goes to the bottom, collapsed
+    # (issue #118). Inlines still render below the form, as Django always does.
+    fieldsets = (
+        (None, {"fields": ("name", "category", "related_places")}),
+        (
+            _("Accès"),
+            {"fields": ("access_public", "access_owner", "access_groups"), "classes": ("collapse",)},
+        ),
+    )
 
     @admin.display(description=_("Variantes"))
     def variants_count(self, obj):

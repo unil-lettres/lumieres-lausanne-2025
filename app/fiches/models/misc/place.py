@@ -98,8 +98,10 @@ class PlaceRecord(ACModel):
 
     class Meta:
         app_label = "fiches"
-        verbose_name = _("Fiche lieu")
-        verbose_name_plural = _("Fiches lieux")
+        # "Lieu" / "Lieux" (not "Fiche lieu"): cleaner admin menu label, consistent
+        # with the other simple entries like Personnes, Activités (issue #118).
+        verbose_name = _("Lieu")
+        verbose_name_plural = _("Lieux")
         ordering = ("name",)
         constraints = [
             models.UniqueConstraint(
