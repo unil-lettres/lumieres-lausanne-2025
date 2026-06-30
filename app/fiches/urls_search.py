@@ -18,6 +18,8 @@
 #
 # This copyright notice MUST APPEAR in all copies of the file.
 
+"""URL routes for the advanced search (the ``chercher/`` namespace)."""
+
 from django.urls import path
 
 from fiches.views.search import (
@@ -36,8 +38,8 @@ from fiches.views.search import (
 urlpatterns = [
     path("", quick_search, name="search-index"),  # 🔍 header search
     path("person/", filter_builder, {"model_name": "Person"}, name="search-person"),
-    path("person/list", list_persons, name="list-person"),
-    path("place/list", list_places, name="list-place"),
+    path("person/list/", list_persons, name="list-person"),
+    path("place/list/", list_places, name="list-place"),
     path("bibliographie/", biblio_extended_search, name="search-biblio"),  # 🔍➕ advanced
     path("do/", do_search, name="do-search"),
     path("display_settings/save/", save_settings, name="save-settings"),
