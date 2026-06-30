@@ -11,7 +11,8 @@
   Used by the Compose CLI only—sets `COMPOSE_FILE=docker-compose.yml:docker-compose.staging.yml` and `COMPOSE_PROJECT_NAME=lumieres-staging`.
 - `.env.staging`
   Injected into containers. Holds Django env, MySQL creds, and Solr URL.
-- **Legacy schema fixes** (apply to every imported dump before the app is usable):
+- Routine staging and production deploys now use the migrated, current database schema. No legacy dump import or schema normalization is required for standard releases.
+- **Historical legacy dump recovery** (exception only: archival restore, old dump replay, or recovery lab work):
   ```sql
   ALTER TABLE fiches_biblio            MODIFY depot varchar(128) NULL;
   ALTER TABLE fiches_manuscript        MODIFY depot varchar(128) NULL;
@@ -71,8 +72,8 @@
       )
     );
   ```
-  _We do not run Django migrations on restored legacy dumps; normalize the schema with the ALTERs above, then sync roles and rebuild the index._
-- `250715-db-lumieres.sql`: latest imported reference dump (July 15). Keep until replaced.
+  _Use this only for exceptional legacy restores. We do not run Django migrations on restored legacy dumps; normalize the schema with the ALTERs above, then sync roles and rebuild the index._
+- `250715-db-lumieres.sql`: archived reference dump from the migration period. Keep only as an explicit recovery artifact.
 - Runtime directories bind-mounted into containers: `logging/`, `media/`, `static/`, `staticfiles/`, `solr/`.
 
 ## Day-to-day Operations
@@ -147,13 +148,39 @@
 - Preserve `.env` and `.env.staging` (compose relies on both).
 - Periodically audit `/var/www/lumieres2`; only the documented files plus data directories should exist.
 
+## Production Compose Defaults
+- Production runs from `/u01/projects/dockerized/lumieres2-prod`.
+- Prod `.env` should set:
+  ```env
+  COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
+  COMPOSE_PROJECT_NAME=lumieres-prod
+  LUMIERES_IMAGE=unillett/lumieres:vYYYY.MM.DD
+  ```
+- With those settings, run plain `docker compose ...` from the prod directory. Before a deploy or restart investigation, verify the resolved image with:
+  ```bash
+  docker compose config --images
+  docker compose ps
+  ```
+- Keep `LUMIERES_IMAGE` on an explicit release tag. Do not use `latest` for prod.
+
+## Backup Locations
+- Automated daily production DB backups are created by `/etc/cron.daily/lumieres-db-backup`.
+- Output path for automated daily backups:
+  - `/home/lmradm/LL_backup_YYYY-MM-DD_HH-MM.sql.gz`
+- These daily backups are separate from deploy-time rollback assets.
+- Deploy-time rollback assets live under:
+  - `/u01/projects/dockerized/lumieres2-prod/backups/<timestamp>/`
+- Use the deploy-time backup directory for release rollback evidence (`.env`, compose snapshots, ad hoc SQL dumps).
+- Use `/home/lmradm/LL_backup_*.sql.gz` when checking the health of the unattended daily backup mechanism.
+
 ## Database Maintenance
 - Staging MySQL is the `db` service; run SQL via:
   ```bash
   docker compose exec db \
     mysql -ulluser -p${MYSQL_PASSWORD} lumieres_lausanne -e "SHOW TABLES;"
   ```
-- Reapply the schema ALTERs after importing production dumps (locally and on staging) to keep Django happy.
+- Rebuild the index and run `sync_status_roles --apply` after an exceptional DB restore if auth/search state needs to be refreshed.
+- Only use the legacy schema ALTERs above when working from a pre-migration historical dump.
 
 ## Staging-Only Realignment: Published Date/User From Last Saved Event
 Use this only on staging (`plt-tst-2.unil.ch`) to validate Béatrice’s rule before any prod change.
@@ -329,9 +356,9 @@ This is for the mutualized production VM, so operations must stay scoped to Lumi
 ssh <user>@lumieres-srv2.unil.ch
 cd /u01/projects/dockerized/lumieres2-prod
 
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml ps
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml images
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml logs --tail=100 web
+docker compose ps
+docker compose config --images
+docker compose logs --tail=100 web
 df -h
 ```
 
@@ -341,11 +368,11 @@ cd /u01/projects/dockerized/lumieres2-prod
 TS="$(date +%Y%m%d_%H%M%S)"
 
 mkdir -p backups/${TS}
-cp -a docker-compose.prod.base.yml docker-compose.prod.yml .env backups/${TS}/
+cp -a docker-compose.yml docker-compose.prod.yml .env backups/${TS}/
 test -f .env.prod && cp -a .env.prod backups/${TS}/
 
 # Full DB backup (required before schema/data writes)
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec -T db \
+docker compose exec -T db \
   bash -lc 'mysqldump -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" --single-transaction --no-tablespaces "$MYSQL_DATABASE"' \
   > backups/${TS}/lumieres-prod.sql
 
@@ -361,7 +388,7 @@ sha256sum backups/${TS}/lumieres-prod.sql > backups/${TS}/lumieres-prod.sql.sha2
 
 ```bash
 # 3.1 Check columns
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec -T db \
+docker compose exec -T db \
   bash -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "
     SHOW COLUMNS FROM fiches_transcription LIKE \"published_date\";
     SHOW COLUMNS FROM fiches_transcription LIKE \"published_by_id\";
@@ -370,7 +397,7 @@ docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec -
   "'
 
 # 3.2 Add missing columns (run only for columns that are absent)
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec -T db \
+docker compose exec -T db \
   bash -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "
     ALTER TABLE fiches_transcription ADD COLUMN published_date datetime NULL AFTER facsimile_start_canvas;
     ALTER TABLE fiches_transcription ADD COLUMN published_by_id int NULL AFTER published_date;
@@ -379,7 +406,7 @@ docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec -
   "'
 
 # 3.3 Snapshot fields before backfill (fast rollback path)
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec -T db \
+docker compose exec -T db \
   bash -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "
     CREATE TABLE IF NOT EXISTS backup_transcription_pub_${TS} AS
     SELECT id, published_date, published_by_id, modified_date, modified_by_id
@@ -387,7 +414,7 @@ docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec -
   "'
 
 # 3.4 Backfill publication/modified data
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec -T db \
+docker compose exec -T db \
   bash -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "
     UPDATE fiches_transcription t
     LEFT JOIN (
@@ -436,15 +463,15 @@ docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec -
 ```bash
 cd /u01/projects/dockerized/lumieres2-prod
 
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml pull web
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml up -d --no-deps web
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml logs --tail=200 web
+docker compose pull web
+docker compose up -d --no-deps web
+docker compose logs --tail=200 web
 
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec web \
+docker compose exec web \
   bash -lc "python /app/app/manage.py collectstatic --noinput"
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec web \
+docker compose exec web \
   bash -lc "python /app/app/manage.py sync_status_roles --apply"
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec web \
+docker compose exec web \
   bash -lc "python /app/app/manage.py update_index"
 ```
 
@@ -452,7 +479,7 @@ Use `rebuild_index --noinput` instead of `update_index` if index schema changed.
 
 ### 5) Validation gates
 ```bash
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml ps
+docker compose ps
 curl -I https://lumieres.unil.ch/
 ```
 
@@ -466,13 +493,13 @@ Manual checks:
 App rollback:
 ```bash
 # Set previous known-good tag in .env.prod or compose override, then:
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml pull web
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml up -d --no-deps web
+docker compose pull web
+docker compose up -d --no-deps web
 ```
 
 DB rollback (fast path: undo backfill values only):
 ```bash
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec -T db \
+docker compose exec -T db \
   bash -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "
     UPDATE fiches_transcription t
     JOIN backup_transcription_pub_${TS} b ON b.id = t.id
@@ -486,7 +513,7 @@ docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec -
 
 DB rollback (full restore):
 ```bash
-docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec -T db \
+docker compose exec -T db \
   bash -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' \
   < backups/<timestamp>/lumieres-prod.sql
 ```
@@ -513,7 +540,7 @@ docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec -
 - Quick recovery used:
   ```bash
   cd /u01/projects/dockerized/lumieres2-prod
-  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --force-recreate front
+  docker compose up -d --no-deps --force-recreate front
   curl -I https://lumieres.unil.ch/
   ```
 - Permanent mitigation (prod `nginx.conf`):
@@ -536,8 +563,8 @@ docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec -
   TS="$(date +%Y%m%d_%H%M%S)"
   cp -a nginx.conf backups/${TS}.nginx.conf.bak
   # edit nginx.conf with resolver + variable proxy_pass shown above
-  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps --force-recreate front
-  docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T front nginx -t
+  docker compose up -d --no-deps --force-recreate front
+  docker compose exec -T front nginx -t
   curl -I https://lumieres.unil.ch/
   ```
 - Prevention rule: after any `web` recreate/redeploy on prod, run a public check (`curl -I https://lumieres.unil.ch/`) and, if needed, recreate `front` immediately.
@@ -583,8 +610,9 @@ docker compose -f docker-compose.prod.base.yml -f docker-compose.prod.yml exec -
 
 Process notes from deployment:
 - Compose filename drift on prod host:
-  - In practice, prod currently runs with `docker-compose.yml` + `docker-compose.prod.yml`.
-  - Some older instructions still mention `docker-compose.prod.base.yml`; verify files present on host before running commands.
+  - In practice, prod runs with `docker-compose.yml` + `docker-compose.prod.yml`.
+  - Since 2026-05-05, prod `.env` sets `COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml`, so plain `docker compose ...` from `/u01/projects/dockerized/lumieres2-prod` is the current procedure.
+  - Some older historical records still mention `docker-compose.prod.base.yml`; verify files present on host before following archived commands.
 - CI sequencing nuance:
   - Pushing `master` and then pushing the release tag triggers two `docker-prod` workflow runs for the same commit.
   - For release deploys, wait for the tag-triggered run and confirm `unillett/lumieres:vYYYY.MM.DD` is published before pulling on prod.
@@ -607,3 +635,133 @@ Process notes from deployment:
   - Docker stack running locally,
   - `python manage.py check` => no issues,
   - manual check on `http://127.0.0.1:8000/fiches/trans/270/`: in `Version éditée`, blue words disappear in `Notes de l'éditeur`; recipient address behavior remains correct.
+
+### Execution Record (2026-03-03, prod)
+- Deploy scope: `lumieres.unil.ch` (`/u01/projects/dockerized/lumieres2-prod`)
+- Prechecks:
+  - Disk free space OK (`/`: 19G free, `/u01`: 38G free at deployment time)
+  - Fresh DB backup created before deploy:
+    - `backups/20260303_102551/lumieres-prod.sql`
+    - SHA256: `9c60a5ebe2f6aa14877b45c09b3006a2e85c1bf0bea8c579c2ea3be4eed2ca9d`
+    - Compose/env snapshot copied to same backup folder
+- Image pin changed:
+  - `.env`: `LUMIERES_IMAGE=unillett/lumieres:latest`
+- Deploy/post-deploy completed:
+  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml pull web`
+  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps web`
+  - `collectstatic --noinput` (`1420` files copied)
+  - `sync_status_roles --apply`
+  - `update_index`
+- Live checks:
+  - `curl -I https://lumieres.unil.ch/` => `HTTP/2 200`
+  - `curl -I https://lumieres.unil.ch/projets/` => `HTTP/2 200`
+- Follow-up / risk discovered later:
+  - This change reintroduced ambiguous prod image targeting by moving away from an explicit release tag.
+  - During the 2026-03-19 incident review, prod was found running old image `v2026.01.21` after a restart/recreate path while `.env` still pointed at `latest`.
+  - Do not use `latest` for routine prod pinning; cut a release tag and pin `.env` to that tag.
+
+### Execution Record (2026-03-19, prod)
+- Release tag deployed: `v2026.03.19`
+- Final pinned prod image: `LUMIERES_IMAGE=unillett/lumieres:v2026.03.19`
+- DockerHub manifest digest:
+  - `sha256:9227e3330cf9b8aa0f64ac5e4261bbaf4f82f5640d27a7da129cfa61dfe0f1b6`
+- Backup baseline:
+  - `backups/20260319_114450/lumieres-prod.sql`
+  - SHA256: `e78ffe478b3058e5cbec04f131d85ed71ffb31a89f7ce20f297c4cc6055fcc00`
+  - Compose/env snapshot copied to same backup folder
+- Incident remediation:
+  - Confirmed prod drift before fix:
+    - `.env`: `LUMIERES_IMAGE=unillett/lumieres:latest`
+    - running `web`: `unillett/lumieres:v2026.01.21`
+  - Cut and pushed release tag `v2026.03.19` from `master` commit `aff6006`
+  - Waited for successful `docker-prod` workflow completion and verified DockerHub publication
+- Deploy/post-deploy completed:
+  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml pull web`
+  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --no-deps web`
+  - `collectstatic --noinput` (`1420` files copied)
+  - `sync_status_roles --apply`
+  - `update_index`
+- Live checks:
+  - `docker compose -f docker-compose.yml -f docker-compose.prod.yml ps` shows `web` on `unillett/lumieres:v2026.03.19`
+  - `docker inspect lumieres-prod-web-1 --format "{{.Config.Image}}|{{index .Config.Labels \"org.opencontainers.image.revision\"}}|{{index .Config.Labels \"org.opencontainers.image.version\"}}"` confirms revision `aff6006` and version `v2026.03.19`
+  - `curl -I https://lumieres.unil.ch/` => `HTTP/2 200`
+  - `curl -I https://lumieres.unil.ch/projets/` => `HTTP/2 200`
+- Prevention rule:
+  - Keep prod pinned to explicit release tags only.
+  - After every prod deploy or restart investigation, verify both `.env` and the running container image/labels; `docker compose ps` alone is not sufficient when recovering from drift incidents.
+  - 2026-05-05 update: prod `.env` now sets `COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml`; plain compose is acceptable after confirming `docker compose config --images` resolves to the pinned release image.
+
+### Reboot Automation Fix (2026-03-19, prod)
+- Forensic finding:
+  - host reboot at `2026-03-19 05:09 CET`
+  - `lmradm` crontab contained two duplicate entries:
+    - `@reboot sleep 30 && cd /u01/projects/dockerized/lumieres2-prod && docker compose up -d`
+    - `@reboot sleep 300 && cd /u01/projects/dockerized/lumieres2-prod && docker compose up -d`
+  - at that time, plain `docker compose up -d` resolved `web` to the legacy base-file image `unillett/lumieres:v2026.01.21`
+- Why the cron jobs were unnecessary:
+  - prod containers already run with Docker restart policy `unless-stopped`
+  - on a normal host reboot, Docker restarts `web`, `db`, `solr`, and `front` automatically
+- Remediation applied:
+  - backed up the existing user crontab to:
+    - `/u01/projects/dockerized/lumieres2-prod/backups/20260319_130340/lmradm.crontab.before-remove-reboot`
+  - removed both `@reboot` entries from `lmradm` crontab
+- Operational rule going forward:
+  - rely on Docker restart policies for reboot recovery
+  - if manual compose intervention is needed on prod, first verify `docker compose config --images`; the current `.env` makes plain `docker compose ...` include the prod override
+
+### Compose Default Simplification (2026-05-05, prod)
+- Prod `.env` now sets:
+  - `COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml`
+  - `COMPOSE_PROJECT_NAME=lumieres-prod`
+  - `LUMIERES_IMAGE=unillett/lumieres:v2026.05.05`
+- Backup before edit:
+  - `/u01/projects/dockerized/lumieres2-prod/backups/20260505_174009/.env.before-compose-file`
+- Validation:
+  - `docker compose config --images` resolved `web` to `unillett/lumieres:v2026.05.05`
+  - first plain `docker compose up -d` reconciled the project metadata and recreated `db`/`web`
+  - second plain `docker compose up -d` was a no-op for running containers
+  - `manage.py check` passed
+  - public checks for `/`, `/projets/`, `/chercher/person/list`, and `/fiches/trans/1288/` returned `HTTP 200`
+  - transcription `1288` embedded `308` IIIF tile sources
+
+### Automated Backup Verification Note (2026-03-19, prod)
+- Daily backup mechanism status: confirmed healthy
+- Verification evidence:
+  - root-owned script: `/etc/cron.daily/lumieres-db-backup`
+  - cron log entries show daily `run-parts` execution for `lumieres-db-backup`
+  - output files observed in `/home/lmradm/`, including:
+    - `LL_backup_2026-03-19_03-19.sql.gz`
+    - `LL_backup_2026-03-18_03-18.sql.gz`
+    - `LL_backup_2026-03-17_03-06.sql.gz`
+- Important distinction:
+  - `/home/lmradm/LL_backup_*.sql.gz` = unattended daily backups
+  - `/u01/projects/dockerized/lumieres2-prod/backups/<timestamp>/` = manual/deploy rollback artifacts
+- Validation command used on the latest daily backup:
+  - `gzip -t /home/lmradm/LL_backup_2026-03-19_03-19.sql.gz`
+
+### Incident Note (2026-03-03, prod): News Attachments 500
+- Symptoms:
+  - Saving news with image failed (`/fiches_admin/fiches/news/add/`)
+  - Saving news with document failed
+  - Opening news edit page with a document attachment failed (`/fiches_admin/fiches/news/<id>/change/`)
+- Root causes:
+  - Media write permissions mismatch after image update:
+    - container runs as `uid=10001 gid=0`
+    - host media subdirs were group-owned by `tape` with mode `775`
+    - result: no write access to create year/month upload folders
+  - Code regression in document string rendering:
+    - `fiches/models/documents/document.py` used `basename(...)` without importing it
+    - raised `NameError` while rendering admin inline rows for attached documents
+- Remediation applied on prod:
+  - Permissions fixed on host media upload trees:
+    - `chgrp -R 0 /u01/projects/dockerized/media/images /u01/projects/dockerized/media/files /u01/projects/dockerized/media/documents`
+    - directories `chmod 2775`, files `chmod 664`
+  - Hotfix applied in running container and web restarted:
+    - add `from os.path import basename` in `fiches/models/documents/document.py`
+  - Permanent git fixes pushed:
+    - `master`: `a2234fd` (basename import)
+    - `dev`: `298fbd6` (cherry-pick)
+- Validation after fix:
+  - News creation with image works
+  - News creation with document works
+  - News edit page with document attachment opens correctly

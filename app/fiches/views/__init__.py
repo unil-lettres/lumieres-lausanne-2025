@@ -427,13 +427,11 @@ def server_error(request, template_name="500.html"):
     """
     500 error handler.
     Modified from django.views.default.server_error.
-    Added RequestContext as Context so we can have access to MEDIA_URL
 
     Templates: `500.html`
-    Context: RequestContext
     """
     t = loader.get_template(template_name)
-    return HttpResponseServerError(t.render(RequestContext(request)))
+    return HttpResponseServerError(t.render({}, request))
 
 
 def login(request):

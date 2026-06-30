@@ -39,7 +39,7 @@ def index(request):
 def display_news(request, news_id):
     news = get_object_or_404(News, pk=news_id)
     
-    if not news.published and (not request.user.is_authenticated() or not request.user.has_perm('fiches.change_news')):
+    if not news.published and (not request.user.is_authenticated or not request.user.has_perm('fiches.change_news')):
         return HttpResponseForbidden("Access denied")
         
     context = {'news': news }

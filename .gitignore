@@ -175,6 +175,7 @@ cython_debug/
 
 temp/
 backup/
+local-refresh-backups/
 app/media/
 logging/
 
@@ -200,6 +201,7 @@ Docker.raw
 
 # Local secrets (keep out of repo)
 descr/private/
+descr/devis/
 
 # Backups
 *.bak

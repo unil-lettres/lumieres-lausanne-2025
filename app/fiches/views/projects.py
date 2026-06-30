@@ -74,7 +74,7 @@ def display_project(request, proj_id=None, proj_slug=None):
     if not (
         project.publish
         or (
-            request.user.is_authenticated()
+            request.user.is_authenticated
             and (request.user.has_perm("fiches.view_unpublished_project") or project.is_editable(request.user))
         )
     ):

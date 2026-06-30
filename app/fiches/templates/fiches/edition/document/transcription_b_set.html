@@ -47,7 +47,14 @@
     </li>{% endspaceless %}
 {% endfor %}
 </ul>
-{% if perms.fiches.add_transcription %}<div class="transcription_addbox-OFF"><button class="transcription-addbut" type="button" onclick="document.location.href='{% url 'transcription-b-add' doc.id %}'">Ajouter une nouvelle transcription</button></div>{% endif %}
+{% if perms.fiches.add_transcription %}
+<div class="transcription_addbox-OFF">
+    <form method="post" action="{% url 'transcription-b-add' doc.id %}">
+        {% csrf_token %}
+        <button class="transcription-addbut" type="submit">Ajouter une nouvelle transcription</button>
+    </form>
+</div>
+{% endif %}
 {% else %}
 {% if perms.fiches.add_transcription %}<p class="info-msg">{% trans "Enregistrer la fiche avant d'y ajouter une transcription" %}</p>{% endif %}
 {% endif %}
