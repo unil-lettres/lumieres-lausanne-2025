@@ -181,3 +181,27 @@ def test_place_page_renders_persons_listing(client, place):
     body = response.content.decode()
     assert "Personnes" in body
     assert "Montolieu, Louis de" in body
+
+
+@pytest.mark.django_db
+def test_place_page_renders_book_citation(client, place):
+    # Option C (#117): clickable title + full citation rendered for each entry.
+    make_biblio(LIVRE, "Mon Livre", place=tag(place), date=date(1770, 1, 1))
+    response = client.get(reverse("place-display", args=[place.id]))
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "Lieu d'impression" in body
+    assert "Mon Livre" in body
+    assert "biblioref-item" in body  # the full citation block is rendered
+
+
+@pytest.mark.django_db
+def test_place_page_renders_manuscript_citation_without_error(client, place):
+    # Manuscript citations exercise the user_accessible_trans branch, which the
+    # nolink / noManBiblioLink flags must short-circuit (no 500).
+    make_biblio(MANUSCRIT, "Mon Manuscrit", place=tag(place), date=date(1765, 1, 1))
+    response = client.get(reverse("place-display", args=[place.id]))
+    assert response.status_code == 200
+    body = response.content.decode()
+    assert "Lieu de rédaction" in body
+    assert "biblioref-item" in body
