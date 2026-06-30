@@ -139,6 +139,7 @@ def get_biblio_form_def(biblioForm):
                         "sep": "<br/>",
                         "template": "fiches/edition/keywords/simple_keywords.html",
                     },
+                    {"name": "subj_place", "class": "single-line", "sep": "<br/>"},
                     {"name": "subj_person", "class": "single-line", "sep": "<br/>"},
                     {"name": "subj_society", "class": "single-line", "sep": "<br/>"},
                 ),
@@ -315,6 +316,7 @@ def display(request, doc_id):
         "SHOW_EMPTY_FIELDS": True,
         "DOCTYPE": DOCTYPE,
         "subj_person": doc.subj_person.all(),
+        "subj_place": doc.subj_place.all(),
     }
 
     return render(request, "fiches/display/bibliography.html", context)
@@ -434,6 +436,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
             doc.save()
             biblioForm.save_m2m()
             doc.subj_person.set(biblioForm.cleaned_data.get("subj_person", []))
+            doc.subj_place.set(biblioForm.cleaned_data.get("subj_place", []))
 
             # Set a default depot for newly created documents
             if new_doc:

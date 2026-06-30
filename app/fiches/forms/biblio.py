@@ -37,7 +37,8 @@ from fiches.models.documents import (
     Manuscript,
     ManuscriptType,
 )
-from fiches.models.misc import Society
+from fiches.forms.place import MultiplePlaceField
+from fiches.models.misc import PlaceRecord, Society
 from fiches.models.person import Person
 from fiches.place_tag import PlaceTagWidget
 from fiches.widgets import DynamicList, PersonWidget, StaticList
@@ -67,6 +68,18 @@ class BiblioForm(forms.ModelForm):
             placeholder="nom, prénom",
         ),
         label=_("Personne"),
+        required=False,
+    )
+
+    # Add the "Lieu(x)" dynamic M2M field (§4.3), same widget as "Personne".
+    subj_place = MultiplePlaceField(
+        queryset=PlaceRecord.objects.all(),
+        widget=DynamicList(
+            rel=Biblio.subj_place,
+            add_title="Ajouter un lieu",
+            placeholder="rechercher un lieu…",
+        ),
+        label=_("Lieu"),
         required=False,
     )
 

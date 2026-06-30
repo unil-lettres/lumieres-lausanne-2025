@@ -477,6 +477,17 @@
                         </ul>
                     </li>
                 {% endif %}
+                {#<!--  Lieux (§4.3) — cliquables vers la fiche lieu  -->#}
+                {% if subj_place %}
+                <li>
+                    <span class="sub_label">Lieu:</span>
+                    <ul>
+                    {% for place in subj_place %}
+                        <li><a href="{% url 'place-display' place.pk %}">{{ place }}</a></li>
+                    {% endfor %}
+                    </ul>
+                </li>
+                {% endif %}
                 {#<!--  Personnes  -->#}
                 {% if subj_person %}
                 <li>

@@ -216,6 +216,11 @@ class Biblio(models.Model):
     # Subjects
     subj_primary_kw = models.ManyToManyField("PrimaryKeyword", verbose_name=_("Mot clé principal"), blank=True)
     subj_secondary_kw = models.ManyToManyField("SecondaryKeyword", verbose_name=_("Mot clé secondaire"), blank=True)
+    # Place subjects (§4.3): indexed like persons, shown between keywords and persons.
+    # db_constraint=False: the legacy fiches_biblio.id is type-incompatible with the
+    # FK column Django generates for the join table (MySQL errno 3780), as for other
+    # new relations to legacy INT-PK tables.
+    subj_place = models.ManyToManyField("PlaceRecord", verbose_name=_("Lieu"), blank=True, db_constraint=False)
     subj_person = models.ManyToManyField("Person", verbose_name=_("Personne"), blank=True)
     subj_society = models.ManyToManyField("Society", verbose_name=_("Société/Académie"), blank=True)
 

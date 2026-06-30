@@ -237,8 +237,6 @@ class DynamicList(forms.SelectMultiple):
         Custom rendering to produce a dynamic list UI for M2M relationships.
         Compatible with Django >= 2.1 by accepting 'renderer=None'.
         """
-        from fiches.models import Person
-
         if value is None:
             value = []
 
@@ -265,7 +263,7 @@ class DynamicList(forms.SelectMultiple):
         id_value = []
         name_value = []
         for val in list(value):
-            if isinstance(val, Person):
+            if self.rel is not None and isinstance(val, self.rel):
                 id_value.append(val.id)
             elif isinstance(val, str):
                 if "|" in val:
