@@ -251,17 +251,15 @@
   // link that spans exactly the selection. Any same-kind tag the selection
   // touches is absorbed: enclosed ones are merged in, partially-covered ones are
   // freed (their outside part becomes plain text again). Editorial corrections
-  // inside the new tag get their diplomatic tooltip hidden. With no selection,
-  // the label text is dropped in as a fresh tag.
+  // inside the new tag get their diplomatic tooltip hidden. With no selection it
+  // does nothing — tagging never inserts text into the transcription (issue #121).
   function applyTag(editor, conf, id, label) {
     var selection = editor.getSelection();
     var ranges = selection ? selection.getRanges() : [];
 
     if (!ranges.length || ranges[0].collapsed) {
-      // No selection: drop the label text as the link content.
-      var bare = newTagElement(editor, conf, id, label);
-      bare.setText(label || String(id));
-      editor.insertElement(bare);
+      // No selection: do not insert any text (the dialog/button guard normally
+      // prevents reaching here; this is a last-resort safety net).
       return;
     }
 
@@ -693,6 +691,11 @@
             if (this._nametagBookmarks) {
               editor.getSelection().selectBookmarks(this._nametagBookmarks);
               this._nametagBookmarks = null;
+            } else {
+              // No text was selected: tagging must not insert new text in the
+              // transcription, so keep the dialog open with a hint (#121).
+              setStatus(conf, 'Sélectionnez d’abord le mot ou le passage à taguer.');
+              return false;
             }
             applyTag(editor, conf, id, label);
           } else {
@@ -730,6 +733,28 @@
   function registerKind(editor, conf, pluginPath) {
     editor.addCommand(conf.command, new CKEDITOR.dialogCommand(conf.dialog));
 
+    // Tagging is a layer applied to selected text; it must never insert new text
+    // into the transcription. Guard the toolbar button so that with no selection
+    // and no tag under the caret it warns instead of opening the dialog (#121).
+    var guardedCommand = conf.command + 'Guarded';
+    editor.addCommand(guardedCommand, {
+      exec: function (ed) {
+        var selection = ed.getSelection();
+        var ranges = selection ? selection.getRanges() : [];
+        var hasSelection = !!(ranges.length && !ranges[0].collapsed);
+        if (!hasSelection && !findTag(conf, selection)) {
+          var msg = 'Sélectionnez d’abord le mot ou le passage à taguer.';
+          if (ed.showNotification) {
+            ed.showNotification(msg, 'warning', 4000);
+          } else {
+            window.alert(msg);
+          }
+          return;
+        }
+        ed.openDialog(conf.dialog);
+      }
+    });
+
     editor.addCommand(conf.removeCommand, {
       exec: function (ed) {
         removeTag(findTag(conf, ed.getSelection()));
@@ -739,7 +764,7 @@
     editor.ui.addButton(conf.button, {
       label: conf.buttonTitle,
       title: conf.buttonTitle,
-      command: conf.command,
+      command: guardedCommand,
       icon: pluginPath + conf.icon
     });
 
