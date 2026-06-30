@@ -40,6 +40,8 @@
         /* 1) Ensure doctype_exclusive_fields & doctype_allexclusive_fields are available */
         var doctype_exclusive_fields = {{ doctype_exclusive_fields_js|default:"{}" }};
         var doctype_allexclusive_fields = {{ doctype_allexclusive_fields_js|default:"{}" }};
+        /* Gate inline place creation in the place-tag widget (re-checked server-side). */
+        window.LL_NAMETAG = { place: {% if perms.fiches.add_placerecord %}true{% else %}false{% endif %} };
     </script>
     
     <!-- 2) Load the dynamic list widget code -->
@@ -322,6 +324,9 @@
     {% endfor %}
 </form>
 
+{# Place-tagging widget assets for the Lieu / 2e Lieu / Lieu de destination fields (§4.2). #}
+{% include "fiches/edition/_place_tag_widget.html" %}
+
 <div id="ctxt-help-biblio-pages" style="display:none">
     <h6>Directives pour le champ « Pages »</h6>
     <p>L'utilisation de ce champ diffère selon le type de document :</p>
@@ -434,7 +439,12 @@
         fiches_edit.registerRecommandationCallback(function() {
 
             var recommandedSimpleFields = [
-			 {'name': "Lieu", 'id': 'place'},
+			 {'name': "Lieu", 'id': 'place', lambda: function() {
+				 // "Lieu" uses the place-tag widget: its value lives in a
+				 // contenteditable (#id_place), so .val() always reads "". Test
+				 // the visible text instead (filled = any text, tagged or not).
+				 return $.trim($('#id_' + this.id).text() || '') == '';
+			 }},
 			 {'name': "Date", 'id': 'date'},
 			 {'name': "Pages", 'id': 'pages'},
 			 {'name': "Langue", 'id': 'language'},

@@ -188,9 +188,11 @@ class Biblio(models.Model):
         on_delete=models.SET_NULL,
     )
 
-    place = models.CharField(_("Lieu"), max_length=64, blank=True)
+    # Place fields are TextField (not CharField) so they can hold the inline place-tag HTML (§4.2).
+    place = models.TextField(_("Lieu"), blank=True)
     publisher = models.CharField(_("Editeur"), max_length=256, blank=True)
-    place2 = models.CharField(_("2e Lieu"), max_length=64, blank=True)
+    place2 = models.TextField(_("2e Lieu"), blank=True)
+    destination = models.TextField(_("Lieu de destination"), blank=True)
     publisher2 = models.CharField(_("2e Editeur"), max_length=256, blank=True)
     edition = models.CharField(_("Date de 1ère Edition"), max_length=128, blank=True)
     date = models.DateField(_("Date"), blank=True, null=True)

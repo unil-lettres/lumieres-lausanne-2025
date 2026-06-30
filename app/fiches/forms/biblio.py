@@ -39,6 +39,7 @@ from fiches.models.documents import (
 )
 from fiches.models.misc import Society
 from fiches.models.person import Person
+from fiches.place_tag import PlaceTagWidget
 from fiches.widgets import DynamicList, PersonWidget, StaticList
 
 # DocumentType IDs whose Biblio form requires a specific title/type field.
@@ -99,7 +100,11 @@ class BiblioForm(forms.ModelForm):
         widgets = {
             "short_title": forms.Textarea(attrs={"cols": "64", "rows": "1"}),
             "litterature_type": RadioSelect,
-            # optionally override any other Biblio fields
+            # Place fields are taggable with a place fiche (§4.2), same widget as the
+            # biography place fields: a "Lieu" button wraps the selection in a place tag.
+            "place": PlaceTagWidget(),
+            "place2": PlaceTagWidget(),
+            "destination": PlaceTagWidget(),
         }
 
     def __init__(self, *args, **kwargs):
