@@ -47,7 +47,7 @@ from haystack.query import SearchQuerySet
 # Project utils
 from utils import dbg_logger
 
-from fiches.models import ActivityLog, Person, Project, RelationType, Society, UserGroup
+from fiches.models import ActivityLog, Person, PlaceRecord, Project, RelationType, Society, UserGroup
 
 # Domain models
 from fiches.models.documents.document import Biblio, DocumentType, Transcription
@@ -729,6 +729,20 @@ def list_persons(request):
         filter_params["name__istartswith"] = first_letter
     persons = Person.objects.filter(**filter_params).order_by("name").distinct()
     return render(request, "fiches/search/list_persons.html", {"persons": persons, "first_letter": first_letter})
+
+
+def list_places(request):
+    """Alphabetical "Liste des lieux" tab of the advanced search (§5).
+
+    Mirrors ``list_persons``: an A-Z first-letter filter over the place fiches,
+    each linking to its public read view.
+    """
+    first_letter = request.GET.get("q")
+    places = PlaceRecord.objects.all()
+    if first_letter:
+        places = places.filter(name__istartswith=first_letter)
+    places = places.order_by("name").distinct()
+    return render(request, "fiches/search/list_places.html", {"places": places, "first_letter": first_letter})
 
 
 def req_search_view(request):

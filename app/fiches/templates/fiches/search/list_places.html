@@ -1,22 +1,8 @@
 {% extends "fiches/search/search_base2.html" %}
 {% comment %}<!--
-   Copyright (C) 2010-2012 Université de Lausanne, RISET
-   < http://www.unil.ch/riset/ >
-
-   This file is part of Lumières.Lausanne.
-   Lumières.Lausanne is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   Lumières.Lausanne is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+   Copyright (C) 2010-2026 Université de Lausanne, SIER
+   This file is part of Lumières.Lausanne (GNU AGPL v3 or later).
+   "Liste des lieux" tab of the advanced search (§5), mirroring list_persons.html.
    This copyright notice MUST APPEAR in all copies of the file.
 -->{% endcomment %}
 
@@ -30,8 +16,8 @@
 <div class="sub-navig ui-tabs">
 	<ul class="ui-tabs-nav ui-helper-reset ui-helper-clearfix ui-widget-header">
 		<li class="ui-state-default ui-corner-top"><a href="{% url 'search-biblio' %}">Recherche bibliographique</a></li>
-		<li class="ui-state-default ui-corner-top ui-tabs-selected ui-state-active"><a>Liste des personnes</a></li>
-		<li class="ui-state-default ui-corner-top"><a href="{% url 'list-place' %}">Liste des lieux</a></li>
+		<li class="ui-state-default ui-corner-top"><a href="{% url 'list-person' %}">Liste des personnes</a></li>
+		<li class="ui-state-default ui-corner-top ui-tabs-selected ui-state-active"><a>Liste des lieux</a></li>
 		<li class="ui-state-default ui-corner-top"><a href="{% url 'search-person' %}">Recherche biographique</a></li>
 	</ul>
 </div>
@@ -44,6 +30,7 @@
 	#search-results .paginator { border-radius: 2px; margin-bottom: 5px; }
 	#search-results .results li { padding: 4px 2px; }
 	#search-results .results li:nth-child(2n) { background-color: #f0f0f0; }
+	#search-results .results .place-category { color: #777; }
 </style>
 
 <div id="search-results">
@@ -54,28 +41,28 @@
 		{% if first_letter == c %}
 		<span class="page current">{{ c }}</span>
 		{% else %}
-		<a class="page" href="{% url 'list-person' %}?q={{ c }}">{{ c }}</a>
+		<a class="page" href="{% url 'list-place' %}?q={{ c }}">{{ c }}</a>
 		{% endif %}
 		{% endfor %}
 
 		{% if first_letter %}
-		<a class="page" href="{% url 'list-person' %}">Tous</a>
+		<a class="page" href="{% url 'list-place' %}">Tous</a>
 		{% else %}
 		<span class="page current">Tous</span>
 		{% endif %}
 	</div>
 </div>
 
-{% if persons.exists %}
+{% if places.exists %}
 <ul class="results">
-	{% for p in persons %}
+	{% for place in places %}
 	<li>
-		<a href="{% url 'biography-display' p.id %}" title="Afficher la biographie dans une nouvelle fenêtre" target="search_result">{{ p.get_biography.person_name }}</a>
+		<a href="{% url 'place-display' place.id %}" title="Afficher la fiche lieu dans une nouvelle fenêtre" target="search_result">{{ place.name }}</a>{% if place.category %} <span class="place-category">({{ place.category }})</span>{% endif %}
 	</li>
 	{% endfor %}
 </ul>
 {% else %}
-<div class="noresults">Aucune personne trouvée</div>
+<div class="noresults">Aucun lieu trouvé</div>
 {% endif %}
 
 </div>

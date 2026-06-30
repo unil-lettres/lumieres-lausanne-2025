@@ -25,6 +25,7 @@ from fiches.views.search import (
     do_search,
     filter_builder,
     list_persons,
+    list_places,
     quick_search,  # ← add this
     relations,
     req_search_view,  # keep temporarily for compatibility
@@ -36,6 +37,7 @@ urlpatterns = [
     path("", quick_search, name="search-index"),  # 🔍 header search
     path("person/", filter_builder, {"model_name": "Person"}, name="search-person"),
     path("person/list", list_persons, name="list-person"),
+    path("place/list", list_places, name="list-place"),
     path("bibliographie/", biblio_extended_search, name="search-biblio"),  # 🔍➕ advanced
     path("do/", do_search, name="do-search"),
     path("display_settings/save/", save_settings, name="save-settings"),
