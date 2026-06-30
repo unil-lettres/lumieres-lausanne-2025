@@ -43,6 +43,7 @@ from fiches.models import (
     Document,
     DocumentFile,
     DocumentLanguage,
+    DocumentNature,
     DocumentType,
     JournaltitleView,
     ManuscriptType,
@@ -475,6 +476,14 @@ class ManuscriptTypeAdmin(admin.ModelAdmin):
     ordering = ("sorting",)
 
 
+class DocumentNatureAdmin(admin.ModelAdmin):
+    """Admin interface for the DocumentNature lookup table (manuscript "Nature du document")."""
+
+    list_display = ("name", "sorting")
+    search_fields = ("name",)
+    ordering = ("sorting",)
+
+
 class PlaceCategoryAdmin(admin.ModelAdmin):
     """Admin interface for the PlaceCategory lookup table (fiche Lieu)."""
 
@@ -680,6 +689,7 @@ fiches_admin.register(Finding, FindingAdmin)
 fiches_admin.register(DocumentType, DocumentTypeAdmin)
 fiches_admin.register(RelationType, RelationTypeAdmin)
 fiches_admin.register(ManuscriptType, ManuscriptTypeAdmin)
+fiches_admin.register(DocumentNature, DocumentNatureAdmin)
 fiches_admin.register(PlaceCategory, PlaceCategoryAdmin)
 fiches_admin.register(PlaceRecord, PlaceRecordAdmin)
 fiches_admin.register(User, UserAdmin)

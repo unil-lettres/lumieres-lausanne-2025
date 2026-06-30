@@ -88,6 +88,7 @@ def get_biblio_form_def(biblioForm):
                     },
                     {"name": "short_title", "tooltip_id": "ctxt-help-biblio-short-title", "class": "single-line"},
                     {"name": "manuscript_type", "template": None, "required": True},
+                    {"name": "document_nature"},
                 ),
             },
             {

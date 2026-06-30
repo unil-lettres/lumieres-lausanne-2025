@@ -137,6 +137,22 @@ class ManuscriptType(models.Model):
         ordering = ["sorting"]
 
 
+class DocumentNature(models.Model):
+    """Admin-managed list for a manuscript's "Nature du document" (shown under "Type d'écrit")."""
+
+    name = models.CharField(max_length=128)
+    sorting = models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = _("Nature du document")
+        verbose_name_plural = _("Natures de document")
+        app_label = "fiches"
+        ordering = ["sorting"]
+
+
 def get_default_language():
     """Default language for a Biblio: the "Français" DocumentLanguage.
 
@@ -183,6 +199,14 @@ class Biblio(models.Model):
     manuscript_type = models.ForeignKey(
         "ManuscriptType",
         verbose_name=_("Type d'écrit"),
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
+    # "Nature du document": admin-managed list, manuscripts only (shown under "Type d'écrit").
+    document_nature = models.ForeignKey(
+        "DocumentNature",
+        verbose_name=_("Nature du document"),
         blank=True,
         null=True,
         on_delete=models.SET_NULL,
