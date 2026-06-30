@@ -49,10 +49,27 @@
 </ul>
 {% if perms.fiches.add_transcription %}
 <div class="transcription_addbox-OFF">
-    <form method="post" action="{% url 'transcription-b-add' doc.id %}">
-        {% csrf_token %}
-        <button class="transcription-addbut" type="submit">Ajouter une nouvelle transcription</button>
-    </form>
+    <button
+        class="transcription-addbut"
+        type="button"
+        data-action="{% url 'transcription-b-add' doc.id %}"
+        onclick="
+            var form = document.createElement('form');
+            var csrf = document.querySelector('#biblio-form-id input[name=csrfmiddlewaretoken]');
+            form.method = 'post';
+            form.action = this.getAttribute('data-action');
+            if (csrf) {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'csrfmiddlewaretoken';
+                input.value = csrf.value;
+                form.appendChild(input);
+            }
+            document.body.appendChild(form);
+            form.submit();
+            return false;
+        "
+    >Ajouter une nouvelle transcription</button>
 </div>
 {% endif %}
 {% else %}
