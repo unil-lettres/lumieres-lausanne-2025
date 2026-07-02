@@ -30,6 +30,13 @@
 
 {% block head_js %}
 	{{ block.super }}
+	{# Named-entity tagging: tell the CKEditor plugin which fiches this user may create (Directeurs only). #}
+	<script type="text/javascript">
+		window.LL_NAMETAG = {
+			person: {% if perms.fiches.add_person %}true{% else %}false{% endif %},
+			place: {% if perms.fiches.add_placerecord %}true{% else %}false{% endif %}
+		};
+	</script>
 	<script src="{% static 'js/lib/jquery/jquery.bgiframe.min.js' %}"></script>
 	<script src="{% static 'js/lib/jquery/jquery.ajaxQueue.js' %}"></script>
 	<script src="{% static 'js/lib/jquery/jquery.autocomplete.min.js' %}"></script>

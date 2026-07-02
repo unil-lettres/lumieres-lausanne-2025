@@ -1,18 +1,19 @@
-# Copyright (C) 2010-2025 Université de Lausanne, RISET
-# <https://www.unil.ch/riset/>
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
 #
 # This file is part of Lumières.Lausanne.
 # Lumières.Lausanne is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
+# it under the terms of the GNU Affero General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # Lumières.Lausanne is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# GNU Affero General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
+# You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 # This copyright notice MUST APPEAR in all copies of the file.
@@ -29,7 +30,6 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.urls import include, path, re_path
 from django.views.generic import TemplateView
 from django.views.static import serve
-
 from fiches import views as fiches_views
 from fiches.admin import fiches_admin
 
@@ -49,10 +49,8 @@ urlpatterns = [
     # Admin URLs ======================================================================================================
     path("admin/", admin.site.urls),
     path("fiches_admin/", fiches_admin.urls, name="fiches_admin"),
-
     # CKEditor URLs ===================================================================================================
     path("ckeditor/", include("ckeditor_uploader.urls")),
-
     # Auth URLs =======================================================================================================
     # Authentication URLs using Django's built-in class-based views
     path("accounts/login/", auth_views.LoginView.as_view(template_name="registration/login2.html"), name="login-page"),
@@ -93,7 +91,8 @@ urlpatterns = [
     path(
         "accounts/reset_password_confirm/<uidb64>/<token>/",
         auth_views.PasswordResetConfirmView.as_view(
-            template_name="registration/password_reset_confirm.html", success_url="/accounts/reset_password_complete/",
+            template_name="registration/password_reset_confirm.html",
+            success_url="/accounts/reset_password_complete/",
         ),
         name="password_reset_confirm",
     ),
@@ -102,13 +101,10 @@ urlpatterns = [
         auth_views.PasswordResetCompleteView.as_view(template_name="registration/password_reset_complete.html"),
         name="password_reset_complete",
     ),
-
     # Home Page =======================================================================================================
     path("", fiches_views.main_index, name="lumieres-home"),
-
     # Static About Page ===============================================================================================
     path("a_propos/", TemplateView.as_view(template_name="fiches/about.html"), name="about"),
-
     # Include App-specific URLs =======================================================================================
     path("fiches/", include("fiches.urls")),
     path("projets/", include("fiches.urls_project")),
@@ -117,7 +113,6 @@ urlpatterns = [
     path("presentation/<str:what>/", fiches_views.presentation, name="presentation"),
     path("espace_de_travail/", include("fiches.urls_workspace")),
     path("chercher/", include("fiches.urls_search")),
-
     # Test Debug View =================================================================================================
     path("testdebug/", fiches_views.debug_test, name="test-debug"),
 ]

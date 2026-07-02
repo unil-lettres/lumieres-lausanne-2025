@@ -1,0 +1,235 @@
+{% comment %}<!--
+   Place-tagging widget assets (§2.2), included by the biography edit form.
+   A globe "Lieu" button (same icon as the transcription TagPlace button) opens a
+   search/create panel and wraps the *selection* in an <a class="ll-tag
+   ll-tag-place"> link (same markup as the transcription tags), reusing the place
+   search/create back-end. Applying over an existing tag absorbs it (enlarge /
+   reduce); the panel can also remove the tag. Requires jQuery and the
+   jquery.autocomplete plugin (loaded by the page). window.LL_NAMETAG.place gates
+   inline creation (re-checked server-side).
+-->{% endcomment %}
+{% load i18n static %}
+<style>
+	.placetag { display: inline-block; position: relative; }
+	.placetag_editable {
+		display: inline-block; min-width: 240px; min-height: 16px; padding: 3px 6px;
+		border: 1px solid #ccc; background: #fff; vertical-align: middle; line-height: 1.4;
+	}
+	.placetag_editable:focus { outline: 0; border-color: #5b9bd5; }
+	.placetag_editable a.ll-tag-place { color: #1a5fb4; text-decoration: underline; }
+	.placetag_button {
+		width: 25px; height: 25px; padding: 0; margin-left: 4px; cursor: pointer;
+		vertical-align: middle; border: 1px solid #bbb; border-radius: 2px;
+		background: #f5f5f5 url("{% static 'ckeditor/ckeditor/plugins/nametag/icons/place.png' %}") no-repeat center;
+		text-indent: -9999px; overflow: hidden; white-space: nowrap;
+	}
+	.placetag_button:hover { background-color: #e9e9e9; }
+	.placetag_picker {
+		display: none; position: absolute; z-index: 50; top: 100%; left: 0; margin-top: 2px;
+		padding: 6px; background: #fff; border: 1px solid #aaa; box-shadow: 0 2px 6px rgba(0,0,0,.2);
+		min-width: 260px;
+	}
+	.placetag_picker .placetag_search { width: 240px; }
+	.placetag_create { margin-top: 6px; padding-top: 6px; border-top: 1px solid #eee; }
+	.placetag_create .placetag_cat { max-width: 150px; }
+	.placetag_remove { margin-top: 6px; }
+	.placetag_remove a { color: #b00; cursor: pointer; font-size: 11px; }
+	.placetag_status { color: #666; font-size: 11px; margin-top: 3px; }
+</style>
+<script type="text/javascript">
+(function ($) {
+	if (window.placeTagWidget) { return; }
+
+	var URLS = {
+		search: "{% url 'place-autocomplete' %}",
+		categories: "{% url 'tagging-place-categories' %}",
+		create: "{% url 'tagging-place-create' %}"
+	};
+
+	function canCreate() { return !!(window.LL_NAMETAG && window.LL_NAMETAG.place); }
+	function csrf() { return $("input[name=csrfmiddlewaretoken]").first().val() || ""; }
+	function editableOf($w) { return $w.find(".placetag_editable")[0]; }
+
+	// ---- selection as text offsets within the editable (survives unwrapping) ----
+	function selectionOffsets(ed) {
+		var sel = window.getSelection();
+		if (!sel || !sel.rangeCount) { return null; }
+		var r = sel.getRangeAt(0);
+		if (!ed.contains(r.commonAncestorContainer)) { return null; }
+		function off(node, offset) {
+			var m = document.createRange();
+			m.setStart(ed, 0);
+			m.setEnd(node, offset);
+			return m.toString().length;
+		}
+		return { start: off(r.startContainer, r.startOffset), end: off(r.endContainer, r.endOffset) };
+	}
+
+	function rangeFromOffsets(ed, start, end) {
+		var range = document.createRange(), pos = 0, startDone = false;
+		(function walk(node) {
+			if (node.nodeType === 3) {
+				var len = node.nodeValue.length;
+				if (!startDone && start <= pos + len) { range.setStart(node, start - pos); startDone = true; }
+				if (startDone && end <= pos + len) { range.setEnd(node, end - pos); return true; }
+				pos += len;
+			} else {
+				for (var i = 0; i < node.childNodes.length; i++) { if (walk(node.childNodes[i])) { return true; } }
+			}
+			return false;
+		})(ed);
+		if (!startDone) { range.selectNodeContents(ed); }
+		return range;
+	}
+
+	// Unwrap every place tag in the editable (absorb on re-tag / remove on demand).
+	function flattenTags(ed) {
+		$(ed).find("a.ll-tag-place").each(function () {
+			var a = this;
+			while (a.firstChild) { a.parentNode.insertBefore(a.firstChild, a); }
+			a.parentNode.removeChild(a);
+		});
+		ed.normalize();
+	}
+
+	function buildTag(id, label) {
+		var a = document.createElement("a");
+		a.className = "ll-tag ll-tag-place";
+		a.setAttribute("data-place", String(id));
+		var href = "/fiches/lieu/" + id + "/";
+		a.setAttribute("href", href);
+		a.setAttribute("data-cke-saved-href", href);
+		a.setAttribute("title", label || "");
+		return a;
+	}
+
+	function sync($w) { $w.find(".placetag_value").first().val($w.find(".placetag_editable").first().html()); }
+
+	// Wrap the captured selection (or the whole field if none) in a place tag,
+	// absorbing any tag the selection overlaps so we enlarge/reduce in place.
+	function applyPlace($w, id, label) {
+		var ed = editableOf($w), s = $w.data("placetagSel");
+		flattenTags(ed);
+		var text = ed.textContent, start, end;
+		if (s && s.end > s.start) { start = s.start; end = s.end; }
+		else { start = 0; end = text.length; } // no selection: tag the whole field
+		var range = rangeFromOffsets(ed, start, end);
+		var a = buildTag(id, label);
+		a.appendChild(range.extractContents());
+		if (!a.textContent) { a.textContent = label; }
+		range.insertNode(a);
+		ed.normalize();
+		$w.removeData("placetagSel");
+		sync($w);
+		closePicker($w);
+	}
+
+	function removePlace($w) {
+		flattenTags(editableOf($w));
+		$w.removeData("placetagSel");
+		sync($w);
+		closePicker($w);
+	}
+
+	function closePicker($w) { $w.find(".placetag_picker").hide(); }
+
+	function loadCategories($sel, $status) {
+		if ($sel.data("loaded")) { return; }
+		$.getJSON(URLS.categories)
+			.done(function (d) {
+				$sel.empty().append($("<option>").val("").text("[ catégorie ]"));
+				(d.categories || []).forEach(function (c) { $sel.append($("<option>").val(c.id).text(c.name)); });
+				$sel.data("loaded", true);
+			})
+			.fail(function () { $status.text("Impossible de charger les catégories."); });
+	}
+
+	function createPlace($w, name, $status) {
+		var catId = $w.find(".placetag_cat").val();
+		if (!name) { $status.text("Saisissez d'abord un nom de lieu."); return; }
+		if (!catId) { $status.text("Choisissez une catégorie."); return; }
+		$status.text("Création…");
+		$.post(URLS.create, { name: name, category: catId, csrfmiddlewaretoken: csrf() })
+			.done(function (d) {
+				if (d && d.success) { applyPlace($w, d.id, d.label); }
+				else { $status.text("Échec de la création."); }
+			})
+			.fail(function (xhr) { $status.text(xhr.status === 403 ? "Création non autorisée." : "Échec de la création."); });
+	}
+
+	function buildPicker($w) {
+		var $picker = $(
+			'<div class="placetag_picker">' +
+			'<input type="text" class="placetag_search" placeholder="rechercher un lieu…" autocomplete="off">' +
+			'<div class="placetag_create">' +
+			'<select class="placetag_cat"></select> ' +
+			'<button type="button" class="placetag_create_btn">Créer ce lieu</button>' +
+			'</div>' +
+			'<div class="placetag_remove"><a class="placetag_remove_btn">Retirer le lieu</a></div>' +
+			'<div class="placetag_status"></div>' +
+			'</div>'
+		);
+		$w.append($picker);
+		var $search = $picker.find(".placetag_search"), $status = $picker.find(".placetag_status");
+
+		$search.autocomplete(URLS.search, { mustMatch: false, autoFill: false, selectFirst: true, max: 20, clickFire: true })
+			.result(function (event, data) {
+				if (!data) { return; }
+				var id = data[0], label = data[1];
+				if (isNaN(parseInt(id, 10))) { id = data[1]; label = data[0]; }
+				applyPlace($w, id, label);
+			});
+
+		if (canCreate()) {
+			loadCategories($picker.find(".placetag_cat"), $status);
+			$picker.find(".placetag_create_btn").on("click", function () { createPlace($w, $.trim($search.val()), $status); });
+		} else {
+			$picker.find(".placetag_create").hide();
+		}
+		$picker.find(".placetag_remove_btn").on("click", function () { removePlace($w); });
+		return $picker;
+	}
+
+	function openPicker($w) {
+		var $picker = $w.find(".placetag_picker");
+		if (!$picker.length) { $picker = buildPicker($w); }
+		if ($picker.is(":visible")) { $picker.hide(); return; }
+		$picker.find(".placetag_status").text("");
+		// Seed the search with the captured selection (else the whole field text)
+		// and launch the search at once, so suggestions show without retyping.
+		var ed = editableOf($w), s = $w.data("placetagSel"), seed;
+		seed = (s && s.end > s.start) ? ed.textContent.substring(s.start, s.end) : $.trim(ed.textContent);
+		var $search = $picker.find(".placetag_search").val(seed);
+		$picker.show();
+		$search.focus();
+		// clickFire is on: a click runs the lookup for the seeded value and shows
+		// the suggestion list immediately, without the user retyping a letter.
+		if (seed) { $search.click(); }
+		$w.find(".placetag_remove").toggle($(ed).find("a.ll-tag-place").length > 0);
+	}
+
+	function init(el) {
+		var $w = $(el);
+		if ($w.data("placetagReady")) { return; }
+		$w.data("placetagReady", true);
+		var ed = editableOf($w);
+		$(ed).on("keyup mouseup", function () { $w.data("placetagSel", selectionOffsets(ed)); sync($w); });
+		$(ed).on("blur", function () { sync($w); });
+		// Capture the selection on mousedown (before focus moves) and keep it.
+		$w.find(".placetag_button").on("mousedown", function (e) {
+			e.preventDefault();
+			$w.data("placetagSel", selectionOffsets(ed));
+		}).on("click", function () { openPicker($w); });
+		$(document).on("mousedown", function (e) {
+			if (!$(e.target).closest($w).length) { closePicker($w); }
+		});
+	}
+
+	window.placeTagWidget = {
+		init: init,
+		initAll: function (scope) { $(".placetag", scope || document).each(function () { init(this); }); }
+	};
+
+	$(function () { window.placeTagWidget.initAll(); });
+})(jQuery);
+</script>

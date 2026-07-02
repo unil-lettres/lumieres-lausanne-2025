@@ -1,0 +1,163 @@
+{% extends "fiches/display/display_base2.html" %}
+{% comment %}<!--
+   Copyright (C) 2010-2026 Université de Lausanne, SIER
+   This file is part of Lumières.Lausanne (GNU AGPL v3 or later).
+   This copyright notice MUST APPEAR in all copies of the file.
+-->{% endcomment %}
+{% load i18n %}
+
+{% block page_title %} | {{ place.name }}{% endblock page_title %}
+{% block main_header_title %}{% trans "Fiche lieu" %}{% endblock main_header_title %}
+
+{% block main_content %}
+<style>
+	.listing-ref .biblioref-item { display: inline; }
+</style>
+<h2>{{ place.name }}</h2>
+
+<div class="field_group">
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Catégorie" %}</div>
+		<div class="field_value">{{ place.category }}</div>
+		<div class="fixclear"></div>
+	</div>
+
+	{% if place.variants.all %}
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Variantes" %}</div>
+		<div class="field_value">{% for variant in place.variants.all %}{{ variant.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+		<div class="fixclear"></div>
+	</div>
+	{% endif %}
+
+	{% if place.related_places.all %}
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Lieux associés" %}</div>
+		<div class="field_value">{% for related in place.related_places.all %}<a href="{% url 'place-display' related.pk %}">{{ related.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+		<div class="fixclear"></div>
+	</div>
+	{% endif %}
+
+	{% if place.reference_links.all %}
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Sites de référence" %}</div>
+		<div class="field_value">
+			<ul>
+			{% for reference in place.reference_links.all %}
+				<li>{{ reference.reference_site }} : <a href="{{ reference.url }}" target="_blank" rel="noopener">{{ reference.identifier }}</a></li>
+			{% endfor %}
+			</ul>
+		</div>
+		<div class="fixclear"></div>
+	</div>
+	{% endif %}
+</div>
+
+{% for note in visible_notes %}
+<div class="field_group">
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Note" %}</div>
+		<div class="field_value rich-text-content"><div class="rich-text-body">{{ note.text|safe }}</div></div>
+		<div class="fixclear"></div>
+	</div>
+</div>
+{% endfor %}
+
+{% comment %} 3.4 automatic listings: what references this place (via place tags).
+Each listing paginates independently; {% templatetag openblock %} querystring {% templatetag closeblock %}
+preserves the other listings' page params while overriding its own. {% endcomment %}
+{% if tagged_persons.paginator.count %}
+<div class="field_group" id="personnes">
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Personnes" %}</div>
+		<div class="field_value">
+			<ul>
+			{% for entry in tagged_persons %}
+				<li><a href="{% url 'biography-display' entry.person.id %}">{{ entry.name }}</a>{% if entry.detail %} ({{ entry.detail }}){% endif %}</li>
+			{% endfor %}
+			</ul>
+			{% if tagged_persons.has_next %}
+			<a class="listing-more" href="{% querystring personnes_page=tagged_persons.next_page_number %}#personnes">{% blocktrans count n=personnes_remaining %}afficher la fiche suivante{% plural %}afficher les {{ n }} fiches suivantes{% endblocktrans %}</a>
+			{% endif %}
+		</div>
+		<div class="fixclear"></div>
+	</div>
+</div>
+{% endif %}
+
+{% if tagged_printing.paginator.count %}
+<div class="field_group" id="impression">
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Lieu d'impression" %}</div>
+		<div class="field_value">
+			<ul>
+			{% for biblio in tagged_printing %}
+				<li><a class="listing-ref" href="{% url 'display-bibliography' biblio.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</a></li>
+			{% endfor %}
+			</ul>
+			{% if tagged_printing.has_next %}
+			<a class="listing-more" href="{% querystring impression_page=tagged_printing.next_page_number %}#impression">{% blocktrans count n=impression_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+			{% endif %}
+		</div>
+		<div class="fixclear"></div>
+	</div>
+</div>
+{% endif %}
+
+{% if tagged_writing.paginator.count %}
+<div class="field_group" id="redaction">
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Lieu de rédaction" %}</div>
+		<div class="field_value">
+			<ul>
+			{% for biblio in tagged_writing %}
+				<li><a class="listing-ref" href="{% url 'display-bibliography' biblio.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</a></li>
+			{% endfor %}
+			</ul>
+			{% if tagged_writing.has_next %}
+			<a class="listing-more" href="{% querystring redaction_page=tagged_writing.next_page_number %}#redaction">{% blocktrans count n=redaction_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+			{% endif %}
+		</div>
+		<div class="fixclear"></div>
+	</div>
+</div>
+{% endif %}
+
+{% if tagged_subject.paginator.count %}
+<div class="field_group" id="mention">
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Publications - Lieu mentionné" %}</div>
+		<div class="field_value">
+			<ul>
+			{% for biblio in tagged_subject %}
+				<li><a class="listing-ref" href="{% url 'display-bibliography' biblio.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</a></li>
+			{% endfor %}
+			</ul>
+			{% if tagged_subject.has_next %}
+			<a class="listing-more" href="{% querystring mention_page=tagged_subject.next_page_number %}#mention">{% blocktrans count n=mention_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+			{% endif %}
+		</div>
+		<div class="fixclear"></div>
+	</div>
+</div>
+{% endif %}
+
+{% if tagged_transcriptions.paginator.count %}
+<div class="field_group" id="manuscrits">
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Manuscrits - Lieu mentionné" %}</div>
+		<div class="field_value">
+			<ul>
+			{% for trans in tagged_transcriptions %}
+				<li><a class="listing-ref" href="{% url 'transcription-display' trans.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 noManBiblioLink=1 only %}</a></li>
+			{% endfor %}
+			</ul>
+			{% if tagged_transcriptions.has_next %}
+			<a class="listing-more" href="{% querystring manuscrits_page=tagged_transcriptions.next_page_number %}#manuscrits">{% blocktrans count n=manuscrits_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+			{% endif %}
+		</div>
+		<div class="fixclear"></div>
+	</div>
+</div>
+{% endif %}
+{% endblock main_content %}

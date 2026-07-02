@@ -1,56 +1,31 @@
-#from django.utils.log import getLogger
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
+#
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# This copyright notice MUST APPEAR in all copies of the file.
+
 import logging
+
 from django.conf import settings
 
 if not settings.DEBUG:
-    dbg_logger = logging.getLogger('django')
+    dbg_logger = logging.getLogger("django")
 else:
     try:
-        dbg_logger = logging.getLogger('lumieres.debug')
-    except:
-        dbg_logger = logging.getLogger('django')
-
-
-
-# ## Taken from http://www.djangosnippets.org/snippets/1282/
-# from django.db.models.query import CollectedObjects
-# from django.db.models.fields.related import ForeignKey
-# 
-# def duplicate(obj, value=None, field=None, exclude_models=[]):
-#     """
-#     Duplicate all related objects of `obj`. 
-#     If one of the duplicate
-#     objects has an FK to another duplicate object
-#     update that as well. Return the duplicate copy
-#     of `obj`.  
-#     """
-#     collected_objs = CollectedObjects()
-#     obj._collect_sub_objects(collected_objs)
-#     related_models = collected_objs.keys()
-#     root_obj = None
-#     # Traverse the related models in reverse deletion order.
-#     for model in reversed(related_models):
-#         if model.__name__ in exclude_models: break
-#         
-#         # Find all FKs on `model` that point to a `related_model`.
-#         fks = []
-#         for f in model._meta.fields:
-#             if isinstance(f, ForeignKey) and f.rel.to in related_models:
-#                 fks.append(f)
-#         # Replace each `sub_obj` with a duplicate.
-#         sub_obj = collected_objs[model]
-#         for pk_val, obj in sub_obj.iteritems():
-#             for fk in fks:
-#                 fk_value = getattr(obj, "%s_id" % fk.name)
-#                 # If this FK has been duplicated then point to the duplicate.
-#                 if fk_value in collected_objs[fk.rel.to]:
-#                     dupe_obj = collected_objs[fk.rel.to][fk_value]
-#                     setattr(obj, fk.name, dupe_obj)
-#             # Duplicate the object and save it.
-#             obj.id = None
-#             if value and field:
-#                 setattr(obj, field, value)
-#             obj.save()
-#             if root_obj is None:
-#                 root_obj = obj
-#     return root_obj
+        dbg_logger = logging.getLogger("lumieres.debug")
+    except Exception:
+        dbg_logger = logging.getLogger("django")

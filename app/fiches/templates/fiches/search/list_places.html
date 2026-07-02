@@ -1,0 +1,70 @@
+{% extends "fiches/search/search_base2.html" %}
+{% comment %}<!--
+   Copyright (C) 2010-2026 Université de Lausanne, SIER
+   This file is part of Lumières.Lausanne (GNU AGPL v3 or later).
+   "Liste des lieux" tab of the advanced search (§5), mirroring list_persons.html.
+   This copyright notice MUST APPEAR in all copies of the file.
+-->{% endcomment %}
+
+{% block head_js %}
+{{ block.super }}
+{% endblock head_js %}
+
+{% block page_content_title %}<h1 class="ia">Recherche avancée</h1>{% endblock %}
+
+{% block main_header %}
+<div class="sub-navig ui-tabs">
+	<ul class="ui-tabs-nav ui-helper-reset ui-helper-clearfix ui-widget-header">
+		<li class="ui-state-default ui-corner-top"><a href="{% url 'search-biblio' %}">Recherche bibliographique</a></li>
+		<li class="ui-state-default ui-corner-top"><a href="{% url 'list-person' %}">Liste des personnes</a></li>
+		<li class="ui-state-default ui-corner-top ui-tabs-selected ui-state-active"><a>Liste des lieux</a></li>
+		<li class="ui-state-default ui-corner-top"><a href="{% url 'search-person' %}">Recherche biographique</a></li>
+	</ul>
+</div>
+<div class="clear"></div>
+{% endblock %}
+
+{% block main_content %}
+
+<style>
+	#search-results .paginator { border-radius: 2px; margin-bottom: 5px; }
+	#search-results .results li { padding: 4px 2px; }
+	#search-results .results li:nth-child(2n) { background-color: #f0f0f0; }
+	#search-results .results .place-category { color: #777; }
+</style>
+
+<div id="search-results">
+
+<div class="paginator">
+	<div class="pagination">
+		{% for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" %}
+		{% if first_letter == c %}
+		<span class="page current">{{ c }}</span>
+		{% else %}
+		<a class="page" href="{% url 'list-place' %}?q={{ c }}">{{ c }}</a>
+		{% endif %}
+		{% endfor %}
+
+		{% if first_letter %}
+		<a class="page" href="{% url 'list-place' %}">Tous</a>
+		{% else %}
+		<span class="page current">Tous</span>
+		{% endif %}
+	</div>
+</div>
+
+{% if places.exists %}
+<ul class="results">
+	{% for place in places %}
+	<li>
+		<a href="{% url 'place-display' place.id %}" title="Afficher la fiche lieu dans une nouvelle fenêtre" target="search_result">{{ place.name }}</a>{% if place.category %} <span class="place-category">({{ place.category }})</span>{% endif %}
+	</li>
+	{% endfor %}
+</ul>
+{% else %}
+<div class="noresults">Aucun lieu trouvé</div>
+{% endif %}
+
+</div>
+
+{% endblock %}

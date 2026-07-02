@@ -170,7 +170,7 @@ docker compose up -d web
 Production runs from `/u01/projects/dockerized/lumieres2-prod` on `lumieres-srv2.unil.ch`. The prod `.env` is expected to include:
 
 ```env
-COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
+COMPOSE_FILE=docker-compose.yml:docker/docker-compose.prod.yml
 COMPOSE_PROJECT_NAME=lumieres-prod
 LUMIERES_IMAGE=unillett/lumieres:vYYYY.MM.DD
 ```

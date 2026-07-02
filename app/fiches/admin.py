@@ -1,47 +1,72 @@
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
+#
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# This copyright notice MUST APPEAR in all copies of the file.
+
 """Admin configuration for the fiches app in Lumières.Lausanne."""
 
-from django.utils.html import format_html
-from django.urls import reverse as reverse_url
-from django.utils.translation import gettext_lazy as _
-from django.contrib.admin import AdminSite
-from django.contrib.auth.admin import UserAdmin, GroupAdmin
-from django.contrib.auth.models import User, Group
-from django.contrib.contenttypes.admin import GenericStackedInline
-from django.contrib.sites.models import Site
-from django.contrib.sites.admin import SiteAdmin
-from django.forms import ModelForm, TextInput, CharField
-from django.contrib import admin
-from django.contrib import messages
-from django.contrib.admin.sites import NotRegistered
-from fiches.forms import ProjectForm
+import contextlib
 
-from fiches.models.content.free_content import FreeContent
-from fiches.models.content.news import News
-from fiches.models.content.image import Image
-from fiches.models.misc.project import Project
-from fiches.models.content.finding import Finding
+from django.contrib import admin, messages
+from django.contrib.admin import AdminSite
+from django.contrib.admin.sites import NotRegistered
+from django.contrib.auth.admin import GroupAdmin, UserAdmin
+from django.contrib.auth.models import Group, User
+from django.contrib.contenttypes.admin import GenericStackedInline
+from django.contrib.sites.admin import SiteAdmin
+from django.contrib.sites.models import Site
+from django.forms import CharField, ModelForm, TextInput
+from django.urls import reverse as reverse_url
+from django.utils.html import format_html
+from django.utils.translation import gettext_lazy as _
+
+from fiches.forms import BiblioForm, ProjectForm
 from fiches.models import (
-    UserProfile,
-    Person,
-    PrimaryKeyword,
-    SecondaryKeyword,
-    Society,
+    ActivityLog,
     Biography,
-    DocumentType,
-    DocumentLanguage,
+    Depot,
+    Document,
     DocumentFile,
-    PlaceView,
+    DocumentLanguage,
+    DocumentNature,
+    DocumentType,
     JournaltitleView,
-    UserGroup,
+    ManuscriptType,
     Nationality,
+    Person,
+    PlaceCategory,
+    PlaceRecord,
+    PlaceReferenceSite,
+    PlaceVariant,
+    PlaceView,
+    PrimaryKeyword,
     RelationType,
     Religion,
-    ManuscriptType,
-    ActivityLog,
-    Document,
-    Depot,
+    SecondaryKeyword,
+    Society,
+    UserGroup,
+    UserProfile,
 )
-from fiches.forms import BiblioForm
+from fiches.models.content.finding import Finding
+from fiches.models.content.free_content import FreeContent
+from fiches.models.content.image import Image
+from fiches.models.content.news import News
+from fiches.models.misc.project import Project
 
 
 class FichesAdminSite(AdminSite):
@@ -139,11 +164,12 @@ class PersonAdmin(admin.ModelAdmin):
         bio = obj.biography_set.first()
         if bio:
             url = f"/fiches/bio/{obj.id}/"
-            return format_html('<a href="{}" target="_blank">{}</a>', url, _(u"Afficher"))
+            return format_html('<a href="{}" target="_blank">{}</a>', url, _("Afficher"))
         # Show button to add biography
         return format_html(
             '<button type="button" onclick="fiches_admin.add_person_biography({})">{}</button>',
-            obj.id, _(u"Ajouter une biographie")
+            obj.id,
+            _("Ajouter une biographie"),
         )
 
     @admin.action(description=_("Ajouter une biographie"))
@@ -155,16 +181,10 @@ class PersonAdmin(admin.ModelAdmin):
                 Biography.objects.create(person=person)
                 created += 1
         if created:
-            self.message_user(
-                request,
-                _("%d biography(ies) created." % created),
-                messages.SUCCESS
-            )
+            self.message_user(request, _("%d biography(ies) created." % created), messages.SUCCESS)
         else:
             self.message_user(
-                request,
-                _("No biography was created. All selected persons already have a biography."),
-                messages.INFO
+                request, _("No biography was created. All selected persons already have a biography."), messages.INFO
             )
 
 
@@ -329,6 +349,7 @@ class NewsAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         """
         Keep compatibility with DB schemas where news.author_id is NOT NULL.
+
         If author is not set in the form, default to the current admin user.
         """
         if not getattr(obj, "author_id", None) and getattr(request.user, "id", None):
@@ -455,6 +476,73 @@ class ManuscriptTypeAdmin(admin.ModelAdmin):
     ordering = ("sorting",)
 
 
+class DocumentNatureAdmin(admin.ModelAdmin):
+    """Admin interface for the DocumentNature lookup table (manuscript "Nature du document")."""
+
+    list_display = ("name", "sorting")
+    search_fields = ("name",)
+    ordering = ("sorting",)
+
+
+class PlaceCategoryAdmin(admin.ModelAdmin):
+    """Admin interface for the PlaceCategory lookup table (fiche Lieu)."""
+
+    list_display = ("name",)
+    search_fields = ("name",)
+    ordering = ("name",)
+
+
+class PlaceVariantInline(admin.TabularInline):
+    """Inline admin for a place's alternate spellings (variantes de lieu)."""
+
+    model = PlaceVariant
+    extra = 0
+
+
+class PlaceReferenceSiteInline(admin.TabularInline):
+    """Inline admin for a place's reference-site permalinks (référentiels)."""
+
+    model = PlaceReferenceSite
+    extra = 0
+
+
+class PlaceRecordAdmin(admin.ModelAdmin):
+    """Admin interface for the PlaceRecord model (fiche lieu).
+
+    Registered per issue #118 so existing place fiches can be browsed, searched,
+    opened and corrected from the admin without knowing their id.
+    """
+
+    list_display = ("id", "name", "category", "variants_count", "updated_at", "fiche_link")
+    list_display_links = ("name",)
+    list_filter = ("category",)
+    search_fields = ("name", "variants__name")
+    ordering = ("name",)
+    autocomplete_fields = ("category", "related_places", "access_owner")
+    filter_horizontal = ("access_groups",)
+    inlines = [PlaceVariantInline, PlaceReferenceSiteInline]
+    # Business fields first; the access metadata block goes to the bottom, collapsed
+    # (issue #118). Inlines still render below the form, as Django always does.
+    fieldsets = (
+        (None, {"fields": ("name", "category", "related_places")}),
+        (
+            _("Accès"),
+            {"fields": ("access_public", "access_owner", "access_groups"), "classes": ("collapse",)},
+        ),
+    )
+
+    @admin.display(description=_("Variantes"))
+    def variants_count(self, obj):
+        """Return the number of alternate spellings recorded for the place."""
+        return obj.variants.count()
+
+    @admin.display(description=_("Fiche"))
+    def fiche_link(self, obj):
+        """Return a link to the public place fiche (read view)."""
+        url = reverse_url("place-display", args=[obj.id])
+        return format_html('<a href="{}" target="_blank">{}</a>', url, _("Afficher"))
+
+
 class ManuscriptAdmin(admin.ModelAdmin):
     """Admin interface for Manuscript model."""
 
@@ -478,11 +566,11 @@ class ActivityLogAdmin(admin.ModelAdmin):
         """Return the user's full name (or username) as a clickable link to the user admin page."""
         if not obj.user:
             return "-"
-        
+
         # Get user's full name or fallback to username
         full_name = obj.user.get_full_name()
         display_name = full_name if full_name.strip() else obj.user.username
-        
+
         # Create link to user admin page
         try:
             url = reverse_url("admin:auth_user_change", args=[obj.user.pk])
@@ -601,6 +689,9 @@ fiches_admin.register(Finding, FindingAdmin)
 fiches_admin.register(DocumentType, DocumentTypeAdmin)
 fiches_admin.register(RelationType, RelationTypeAdmin)
 fiches_admin.register(ManuscriptType, ManuscriptTypeAdmin)
+fiches_admin.register(DocumentNature, DocumentNatureAdmin)
+fiches_admin.register(PlaceCategory, PlaceCategoryAdmin)
+fiches_admin.register(PlaceRecord, PlaceRecordAdmin)
 fiches_admin.register(User, UserAdmin)
 fiches_admin.register(Group, GroupAdmin)
 fiches_admin.register(Site, SiteAdmin)
@@ -610,8 +701,6 @@ fiches_admin.unregister(User)
 fiches_admin.register(User, CustomUserAdmin)
 
 # Keep the default Django admin aligned with the custom fiches admin for User profile fields.
-try:
+with contextlib.suppress(NotRegistered):
     admin.site.unregister(User)
-except NotRegistered:
-    pass
 admin.site.register(User, CustomUserAdmin)

@@ -3,7 +3,9 @@ name: LumieresLausanne
 services:
   db:
     image: mysql:9.3
-    env_file: .env
+    env_file:
+      - path: .env
+        required: false
     restart: unless-stopped
     volumes:
       - db_data:/var/lib/mysql
@@ -17,15 +19,17 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.app
-    env_file: .env
+      target: runtime
+    env_file:
+      - path: .env
+        required: false
     depends_on:
       db:
         condition: service_healthy
       solr:
         condition: service_healthy
     volumes:
-      - ./app:/app/app
-      - ./app/media:/app/app/media
+      - ./app/media:/app/media
       - ./logging:/app/logging
     ports:
       - "8000:8000"
@@ -33,7 +37,7 @@ services:
   solr:
     image: solr:8
     volumes:
-      - ./solr/configsets/lumieres:/var/solr/configsets/lumieres:ro
+      - ./settings/solr/configsets/lumieres:/var/solr/configsets/lumieres:ro
       - solr_data:/var/solr/data
     command: >
       bash -lc "

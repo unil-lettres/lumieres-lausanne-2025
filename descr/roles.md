@@ -3,25 +3,25 @@
 ## Removing/Reassigning the legacy "assistants" role
 1. **List current members**
    ```bash
-   docker compose -f docker-compose.staging.yml exec web \
+   docker compose -f docker/docker-compose.staging.yml exec web \
      bash -lc "python /app/app/manage.py shell -c 'from django.contrib.auth.models import User, Group; g=Group.objects.get(name=\"assistants\"); print(list(g.user_set.values_list(\"username\", flat=True)))'"
    ```
 2. **Reassign users as needed** (via admin or shell) – e.g. move to `doctorants`/`chercheurs` or deactivate test accounts.
 3. **Preview changes**
    ```bash
-   docker compose -f docker-compose.staging.yml exec web \
+   docker compose -f docker/docker-compose.staging.yml exec web \
      bash -lc 'python /app/app/manage.py sync_status_roles'
    ```
    Confirm the assistant group is empty (`X associated user(s)` shown). If not, loop back to step 2.
 4. **Apply changes**
    ```bash
-   docker compose -f docker-compose.staging.yml exec web \
+   docker compose -f docker/docker-compose.staging.yml exec web \
      bash -lc 'python /app/app/manage.py sync_status_roles --apply'
    ```
    This creates `fiches.change_collection_owner` (if missing), grants it to “directeurs”, and deletes the assistant group.
 5. **Verify**
    ```bash
-   docker compose -f docker-compose.staging.yml exec web \
+   docker compose -f docker/docker-compose.staging.yml exec web \
      bash -lc 'python /app/app/manage.py sync_status_roles'
    ```
    Output should show: permission exists, directeurs already hold it, no assistant group found.

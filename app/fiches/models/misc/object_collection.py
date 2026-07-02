@@ -1,10 +1,28 @@
-from django.db import models
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
+#
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# This copyright notice MUST APPEAR in all copies of the file.
+
 from django.contrib.auth.models import User
-from django.utils.translation import gettext_lazy as _
-from django.utils.text import slugify
-from django.forms import ModelForm, Textarea
+from django.db import models
 from django.db.models.fields.related import ManyToManyField
-from django.apps import apps  # For lazy imports
+from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 
 from fiches.models.contributions.ac_model import ACModel
 from fiches.models.core.user_group import UserGroup
@@ -16,30 +34,25 @@ class ObjectCollection(ACModel):
     slug = models.SlugField(editable=False, blank=True, null=True, unique=True)
     description = models.TextField(_("Description"), blank=True)
     owner = models.ForeignKey(
-        User, verbose_name=_("Utilisateur"), related_name='objectcollections', on_delete=models.CASCADE
+        User, verbose_name=_("Utilisateur"), related_name="objectcollections", on_delete=models.CASCADE
     )
     change_groups = models.ManyToManyField(
-        UserGroup, verbose_name=_("Groupes contributeurs"), related_name='objectcollections', blank=True
+        UserGroup, verbose_name=_("Groupes contributeurs"), related_name="objectcollections", blank=True
     )
     access_private = models.BooleanField(
-        blank=True, default=True, verbose_name=_("Privé"),
-        help_text=_("Accessible pour le propriétaire seulement")
+        blank=True, default=True, verbose_name=_("Privé"), help_text=_("Accessible pour le propriétaire seulement")
     )
 
     # Fields for related objects
-    persons = models.ManyToManyField(Person, related_name='objectcollections', blank=True)
+    persons = models.ManyToManyField(Person, related_name="objectcollections", blank=True)
     # Use lazy references for Biblio and Transcription
-    bibliographies = models.ManyToManyField(
-        'fiches.Biblio', blank=True
-    )
-    transcriptions = models.ManyToManyField(
-        'fiches.Transcription', blank=True
-    )
+    bibliographies = models.ManyToManyField("fiches.Biblio", blank=True)
+    transcriptions = models.ManyToManyField("fiches.Transcription", blank=True)
 
     class Meta:
         verbose_name = _("Collection")
         verbose_name_plural = _("Collections")
-        ordering = ['id']
+        ordering = ["id"]
         permissions = [
             ("change_collection_owner", "Peut changer le propriétaire de la collection"),
         ]
@@ -56,16 +69,16 @@ class ObjectCollection(ACModel):
                 self.slug = slug_candidate
             else:
                 self.slug = None
-        super().save(force_insert=force_insert, force_update=force_update, *args, **kwargs)
+        super().save(*args, force_insert=force_insert, force_update=force_update, **kwargs)
 
         if nb_existing_slug > 0:
             old_slug = self.slug
             obj_id = str(self.id)
             new_slug = f"{old_slug}-{obj_id}"
             if len(new_slug) > 50:
-                new_slug = f"{old_slug[:50 - len(obj_id) - 1]}-{obj_id}"
+                new_slug = f"{old_slug[: 50 - len(obj_id) - 1]}-{obj_id}"
             self.slug = new_slug
-            super().save(force_insert=force_insert, force_update=force_update, *args, **kwargs)
+            super().save(*args, force_insert=force_insert, force_update=force_update, **kwargs)
 
     def add_object(self, obj):
         of = self.get_object_field(obj)
@@ -80,8 +93,9 @@ class ObjectCollection(ACModel):
     def get_object_field(self, obj):
         # Retrieve ManyToMany fields excluding 'access_groups' from ACModel if it exists
         object_fields_names = [
-            f.attname for f in self._meta.get_fields()
-            if isinstance(f, ManyToManyField) and f.attname != 'access_groups'
+            f.attname
+            for f in self._meta.get_fields()
+            if isinstance(f, ManyToManyField) and f.attname != "access_groups"
         ]
 
         for f in object_fields_names:

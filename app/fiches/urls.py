@@ -1,18 +1,41 @@
-# fiches/urls.py
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
+#
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# This copyright notice MUST APPEAR in all copies of the file.
+
+"""URL routing for the fiches app."""
 
 from django.urls import path, re_path
-from fiches.views import ajax_search
-from fiches.views import collections as views_collections
+
 from fiches.views import (
+    ajax_search,
     documentfile_frame_create,
     documentfile_frame_edit,
     documentfile_frame_list,
     last_activities,
     main_index,
     serve_documentfile,
+    workspace_collections,
 )
+from fiches.views import collections as views_collections
+from fiches.views import place as views_place
+from fiches.views import tagging as views_tagging
 from fiches.views import transcription as views_transcription
-from fiches.views import workspace_collections
 from fiches.views.bibliography import cancel_new_bibliography as bibliography_cancel
 from fiches.views.bibliography import create as bibliography_create
 from fiches.views.bibliography import delete as bibliography_delete
@@ -35,17 +58,13 @@ from fiches.views.biography import to_be_validated as biography_to_be_validated
 from fiches.views.biography import validate as biography_validate
 from fiches.views.search import biblio_extended_search, filter_builder
 
-
 urlpatterns = [
     # Home Page (relative to 'fiches/' prefix)
     path("", main_index, name="home"),
-
     # AJAX Search =====================================================================================================
     path("ajax_search/", ajax_search, name="ajax-search"),
-
     # Last Activities =================================================================================================
     path("last_activities/", last_activities, name="last-activities-list"),
-
     # Bibliography URLs ===============================================================================================
     path("biblio/", biblio_extended_search, name="bibliography-index"),
     path("biblio/ref/", biblio_extended_search, name="bibliography-references"),
@@ -72,7 +91,6 @@ urlpatterns = [
         name="bibliography-documentfile-remove",
     ),
     path("biblio/person/<int:person_id>/", bibliography_get_person_publications, name="get-person-publications"),
-
     # Biography URLs ==================================================================================================
     path("bio/", filter_builder, {"model_name": "Person"}, name="biography-index"),
     path("bio/a_valider/", filter_builder, {"model_name": "Person"}, name="biography-2b-validated"),
@@ -86,10 +104,18 @@ urlpatterns = [
     path("bio/<int:person_id>/relations/", biography_relations_list, name="biography-relations-list"),
     path("bio/pfnb/", biography_person_without_bio, name="persons-for-new-biography"),
     path("bio/ajax/add_person/", biography_ajax_add_person, name="biography-ajax-add-person"),
-
+    # Place (Lieu) URLs ===============================================================================================
+    path("lieu/<int:place_id>/", views_place.display, name="place-display"),
+    path("lieu/edit/<int:place_id>/", views_place.edit, name="place-edit"),
+    path("lieu/new/", views_place.create, name="place-create"),
+    path("lieu/delete/<int:place_id>/", views_place.delete, name="place-delete"),
+    path("lieu/autocomplete/", views_place.place_autocomplete, name="place-autocomplete"),
+    # Inline fiche creation from the transcription tagging window (Directeurs only).
+    path("tagging/place/categories/", views_tagging.place_categories, name="tagging-place-categories"),
+    path("tagging/place/create/", views_tagging.create_place, name="tagging-place-create"),
+    path("tagging/person/create/", views_tagging.create_person, name="tagging-person-create"),
     # Manuscript URLs =================================================================================================
     path("man/<int:man_id>/", bibliography_display_man, name="manuscript-display"),
-
     # Transcription URLs ==============================================================================================
     path("trans/", views_transcription.index, name="transcription-index"),
     path("trans/list/", views_transcription.index, name="transcription-list"),
@@ -97,7 +123,6 @@ urlpatterns = [
     path("trans/edit/<int:trans_id>/", views_transcription.edit, name="transcription-edit"),
     path("trans/new/<int:doc_id>/", views_transcription.create, name="transcription-b-add"),
     path("trans/delete/<int:trans_id>/", views_transcription.delete, name="transcription-delete"),
-
     # Document URLs ===================================================================================================
     re_path(r"^documents/get/(?P<documentfile_key>[a-zA-Z0-9_-]+)/$", serve_documentfile, name="serve-file"),
     re_path(
@@ -121,7 +146,6 @@ urlpatterns = [
         {"edit_done": True},
         name="docfile-frame-edit-done",
     ),
-
     # Collections URLs ================================================================================================
     # 1. Fixed underscore‑prefixed URLs (these are exact matches)
     path("collection/_new/", views_collections.edit, {"coll_id": "#", "create_coll": True}, name="collection-new"),

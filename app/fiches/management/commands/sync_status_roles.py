@@ -1,3 +1,23 @@
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
+#
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# This copyright notice MUST APPEAR in all copies of the file.
+
 from contextlib import nullcontext
 
 from django.contrib.auth.models import Group, Permission
@@ -9,6 +29,8 @@ from django.db.models import Q
 from fiches.models.core.user_profile import UserProfile
 from fiches.models.documents.document_file import DocumentFile
 from fiches.models.misc.object_collection import ObjectCollection
+from fiches.models.misc.place import PlaceRecord
+from fiches.models.person.person import Person
 
 
 class Command(BaseCommand):
@@ -18,6 +40,7 @@ class Command(BaseCommand):
         " - doctorants may access and edit third-party transcriptions\n"
         " - directeurs may reassign collection owners\n"
         " - directeurs may manage user profile extra information\n"
+        " - directeurs may create person & place fiches (named-entity tagging)\n"
         " - assistants status is retired\n"
         "Run without --apply for a dry-run preview."
     )
@@ -64,6 +87,8 @@ class Command(BaseCommand):
                 self._update_director_permissions([collection_owner_perm], apply_changes)
             user_profile_perms = self._ensure_user_profile_permissions()
             self._update_director_permissions(user_profile_perms, apply_changes)
+            fiche_creation_perms = self._ensure_fiche_creation_permissions()
+            self._update_director_permissions(fiche_creation_perms, apply_changes)
             self._retire_assistant_group(apply_changes)
 
         self.stdout.write(self.style.SUCCESS("Status synchronisation complete."))
@@ -78,8 +103,7 @@ class Command(BaseCommand):
         """Fetch DocumentFile permissions required for attachment management."""
         ct = ContentType.objects.get_for_model(DocumentFile)
         perms = {
-            perm.codename: perm
-            for perm in Permission.objects.filter(content_type=ct, codename__in=self.DOCFILE_PERMS)
+            perm.codename: perm for perm in Permission.objects.filter(content_type=ct, codename__in=self.DOCFILE_PERMS)
         }
         missing = sorted(set(self.DOCFILE_PERMS) - set(perms))
         if missing:
@@ -128,11 +152,7 @@ class Command(BaseCommand):
                 f"{', '.join(missing)}. Please run migrations before applying changes."
             )
             self.stdout.write(self.style.WARNING(warning))
-        return [
-            perms[codename]
-            for codename in self.DIRECTOR_USER_PROFILE_PERMS
-            if codename in perms
-        ]
+        return [perms[codename] for codename in self.DIRECTOR_USER_PROFILE_PERMS if codename in perms]
 
     def _update_doctorant_permissions(self, required_permissions, apply_changes):
         """Grant required working permissions to doctorants."""
@@ -179,9 +199,7 @@ class Command(BaseCommand):
             perm = Permission.objects.get(content_type=ct, codename=self.COLLECTION_OWNER_PERM)
             if not apply_changes:
                 self.stdout.write(
-                    self.style.SUCCESS(
-                        "Custom permission 'fiches.change_collection_owner' already exists."
-                    )
+                    self.style.SUCCESS("Custom permission 'fiches.change_collection_owner' already exists.")
                 )
             return perm
         except Permission.DoesNotExist:
@@ -191,20 +209,29 @@ class Command(BaseCommand):
                     codename=self.COLLECTION_OWNER_PERM,
                     name="Can change collection owner",
                 )
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        "Created custom permission 'fiches.change_collection_owner'."
-                    )
-                )
+                self.stdout.write(self.style.SUCCESS("Created custom permission 'fiches.change_collection_owner'."))
                 return perm
             else:
                 self.stdout.write(
                     self.style.WARNING(
-                        "Permission 'fiches.change_collection_owner' is missing. "
-                        "Would create it in apply mode."
+                        "Permission 'fiches.change_collection_owner' is missing. Would create it in apply mode."
                     )
                 )
                 return None
+
+    def _ensure_fiche_creation_permissions(self):
+        """Fetch the person/place 'add' permissions used to create fiches while tagging."""
+        permissions = []
+        for model, codename in ((Person, "add_person"), (PlaceRecord, "add_placerecord")):
+            ct = ContentType.objects.get_for_model(model)
+            perm = Permission.objects.filter(content_type=ct, codename=codename).first()
+            if perm:
+                permissions.append(perm)
+            else:
+                self.stdout.write(
+                    self.style.WARNING(f"Missing permission '{codename}'. Please run migrations before applying.")
+                )
+        return permissions
 
     def _update_director_permissions(self, permissions, apply_changes):
         """Ensure directors hold the required administrative permissions."""
@@ -222,27 +249,15 @@ class Command(BaseCommand):
         missing_permissions = [permission for permission in permissions if permission.id not in existing_ids]
 
         if not missing_permissions:
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"'{group.name}' already holds required director permissions."
-                )
-            )
+            self.stdout.write(self.style.SUCCESS(f"'{group.name}' already holds required director permissions."))
             return
 
         perm_labels = ", ".join(permission.codename for permission in missing_permissions)
         if apply_changes:
             group.permissions.add(*missing_permissions)
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"Granted director permissions to '{group.name}': {perm_labels}"
-                )
-            )
+            self.stdout.write(self.style.SUCCESS(f"Granted director permissions to '{group.name}': {perm_labels}"))
         else:
-            self.stdout.write(
-                self.style.WARNING(
-                    f"Would grant director permissions to '{group.name}': {perm_labels}"
-                )
-            )
+            self.stdout.write(self.style.WARNING(f"Would grant director permissions to '{group.name}': {perm_labels}"))
 
     def _retire_assistant_group(self, apply_changes):
         """Remove the assistant status group entirely."""
@@ -267,8 +282,5 @@ class Command(BaseCommand):
                 note += f" {total_users} user(s) lost that status."
             self.stdout.write(self.style.SUCCESS(note))
         else:
-            note = (
-                f"Would remove assistant group(s) ({label}). "
-                f"{total_users} associated user(s) currently assigned."
-            )
+            note = f"Would remove assistant group(s) ({label}). {total_users} associated user(s) currently assigned."
             self.stdout.write(self.style.WARNING(note))

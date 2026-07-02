@@ -1,0 +1,119 @@
+{% extends ext_template %}
+{% comment %}<!--
+   Copyright (C) 2010-2026 Université de Lausanne, SIER
+   Service Infrastructure Enseignement et Recherche
+
+   This file is part of Lumières.Lausanne.
+   Lumières.Lausanne is free software: you can redistribute it and/or modify
+   it under the terms of the GNU Affero General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This copyright notice MUST APPEAR in all copies of the file.
+-->{% endcomment %}
+{% load i18n fiches_extras static %}
+
+{% block head %}
+	{{ block.super }}
+	{{ form.media }}
+	<script type="text/javascript" src="{% static 'js/list_widget.js' %}"></script>
+	<link rel="stylesheet" href="{% static 'css/jquery.autocomplete.css' %}" />
+	<script type="text/javascript" src="{% static 'js/lib/jquery/jquery.bgiframe.min.js' %}"></script>
+	<script type="text/javascript" src="{% static 'js/lib/jquery/jquery.ajaxQueue.js' %}"></script>
+	<script type="text/javascript" src="{% static 'js/lib/jquery/jquery.autocomplete.min.js' %}"></script>
+	<style>
+		/* Narrower Name input — scoped to this page only (no impact on other forms). */
+		#place-form-id .fieldWrapper.name input { width: 448px; }
+		/* Variants and related-places: wider add input, reaching toward the button. */
+		.fieldWrapper.variants .dynamiclist_helper_input,
+		.fieldWrapper.related_places .dynamiclist_helper_input { width: 415px; }
+	</style>
+{% endblock head %}
+
+{% block main_menu %}{% with "lieu" as fiche_type %}{{ block.super }}{% endwith %}{% endblock %}
+{% block main_header_title %}{{ new_object|yesno:"Nouvelle fiche lieu,Modification de fiche lieu" }}{% endblock %}
+
+{% block but_cancel_onclick %}
+	{% if new_object %}
+		{% if prev_url %}return fiches_edit.cancelEdition('{{ prev_url }}');
+		{% else %}return fiches_edit.cancelEdition('{% url 'workspace-main' %}');{% endif %}
+	{% else %}return fiches_edit.cancelEdition('{% url 'place-display' form.instance.pk %}');{% endif %}
+{% endblock %}
+
+{% block main_content %}
+<h2>{{ form.instance }}</h2>
+<form method="post" action="" id="place-form-id" class="edit-form">{% csrf_token %}
+	{{ form.id }}
+	{% for fs in place_formdef.fieldsets %}
+		{% if fs.template %}
+			{% with fs as fieldset %}{% include fs.template %}{% endwith %}
+		{% else %}
+		<fieldset>
+			{% if fs.title %}<div class="legend">{{ fs.title }}</div>{% endif %}
+			{% for f in fs.fields %}
+				{% if f.template %}
+					{% include f.template %}
+				{% else %}{% if f.field %}
+					{% with f.field as field %}
+					<div class="fieldWrapper {{ field.html_name }}">
+						{{ field.errors }}
+						<label for="{{ field.auto_id }}"{% if f.class %} class="{{ f.class }}"{% endif %}>{{ field.label }}
+							{% if field.help_text %} <span class="help_text">{{ field.help_text }}</span>{% endif %}</label>
+						{{ field }}
+					</div>
+					<div class="fixclear"></div>
+					{% endwith %}
+				{% endif %}{% endif %}
+			{% endfor %}
+		</fieldset>
+		{% endif %}
+	{% endfor %}
+</form>
+{% include "fiches/edition/_reference_links_widget.html" %}
+<script type="text/javascript">
+(function ($) {
+	// Related places: search existing places by name and add them as chips.
+	function placeAutocomplete($input) {
+		$input.autocomplete("{% url 'place-autocomplete' %}", {
+			extraParams: { exclude: "{{ form.instance.pk|default:'' }}" },
+			mustMatch: true, autoFill: false, selectFirst: true
+		})
+		.result(function (event, data) {
+			var $this = $(this);
+			if (data) {
+				if (isNaN(parseInt(data[0]))) { data.reverse(); }
+				$this.siblings(".helper_input_value").val(data[0]);
+				$this.parents(".dynamiclist_container").find(".dynamiclist_helper_addbut").removeAttr("disabled");
+			}
+		})
+		.blur(function () { $(this).search(); });
+	}
+
+	$(document).ready(function () {
+		// Variants: free-text chips.
+		var $variants = $(".fieldWrapper.variants");
+		$variants.find(".dynamiclist_value_entry").each(function () {
+			dynamiclist_widget.appendDeleteButton(this);
+		});
+		$variants.find(".dynamiclist_helper_input").on("input", function () {
+			var v = $(this).val();
+			$(this).siblings(".helper_input_value").val(v ? "|" + v : "");
+			$(this).parents(".dynamiclist_container").find(".dynamiclist_helper_addbut").removeAttr("disabled");
+		});
+		if ($.fn.button) {
+			$variants.find(".dynamiclist_helper_addbut").button({ icons: { primary: "ui-icon-plusthick" } });
+		}
+
+		// Related places: autocomplete search + chips.
+		var $related = $(".fieldWrapper.related_places");
+		$related.find(".dynamiclist_value_entry").each(function () {
+			dynamiclist_widget.appendDeleteButton(this);
+		});
+		placeAutocomplete($related.find(".dynamiclist_helper_input"));
+		if ($.fn.button) {
+			$related.find(".dynamiclist_helper_addbut").button({ icons: { primary: "ui-icon-plusthick" } });
+		}
+	});
+})(jQuery);
+</script>
+{% endblock main_content %}

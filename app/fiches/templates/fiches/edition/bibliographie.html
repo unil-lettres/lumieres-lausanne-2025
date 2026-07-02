@@ -40,6 +40,8 @@
         /* 1) Ensure doctype_exclusive_fields & doctype_allexclusive_fields are available */
         var doctype_exclusive_fields = {{ doctype_exclusive_fields_js|default:"{}" }};
         var doctype_allexclusive_fields = {{ doctype_allexclusive_fields_js|default:"{}" }};
+        /* Gate inline place creation in the place-tag widget (re-checked server-side). */
+        window.LL_NAMETAG = { place: {% if perms.fiches.add_placerecord %}true{% else %}false{% endif %} };
     </script>
     
     <!-- 2) Load the dynamic list widget code -->
@@ -100,6 +102,26 @@
         }
     
         /**
+         * Autocomplete for the "Lieu(x)" subject field (§4.3): search existing
+         * places by name (place-autocomplete) and store the picked id for the chip.
+         * Selection only — a new place needs a category, created on its own fiche.
+         */
+        function place_subject_autocomplete(o) {
+            $(o).autocomplete("{% url 'place-autocomplete' %}", {
+                mustMatch: true, autoFill: false, selectFirst: true, max: 20
+            })
+            .result(function (event, data) {
+                var $this = $(this);
+                if (data) {
+                    if (isNaN(parseInt(data[0]))) { data.reverse(); }
+                    $this.siblings(".helper_input_value").val(data[0]);
+                    $this.parents(".dynamiclist_container").find(".dynamiclist_helper_addbut").removeAttr("disabled");
+                }
+            })
+            .blur(function () { $(this).search(); });
+        }
+
+        /**
          * Optionally used for the #id_publisher autocomplete to filter by litt. type
          */
         function litteratureType_query() {
@@ -131,8 +153,10 @@
     
             /* ============ Dynamic List Setup (Persons, etc.) ============ */
     
-            // Hook up the “Person” autocomplete to any inputs with class .dynamiclist_helper_input
-            dynamic_list_autocomplete($(".dynamiclist_helper_input"), 'name', 'Person');
+            // Hook up the “Person” autocomplete to the person subject field only.
+            dynamic_list_autocomplete($(".subj_person .dynamiclist_helper_input"), 'name', 'Person');
+            // Hook up the “Lieu(x)” autocomplete to the place subject field (§4.3).
+            place_subject_autocomplete($(".subj_place .dynamiclist_helper_input"));
     
             // On page load, add "delete" buttons to existing dynamic list entries
             $(".dynamiclist_container").find(".dynamiclist_value_entry").each(function(){
@@ -267,7 +291,17 @@
 
         {% for f in fs.fields %}
             {% with f.field as field %}
-                {% if f.name == "subj_person" %}
+                {% if f.name == "subj_place" %}
+                    <div class="fieldWrapper subj_place">
+                        <label for="id_subj_place" class="single-line">Lieu(x)</label>
+                        {% if field.errors %}
+                            <div class="field-errors">
+                                {{ field.errors }}
+                            </div>
+                        {% endif %}
+                        {{ field }}
+                    </div>
+                {% elif f.name == "subj_person" %}
                     <div class="fieldWrapper subj_person">
                         <label for="id_subj_person" class="single-line">Personne</label>
                         {# Affiche les erreurs du champ subj_person #}
@@ -321,6 +355,9 @@
     </fieldset>
     {% endfor %}
 </form>
+
+{# Place-tagging widget assets for the Lieu / 2e Lieu / Lieu de destination fields (§4.2). #}
+{% include "fiches/edition/_place_tag_widget.html" %}
 
 <div id="ctxt-help-biblio-pages" style="display:none">
     <h6>Directives pour le champ « Pages »</h6>
@@ -434,7 +471,12 @@
         fiches_edit.registerRecommandationCallback(function() {
 
             var recommandedSimpleFields = [
-			 {'name': "Lieu", 'id': 'place'},
+			 {'name': "Lieu", 'id': 'place', lambda: function() {
+				 // "Lieu" uses the place-tag widget: its value lives in a
+				 // contenteditable (#id_place), so .val() always reads "". Test
+				 // the visible text instead (filled = any text, tagged or not).
+				 return $.trim($('#id_' + this.id).text() || '') == '';
+			 }},
 			 {'name': "Date", 'id': 'date'},
 			 {'name': "Pages", 'id': 'pages'},
 			 {'name': "Langue", 'id': 'language'},

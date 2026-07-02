@@ -5,22 +5,18 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("fiches", "0001_add_transcription_dates"),
+        ("fiches", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
             model_name="transcription",
             name="published_date",
-            field=models.DateTimeField(
-                blank=True, null=True, verbose_name="Date de mise en ligne"
-            ),
+            field=models.DateTimeField(blank=True, null=True, verbose_name="Date de mise en ligne"),
         ),
         migrations.AddField(
             model_name="transcription",
             name="modified_date",
-            field=models.DateTimeField(
-                auto_now=True, verbose_name="Date de modification"
-            ),
+            field=models.DateTimeField(auto_now=True, verbose_name="Date de modification"),
         ),
     ]

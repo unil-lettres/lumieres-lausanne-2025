@@ -1,46 +1,38 @@
-# -*- coding: utf-8 -*-
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
 #
-#    Copyright (C) 2010-2012 Université de Lausanne, RISET
-#    < http://www.unil.ch/riset/ >
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#    This file is part of Lumières.Lausanne.
-#    Lumières.Lausanne is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
 #
-#    Lumières.Lausanne is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-#    This copyright notice MUST APPEAR in all copies of the file.
-#
-import logging  # XXX: delete it
-import re
-import time
+# This copyright notice MUST APPEAR in all copies of the file.
+
 import datetime
+import re
 import urllib.parse as urlparse
 
 from django import template
 from django.contrib.auth.models import AnonymousUser, User
 from django.template import TemplateSyntaxError
 from django.template.loader import get_template
-
-# from django.core.urlresolvers import resolve, Resolver404
 from django.urls import Resolver404, resolve
 from django.utils.dateformat import format
 from django.utils.encoding import force_str, smart_str
 from django.utils.html import urlize
 from django.utils.safestring import mark_safe
+
 from fiches.models import UserGroup
-
-# from django.conf import settings
-
-logger = logging.getLogger(__name__)  # XXX: delete it
 
 register = template.Library()
 
@@ -72,7 +64,7 @@ def in_group2(user, groups):
 def startswith(string, needle):
     try:
         return string.startswith(needle)
-    except:
+    except (AttributeError, TypeError):
         return ""
 
 
@@ -81,22 +73,18 @@ def decodeHtmlEntities(string):
     entity_re = re.compile(r"&(#?)(\d{1,5}|\w{1,8});")
 
     def substitute_entity(match):
-        # from htmlentitydefs import name2codepoint as n2cp
         from html.entities import name2codepoint
 
         ent = match.group(2)
         if match.group(1) == "#":
-            # return unichr(int(ent))
             try:
                 return chr(int(ent))
             except ValueError:
                 return match.group()
         else:
-            # cp = n2cp.get(ent)
             cp = cp = name2codepoint.get(ent)
 
             if cp:
-                # return unichr(cp)
                 return chr(cp)
             else:
                 return match.group()
@@ -104,19 +92,9 @@ def decodeHtmlEntities(string):
     return entity_re.subn(substitute_entity, string)[0]
 
 
-# @register.filter
-# def field_verbose_name(model,field):
-#     try:
-#         output = filter(lambda f: f.name == field, model._meta._fields())[0].verbose_name
-#     except:
-#         output = ""
-#     return output
-
-
 @register.filter
 def field_verbose_name(model, field):
     try:
-        # output = filter(lambda f: f.name == field, model._meta._fields())[0].verbose_name
         field_object = next(f for f in model._meta.get_fields() if f.name == field)
         output = field_object.verbose_name
     except (StopIteration, AttributeError):
@@ -128,7 +106,7 @@ def field_verbose_name(model, field):
 def meta(value, arg):
     try:
         return smart_str(value._meta.__getattribute__(arg))
-    except:
+    except AttributeError:
         return ""
 
 
@@ -143,7 +121,7 @@ def date_f(model, param):
 
     try:
         model_field = model.__getattribute__(field)
-    except:
+    except AttributeError:
         return "error 1"
 
     output = ""
@@ -153,11 +131,11 @@ def date_f(model, param):
         if field_format:
             user_format = sep.join([c for c in format_str if c in field_format])
         else:
-            user_format = sep.join([c for c in format_str])
+            user_format = sep.join(list(format_str))
 
         try:
             output = format(model.__getattribute__(field), user_format)
-        except:
+        except (AttributeError, TypeError, ValueError):
             output = "error 2"
 
     return output
@@ -167,7 +145,7 @@ def date_f(model, param):
 def date_biblio(model, param):
     try:
         model_field = model.__getattribute__(param)
-    except:
+    except AttributeError:
         return "[s.d.]"
     if model_field:
         field_format = model.__getattribute__("%s_f" % param)
@@ -223,7 +201,7 @@ def sort_biblio(results, doc_name):
         if isinstance(value, datetime.date):
             return value
         if isinstance(value, str):
-            digits = ''.join(ch for ch in value if ch.isdigit())
+            digits = "".join(ch for ch in value if ch.isdigit())
             if len(digits) >= 4:
                 try:
                     return datetime.date(int(digits[:4]), 1, 1)
@@ -288,7 +266,6 @@ RE_HREF = re.compile(r'href="([^"]+)"')
 def docfileinfo(value):
     from fiches.models import DocumentFile
 
-    # output = value
     anchors = re.compile(r"<a[^>]+>.*</a>").findall(value)
     for a in anchors:
         url = RE_HREF.search(a)
@@ -300,8 +277,7 @@ def docfileinfo(value):
                 value = value.replace(a, "%s [%s]" % (a, template.defaultfilters.filesizeformat(docfile.file.size)))
             except Resolver404:
                 pass
-            except:
-                # raise
+            except (KeyError, DocumentFile.DoesNotExist):
                 pass
 
     return mark_safe(value)
@@ -319,7 +295,8 @@ def truncatechars(value, token):
 def truncate_chars(s, num, end_text="..."):
     """Truncates a string after a certain number of characters but don't truncate words.
     Takes an optional argument of what should be used to notify that the string has been
-    truncated, defaults to ellipsis (...)"""
+    truncated, defaults to ellipsis (...)
+    """
     s = force_str(s)
     length = int(num)
     if len(s.strip()) <= length:
@@ -342,14 +319,10 @@ def access_grouplist(value, token=""):
     those auth.Group. Not that easy to explain hum...
     """
     if not isinstance(value, User) and not isinstance(value, AnonymousUser):
-        # raise template.TemplateSyntaxError, "value should be a User"
         raise TemplateSyntaxError("value should be a User")
     user = value
     group_list = UserGroup.objects.filter(groups__in=user.groups.all()) | user.usergroup_set.all()
-    if token == "as_id":
-        group_list = [g.id for g in group_list]
-    else:
-        group_list = list(group_list)
+    group_list = [g.id for g in group_list] if token == "as_id" else list(group_list)
     return group_list
 
 
@@ -359,7 +332,6 @@ def access_strict(df, token, any_login=False):
     Return True if ACModel.user_acces is strictly validated. Always TRUE for staff members (user.is_staff == True )
     i.e access_public == True | access_owner == user | access_groups IN user.usergroups
     """
-
     if not isinstance(token, User) and not isinstance(token, AnonymousUser):
         raise TemplateSyntaxError("argument should be a User")
     user = token
@@ -396,12 +368,8 @@ class TooltipLinkNode(template.Node):
 
     def render(self, context):
         try:
-            if self.id is None:
-                tooltip_id = self.id_to_be_resolved.resolve(context)
-            else:
-                tooltip_id = self.id
+            tooltip_id = self.id_to_be_resolved.resolve(context) if self.id is None else self.id
             return '<span class="tooltiplink"><a href="#%s" class="tooltiplink">?</a></span>' % tooltip_id
-        #            return '<span class="tooltiplink ui-state-default"><a href="#%s" class="ui-icon ui-icon-help"></a></span>' % tooltip_id
         except template.VariableDoesNotExist:
             return ""
 
@@ -411,11 +379,8 @@ def tooltiplink(parser, token):
     try:
         tag_name, arg = token.contents.split(None, 1)
     except ValueError:
-        raise TemplateSyntaxError("%r tag requires one argument" % token.contents.split()[0])
+        raise TemplateSyntaxError("%r tag requires one argument" % token.contents.split()[0]) from None
 
-    #    if not re.match(r'^[a-zA-Z0-9_-]+$', arg):
-    #        raise template.TemplateSyntaxError, "%r tag argument is incorrect, only [a-zA-Z0-9_-] char accepted" % tag_name
-    #
     return TooltipLinkNode(arg)
 
 
@@ -424,7 +389,6 @@ class TimestampNode(template.Node):
         self.token = token
 
     def render(self, context):
-        val = "timestamp %s: %s" % (str(self.token).ljust(40), time.time())
         return ""
 
 
@@ -434,18 +398,6 @@ def timstamp(parser, token):
 
 
 from django.core.cache import cache
-
-# class BiblioRefNode(template.Node):
-#     def __init__(self, template_filename='fiches/bibliography_references/biblio_template.html'):
-#         self.template = get_template(template_filename)
-#     def render(self, context):
-#         ref_key = 'lumieres__biblioref__%s' % context['ref'].id
-#         ref_string = cache.get(ref_key)
-#         if ref_string is None:
-#             ref_string = self.template.render(context)
-#             cache.set(ref_key, ref_string, 60 * 60 * 24 * 3)  # 3 jours
-#             print (ref_string)
-#         return ref_string
 
 
 class BiblioRefNode(template.Node):
@@ -459,15 +411,12 @@ class BiblioRefNode(template.Node):
             return ""
 
         ref_key = f"lumieres__biblioref__{ref.id}"
-        # ref_key = 'lumieres__biblioref__%s' % context['ref'].id
         ref_string = cache.get(ref_key)
         if ref_string is None:
             # Ensure context is a dictionary
             context_dict = context.flatten() if hasattr(context, "flatten") else dict(context)
             ref_string = self.template.render(context_dict)
             cache.set(ref_key, ref_string, 60 * 60 * 24 * 3)  # Cache for 3 days
-        # logger.debug(f"ref: {ref}")  # XXX: debug
-        # logger.debug(f"ref_key: {ref_key}")  # XXX: debug
         return ref_string
 
 
@@ -480,16 +429,6 @@ def biblioref(parser, token):
     except ValueError:
         kwargs = {}
     return BiblioRefNode(**kwargs)
-
-
-# @register.tag(name='biblioref')
-# def biblioref(parser, token):
-#     try:
-#         tag_name, template_filename = token.contents.split(None, 1)
-#     except ValueError:
-#         raise template.TemplateSyntaxError("'{% biblioref %}' tag requires exactly one argument.")
-
-#     return BiblioRefNode(template_filename)
 
 
 class ACCheckNode(template.Node):
@@ -509,17 +448,11 @@ class ACCheckNode(template.Node):
 
 @register.tag(name="ac_check")
 def do_ac_check(parser, token):
-    #    try:
-    #        tag_name, object_to_be_checked, user_to_check = token.split_contents()
-    #    except ValueError:
-    #        raise template.TemplateSyntaxError, "%r tag requires exactly two arguments" % token.contents.split()[0]
-    #    return ACCheckNode(object_to_be_checked, user_to_check)
-
     try:
         # Splitting by None == splitting by spaces.
         tag_name, arg = token.contents.split(None, 1)
     except ValueError:
-        raise TemplateSyntaxError("%r tag requires arguments" % token.contents.split()[0])
+        raise TemplateSyntaxError("%r tag requires arguments" % token.contents.split()[0]) from None
     m = re.search(r"^(.\w+)\s+(\w+?)$", arg)
     if m:
         object_to_be_checked, user_to_check = m.groups()
@@ -538,7 +471,7 @@ def do_captureas(parser, token):
     try:
         tag_name, args = token.contents.split(None, 1)
     except ValueError:
-        raise template.TemplateSyntaxError("'captureas' node requires a variable name.")
+        raise template.TemplateSyntaxError("'captureas' node requires a variable name.") from None
     nodelist = parser.parse(("endcaptureas",))
     parser.delete_first_token()
     return CaptureasNode(nodelist, args)

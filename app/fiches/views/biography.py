@@ -1,52 +1,44 @@
-#    Copyright (C) 2010-2012 Universit� de Lausanne, RISET
-#    < http://www.unil.ch/riset/ >
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
 #
-#    This file is part of Lumi�res.Lausanne.
-#    Lumi�res.Lausanne is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#    Lumi�res.Lausanne is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-#    This copyright notice MUST APPEAR in all copies of the file.
-#
-import json
-import pprint
+# This copyright notice MUST APPEAR in all copies of the file.
+
 import re
-import time
-from base64 import b64decode
 from itertools import groupby
 
-from django.conf import settings
 from django.contrib.auth.decorators import permission_required
 from django.db.models import Q
-from django.forms.models import inlineformset_factory, modelformset_factory
+from django.forms.models import inlineformset_factory
 from django.http import (
     Http404,
     HttpResponse,
     HttpResponseForbidden,
     HttpResponseRedirect,
+    HttpResponseServerError,
     JsonResponse,
 )
 from django.shortcuts import get_object_or_404, render
-from django.template import RequestContext
-from django.views.decorators.http import require_POST
-
-# from django.core.urlresolvers import reverse
 from django.urls import reverse
-
-# from django.utils.encoding import smart_str, smart_unicode
-from django.utils.html import escape
-from django.utils.safestring import mark_safe
 from django.views.decorators.cache import never_cache
-from fiches.models import *
+from django.views.decorators.http import require_POST
+from utils import dbg_logger
+
+from fiches.models import Biblio, Biography, BiographyReferenceSite, ContributionDoc, Person, Relation
 from fiches.models.person.biography import (
     BiographyForm,
     NoteBiography,
@@ -60,24 +52,18 @@ from fiches.models.person.biography import (
 from fiches.utils import (
     get_grouped_objet_activities,
     log_model_activity,
-    query_fiche,
-    remove_object_index,
-    supprime_accent,
     update_object_index,
 )
-from utils import dbg_logger
 
 # ===============================================================================
 # BIOGRAPHY
 # ===============================================================================
 
 
-def get_bio_formDef(bioForm):
-    i = 0
+def get_bio_form_def(bioForm):
     flst = {}
-    for f in bioForm.visible_fields():
+    for i, f in enumerate(bioForm.visible_fields()):
         flst[f.html_name] = i
-        i += 1
 
     formdef = {
         "fieldsets": (
@@ -142,6 +128,10 @@ def get_bio_formDef(bioForm):
             {"title": "Notes", "fields": ({"name": None, "template": "fiches/edition/note_formset.html"},)},
             {
                 "title": None,
+                "fields": ({"name": "reference_links", "class": "single-line"},),
+            },
+            {
+                "title": None,
                 "fields": (
                     {"name": "archive", "class": "single-line", "tooltip_id": "ctxt-help-bio-archive"},
                     {
@@ -158,9 +148,24 @@ def get_bio_formDef(bioForm):
                 try:
                     f["field"] = bioForm.visible_fields()[flst[f["name"]]]
                     fs[f["name"]] = bioForm.visible_fields()[flst[f["name"]]]
-                except:
+                except (KeyError, IndexError):
                     del f
     return formdef
+
+
+def _sync_bio_reference_links(bio, pairs):
+    """Replace the biography's reference-site links with the submitted (site, identifier) pairs.
+
+    Editing a biography saves a new version (a fresh Biography row); the links are
+    therefore (re)created on that new instance from the widget's cleaned payload.
+    """
+    bio.reference_links.all().delete()
+    BiographyReferenceSite.objects.bulk_create(
+        [
+            BiographyReferenceSite(biography=bio, reference_site_id=site_id, identifier=identifier)
+            for site_id, identifier in pairs
+        ]
+    )
 
 
 DISPLAY_COLLECTOR = True
@@ -221,7 +226,6 @@ def build_person_biblio_dict(person):
     def cd_grouper_ctype(cd):
         return cd.contribution_type.name
 
-    # refs_prim = get_person_biblio(person).select_related().order_by('document_type__id')
     refs_prim = (
         Biblio.objects.exclude(document_type__id=5)
         .filter(litterature_type="p", contributiondoc__person=person)
@@ -246,8 +250,7 @@ def build_person_biblio_dict(person):
         for g in groupby(cd, cd_grouper_doctype)
     ]
 
-    # Biblio - litt�rature secondaire
-    # refs_sec = Biblio.objects.exclude(document_type__id=5).select_related().filter(subj_person=person).order_by('document_type__id','date','title')
+    # Biblio - littérature secondaire
     litt_prim = (
         Biblio.objects.exclude(contributiondoc__person=person)
         .select_related()
@@ -270,17 +273,11 @@ def build_person_biblio_dict(person):
 
     return {
         "contrib_man": contrib_man,
-        #'trans_list': trans_list,
-        #'grouped_refs': grouped_refs,
         "ref_list": refs_prim,
         "grouped_refs_prim": grouped_refs_prim,
         "litt_prim": litt_prim,
         "litt_sec": litt_sec,
-        #'grouped_refs_sec': grouped_refs_sec,
     }
-
-
-from fiches.views.bibliography import get_person_biblio
 
 
 def display(request, person_id, version=0):
@@ -295,13 +292,21 @@ def display(request, person_id, version=0):
         bio = person.get_valid_biography()
 
     if bio is None:
-        raise Http404()
+        # The person exists (e.g. just created from the tagging window) but no
+        # biography has been written yet. Serve a dedicated, consultable page
+        # (HTTP 200, per the client's request) instead of a 404 so a tag link is
+        # never a dead end; it offers to create the fiche to users allowed to.
+        return render(
+            request,
+            "fiches/display/biography_not_created.html",
+            {"person": person, "can_create_bio": request.user.has_perm("fiches.add_biography")},
+        )
 
     referer = request.META.get("HTTP_REFERER")
     if referer:
         edit_url = reverse("biography-edit", args=[person_id])
         display_url = reverse("biography-display", args=[person_id])
-        if not edit_url in referer and not display_url in referer:
+        if edit_url not in referer and display_url not in referer:
             request.session["bio_from"] = request.META.get("HTTP_REFERER")
 
     # Version informations
@@ -314,10 +319,7 @@ def display(request, person_id, version=0):
     }
 
     # Relations
-    if version == 0:
-        relations = person.get_relations()
-    else:
-        relations = bio.relation_set.all()
+    relations = person.get_relations() if version == 0 else bio.relation_set.all()
 
     reverse_relations = person.get_reverse_relations()
 
@@ -343,7 +345,6 @@ def display(request, person_id, version=0):
     bio_template = "fiches/display/biography2.html"
 
     return render(request, bio_template, ctx)
-    # return render(bio_template, ctx, context_instance=RequestContext(request))
 
 
 def to_be_validated(request):
@@ -376,8 +377,6 @@ def edit(request, person_id, version=0, create_bio=False):
         if bio is None:
             raise Http404()
 
-    #    dbg_logger.debug("relation_set -> %s" % bio.relation_set)
-
     # ------------------------- Formsets ---------------------------------------#
     NoteFormset = inlineformset_factory(Biography, NoteBiography, extra=0, form=NoteFormBiography)
 
@@ -385,7 +384,7 @@ def edit(request, person_id, version=0, create_bio=False):
         if not getattr(bio, "pk", None):
             return NoteBiography.objects.none()
         note_qs = NoteBiography.objects.filter(owner_id=bio.pk)
-        
+
         if not request.user.is_staff:
             note_qs = note_qs.filter(
                 Q(access_owner=request.user)
@@ -415,7 +414,6 @@ def edit(request, person_id, version=0, create_bio=False):
         prev_version_note_ids = []
         for note in note_qs:
             prev_version_note_ids.append(note.id)
-        # dbg_logger.debug("relationFormset.is_valid() -> %s" % relationFormset.is_valid())
 
         if (
             bioForm.is_valid()
@@ -432,11 +430,9 @@ def edit(request, person_id, version=0, create_bio=False):
                 bio.version = 0
                 bio.save()
                 person.renum_bio()
-                # new_bio = duplicate(bio, 'version', '0', exclude_models=exclude_from_duplication)
-                # new_bio.person.renum_bio()
 
-            # Modifie les donn�es des formsets de sorte que tous les �l�ments du formset soient pris comme nouveaux �l�ments.
-            # Comme �a on provoque une duplication des objets li�s
+            _sync_bio_reference_links(bio, bioForm.cleaned_data.get("reference_links", []))
+
             posted_data = request.POST.copy()
             for excluded_modelname in exclude_from_duplication:
                 formset_prefix = "%s_set" % excluded_modelname.lower()
@@ -483,7 +479,7 @@ def edit(request, person_id, version=0, create_bio=False):
 
             societyFormset = SocietyFormset(posted_data, instance=bio)
             if societyFormset.is_valid():
-                sty_list = societyFormset.save()
+                societyFormset.save()
 
             else:
                 dbg_logger.debug("societyFormset is not valid")
@@ -512,7 +508,7 @@ def edit(request, person_id, version=0, create_bio=False):
         societyFormset = SocietyFormset(instance=bio)
         professionFormset = ProfessionFormset(instance=bio)
 
-    bio_formdef = get_bio_formDef(bioForm)
+    bio_formdef = get_bio_form_def(bioForm)
 
     public_notes = None
     if getattr(bio, "pk", None) and not request.user.has_perm("fiches.can_publish_note"):
@@ -541,14 +537,11 @@ def edit(request, person_id, version=0, create_bio=False):
             "can_add_person": request.user.has_perm("fiches.add_person"),
         }
     )
-    # return render('fiches/edition/biography.html', ctx, context_instance=RequestContext(request))
     return render(request, "fiches/edition/biography.html", ctx)
 
 
 def validate(request, person_id, version=0):
-    """
-    Validate the version of a biography
-    """
+    """Validate the version of a biography."""
     if not request.user.has_perm("fiches.validate_biography"):
         return HttpResponseForbidden("Accès non autorisé")
 
@@ -571,11 +564,9 @@ def validate(request, person_id, version=0):
 
 
 def delete(request, person_id, version=0):
-    """
-    Delete a biography version and call renum_bio on the person instance
-    """
+    """Delete a biography version and call renum_bio on the person instance."""
     if not request.user.has_perm("fiches.delete_biography"):
-        return HttpResponseForbidden("Acc�s non autoris�")
+        return HttpResponseForbidden("Accès non autorisé")
 
     person = get_object_or_404(Person, pk=person_id)
     bio = person.get_biography(version=version)
@@ -584,7 +575,7 @@ def delete(request, person_id, version=0):
 
     try:
         version = int(version)
-    except:
+    except (ValueError, TypeError):
         version = 0
 
     nb_versions = person.biography_set.count()
@@ -620,7 +611,6 @@ def relations_list(request, person_id=None):
         relation_list = [
             {
                 "id": r.related_person.id,
-                #'name': r.related_person.__str__(), #__unicode__(),
                 "name": str(r.related_person),
                 "type": r.relation_type,
                 "rel": r.related_person.has_relations(exclude_people=[person_id]),
@@ -629,21 +619,12 @@ def relations_list(request, person_id=None):
         ] + [
             {
                 "id": r.bio.person.id,
-                #'name': r.bio.person.__str__(), #__unicode__(),
                 "name": str(r.bio.person),
                 "type": r.relation_type.reverse_name,
                 "rel": r.bio.person.has_relations(exclude_people=[person_id]),
             }
             for r in rrel
         ]
-
-        # return render('fiches/list/biography_relations_list.html',
-        #                           {
-        #                            'person': person,
-        #                            'relation_list': relation_list,
-        #                           },
-        #                           context_instance=RequestContext(request)
-        # )
 
         return render(
             request,
@@ -654,19 +635,24 @@ def relations_list(request, person_id=None):
             },
         )
     except Exception as e:
-        return HttpResponseServerError("Error: {}".format(str(e)))
+        return HttpResponseServerError(f"Error: {str(e)}")
 
 
 RELATION_MAX_RECURSION_DEPTH = 5
 
 
-def _get_all_relations(person, excluded_rels=[], depth=0, only_people=[], only_relations=[]):
+def _get_all_relations(person, excluded_rels=None, depth=0, only_people=None, only_relations=None):
+    if excluded_rels is None:
+        excluded_rels = []
+    if only_people is None:
+        only_people = []
+    if only_relations is None:
+        only_relations = []
     rel = person.get_relations(only_people=only_people, only_relations=only_relations)
     rrel = person.get_reverse_relations(only_people=only_people, only_relations=only_relations)
     relation_list = [
         {
             "id": r.id,
-            #'dst_name': r.related_person.__unicode__(),
             "dst_name": str(r.related_person),
             "src_name": person.name,
             "type": r.relation_type,
@@ -677,7 +663,6 @@ def _get_all_relations(person, excluded_rels=[], depth=0, only_people=[], only_r
     ] + [
         {
             "id": r.id,
-            #'dst_name': r.bio.person.__unicode__(),
             "dst_name": str(r.bio.person),
             "src_name": person.name,
             "type": r.relation_type.reverse_name,
@@ -718,7 +703,3 @@ def relation_dot(request=None, person_id=None, max_depth=3):
 
     output = "digraph essais {\n" + dot_relations + "\n}\n"
     return output
-
-    response = HttpResponse(output)
-    response["mime/type"] = "plain/text"
-    return response

@@ -15,6 +15,7 @@ nav:
   - Administrator Guides:
     - Facsimile Admin Guide (EN): en/facsimile-admin-guide.md
     - Guide administrateur (FR): fr/facsimile-guide-admin.md
+    - DB Maintenance — InnoDB & URL cleanup: db-maintenance-innodb-url-cleanup.md
   - Developer Documentation:
     - OpenSeadragon Integration: openseadragon-integration.md
     - IIIF Facsimile Migration: iiif-facsimile-migration.md

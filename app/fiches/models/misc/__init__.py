@@ -1,11 +1,39 @@
-from .object_collection import ObjectCollection
-from .project import Project
-from .society import Society
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
+#
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# This copyright notice MUST APPEAR in all copies of the file.
+
 from .notes import NoteBase
+from .object_collection import ObjectCollection
+from .place import NotePlace, PlaceCategory, PlaceRecord, PlaceReferenceSite, PlaceVariant
+from .project import Project
+from .reference_site import ReferenceSite
+from .society import Society
 
 __all__ = [
-    'ObjectCollection',
-    'Project',
-    'Society',
-    'NoteBase',
+    "ObjectCollection",
+    "PlaceCategory",
+    "PlaceRecord",
+    "PlaceReferenceSite",
+    "PlaceVariant",
+    "NotePlace",
+    "Project",
+    "ReferenceSite",
+    "Society",
+    "NoteBase",
 ]
