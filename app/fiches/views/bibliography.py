@@ -348,7 +348,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
         if not request.user.has_perm("fiches.change_any_biblio") and doc.creator != request.user:
             return HttpResponseForbidden(_("Accès non autorisé"))
 
-    # Handle new bibliography creation (without saving immediately)
+    # Handle new bibliography creation without allocating a database id on GET.
     if new_doc:
         if not request.user.has_perm("fiches.add_biblio"):
             return HttpResponseForbidden(_("Accès non autorisé"))
@@ -363,7 +363,6 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
             creator=request.user,
             document_type=document_type,
         )
-        doc.save()
 
     # -------------------------------
     # Keywords Query
@@ -429,56 +428,49 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
         if date2_f_val is not None:
             req_post["date2_f"] = date2_f_val.replace("/", "-")
         biblioForm = BiblioForm(req_post, instance=doc, user=request.user)
-
-        if biblioForm.is_valid():
-            doc = biblioForm.save(commit=False)
-            # Save subj_person M2M
-            doc.save()
-            biblioForm.save_m2m()
-            doc.subj_person.set(biblioForm.cleaned_data.get("subj_person", []))
-
-            # Set a default depot for newly created documents
-            if new_doc:
-                with connection.cursor() as cursor:
-                    cursor.execute("UPDATE fiches_biblio SET depot_id = %s WHERE id = %s", [None, doc.id])
-
-            log_model_activity(doc, request.user)
-
-            # Process note formset
-            noteFormset = NoteFormset(request.POST, instance=doc, queryset=note_qs)
-            if noteFormset.is_valid():
-                noteFormset.save()
-
-            current_lit_type = biblioForm.cleaned_data.get("litterature_type") or doc.litterature_type or post_lit_type
-
-            # Process contribution formset
-            if biblioForm.cleaned_data.get("litterature_type") == "s":
-                ContributionFormset = inlineformset_factory(
-                    Biblio, ContributionDoc, form=ContributionDocSecForm, extra=1
-                )
-
-            contributionFormSet = ContributionFormset(
-                request.POST,
-                instance=doc,
-                form_kwargs={"litterature_type": current_lit_type},
+        current_lit_type = post_lit_type or getattr(doc, "litterature_type", None)
+        if current_lit_type == "s":
+            ContributionFormset = inlineformset_factory(
+                Biblio, ContributionDoc, form=ContributionDocSecForm, extra=1 if new_doc else 0
             )
-            if contributionFormSet.is_valid():
-                contributionFormSet.save()
+        noteFormset = NoteFormset(request.POST, instance=doc, queryset=note_qs)
+        contributionFormset = ContributionFormset(
+            request.POST,
+            instance=doc,
+            form_kwargs={"litterature_type": current_lit_type},
+        )
+
+        if biblioForm.is_valid() and noteFormset.is_valid() and contributionFormset.is_valid():
+            with transaction.atomic():
+                doc = biblioForm.save(commit=False)
+                if new_doc and not doc.creator_id:
+                    doc.creator = request.user
+                doc.save()
+                doc.documentfiles.set(biblioForm.cleaned_data.get("documentfiles", []))
+                doc.subj_primary_kw.set(biblioForm.cleaned_data.get("subj_primary_kw", []))
+                doc.subj_secondary_kw.set(biblioForm.cleaned_data.get("subj_secondary_kw", []))
+                doc.subj_person.set(biblioForm.cleaned_data.get("subj_person", []))
+                doc.subj_society.set(biblioForm.cleaned_data.get("subj_society", []))
+
+                # Set a default depot for newly created documents
+                if new_doc:
+                    with connection.cursor() as cursor:
+                        cursor.execute("UPDATE fiches_biblio SET depot_id = %s WHERE id = %s", [None, doc.id])
+
+                noteFormset.instance = doc
+                noteFormset.save()
+                contributionFormset.instance = doc
+                contributionFormset.save()
 
                 # Update first author cache & re-index the document
                 doc.updateFirstAuthor()
                 update_object_index(doc)
+                log_model_activity(doc, request.user)
 
-                # Redirect after successful form submission
-                if request.POST.get("__continue", "") == "on":
-                    return HttpResponseRedirect(reverse("bibliography-edit", args=[doc.id]))
+            # Redirect after successful form submission
+            if request.POST.get("__continue", "") == "on":
+                return HttpResponseRedirect(reverse("bibliography-edit", args=[doc.id]))
             return HttpResponseRedirect(reverse("display-bibliography", args=[doc.id]))
-        else:
-            noteFormset = NoteFormset(request.POST, instance=doc, queryset=note_qs)
-            current_lit_type = post_lit_type or getattr(doc, "litterature_type", None)
-            contributionFormset = ContributionFormset(
-                request.POST, instance=doc, form_kwargs={"litterature_type": current_lit_type}
-            )
 
     else:
         # Initialize forms for GET requests
@@ -486,24 +478,6 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
         noteFormset = NoteFormset(instance=doc, queryset=note_qs)
         current_lit_type = getattr(doc, "litterature_type", None)
         contributionFormset = ContributionFormset(instance=doc, form_kwargs={"litterature_type": current_lit_type})
-
-        # DEBUG: Log the initial value of subj_person (safe for new/unsaved instance)
-        import logging
-
-        logger = logging.getLogger("django")
-        subj_person_initial = getattr(biblioForm.instance, "subj_person", None)
-        if subj_person_initial and getattr(biblioForm.instance, "id", None):
-            subj_person_list = list(subj_person_initial.all())
-        elif subj_person_initial:
-            subj_person_list = "NO_ID"
-        else:
-            subj_person_list = None
-        logger.debug("[BIBLIO-DEBUG] subj_person initial: %s", subj_person_list)
-        logger.debug("[BIBLIO-DEBUG] biblioForm.initial: %s", biblioForm.initial)
-        logger.debug(
-            "[BIBLIO-DEBUG] biblioForm.cleaned_data (should be empty on GET): %s",
-            getattr(biblioForm, "cleaned_data", None),
-        )
 
     # -------------------------------
     # Public Notes (Read-only display)

@@ -163,8 +163,12 @@ var fiches_edit = $.extend({}, fiches_edit, {
 		var redirectTo = function() { document.location = targetLocation; };
 
 		if (isNewDoc) {
+			var cancelUrl = cancelInput.val().replace(/\/$/, '') + '/';
+			if (!/\/\d+\/$/.test(cancelUrl)) {
+				cancelUrl += newDocId + '/';
+			}
 			$.ajax({
-				url: cancelInput.val().replace(/\/$/, '') + '/' + newDocId + '/',
+				url: cancelUrl,
 				type: "POST",
 				headers: { "X-CSRFToken": csrfToken }
 			}).always(redirectTo);
@@ -400,4 +404,3 @@ $(document).ready(function(){
 });
 
 window.fiches_edit = fiches_edit;
-
