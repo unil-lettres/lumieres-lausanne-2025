@@ -79,6 +79,14 @@ def _accessible_transcription_ids(user):
     return list(qs.values_list("id", flat=True))
 
 
+def _activity_log_object_ids_for_date_range(model_name, date_from, date_to):
+    return ActivityLog.objects.filter(
+        model_name=model_name,
+        date__date__gte=date_from,
+        date__date__lte=date_to,
+    ).values_list("object_id", flat=True)
+
+
 # ---------------------------------------------------------------------
 # Entry points / simple pages
 # ---------------------------------------------------------------------
@@ -377,12 +385,12 @@ def biblio_extended_search(request):
         if cd.get("mdate_from") or cd.get("mdate_to"):
             mdate_from = cd.get("mdate_from") or datetime.date(1, 1, 1)
             mdate_to = cd.get("mdate_to") or datetime.date(9999, 1, 1)
-            biblio_ids_from_log = ActivityLog.objects.filter(
-                model_name="Biblio", date__range=(mdate_from, mdate_to)
-            ).values_list("object_id", flat=True)
-            trans_ids_from_log = ActivityLog.objects.filter(
-                model_name="Transcription", date__range=(mdate_from, mdate_to)
-            ).values_list("object_id", flat=True)
+            biblio_ids_from_log = _activity_log_object_ids_for_date_range(
+                "Biblio", mdate_from, mdate_to
+            )
+            trans_ids_from_log = _activity_log_object_ids_for_date_range(
+                "Transcription", mdate_from, mdate_to
+            )
             q &= (
                 models.Q(pk__in=list(biblio_ids_from_log))
                 | models.Q(transcription__pk__in=list(trans_ids_from_log))
