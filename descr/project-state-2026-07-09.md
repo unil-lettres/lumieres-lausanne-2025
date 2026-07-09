@@ -134,14 +134,28 @@ for routine docs edits.
 
 ### Temporary worktrees
 
-Temporary worktrees may still exist under `/private/tmp`, including:
+Temporary hotfix worktrees were pruned on 2026-07-09. `git worktree list`
+currently shows only:
 
-- `/private/tmp/lumieres-staging-named_entities`
-- `/private/tmp/lumieres-hotfix-biblio-create-search-date`
-- `/private/tmp/lumieres-dev-hotfix-biblio-sync`
+- main dev worktree:
+  `/Users/jganivet/Développement/lumieres-lausanne-newfeats`;
+- Xavier isolated validation worktree:
+  `/Users/jganivet/Développement/lumieres-xavier-clean-repo`.
 
-They are useful as local history, but should not be treated as authoritative.
-The authoritative remote refs are listed in the branch map above.
+There is still a local branch `staging/named_entities` tracking
+`origin/staging/named_entities`, but it is not currently checked out in a
+separate worktree. If staging promotion work resumes, create or reuse a clean
+worktree for that branch instead of mixing it into the main `dev` checkout.
+
+The local hotfix branches `dev-hotfix-biblio-sync` and
+`hotfix/biblio-create-search-date` were removed after their commits were
+preserved by `origin/dev`, `origin/master`, and tag `v2026.07.03`.
+
+The already-merged local branches `beatrice-staging-fixes` and
+`feat/facsimile-viewer` were also removed.
+
+Local `master` was reset/fast-forwarded to `origin/master` on 2026-07-09, so it
+points at the current production hotfix commit `c06c2c2`.
 
 ## Current Open Items
 
