@@ -8,6 +8,11 @@ is the branch deployed to `https://plt-tst-2.unil.ch/` for validation; it
 contains Xavier's `feat/named_entities` plus the latest production hotfix
 `v2026.07.03`. Do not deploy `feat/named_entities` directly.
 
+For future Xavier fixes, use the workflow documented in
+`descr/project-state-2026-07-09.md#workflow-for-xavier-fixes`: validate first in
+the isolated Xavier worktree/stack, then promote accepted commits from the main
+`newfeats` worktree into `staging/named_entities` for staging deployment.
+
 ## Branch / GitHub Workflow Push Issue
 - Xavier created a feature branch for named entities work (`feat/named-entities` / `feat/named_entities` naming to verify locally).
 - His push was rejected by GitHub with:

@@ -162,6 +162,84 @@ Production rollout guidance:
 - after validation, plan a normal merge back into `dev`, then `master`, then
   tag/release using the production runbook.
 
+## Workflow For Xavier Fixes
+
+Use this sequence when Xavier pushes follow-up work for named entities.
+
+### 1. Validate Xavier's work locally
+
+Open/use the isolated Xavier worktree:
+
+```bash
+cd /Users/jganivet/Développement/lumieres-xavier-clean-repo
+```
+
+Target stack:
+
+- worktree: `/Users/jganivet/Développement/lumieres-xavier-clean-repo`
+- Docker Compose project: `lumieres-xavier`
+- local app: `http://127.0.0.1:8010/`
+- local DB volume: `lumieres-xavier_db_data`
+- local Solr volume: `lumieres-xavier_solr_data`
+
+Fetch Xavier's branch and validate there. This stack is allowed to have Xavier's
+branch-specific runtime/test layout and its own local database state.
+
+When asking Codex to help in this phase, start the request with the target
+explicitly, for example:
+
+```text
+Target Xavier isolated stack. In /Users/jganivet/Développement/lumieres-xavier-clean-repo,
+fetch Xavier's latest feat/named_entities work and validate it locally.
+Do not touch staging or production.
+```
+
+### 2. Promote only accepted work to the staging integration branch
+
+After local validation passes, switch back to the main Lumières worktree:
+
+```bash
+cd /Users/jganivet/Développement/lumieres-lausanne-newfeats
+```
+
+Promotion target:
+
+- worktree: `/Users/jganivet/Développement/lumieres-lausanne-newfeats`
+- branch to update: `staging/named_entities`
+- deployment target: `plt-tst-2.unil.ch`
+
+The staging deployable artifact must come from `staging/named_entities`, not
+directly from the isolated Xavier worktree. Merge or cherry-pick Xavier's
+accepted commits into `staging/named_entities`, resolve integration/deployment
+differences there, then build and deploy staging from that integration commit.
+
+When asking Codex to help in this phase, open the main `newfeats` folder and use
+an explicit request such as:
+
+```text
+Target main dev worktree. Promote Xavier's validated named-entities fix to
+staging/named_entities and deploy it to plt-tst-2. Do not touch production.
+```
+
+### 3. Validate staging
+
+After deployment to `plt-tst-2`:
+
+- run `collectstatic` if static files may have changed;
+- run migrations/indexing only if the promoted changes require it;
+- do browser smoke checks on the touched named-entities paths;
+- keep temporary staging test data/users cleaned up after validation.
+
+### 4. Production remains a later decision
+
+Do not treat a successful local Xavier validation or staging deploy as approval
+for production. Production rollout still requires Beatrice/Xavier validation and
+a normal release plan:
+
+```text
+accepted named_entities integration -> dev -> master -> vYYYY.MM.DD tag -> prod deploy
+```
+
 ### Backlog
 
 - General search result grouping/order requested by Beatrice is recorded in
