@@ -1,9 +1,40 @@
 # Lumières Lausanne Backlog
 
+## General Search Result Grouping And Ordering
+
+Status: backlog item, no implementation yet
+Recorded: 2026-06-30
+Requested by: Béatrice
+Related work: Xavier's `named_entities` feature branch and future staging deployment
+
+### Request
+Improve the display of general search results by grouping and ordering result
+categories more clearly.
+
+Original request:
+- group categories;
+- show biography fiches first;
+- then bibliographic fiches:
+  - secondary literature: books, book chapters, journal articles, dictionary
+    articles, manuscripts;
+  - primary literature: same order.
+
+Example:
+https://lumieres.unil.ch/chercher/?q=etiennette
+
+### Planning Note
+Do not treat this as part of the 2026-06-30 production hotfix for duplicate
+transcription creation and Doctorant transcription editing rights.
+
+Keep this item for the next staging cycle tied to named entities, because the
+request overlaps with Xavier's ongoing work on indexing, result ordering, and
+result presentation. Validate it together with the `named_entities` feature set
+instead of shipping an isolated search-display change now.
+
 ## Future Analytics / Public Visit Audit Trail
 
-Status: backlog item, no implementation yet  
-Recorded: 2026-04-24  
+Status: backlog item, no implementation yet
+Recorded: 2026-04-24
 Environment observed: production (`lumieres-srv2.unil.ch`)
 
 ### Current Findings
