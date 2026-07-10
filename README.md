@@ -16,7 +16,7 @@ knowing the project, start here:
 - [Maintainer survival page](descr/maintainer-survival.md): stack paths,
   restart/check commands, DB dump import, superuser creation, health checks.
 - [Current project state](descr/project-state-2026-07-09.md): branch map,
-  staging/named-entities status, local worktree guardrails.
+  release status, staging status, and operational notes.
 - [Production deployment runbook](descr/prod-deploy-runbook.md): release and
   rollback procedure.
 - [Wiki Lettres production page](descr/wiki-lumieres-informations-techniques.md):
@@ -30,12 +30,10 @@ Production is `https://lumieres.unil.ch/`. Staging is
 
 - `master`: current production release line.
 - `dev`: main development line.
-- `staging/named_entities`: named-entities integration branch currently used
-  for staging validation.
-- `feat/named_entities`: Xavier's original feature branch; do not deploy it
-  directly.
+- feature and staging branches: temporary work branches; check the current
+  project state before deploying one.
 
-Use `descr/project-state-2026-07-09.md` before changing the named-entities
+Use `descr/project-state-2026-07-09.md` before changing release or staging
 workflow.
 
 ## Requirements
@@ -102,20 +100,6 @@ docker compose exec -T app python manage.py rebuild_index --noinput
 
 Some pages need media files under `app/media/`, mounted into the container. Use
 the production backup/media notes before copying real media.
-
-## Xavier Isolated Validation Stack
-
-Xavier branch validation uses a separate local worktree and Docker project. Do
-not mix it with normal `dev` work:
-
-- worktree: `/Users/jganivet/Développement/lumieres-xavier-clean-repo`
-- app: `http://127.0.0.1:8010/`
-- phpMyAdmin: `http://127.0.0.1:8011/`
-
-Validate Xavier's work there first, then promote accepted commits from the main
-`newfeats` worktree into `staging/named_entities`. See
-[Maintainer survival page](descr/maintainer-survival.md) and
-[Xavier handoff notes](descr/xavier-handoff-notes.md).
 
 ## Documentation
 
