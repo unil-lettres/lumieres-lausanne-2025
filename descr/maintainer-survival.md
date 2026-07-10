@@ -11,13 +11,45 @@ data about the Swiss Enlightenment: bibliographic fiches, biographies,
 transcriptions, projects, news, media and search. The production site is
 `https://lumieres.unil.ch/`; staging is `https://plt-tst-2.unil.ch/`.
 
+## VM Stack Cheat Sheet
+
+### Staging
+
+- Host: `plt-tst-2.unil.ch`
+- Install path: `/var/www/lumieres2`
+
+```bash
+ssh <user>@plt-tst-2.unil.ch
+cd /var/www/lumieres2
+docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.staging.yml ps
+docker compose -f docker-compose.yml -f docker-compose.staging.yml logs --tail=200 web
+```
+
+Public URL: `https://plt-tst-2.unil.ch/`
+
+### Production
+
+- Host: `lumieres-srv2.unil.ch`
+- SSH user: `lmradm`
+- Install path: `/u01/projects/dockerized/lumieres2-prod`
+
+Production is read-only unless a change is explicitly authorized.
+
+```bash
+ssh lmradm@lumieres-srv2.unil.ch
+cd /u01/projects/dockerized/lumieres2-prod
+docker compose config --images
+docker compose up -d
+docker compose ps
+docker compose logs --tail=200 web
+```
+
+Public URL: `https://lumieres.unil.ch/`
+
 ## First Orientation
 
 - Main repo: `https://github.com/unil-lettres/lumieres-lausanne-2025`
-- Normal local worktree on Julien's Mac:
-  `/Users/jganivet/Développement/lumieres-lausanne-newfeats`
-- Xavier isolated validation worktree:
-  `/Users/jganivet/Développement/lumieres-xavier-clean-repo`
 - Current project state / branch map: `descr/project-state-2026-07-09.md`
 - Deployment runbook: `descr/prod-deploy-runbook.md`
 - Schema/deployment notes: `descr/deployment.md`
@@ -105,7 +137,7 @@ from the isolated worktree.
 
 ## Start / Inspect Staging
 
-Staging host: `plt-tst-2.unil.ch`
+Host: `plt-tst-2.unil.ch`
 Project directory: `/var/www/lumieres2`
 
 ```bash
@@ -132,7 +164,7 @@ Current named-entities staging uses `staging/named_entities`; see
 
 ## Production Survival
 
-Production host: `lumieres-srv2.unil.ch`
+Host: `lumieres-srv2.unil.ch`
 SSH user documented in ops notes: `lmradm`
 Project directory: `/u01/projects/dockerized/lumieres2-prod`
 Public URL: `https://lumieres.unil.ch/`
