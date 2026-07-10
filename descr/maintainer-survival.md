@@ -47,6 +47,99 @@ docker compose logs --tail=200 web
 
 Public URL: `https://lumieres.unil.ch/`
 
+## Emergency Commands
+
+Use this section first during an outage or restore. Confirm the target
+environment before running any command.
+
+### Start Or Restart A Stack
+
+Staging:
+
+```bash
+ssh <user>@plt-tst-2.unil.ch
+cd /var/www/lumieres2
+docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.staging.yml ps
+curl -I https://plt-tst-2.unil.ch/
+```
+
+Production:
+
+```bash
+ssh lmradm@lumieres-srv2.unil.ch
+cd /u01/projects/dockerized/lumieres2-prod
+docker compose config --images
+docker compose up -d
+docker compose ps
+curl -I https://lumieres.unil.ch/
+```
+
+On production, `docker compose config --images` must show an explicit release
+tag such as `unillett/lumieres:vYYYY.MM.DD`, not `latest`.
+
+### Import A DB Dump
+
+DB import overwrites database state. On production, do this only after explicit
+authorization, a rollback plan, and a fresh backup/snapshot.
+
+Local dev, plain SQL dump:
+
+```bash
+cd <repo-root>
+docker compose up -d db
+docker compose exec -T db bash -lc \
+  'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"' \
+  < /path/to/dump.sql
+docker compose exec -T app python manage.py sync_status_roles --apply
+docker compose exec -T app python manage.py update_index
+```
+
+Staging, gzipped SQL dump:
+
+```bash
+ssh <user>@plt-tst-2.unil.ch
+cd /var/www/lumieres2
+zcat /path/to/dump.sql.gz | docker compose -f docker-compose.yml -f docker-compose.staging.yml exec -T db \
+  bash -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"'
+docker compose -f docker-compose.yml -f docker-compose.staging.yml exec -T web \
+  python manage.py sync_status_roles --apply
+docker compose -f docker-compose.yml -f docker-compose.staging.yml exec -T web \
+  python manage.py update_index
+```
+
+If search behaves badly after import, use `rebuild_index --noinput` instead of
+`update_index`. If the dump is a historical legacy dump, stop and read
+`descr/deployment.md`; standard imports assume the current schema.
+
+### Create A Superuser
+
+Local dev:
+
+```bash
+docker compose exec -T app python manage.py createsuperuser
+```
+
+Staging:
+
+```bash
+cd /var/www/lumieres2
+docker compose -f docker-compose.yml -f docker-compose.staging.yml exec -T web \
+  python manage.py createsuperuser
+```
+
+Production superuser creation should be exceptional and explicitly authorized.
+
+### Fast Health Checks
+
+```bash
+docker compose ps
+docker compose logs --tail=200 web
+docker compose exec -T web python manage.py check
+```
+
+For local dev, replace service `web` with `app`.
+
 ## First Orientation
 
 - Main repo: `https://github.com/unil-lettres/lumieres-lausanne-2025`
