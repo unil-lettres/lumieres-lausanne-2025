@@ -7,6 +7,8 @@ cross-project inventory, VM runbooks, health status, and backup metadata.
 ## Active Entry Points
 
 - Maintainer survival page: `maintainer-survival.md`
+- Wiki Lettres copy-paste page:
+  `wiki-lumieres-informations-techniques.md`
 - Current project state / holiday handoff:
   `project-state-2026-07-09.md`
 - Deployment: `prod-deploy-runbook.md`
