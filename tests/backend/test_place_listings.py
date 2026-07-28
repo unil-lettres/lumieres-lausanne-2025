@@ -291,3 +291,29 @@ def test_note_is_rendered_after_the_mention_listing(client, place, django_user_m
     body = client.get(reverse("place-display", args=[place.id])).content.decode()
 
     assert body.index("Lieu mentionné") < body.index("note situee") < body.index("Auteur de la fiche")
+
+
+@pytest.mark.django_db
+def test_listed_reference_links_only_the_title(client, place):
+    """Client request 2026-07-15: not the whole citation in blue — only the title.
+
+    The entry used to be wrapped in one <a>, which coloured everything. The
+    shared citation template links the title itself (class ia-link, orange), so
+    the wrapper had to go and the nolink flag with it.
+    """
+    make_biblio(LIVRE, "Livre indexé", place=tag(place), date=date(1780, 1, 1))
+
+    body = client.get(reverse("place-display", args=[place.id])).content.decode()
+
+    assert '<a class="listing-ref"' not in body
+    assert 'class="title collectable ia-link"' in body
+
+
+@pytest.mark.django_db
+def test_listed_manuscript_keeps_its_fiche_du_manuscrit_link(client, place):
+    """Same request: a transcription entry ends with the manuscript link."""
+    make_biblio(MANUSCRIT, "Manuscrit indexé", place=tag(place), date=date(1765, 1, 1))
+
+    body = client.get(reverse("place-display", args=[place.id])).content.decode()
+
+    assert "fiche du manuscrit" in body

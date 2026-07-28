@@ -274,6 +274,21 @@ def tagged_biblios_subject_secondary(place):
     return tagged_biblios_subject(place).filter(litterature_type="s")
 
 
+def _accessible_manuscript_ids(user):
+    """Biblio ids of the manuscripts whose transcription this user may read.
+
+    The shared citation template links a manuscript's title to its transcription
+    when the *biblio* id is listed in ``user_accessible_trans`` — so that is what
+    this returns, using the same published/unpublished rule as
+    :func:`tagged_transcriptions`. Left undefined, the template still linked, but
+    only because Django swallows the exception raised by ``not in ''``.
+    """
+    qs = Transcription.objects.exclude(manuscript_b__isnull=True)
+    if not user.has_perm("fiches.access_unpublished_transcription"):
+        qs = qs.filter(published_date__isnull=False)
+    return list(qs.values_list("manuscript_b_id", flat=True))
+
+
 def _listing_page(items, number):
     """Return the requested page (1-based, fallback to first) of a listing."""
     paginator = Paginator(items, LISTING_PAGE_SIZE)
@@ -313,6 +328,9 @@ def display(request, place_id):
         "tagged_writing": writing_page,
         "tagged_subject_primary": primary_page,
         "tagged_subject_secondary": secondary_page,
+        # Consumed by the shared citation template to decide whether a
+        # manuscript's title links through to its transcription.
+        "user_accessible_trans": _accessible_manuscript_ids(user),
         "personnes_remaining": _remaining(persons_page),
         "manuscrits_remaining": _remaining(trans_page),
         "impression_remaining": _remaining(printing_page),

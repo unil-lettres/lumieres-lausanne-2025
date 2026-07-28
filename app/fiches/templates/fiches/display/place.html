@@ -12,7 +12,7 @@
 
 {% block main_content %}
 <style>
-	.listing-ref .biblioref-item { display: inline; }
+	li.listing-ref .biblioref-item { display: inline; }
 </style>
 <h2>{{ place.name }} <span class="place-category">({{ place.category }})</span></h2>
 
@@ -83,7 +83,7 @@ preserves the other listings' page params while overriding its own. {% endcommen
 		<div class="field_value">
 			<ul>
 			{% for biblio in tagged_printing %}
-				<li><a class="listing-ref" href="{% url 'display-bibliography' biblio.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</a></li>
+				<li class="listing-ref">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio user_accessible_trans=user_accessible_trans only %}</li>
 			{% endfor %}
 			</ul>
 			{% if tagged_printing.has_next %}
@@ -102,7 +102,7 @@ preserves the other listings' page params while overriding its own. {% endcommen
 		<div class="field_value">
 			<ul>
 			{% for biblio in tagged_writing %}
-				<li><a class="listing-ref" href="{% url 'display-bibliography' biblio.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</a></li>
+				<li class="listing-ref">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio user_accessible_trans=user_accessible_trans only %}</li>
 			{% endfor %}
 			</ul>
 			{% if tagged_writing.has_next %}
@@ -131,7 +131,7 @@ paginated on its own querystring parameter. {% endcomment %}
 					<ul>
 					{% for trans in tagged_transcriptions %}
 						{# manuscript_b is nullable (SET_NULL): fall back to the transcription's own label rather than rendering the citation against None. #}
-						<li><a class="listing-ref" href="{% url 'transcription-display' trans.id %}">{% if trans.manuscript_b %}{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 noManBiblioLink=1 only %}{% else %}{{ trans }}{% endif %}</a></li>
+						<li class="listing-ref">{% if trans.manuscript_b %}{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b user_accessible_trans=user_accessible_trans only %}{% else %}<a href="{% url 'transcription-display' trans.id %}">{{ trans }}</a>{% endif %}</li>
 					{% endfor %}
 					</ul>
 					{% if tagged_transcriptions.has_next %}
@@ -144,7 +144,7 @@ paginated on its own querystring parameter. {% endcomment %}
 					<span class="sub_label">{% trans "Littérature primaire:" %}</span>
 					<ul>
 					{% for biblio in tagged_subject_primary %}
-						<li><a class="listing-ref" href="{% url 'display-bibliography' biblio.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</a></li>
+						<li class="listing-ref">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio user_accessible_trans=user_accessible_trans only %}</li>
 					{% endfor %}
 					</ul>
 					{% if tagged_subject_primary.has_next %}
@@ -157,7 +157,7 @@ paginated on its own querystring parameter. {% endcomment %}
 					<span class="sub_label">{% trans "Littérature secondaire:" %}</span>
 					<ul>
 					{% for biblio in tagged_subject_secondary %}
-						<li><a class="listing-ref" href="{% url 'display-bibliography' biblio.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</a></li>
+						<li class="listing-ref">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio user_accessible_trans=user_accessible_trans only %}</li>
 					{% endfor %}
 					</ul>
 					{% if tagged_subject_secondary.has_next %}
