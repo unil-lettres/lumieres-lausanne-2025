@@ -107,6 +107,26 @@ class SyncStatusRolesTest(TestCase):
             {"change_placerecord", "delete_placerecord", "view_placerecord"} & self._director_permission_codenames()
         )
 
+    def test_apply_follows_the_place_status_matrix(self):
+        """ "LL détail des STATUTS revus 2026.07": who may edit/delete whose fiche."""
+        etudiants = Group.objects.create(name="étudiants")
+        chercheurs = Group.objects.create(name="chercheurs")
+
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+
+        def codenames(group):
+            return set(group.permissions.values_list("codename", flat=True))
+
+        # Étudiant: may edit and delete, but only their own fiches.
+        self.assertIn("change_placerecord", codenames(etudiants))
+        self.assertNotIn("change_any_placerecord", codenames(etudiants))
+        self.assertNotIn("delete_any_placerecord", codenames(etudiants))
+        # Chercheur: edits every fiche, deletes only their own.
+        self.assertIn("change_any_placerecord", codenames(chercheurs))
+        self.assertNotIn("delete_any_placerecord", codenames(chercheurs))
+        # Directeur LL: no ownership restriction at all.
+        self.assertIn("delete_any_placerecord", self._director_permission_codenames())
+
     def test_director_can_reopen_a_place_fiche_for_editing_after_sync(self):
         """Client report 2026-07-15: a director could create a place fiche but
         saving it, or reopening it later, answered "Accès non autorisé" — they

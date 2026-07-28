@@ -40,7 +40,7 @@ class Command(BaseCommand):
         " - directeurs may reassign collection owners\n"
         " - directeurs may manage user profile extra information\n"
         " - directeurs may create person & place fiches (named-entity tagging)\n"
-        " - directeurs may edit and delete place fiches\n"
+        " - every status group gets its Fiche lieu access from the status matrix\n"
         " - assistants status is retired\n"
         "Run without --apply for a dry-run preview."
     )
@@ -52,16 +52,26 @@ class Command(BaseCommand):
         "delete_userprofile",
         "view_userprofile",
     )
-    #: Directors curate the place fiches, so they need the full CRUD and not
-    #: just "add". With "add" alone, saving a newly created fiche redirected to
-    #: place-edit — which requires change_placerecord — and answered
-    #: "Accès non autorisé"; existing fiches could never be edited or deleted.
-    DIRECTOR_PLACE_PERMS = (
+    #: Fiche lieu access per status, from the client's "LL détail des STATUTS
+    #: revus 2026.07". The matrix grants "modifier"/"supprimer" either fully or
+    #: only on one's own fiches; the latter is expressed by withholding the
+    #: matching "_any_" permission, which views.place.may_change / may_delete
+    #: then read as "own fiches only" (same convention as Biblio).
+    BASE_PLACE_PERMS = (
+        "view_placerecord",
         "add_placerecord",
         "change_placerecord",
         "delete_placerecord",
-        "view_placerecord",
     )
+    PLACE_PERMS_BY_GROUP = {
+        # Étudiant: modifier + supprimer seulement ses propres fiches.
+        "étudiants": BASE_PLACE_PERMS,
+        # Chercheur / Doctorant LL: modifier toutes, supprimer seulement les leurs.
+        "chercheurs": (*BASE_PLACE_PERMS, "change_any_placerecord"),
+        "doctorants": (*BASE_PLACE_PERMS, "change_any_placerecord"),
+        # Directeur LL: tout, sans restriction de propriété.
+        "directeurs": (*BASE_PLACE_PERMS, "change_any_placerecord", "delete_any_placerecord"),
+    }
     ASSISTANT_NAMES = ("assistants", "assistant")
     DOCTORANT_NAME = "doctorants"
     DIRECTEUR_NAME = "directeurs"
@@ -91,8 +101,7 @@ class Command(BaseCommand):
             self._update_director_permissions(user_profile_perms, apply_changes)
             fiche_creation_perms = self._ensure_fiche_creation_permissions()
             self._update_director_permissions(fiche_creation_perms, apply_changes)
-            place_perms = self._ensure_place_management_permissions()
-            self._update_director_permissions(place_perms, apply_changes)
+            self._sync_place_permissions(apply_changes)
             self._retire_assistant_group(apply_changes)
 
         self.stdout.write(self.style.SUCCESS("Status synchronisation complete."))
@@ -209,21 +218,45 @@ class Command(BaseCommand):
                 )
         return permissions
 
-    def _ensure_place_management_permissions(self):
-        """Fetch the full PlaceRecord permission set needed to curate place fiches."""
+    def _sync_place_permissions(self, apply_changes):
+        """Align every status group with the Fiche lieu column of the status matrix."""
         ct = ContentType.objects.get_for_model(PlaceRecord)
-        perms = {
-            perm.codename: perm
-            for perm in Permission.objects.filter(content_type=ct, codename__in=self.DIRECTOR_PLACE_PERMS)
-        }
-        missing = sorted(set(self.DIRECTOR_PLACE_PERMS) - set(perms))
-        if missing:
-            warning = (
-                f"Missing PlaceRecord permissions: {', '.join(missing)}. "
-                "Please run migrations before applying changes."
-            )
-            self.stdout.write(self.style.WARNING(warning))
-        return [perms[codename] for codename in self.DIRECTOR_PLACE_PERMS if codename in perms]
+        available = {perm.codename: perm for perm in Permission.objects.filter(content_type=ct)}
+        for group_name, codenames in self.PLACE_PERMS_BY_GROUP.items():
+            missing = sorted(set(codenames) - set(available))
+            if missing:
+                warning = (
+                    f"Missing PlaceRecord permissions: {', '.join(missing)}. "
+                    "Please run migrations before applying changes."
+                )
+                self.stdout.write(self.style.WARNING(warning))
+            perms = [available[codename] for codename in codenames if codename in available]
+            self._update_group_permissions(group_name, perms, apply_changes)
+
+    def _update_group_permissions(self, group_name, permissions, apply_changes):
+        """Grant the supplied permissions to that status group, creating it if needed."""
+        group = self._get_group(group_name)
+        if not group:
+            message = f"Group '{group_name}' not found."
+            if apply_changes:
+                group = Group.objects.create(name=group_name)
+                self.stdout.write(self.style.SUCCESS(f"{message} Created new group."))
+            else:
+                self.stdout.write(self.style.WARNING(f"{message} Would create it in apply mode."))
+                return
+
+        existing_ids = set(group.permissions.values_list("id", flat=True))
+        missing = [permission for permission in permissions if permission.id not in existing_ids]
+        if not missing:
+            self.stdout.write(self.style.SUCCESS(f"'{group.name}' already holds its place fiche permissions."))
+            return
+
+        labels = ", ".join(permission.codename for permission in missing)
+        if apply_changes:
+            group.permissions.add(*missing)
+            self.stdout.write(self.style.SUCCESS(f"Granted place fiche permissions to '{group.name}': {labels}"))
+        else:
+            self.stdout.write(self.style.WARNING(f"Would grant place fiche permissions to '{group.name}': {labels}"))
 
     def _update_director_permissions(self, permissions, apply_changes):
         """Ensure directors hold the required administrative permissions."""

@@ -161,4 +161,22 @@ preserves the other listings' page params while overriding its own. {% endcommen
 	</div>
 </div>
 {% endif %}
+
+{% comment %} Same two auto-filled fields as the biblio fiche, in the same
+position and format: the author is the fiche's creator, the modification line
+comes from the activity log. Legacy places have neither, so both render empty —
+exactly as they do on an old biblio fiche. {% endcomment %}
+<div class="field_group">
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Auteur de la fiche" %}</div>
+		{# Guard: the default: filter evaluates its argument, so creator.username would blow up on a fiche with no author. #}
+		<div class="field_value">{% if place.creator %}{{ place.creator.get_full_name|default:place.creator.username }}{% endif %}</div>
+		<div class="fixclear"></div>
+	</div>
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Dernière modification" %}</div>
+		<div class="field_value">{% if last_activity %}{{ last_activity.date|date:"d M Y - H:i" }} ({{ last_activity.user.username }}){% endif %}</div>
+		<div class="fixclear"></div>
+	</div>
+</div>
 {% endblock main_content %}

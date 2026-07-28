@@ -93,6 +93,18 @@ class PlaceRecord(ACModel):
         blank=True,
         symmetrical=True,
     )
+    # Displayed as "Auteur de la fiche", like Document.creator on the biblio
+    # fiche, and used as the ownership reference for the "seul. propre" rules
+    # (cf. views.place.edit / delete) exactly as Biblio uses its own creator.
+    creator = models.ForeignKey(
+        User,
+        verbose_name=_("Auteur de la fiche"),
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+        db_constraint=False,
+        related_name="created_places",
+    )
     created_at = models.DateTimeField(_("Créé le"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Mis à jour le"), auto_now=True)
 
@@ -103,6 +115,14 @@ class PlaceRecord(ACModel):
         verbose_name = _("Lieu")
         verbose_name_plural = _("Lieux")
         ordering = ("name",)
+        # The status matrix (LL détail des STATUTS revus 2026.07) grants
+        # "modifier"/"supprimer" either fully or only on one's own fiches; plain
+        # model permissions cannot express that, so mirror the Biblio and
+        # Transcription convention with explicit "any" permissions.
+        permissions = (
+            ("change_any_placerecord", "Can change any Lieu"),
+            ("delete_any_placerecord", "Can delete any Lieu"),
+        )
         constraints = [
             models.UniqueConstraint(
                 fields=["name", "category"],
