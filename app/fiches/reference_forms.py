@@ -85,11 +85,18 @@ class ReferenceLinkWidget(forms.Widget):
             if not site or not identifier:
                 continue
             url = site.build_url(identifier)
+            # A <div>, like DynamicList's entries, so links stack one per line
+            # instead of flowing into an unreadable wrapped paragraph. The
+            # identifier is an input: correcting a typo used to mean deleting the
+            # link and retyping it. The hidden input keeps the "siteId|identifier"
+            # payload, resynced by the widget's JS as the editor types.
             out.append(
-                '<span class="reflist_value_entry dynamiclist_value_entry">'
-                f'<span class="reflist_value_label">{escape(site.name)} {escape(identifier)}</span> '
+                '<div class="reflist_value_entry dynamiclist_value_entry">'
+                f'<span class="reflist_value_label">{escape(site.name)}</span> '
+                f'<input type="text" class="reflist_value_id" value="{escape(identifier)}" '
+                f'data-site-id="{site.id}" data-base-url="{escape(site.base_url)}" /> '
                 f'<a class="reflist_value_link" href="{escape(url)}" target="_blank" rel="noopener">{escape(url)}</a>'
-                f'<input type="hidden" name="{name}" value="{escape(text)}" /></span>'
+                f'<input type="hidden" name="{name}" value="{escape(text)}" /></div>'
             )
         out.append("</div>")
         out.append('<span class="dynamiclist_addbox"><select class="reflist_site_select">')

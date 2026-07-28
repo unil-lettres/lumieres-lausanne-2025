@@ -99,3 +99,44 @@ def test_widget_renders_existing_link_chip_with_permalink(idref, voltaire):
     form = BiographyForm(instance=voltaire)
     html = str(form["reference_links"])
     assert "https://www.idref.fr/026745135" in html
+
+
+@pytest.mark.django_db
+def test_widget_stacks_saved_links_one_per_line(idref, geonames, voltaire):
+    """Client request 2026-07-15: saved links must not flow into one wrapped line.
+
+    They were <span>s, so several référentiels ran together and became
+    unreadable; DynamicList uses a <div> per entry, and so must this widget.
+    """
+    BiographyReferenceSite.objects.create(biography=voltaire, reference_site=idref, identifier="026745135")
+
+    html = str(BiographyForm(instance=voltaire)["reference_links"])
+
+    assert '<div class="reflist_value_entry dynamiclist_value_entry">' in html
+    assert '<span class="reflist_value_entry' not in html
+
+
+@pytest.mark.django_db
+def test_widget_exposes_the_identifier_as_an_editable_input(idref, voltaire):
+    """Same request: correcting a typo should not mean deleting and retyping.
+
+    The input carries the référentiel id and base URL so the widget's JS can
+    resync the submitted payload and the permalink as the editor types.
+    """
+    BiographyReferenceSite.objects.create(biography=voltaire, reference_site=idref, identifier="026745135")
+
+    html = str(BiographyForm(instance=voltaire)["reference_links"])
+
+    assert 'class="reflist_value_id" value="026745135"' in html
+    assert f'data-site-id="{idref.id}"' in html
+    assert 'data-base-url="https://www.idref.fr/{id}"' in html
+    # The label no longer repeats the identifier: the input holds it now.
+    assert f'<span class="reflist_value_label">{idref.name}</span>' in html
+
+
+@pytest.mark.django_db
+def test_clearing_an_identifier_drops_the_link(idref):
+    """Emptying the input removes the link on save, via the field's own cleaning."""
+    field = BiographyForm().fields["reference_links"]
+
+    assert field.clean([f"{idref.id}|"]) == []
