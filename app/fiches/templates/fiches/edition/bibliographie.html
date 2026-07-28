@@ -230,6 +230,18 @@
                 // Flush the existing suggestions so a new search can happen
                 $("#id_publisher").flushCache();
             });
+
+            // Secondary literature is not place-indexed (client request 2026-07-15):
+            // hide the "Lieu" buttons of the place fields while it is selected, so
+            // nobody tags a place there out of zeal. The form strips any tag that is
+            // submitted anyway, so this is presentation, not the guarantee.
+            var $placeFields = $('.placetag[data-name="place"], .placetag[data-name="place2"]');
+            function syncPlaceTagging() {
+                var secondary = $("[name=litterature_type]:checked").val() === "s";
+                $placeFields.toggleClass("placetag-tagging-off", secondary);
+            }
+            $(document).on("change", "[name=litterature_type]", syncPlaceTagging);
+            syncPlaceTagging();
         });
     </script>
     
