@@ -72,6 +72,29 @@ def test_display_renders(client, category):
 
 
 @pytest.mark.django_db
+def test_display_shows_category_next_to_the_title(client, category):
+    """Client request 2026-07-15: the category belongs in brackets next to the label."""
+    place = PlaceRecord.objects.create(name="Lausanne", category=category)
+
+    response = client.get(reverse("place-display", args=[place.pk]))
+
+    assert '<h2>Lausanne <span class="place-category">(Ville/Village)</span></h2>' in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_display_shows_category_next_to_each_related_place(client, category):
+    """Same request, applied to the « Lieux associés » listing."""
+    place = PlaceRecord.objects.create(name="Lausanne", category=category)
+    hamlet = PlaceCategory.objects.create(name="Hameau")
+    place.related_places.add(PlaceRecord.objects.create(name="Vidy", category=hamlet))
+
+    response = client.get(reverse("place-display", args=[place.pk]))
+
+    body = response.content.decode()
+    assert 'Vidy</a> <span class="place-category">(Hameau)</span>' in body
+
+
+@pytest.mark.django_db
 def test_create_requires_permission(client, django_user_model):
     assert client.get(reverse("place-create")).status_code == 403  # anonymous
     django_user_model.objects.create_user(username="nobody", password="pw")
