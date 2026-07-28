@@ -34,6 +34,8 @@ acceptable outcomes here; a traceback is not.
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from django.urls import URLPattern, URLResolver, get_resolver
 
@@ -75,6 +77,35 @@ def _parameterless_routes() -> list[tuple[str, str]]:
 ROUTES = _parameterless_routes()
 ROUTE_IDS = [name for _, name in ROUTES]
 
+#: A primary key that cannot exist. Detail routes must answer 404 for it —
+#: an unguarded ``.get()`` or a template assuming the object is there shows up
+#: here as a 500, which is what the client sees as "Internal Server Error".
+MISSING_ID = "999999999"
+
+_PATH_INT_PARAM = re.compile(r"<int:\w+>")
+_RE_INT_PARAM = re.compile(r"\(\?P<\w+>\\d\+\)")
+#: Anything still regex-ish after substitution means we could not build a
+#: concrete URL (optional groups, slugs, multiple captures): skip it.
+_LEFTOVER_REGEX = re.compile(r"[<>()\[\]?*+\\]")
+
+
+def _detail_routes() -> list[tuple[str, str]]:
+    """Return ``(url, route_name)`` for detail routes, pointing at a missing object."""
+    found: set[tuple[str, str]] = set()
+    for pattern, name in _walk(get_resolver()):
+        if pattern.startswith(EXCLUDED_PREFIXES) or name in EXPECTED_UNTESTABLE:
+            continue
+        url = _RE_INT_PARAM.sub(MISSING_ID, _PATH_INT_PARAM.sub(MISSING_ID, pattern))
+        url = url.replace("^", "").replace("$", "")
+        if MISSING_ID not in url or _LEFTOVER_REGEX.search(url):
+            continue
+        found.add(("/" + url, name or url))
+    return sorted(found)
+
+
+DETAIL_ROUTES = _detail_routes()
+DETAIL_ROUTE_IDS = [name for _, name in DETAIL_ROUTES]
+
 
 @pytest.fixture
 def superuser(db, django_user_model):
@@ -88,6 +119,7 @@ def superuser(db, django_user_model):
 def test_route_discovery_is_not_empty():
     """Guard the guard: a broken walker would silently pass every smoke test."""
     assert len(ROUTES) > 40, f"only discovered {len(ROUTES)} routes — URL walking is broken"
+    assert len(DETAIL_ROUTES) > 20, f"only discovered {len(DETAIL_ROUTES)} detail routes — URL walking is broken"
 
 
 @pytest.mark.django_db
@@ -101,6 +133,17 @@ def test_route_does_not_error_for_anonymous(client, url, name):
 @pytest.mark.django_db
 @pytest.mark.parametrize(("url", "name"), ROUTES, ids=ROUTE_IDS)
 def test_route_does_not_error_for_superuser(client, superuser, url, name):
+    client.force_login(superuser)
+
+    response = client.get(url)
+
+    assert response.status_code < 500, f"{name} ({url}) returned {response.status_code}"
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(("url", "name"), DETAIL_ROUTES, ids=DETAIL_ROUTE_IDS)
+def test_detail_route_does_not_error_for_missing_object(client, superuser, url, name):
+    """A fiche that does not exist must be a 404, never a traceback."""
     client.force_login(superuser)
 
     response = client.get(url)

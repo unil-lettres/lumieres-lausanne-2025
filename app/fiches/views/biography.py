@@ -634,6 +634,10 @@ def relations_list(request, person_id=None):
                 "relation_list": relation_list,
             },
         )
+    except Http404:
+        # get_object_or_404 above raises this for an unknown person; without
+        # this clause the catch-all below turned a plain 404 into a 500.
+        raise
     except Exception as e:
         return HttpResponseServerError(f"Error: {str(e)}")
 
