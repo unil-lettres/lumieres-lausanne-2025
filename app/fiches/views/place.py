@@ -214,8 +214,14 @@ def tagged_biblios_writing(place):
 
 
 def tagged_biblios_subject(place):
-    """Publications indexing this place in Sujets — Lieu(x) (§3.4.2 — Publications - Lieu mentionné)."""
-    return Biblio.objects.filter(subj_place=place).order_by("date", "id").distinct()
+    """Publications indexing this place in Sujets — Lieu(x) (§3.4.2 — « Lieu mentionné »).
+
+    Primary literature first, then secondary, each chronologically (client
+    request 2026-07-15). Sorting on the raw column does that for free ("p"
+    before "s") and, unlike splitting the queryset in two, keeps the rows whose
+    type was never set — 61 of them in the current data — visible.
+    """
+    return Biblio.objects.filter(subj_place=place).order_by("litterature_type", "date", "id").distinct()
 
 
 def _listing_page(items, number):

@@ -170,6 +170,21 @@ def test_subject_lists_biblios_indexing_the_place(place):
     assert [b.title for b in tagged_biblios_subject(place)] == ["Indexé"]
 
 
+@pytest.mark.django_db
+def test_subject_orders_primary_literature_before_secondary(place):
+    """Client request 2026-07-15: primary literature first, then secondary.
+
+    The secondary entry is deliberately the older one, so a purely
+    chronological sort would list it first.
+    """
+    secondary = make_biblio(LIVRE, "Secondaire", litt="s", date=date(1700, 1, 1))
+    primary = make_biblio(LIVRE, "Primaire", litt="p", date=date(1800, 1, 1))
+    for biblio in (secondary, primary):
+        biblio.subj_place.set([place])
+
+    assert [b.title for b in tagged_biblios_subject(place)] == ["Primaire", "Secondaire"]
+
+
 # -- read view integration ----------------------------------------------------
 
 
@@ -209,3 +224,27 @@ def test_place_page_renders_manuscript_citation_without_error(client, place):
     body = response.content.decode()
     assert "Lieu de rédaction" in body
     assert "biblioref-item" in body
+
+
+@pytest.mark.django_db
+def test_place_page_drops_the_mention_listing_prefixes(client, place):
+    """Client request 2026-07-15: both mention listings are simply « Lieu mentionné »."""
+    Transcription.objects.create(text=tag(place), published_date=datetime(2020, 1, 1, tzinfo=UTC))
+    make_biblio(LIVRE, "Indexé").subj_place.set([place])
+
+    body = client.get(reverse("place-display", args=[place.id])).content.decode()
+
+    assert "Publications - Lieu mentionné" not in body
+    assert "Manuscrits - Lieu mentionné" not in body
+    assert body.count("Lieu mentionné") == 2
+
+
+@pytest.mark.django_db
+def test_place_page_lists_manuscripts_before_publications(client, place):
+    """Same request: manuscripts come first, publications after."""
+    Transcription.objects.create(text=tag(place), published_date=datetime(2020, 1, 1, tzinfo=UTC))
+    make_biblio(LIVRE, "Indexé").subj_place.set([place])
+
+    body = client.get(reverse("place-display", args=[place.id])).content.decode()
+
+    assert body.index('id="manuscrits"') < body.index('id="mention"')
