@@ -26,7 +26,7 @@ from datetime import UTC, date, datetime
 
 import pytest
 from django.urls import reverse
-from fiches.models import Biography, PlaceCategory, PlaceRecord
+from fiches.models import Biography, NotePlace, PlaceCategory, PlaceRecord
 from fiches.models.documents import Biblio, DocumentLanguage
 from fiches.models.documents.document import DocumentType, Transcription
 from fiches.models.person.biography import Profession
@@ -275,3 +275,19 @@ def test_publication_with_no_litterature_type_stays_in_the_primary_listing(place
 
     assert [b.title for b in tagged_biblios_subject_primary(place)] == ["Type absent"]
     assert list(tagged_biblios_subject_secondary(place)) == []
+
+
+@pytest.mark.django_db
+def test_note_is_rendered_after_the_mention_listing(client, place, django_user_model):
+    """Client request 2026-07-15: the note belongs after « Lieu mentionné ».
+
+    Same running order as the biblio fiche: listings, then the note, then the
+    author and modification fields.
+    """
+    Transcription.objects.create(text=tag(place), published_date=datetime(2020, 1, 1, tzinfo=UTC))
+    NotePlace.objects.create(owner=place, text="<p>note situee</p>")
+    client.force_login(django_user_model.objects.create_user(username="reader-order", password="pw"))
+
+    body = client.get(reverse("place-display", args=[place.id])).content.decode()
+
+    assert body.index("Lieu mentionné") < body.index("note situee") < body.index("Auteur de la fiche")

@@ -54,27 +54,6 @@
 	{% endif %}
 </div>
 
-{% comment %} Notes are gated by the same access_lazy filter as the biblio and bio
-fiches. Filtering with user_access() alone — as this view used to do — hid every
-note whose access is « Utilisateurs » (not public, no groups), because that case
-is only granted when any_login=True. The access badge is shown next to the label,
-again like the other fiches, so an editor can see each note's visibility.
-{% endcomment %}
-{% for note in place.notes.all %}
-{% if note|access_lazy:user %}
-<div class="field_group">
-	<div class="field_wrap">
-		<div class="field_label">
-			{% trans "Note" %}<br/><br/>
-			{% with access_public=note.access_public access_groups=note.access_groups.all %}{% include "fiches/edition/access_status.html" %}{% endwith %}
-		</div>
-		<div class="field_value rich-text-content"><div class="rich-text-body">{{ note.text|safe }}</div></div>
-		<div class="fixclear"></div>
-	</div>
-</div>
-{% endif %}
-{% endfor %}
-
 {% comment %} 3.4 automatic listings: what references this place (via place tags).
 Each listing paginates independently; {% templatetag openblock %} querystring {% templatetag closeblock %}
 preserves the other listings' page params while overriding its own. {% endcomment %}
@@ -192,6 +171,27 @@ paginated on its own querystring parameter. {% endcomment %}
 	</div>
 </div>
 {% endif %}
+
+{% comment %} Notes are gated by the same access_lazy filter as the biblio and bio
+fiches. Filtering with user_access() alone — as this view used to do — hid every
+note whose access is « Utilisateurs » (not public, no groups), because that case
+is only granted when any_login=True. The access badge is shown next to the label,
+again like the other fiches, so an editor can see each note's visibility.
+{% endcomment %}
+{% for note in place.notes.all %}
+{% if note|access_lazy:user %}
+<div class="field_group">
+	<div class="field_wrap">
+		<div class="field_label">
+			{% trans "Note" %}<br/><br/>
+			{% with access_public=note.access_public access_groups=note.access_groups.all %}{% include "fiches/edition/access_status.html" %}{% endwith %}
+		</div>
+		<div class="field_value rich-text-content"><div class="rich-text-body">{{ note.text|safe }}</div></div>
+		<div class="fixclear"></div>
+	</div>
+</div>
+{% endif %}
+{% endfor %}
 
 {% comment %} Same two auto-filled fields as the biblio fiche, in the same
 position and format: the author is the fiche's creator, the modification line
