@@ -40,6 +40,7 @@ class Command(BaseCommand):
         " - directeurs may reassign collection owners\n"
         " - directeurs may manage user profile extra information\n"
         " - directeurs may create person & place fiches (named-entity tagging)\n"
+        " - directeurs may edit and delete place fiches\n"
         " - assistants status is retired\n"
         "Run without --apply for a dry-run preview."
     )
@@ -50,6 +51,16 @@ class Command(BaseCommand):
         "change_userprofile",
         "delete_userprofile",
         "view_userprofile",
+    )
+    #: Directors curate the place fiches, so they need the full CRUD and not
+    #: just "add". With "add" alone, saving a newly created fiche redirected to
+    #: place-edit — which requires change_placerecord — and answered
+    #: "Accès non autorisé"; existing fiches could never be edited or deleted.
+    DIRECTOR_PLACE_PERMS = (
+        "add_placerecord",
+        "change_placerecord",
+        "delete_placerecord",
+        "view_placerecord",
     )
     ASSISTANT_NAMES = ("assistants", "assistant")
     DOCTORANT_NAME = "doctorants"
@@ -80,6 +91,8 @@ class Command(BaseCommand):
             self._update_director_permissions(user_profile_perms, apply_changes)
             fiche_creation_perms = self._ensure_fiche_creation_permissions()
             self._update_director_permissions(fiche_creation_perms, apply_changes)
+            place_perms = self._ensure_place_management_permissions()
+            self._update_director_permissions(place_perms, apply_changes)
             self._retire_assistant_group(apply_changes)
 
         self.stdout.write(self.style.SUCCESS("Status synchronisation complete."))
@@ -195,6 +208,22 @@ class Command(BaseCommand):
                     self.style.WARNING(f"Missing permission '{codename}'. Please run migrations before applying.")
                 )
         return permissions
+
+    def _ensure_place_management_permissions(self):
+        """Fetch the full PlaceRecord permission set needed to curate place fiches."""
+        ct = ContentType.objects.get_for_model(PlaceRecord)
+        perms = {
+            perm.codename: perm
+            for perm in Permission.objects.filter(content_type=ct, codename__in=self.DIRECTOR_PLACE_PERMS)
+        }
+        missing = sorted(set(self.DIRECTOR_PLACE_PERMS) - set(perms))
+        if missing:
+            warning = (
+                f"Missing PlaceRecord permissions: {', '.join(missing)}. "
+                "Please run migrations before applying changes."
+            )
+            self.stdout.write(self.style.WARNING(warning))
+        return [perms[codename] for codename in self.DIRECTOR_PLACE_PERMS if codename in perms]
 
     def _update_director_permissions(self, permissions, apply_changes):
         """Ensure directors hold the required administrative permissions."""
