@@ -259,6 +259,21 @@ def tagged_biblios_subject(place):
     return Biblio.objects.filter(subj_place=place).order_by("litterature_type", "date", "id").distinct()
 
 
+def tagged_biblios_subject_primary(place):
+    """Primary-literature half of the « Lieu mentionné » listing.
+
+    Excluding "s" rather than filtering on "p" keeps the publications whose
+    litterature_type was never set (61 in current data) visible instead of
+    dropping them between the two sub-listings.
+    """
+    return tagged_biblios_subject(place).exclude(litterature_type="s")
+
+
+def tagged_biblios_subject_secondary(place):
+    """Secondary-literature half of the « Lieu mentionné » listing."""
+    return tagged_biblios_subject(place).filter(litterature_type="s")
+
+
 def _listing_page(items, number):
     """Return the requested page (1-based, fallback to first) of a listing."""
     paginator = Paginator(items, LISTING_PAGE_SIZE)
@@ -282,7 +297,11 @@ def display(request, place_id):
     trans_page = _listing_page(tagged_transcriptions(place, user), get("manuscrits_page"))
     printing_page = _listing_page(tagged_biblios_printing(place), get("impression_page"))
     writing_page = _listing_page(tagged_biblios_writing(place), get("redaction_page"))
-    subject_page = _listing_page(tagged_biblios_subject(place), get("mention_page"))
+    # « Lieu mentionné » is one block with three sub-listings (manuscripts,
+    # primary then secondary literature), like the biblio fiche's « Sujets »;
+    # each keeps its own page parameter so they paginate independently.
+    primary_page = _listing_page(tagged_biblios_subject_primary(place), get("mention_prim_page"))
+    secondary_page = _listing_page(tagged_biblios_subject_secondary(place), get("mention_sec_page"))
     context = {
         "place": place,
         "model": PlaceRecord,
@@ -291,12 +310,14 @@ def display(request, place_id):
         "tagged_transcriptions": trans_page,
         "tagged_printing": printing_page,
         "tagged_writing": writing_page,
-        "tagged_subject": subject_page,
+        "tagged_subject_primary": primary_page,
+        "tagged_subject_secondary": secondary_page,
         "personnes_remaining": _remaining(persons_page),
         "manuscrits_remaining": _remaining(trans_page),
         "impression_remaining": _remaining(printing_page),
         "redaction_remaining": _remaining(writing_page),
-        "mention_remaining": _remaining(subject_page),
+        "mention_prim_remaining": _remaining(primary_page),
+        "mention_sec_remaining": _remaining(secondary_page),
         "last_activity": get_last_model_activity(place),
         "add_url": reverse("place-create") if user.has_perm("fiches.add_placerecord") else None,
         # Ownership-aware, so the buttons never lead to a 403 (cf. may_change/may_delete).

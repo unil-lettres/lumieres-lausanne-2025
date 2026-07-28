@@ -123,39 +123,58 @@ preserves the other listings' page params while overriding its own. {% endcommen
 </div>
 {% endif %}
 
-{% if tagged_transcriptions.paginator.count %}
-<div class="field_group" id="manuscrits">
-	<div class="field_wrap">
+{% comment %} « Lieu mentionné » is a single field_wrap with italic sub-headings,
+built like the biblio fiche's « Sujets » block (same .subjects / .sub_label
+markup) rather than as separate field groups. Order per the client: manuscripts
+first, then primary literature, then secondary — each chronological and
+paginated on its own querystring parameter. {% endcomment %}
+{% if tagged_transcriptions.paginator.count or tagged_subject_primary.paginator.count or tagged_subject_secondary.paginator.count %}
+<div class="field_group">
+	<div class="field_wrap subjects" id="mention">
 		<div class="field_label">{% trans "Lieu mentionné" %}</div>
 		<div class="field_value">
 			<ul>
-			{% for trans in tagged_transcriptions %}
-				{# manuscript_b is nullable (SET_NULL): fall back to the transcription's own label rather than rendering the citation against None. #}
-				<li><a class="listing-ref" href="{% url 'transcription-display' trans.id %}">{% if trans.manuscript_b %}{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 noManBiblioLink=1 only %}{% else %}{{ trans }}{% endif %}</a></li>
-			{% endfor %}
-			</ul>
-			{% if tagged_transcriptions.has_next %}
-			<a class="listing-more" href="{% querystring manuscrits_page=tagged_transcriptions.next_page_number %}#manuscrits">{% blocktrans count n=manuscrits_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+			{% if tagged_transcriptions.paginator.count %}
+				<li>
+					<span class="sub_label">{% trans "Manuscrits:" %}</span>
+					<ul>
+					{% for trans in tagged_transcriptions %}
+						{# manuscript_b is nullable (SET_NULL): fall back to the transcription's own label rather than rendering the citation against None. #}
+						<li><a class="listing-ref" href="{% url 'transcription-display' trans.id %}">{% if trans.manuscript_b %}{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 noManBiblioLink=1 only %}{% else %}{{ trans }}{% endif %}</a></li>
+					{% endfor %}
+					</ul>
+					{% if tagged_transcriptions.has_next %}
+					<a class="listing-more" href="{% querystring manuscrits_page=tagged_transcriptions.next_page_number %}#mention">{% blocktrans count n=manuscrits_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+					{% endif %}
+				</li>
 			{% endif %}
-		</div>
-		<div class="fixclear"></div>
-	</div>
-</div>
-{% endif %}
-
-{% if tagged_subject.paginator.count %}
-<div class="field_group" id="mention">
-	<div class="field_wrap">
-		<div class="field_label">{% trans "Lieu mentionné" %}</div>
-		<div class="field_value">
-			<ul>
-			{% for biblio in tagged_subject %}
-				<li><a class="listing-ref" href="{% url 'display-bibliography' biblio.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</a></li>
-			{% endfor %}
-			</ul>
-			{% if tagged_subject.has_next %}
-			<a class="listing-more" href="{% querystring mention_page=tagged_subject.next_page_number %}#mention">{% blocktrans count n=mention_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+			{% if tagged_subject_primary.paginator.count %}
+				<li>
+					<span class="sub_label">{% trans "Littérature primaire:" %}</span>
+					<ul>
+					{% for biblio in tagged_subject_primary %}
+						<li><a class="listing-ref" href="{% url 'display-bibliography' biblio.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</a></li>
+					{% endfor %}
+					</ul>
+					{% if tagged_subject_primary.has_next %}
+					<a class="listing-more" href="{% querystring mention_prim_page=tagged_subject_primary.next_page_number %}#mention">{% blocktrans count n=mention_prim_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+					{% endif %}
+				</li>
 			{% endif %}
+			{% if tagged_subject_secondary.paginator.count %}
+				<li>
+					<span class="sub_label">{% trans "Littérature secondaire:" %}</span>
+					<ul>
+					{% for biblio in tagged_subject_secondary %}
+						<li><a class="listing-ref" href="{% url 'display-bibliography' biblio.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</a></li>
+					{% endfor %}
+					</ul>
+					{% if tagged_subject_secondary.has_next %}
+					<a class="listing-more" href="{% querystring mention_sec_page=tagged_subject_secondary.next_page_number %}#mention">{% blocktrans count n=mention_sec_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+					{% endif %}
+				</li>
+			{% endif %}
+			</ul>
 		</div>
 		<div class="fixclear"></div>
 	</div>

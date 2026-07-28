@@ -34,6 +34,8 @@ from fiches.models.person.person import Person
 from fiches.views.place import (
     tagged_biblios_printing,
     tagged_biblios_subject,
+    tagged_biblios_subject_primary,
+    tagged_biblios_subject_secondary,
     tagged_biblios_writing,
     tagged_persons,
     tagged_transcriptions,
@@ -227,8 +229,12 @@ def test_place_page_renders_manuscript_citation_without_error(client, place):
 
 
 @pytest.mark.django_db
-def test_place_page_drops_the_mention_listing_prefixes(client, place):
-    """Client request 2026-07-15: both mention listings are simply « Lieu mentionné »."""
+def test_place_page_has_a_single_mention_block(client, place):
+    """Client request 2026-07-15: one « Lieu mentionné » block, built like « Sujets ».
+
+    The two prefixed listings are merged into a single field_wrap carrying
+    italic sub-headings, so the label must appear exactly once.
+    """
     Transcription.objects.create(text=tag(place), published_date=datetime(2020, 1, 1, tzinfo=UTC))
     make_biblio(LIVRE, "Indexé").subj_place.set([place])
 
@@ -236,15 +242,36 @@ def test_place_page_drops_the_mention_listing_prefixes(client, place):
 
     assert "Publications - Lieu mentionné" not in body
     assert "Manuscrits - Lieu mentionné" not in body
-    assert body.count("Lieu mentionné") == 2
+    assert body.count("Lieu mentionné") == 1
+    assert 'class="field_wrap subjects"' in body
 
 
 @pytest.mark.django_db
-def test_place_page_lists_manuscripts_before_publications(client, place):
-    """Same request: manuscripts come first, publications after."""
+def test_mention_sub_headings_are_ordered_manuscripts_then_primary_then_secondary(client, place):
+    """Same request: manuscripts, then primary literature, then secondary."""
     Transcription.objects.create(text=tag(place), published_date=datetime(2020, 1, 1, tzinfo=UTC))
-    make_biblio(LIVRE, "Indexé").subj_place.set([place])
+    make_biblio(LIVRE, "Primaire", litt="p").subj_place.set([place])
+    make_biblio(LIVRE, "Secondaire", litt="s").subj_place.set([place])
 
     body = client.get(reverse("place-display", args=[place.id])).content.decode()
 
-    assert body.index('id="manuscrits"') < body.index('id="mention"')
+    assert body.index("Manuscrits:") < body.index("Littérature primaire:") < body.index("Littérature secondaire:")
+
+
+@pytest.mark.django_db
+def test_secondary_literature_lands_in_its_own_sub_listing(client, place):
+    """Secondary literature is reachable only through Sujets → Lieu(x)."""
+    make_biblio(LIVRE, "Primaire", litt="p").subj_place.set([place])
+    make_biblio(LIVRE, "Secondaire", litt="s").subj_place.set([place])
+
+    assert [b.title for b in tagged_biblios_subject_primary(place)] == ["Primaire"]
+    assert [b.title for b in tagged_biblios_subject_secondary(place)] == ["Secondaire"]
+
+
+@pytest.mark.django_db
+def test_publication_with_no_litterature_type_stays_in_the_primary_listing(place):
+    """Excluding "s" rather than filtering "p" keeps the 61 unset rows visible."""
+    make_biblio(LIVRE, "Type absent", litt="").subj_place.set([place])
+
+    assert [b.title for b in tagged_biblios_subject_primary(place)] == ["Type absent"]
+    assert list(tagged_biblios_subject_secondary(place)) == []

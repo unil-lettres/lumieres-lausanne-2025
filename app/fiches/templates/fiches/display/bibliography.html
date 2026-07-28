@@ -487,7 +487,7 @@
                 {#<!--  Lieux (§4.3) — cliquables vers la fiche lieu  -->#}
                 {% if subj_place %}
                 <li>
-                    <span class="sub_label">Lieu:</span>
+                    <span class="sub_label">Lieu(x):</span>
                     <ul>
                     {% for place in subj_place %}
                         <li><a href="{% url 'place-display' place.pk %}">{{ place }}</a></li>
