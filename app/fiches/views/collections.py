@@ -333,15 +333,20 @@ def get_in_collection_list(request):
     """
     Return the list of user accessible collections and projects the requested item belongs to
     """
-    if request.GET["type"] == "Person":
-        collections = ObjectCollection.objects.filter(persons=request.GET["id"])
-        projects = Project.objects.filter(persons=request.GET["id"])
-    elif request.GET["type"] == "Biblio":
-        collections = ObjectCollection.objects.filter(bibliographies=request.GET["id"])
-        projects = Project.objects.filter(bibliographies=request.GET["id"])
-    elif request.GET["type"] == "Transcription":
-        collections = ObjectCollection.objects.filter(transcriptions=request.GET["id"])
-        projects = Project.objects.filter(transcriptions=request.GET["id"])
+    # Both parameters are supplied by client-side JS. A missing "type" used to
+    # raise MultiValueDictKeyError, and an unknown one left `collections` and
+    # `projects` unbound — both surfaced to the user as a 500.
+    related_field = {
+        "Person": "persons",
+        "Biblio": "bibliographies",
+        "Transcription": "transcriptions",
+    }.get(request.GET.get("type"))
+    item_id = request.GET.get("id")
+    if related_field is None or not item_id:
+        return HttpResponseBadRequest("Error: missing or unknown item type/id")
+
+    collections = ObjectCollection.objects.filter(**{related_field: item_id})
+    projects = Project.objects.filter(**{related_field: item_id})
 
     # filter out the collections/projects the user cannot access
     accessible_coll = set(get_user_coll_list(request.user)) | set(request.user.profile.get_contrib_coll())
@@ -430,7 +435,7 @@ def remove_object(request):
     """
 
     def return_error(msg=""):
-        return HttpResponse("Error: %s" % msg, status=500)
+        return HttpResponseBadRequest("Error: %s" % msg)
 
     if request.method != "POST":
         return return_error("method error")

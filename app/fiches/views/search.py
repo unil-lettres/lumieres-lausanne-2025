@@ -34,7 +34,13 @@ from django.conf import settings
 from django.contrib.auth.decorators import permission_required
 from django.core.paginator import InvalidPage, Paginator
 from django.db import models
-from django.http import Http404, HttpResponseNotFound, HttpResponseRedirect, JsonResponse
+from django.http import (
+    Http404,
+    HttpResponseBadRequest,
+    HttpResponseNotFound,
+    HttpResponseRedirect,
+    JsonResponse,
+)
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
@@ -582,7 +588,12 @@ def do_search(request):
     qparam = request.GET.get("q", "")
     with contextlib.suppress(Exception):
         qparam = b64decode(qparam)
-    query_def = json.loads(qparam)
+    # A missing or malformed "q" is a client error: it used to raise
+    # JSONDecodeError and reach the user as a 500 on the main search endpoint.
+    try:
+        query_def = json.loads(qparam)
+    except (TypeError, ValueError):
+        return HttpResponseBadRequest("Error: missing or malformed search query")
 
     order_by = request.GET.get("o") or "title"
     if order_by == "author":
