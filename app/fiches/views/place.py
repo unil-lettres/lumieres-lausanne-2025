@@ -305,7 +305,8 @@ def display(request, place_id):
     context = {
         "place": place,
         "model": PlaceRecord,
-        "visible_notes": [note for note in place.notes.all() if note.user_access(user)],
+        # Notes are access-filtered in the template with the shared access_lazy
+        # filter, like the biblio and bio fiches, so the rule cannot drift here.
         "tagged_persons": persons_page,
         "tagged_transcriptions": trans_page,
         "tagged_printing": printing_page,
