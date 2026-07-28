@@ -58,8 +58,14 @@ def create_person(request):
 
 @require_POST
 def create_place(request):
-    """Create (or reuse) a PlaceRecord from the tagging window — gated ``add_placerecord``."""
-    if not request.user.has_perm("fiches.add_placerecord"):
+    """Create (or reuse) a PlaceRecord from the tagging window.
+
+    Gated on ``add_placerecord_inline`` rather than ``add_placerecord``: the
+    latter is held by every status that may create a place fiche the normal way,
+    while creating one inline while tagging is reserved for directors (client
+    request 2026-07-15, to avoid a trail of half-filled fiches).
+    """
+    if not request.user.has_perm("fiches.add_placerecord_inline"):
         return JsonResponse({"success": False, "error": "forbidden"}, status=403)
     name = (request.POST.get("name") or "").strip()
     category_id = (request.POST.get("category") or "").strip()

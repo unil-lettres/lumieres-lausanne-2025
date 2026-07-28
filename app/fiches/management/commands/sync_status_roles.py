@@ -69,8 +69,14 @@ class Command(BaseCommand):
         # Chercheur / Doctorant LL: modifier toutes, supprimer seulement les leurs.
         "chercheurs": (*BASE_PLACE_PERMS, "change_any_placerecord"),
         "doctorants": (*BASE_PLACE_PERMS, "change_any_placerecord"),
-        # Directeur LL: tout, sans restriction de propriété.
-        "directeurs": (*BASE_PLACE_PERMS, "change_any_placerecord", "delete_any_placerecord"),
+        # Directeur LL: tout, sans restriction de propriété, plus la création
+        # depuis la barre de tag (hors matrice: demande client du 2026-07-15).
+        "directeurs": (
+            *BASE_PLACE_PERMS,
+            "change_any_placerecord",
+            "delete_any_placerecord",
+            "add_placerecord_inline",
+        ),
     }
     ASSISTANT_NAMES = ("assistants", "assistant")
     DOCTORANT_NAME = "doctorants"

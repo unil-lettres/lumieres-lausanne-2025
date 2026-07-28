@@ -127,6 +127,18 @@ class SyncStatusRolesTest(TestCase):
         # Directeur LL: no ownership restriction at all.
         self.assertIn("delete_any_placerecord", self._director_permission_codenames())
 
+    def test_only_directors_may_create_a_place_while_tagging(self):
+        """Inline creation from the tagging toolbar is narrower than add_placerecord."""
+        chercheurs = Group.objects.create(name="chercheurs")
+
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+
+        self.assertIn("add_placerecord_inline", self._director_permission_codenames())
+        self.assertNotIn(
+            "add_placerecord_inline",
+            set(chercheurs.permissions.values_list("codename", flat=True)),
+        )
+
     def test_director_can_reopen_a_place_fiche_for_editing_after_sync(self):
         """Client report 2026-07-15: a director could create a place fiche but
         saving it, or reopening it later, answered "Accès non autorisé" — they

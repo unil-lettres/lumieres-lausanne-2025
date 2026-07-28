@@ -119,9 +119,14 @@ class PlaceRecord(ACModel):
         # "modifier"/"supprimer" either fully or only on one's own fiches; plain
         # model permissions cannot express that, so mirror the Biblio and
         # Transcription convention with explicit "any" permissions.
+        # add_placerecord covers the normal creation route, which the matrix opens
+        # to every status. Creating a fiche inline from the tagging toolbar is a
+        # separate, narrower right: the client asked to keep it for directors, to
+        # avoid a trail of half-filled place fiches created while tagging.
         permissions = (
             ("change_any_placerecord", "Can change any Lieu"),
             ("delete_any_placerecord", "Can delete any Lieu"),
+            ("add_placerecord_inline", "Can create a Lieu from the tagging toolbar"),
         )
         constraints = [
             models.UniqueConstraint(
