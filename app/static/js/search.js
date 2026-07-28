@@ -386,6 +386,12 @@ $(document).ready(function(){
 // Pagination
 $(document).ready(function(){
 	$(".paginator .pagination a").live('click', function(){
+		// The A-Z index of the "Liste des personnes" / "Liste des lieux" tabs reuses
+		// the paginator markup, but its links are plain navigation to another URL,
+		// not result pagination. Hijacking them cancelled the navigation and fired
+		// an AJAX search with a bare letter as "q", which the search endpoint
+		// rejects — so "Recherche en cours..." stayed on screen for good.
+		if ($(this).closest(".paginator").hasClass("alpha-index")) { return true; }
 		$("#search-results").text("").
 		append(
 			$('<div>', { 
