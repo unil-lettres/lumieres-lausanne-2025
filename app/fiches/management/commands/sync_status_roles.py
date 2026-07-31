@@ -134,9 +134,7 @@ class Command(BaseCommand):
 
         context_manager = transaction.atomic if apply_changes else nullcontext
         with context_manager():
-            civiliste_permissions = self._get_civiliste_permissions()
-            if civiliste_permissions is not None:
-                self._sync_civiliste_permissions(civiliste_permissions, apply_changes)
+            self._sync_civiliste_role(apply_changes)
             docfile_perms = self._ensure_docfile_permissions()
             transcription_perms = self._ensure_transcription_permissions()
             self._update_doctorant_permissions(
@@ -198,6 +196,13 @@ class Command(BaseCommand):
             return None
         return permissions
 
+    def _sync_civiliste_role(self, apply_changes):
+        """Reconcile the Civiliste group and audit elevated account access."""
+        civiliste_permissions = self._get_civiliste_permissions()
+        if civiliste_permissions is not None:
+            self._sync_civiliste_permissions(civiliste_permissions, apply_changes)
+        self._warn_civiliste_account_conflicts()
+
     def _sync_civiliste_permissions(self, required_permissions, apply_changes):
         """Reconcile Civilistes to the exact least-privilege editorial policy."""
         group = self._get_or_create_civiliste_group(apply_changes)
@@ -246,6 +251,37 @@ class Command(BaseCommand):
                 f"{permission.content_type.app_label}.{permission.codename}" for permission in permissions
             )
             self.stdout.write(style(f"{action}: {labels}"))
+
+    def _warn_civiliste_account_conflicts(self):
+        """Report Civiliste accounts that inherit Director or technical-admin rights."""
+        group = self._get_group(self.CIVILISTE_NAME)
+        if group is None:
+            return
+
+        civiliste_user_ids = group.user_set.values("pk")
+        conflicts = group.user_set.model.objects.filter(pk__in=civiliste_user_ids).filter(
+            Q(groups__name__iexact=self.DIRECTEUR_NAME) | Q(is_staff=True) | Q(is_superuser=True)
+        ).distinct()
+        if not conflicts.exists():
+            self.stdout.write(self.style.SUCCESS("No Civiliste account has conflicting elevated access."))
+            return
+
+        details = []
+        for user in conflicts.prefetch_related("groups"):
+            reasons = []
+            if any(member_group.name.casefold() == self.DIRECTEUR_NAME for member_group in user.groups.all()):
+                reasons.append(self.DIRECTEUR_NAME)
+            if user.is_staff:
+                reasons.append("is_staff")
+            if user.is_superuser:
+                reasons.append("is_superuser")
+            details.append(f"{user.username} ({', '.join(reasons)})")
+        self.stdout.write(
+            self.style.WARNING(
+                "Civiliste account conflict(s) detected; memberships were not changed: "
+                f"{'; '.join(details)}. Resolve before staging."
+            )
+        )
 
     def _ensure_docfile_permissions(self):
         """Fetch DocumentFile permissions required for attachment management."""

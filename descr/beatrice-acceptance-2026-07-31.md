@@ -35,12 +35,18 @@ XLS n'est pas reproduit ici.
 - Première branche combinée : `754 passed`.
 - Tests d'acceptation ciblés ajoutés : `47 passed`, plus `5 subtests`.
 - Suite complète finale : `759 passed`, plus `5 subtests`.
-- Après ajout du rôle `civilistes` : `59` tests ciblés puis `775` tests
-  collectés et exécutés avec succès; Ruff ciblé conforme.
+- Après ajout du rôle `civilistes` et des garde-fous d'interface : `777` tests
+  et `5` sous-tests exécutés avec succès; Ruff ciblé conforme.
 - Contrôles Django : `manage.py check` sans erreur; aucune migration manquante.
 - Chrome local : parcours A–Z, fiche lieu lecture/édition/sauvegarde,
   référentiel modifié, note connectée, métadonnées de fiche, fiche personne et
   barre CKEditor; aucune erreur console sur les parcours finaux.
+- Parcours MCP final avec un Civiliste non-staff : tagging réel d'une personne
+  et d'un lieu existants avec persistance en base, upload/édition/suppression
+  d'un PDF réel, masquage d'une note confidentielle, consultation d'une
+  transcription publiée avec édition refusée, et absence des boutons d'édition
+  ou suppression trompeurs. Toutes les fixtures et le média uploadé ont ensuite
+  été supprimés du clone local.
 
 ## Limites et portes de validation
 
@@ -86,6 +92,9 @@ XLS n'est pas reproduit ici.
   une autorité existante mais ne crée pas seul une nouvelle autorité.
 - [x] Ajouter une matrice de tests positifs et négatifs pour `civilistes`, avec
   un compte dédié et sans héritage accidentel de `directeurs`.
+- [x] Faire signaler par le préflight tout compte cumulant `civilistes` avec
+  `directeurs`, `is_staff` ou `is_superuser`, sans modifier automatiquement ses
+  appartenances.
 - [ ] Faire valider par Béatrice sur staging les parcours « tagging existant »,
   « demande de nouvelle autorité », « pagination/IIIF », « pièce jointe » et
   « soumission au Directeur LL ».
@@ -104,6 +113,8 @@ XLS n'est pas reproduit ici.
   rôle `civilistes`.
 - [ ] Appliquer les migrations, `collectstatic`, `sync_status_roles --apply` et
   reconstruire l'index Solr.
+- [ ] Exiger qu'un dernier `sync_status_roles` ne signale aucun conflit de
+  compte Civiliste avant d'ouvrir la validation fonctionnelle.
 - [ ] Exécuter les tests fonctionnels avec des comptes isolés Directeur LL,
   Civiliste, Doctorant, Chercheur et utilisateur sans rôle.
 - [ ] Obtenir la validation fonctionnelle finale de Béatrice avant toute

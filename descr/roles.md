@@ -31,10 +31,14 @@ python app/manage.py sync_status_roles
 ```
 
 The final dry-run must report that `civilistes` already matches the exact
-policy. Then validate with a dedicated non-staff Civiliste account: editing a
-third-party draft, existing-authority tagging, pagination/IIIF, attachment
-creation/editing, refusal of inline authority creation, refusal of publication,
-and refusal to delete third-party content.
+policy and that no Civiliste account has conflicting elevated access. A warning
+lists accounts that are also in `directeurs`, have `is_staff=True`, or have
+`is_superuser=True`; the command reports these conflicts but deliberately does
+not change memberships. Resolve every warning before staging. Then validate
+with a dedicated non-staff Civiliste account: editing a third-party draft,
+existing-authority tagging, pagination/IIIF, attachment creation/editing,
+refusal of inline authority creation, refusal of publication, and refusal to
+delete third-party content.
 
 ## Removing/Reassigning the legacy "assistants" role
 1. **List current members**

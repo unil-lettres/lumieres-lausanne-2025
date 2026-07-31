@@ -24,8 +24,10 @@ from types import SimpleNamespace
 from django.contrib.admin.sites import AdminSite
 from django.contrib.auth.models import Group, Permission, User
 from django.core.management import call_command
+from django.template.loader import render_to_string
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
+
 from fiches.admin import CustomUserAdmin
 from fiches.management.commands.sync_status_roles import Command
 from fiches.models import PlaceCategory, PlaceRecord
@@ -151,6 +153,46 @@ class SyncStatusRolesTest(TestCase):
 
         self.assertEqual(person_response.status_code, 403)
         self.assertEqual(place_response.status_code, 403)
+
+    def test_civiliste_only_sees_the_transcription_delete_button_for_owned_records(self):
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+        user = User.objects.create_user("civiliste-delete-button", password="pw")
+        owner = User.objects.create_user("civiliste-delete-button-owner", password="pw")
+        user.groups.add(self.civilistes)
+        request = RequestFactory().get("/fiches/biblio/edit/1/")
+        request.user = user
+
+        def render(transcription):
+            doc = SimpleNamespace(id=1, transcription_set=SimpleNamespace(all=lambda: [transcription]))
+            return render_to_string(
+                "fiches/edition/document/transcription_b_set.html",
+                {"doc": doc},
+                request=request,
+            )
+
+        foreign = SimpleNamespace(id=101, author=owner, access_owner=owner, access_public=False)
+        own = SimpleNamespace(id=102, author=owner, access_owner=user, access_public=False)
+        published = SimpleNamespace(id=103, author=owner, access_owner=owner, access_public=True)
+
+        self.assertNotIn(reverse("transcription-delete", args=[foreign.id]), render(foreign))
+        self.assertIn(reverse("transcription-edit", args=[foreign.id]), render(foreign))
+        self.assertIn(reverse("transcription-delete", args=[own.id]), render(own))
+        self.assertNotIn(reverse("transcription-edit", args=[published.id]), render(published))
+
+    def test_sync_warns_about_civilistes_with_elevated_access_without_changing_memberships(self):
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+        user = User.objects.create_user("civiliste-conflict", is_staff=False)
+        user.groups.add(self.civilistes, self.directeurs)
+        out = StringIO()
+
+        call_command("sync_status_roles", stdout=out)
+
+        self.assertIn("Civiliste account conflict(s) detected", out.getvalue())
+        self.assertIn("civiliste-conflict (directeurs)", out.getvalue())
+        self.assertEqual(
+            set(user.groups.values_list("name", flat=True)),
+            {"civilistes", "directeurs"},
+        )
 
     def test_apply_grants_user_profile_permissions_to_directors(self):
         out = StringIO()
