@@ -1,0 +1,55 @@
+name: docker-staging-integration
+
+on:
+  push:
+    branches:
+      - staging/named_entities
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  APP_IMAGE: ${{ vars.DOCKERHUB_REPOSITORY }}:named-entities-${{ github.sha }}
+  SOLR_IMAGE: ${{ vars.DOCKERHUB_REPOSITORY }}:solr-8.11.4-log4j-2.25.5-${{ github.sha }}
+  SOLR_STABLE_IMAGE: ${{ vars.DOCKERHUB_REPOSITORY }}:solr-8.11.4-log4j-2.25.5
+
+jobs:
+  build-app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.app
+          target: runtime
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.APP_IMAGE }}
+
+  build-solr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.solr
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.SOLR_IMAGE }}
+            ${{ env.SOLR_STABLE_IMAGE }}

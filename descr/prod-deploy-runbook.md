@@ -12,6 +12,7 @@ Scope: routine production releases for the Dockerized Lumieres stack on lumieres
   - `COMPOSE_FILE=docker-compose.yml:docker/docker-compose.prod.yml`
   - `COMPOSE_PROJECT_NAME=lumieres-prod`
   - `LUMIERES_IMAGE=unillett/lumieres:vYYYY.MM.DD`
+  - `LUMIERES_SOLR_IMAGE=unillett/lumieres:solr-8.11.4-log4j-2.25.5-<validated-commit-sha>`
 
 ## ARIA Lease / Project Ownership
 - `2026-05-20`: Helpdesk/DCSR corrected the ARIA deployment `lumieres-srv2`
@@ -26,6 +27,9 @@ Scope: routine production releases for the Dockerized Lumieres stack on lumieres
 1. Merge `dev` into `master` and push `master`.
 2. Create and push the release tag `vYYYY.MM.DD`.
 3. Verify the tag image exists on DockerHub.
+   For a Solr remediation release, verify both the commit-specific app and
+   Solr images produced by `docker-staging-integration` exist. Promote the
+   exact Solr image already validated on staging; do not rebuild for prod.
 4. On prod, create rollback assets in `/u01/projects/dockerized/lumieres2-prod/backups/<timestamp>/`:
    - DB dump
    - compose/env snapshot
@@ -35,11 +39,18 @@ Scope: routine production releases for the Dockerized Lumieres stack on lumieres
    ```bash
    docker compose config --images
    ```
-7. Redeploy `web` only:
+7. Redeploy `web` only for a routine app release:
    ```bash
    docker compose pull web
    docker compose up -d --no-deps web
    ```
+   For a Solr remediation release, first pin `LUMIERES_SOLR_IMAGE` to the
+   staging-validated commit-specific tag, then pull and recreate only Solr:
+   ```bash
+   docker compose pull solr
+   docker compose up -d --no-deps solr
+   ```
+   Keep the existing Solr data directory/volume intact.
 8. Run post-deploy tasks:
    ```bash
    docker compose exec -T web python manage.py collectstatic --noinput
@@ -54,6 +65,12 @@ Scope: routine production releases for the Dockerized Lumieres stack on lumieres
    - targeted UI smoke checks when the release affects user-visible behavior
 10. Guardrail:
    - never leave prod pinned to `latest`; keep `LUMIERES_IMAGE` on an explicit release tag so a restart/recreate cannot silently fall back to an ambiguous image target.
+   - keep `LUMIERES_SOLR_IMAGE` on the exact commit-specific image validated on
+     staging. The shorter `solr-8.11.4-log4j-2.25.5` tag is a convenience for
+     local Compose only, not a production pin.
+   - rollback Solr by restoring the pre-change compose/env snapshot, pinning
+     the previous image, and recreating only `solr`; never delete its data
+     directory/volume during rollback.
 
 ## Archived Initial Migration Plan
 The sections below are retained as historical reference for the January-February 2026 migration/cutover. They are not the routine procedure for normal production releases anymore.
@@ -362,7 +379,10 @@ Observed issues and fixes during first prod cutover to Django 5:
 - Thumbnails missing on `/actualites/`: `MEDIA_ROOT` is `/app/app/media`; mount must be `/u01/projects/dockerized/media:/app/app/media` in the web service (previous `/app/media` mount caused FileNotFoundError).
 - Thumbnail cache writes blocked until media cache permissions fixed; ensure `/u01/projects/dockerized/media/cache` is writable (g+rwX with setgid or 2775).
 - `prod-latest` tag did not exist on DockerHub; pin to the release tag (`v2026.01.21`) to avoid pull failures.
-- Solr 8 required Log4j overrides; mount the 2.17.2 jars into `/opt/solr/server/lib/ext/` (core, api, slf4j-impl, 1.2-api, web).
+- Historical note: Solr 8 originally used host-mounted Log4j 2.17.2 overrides.
+  Current releases use the flattened `Dockerfile.solr` image with every Solr
+  and Prometheus exporter Log4j artifact replaced by verified 2.25.5 JARs;
+  do not restore the old JAR bind mounts.
 - Traefik HTTP redirects were applied via file provider config (see above), not
   the global entrypoint redirect.
 
