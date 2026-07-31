@@ -272,6 +272,7 @@ def serve_documentfile(request, documentfile_key, attachment=True):
     return response
 
 
+@permission_required("fiches.add_documentfile", raise_exception=True)
 def documentfile_frame_list(request):
     """
     Affiche la liste des documents disponibles dans la dialogue "Ajouter un nouveau document"
@@ -287,10 +288,14 @@ def documentfile_frame_list(request):
     else:
         docfiles = DocumentFile.objects.all()
 
-    if not request.user.is_staff:
-        q_nogroup = models.Q(access_groups__exact=None)
-        q_usergroups = models.Q(access_groups__in=[g.id for g in request.user.groups.all()])
-        docfiles = docfiles.filter(q_nogroup | q_usergroups).distinct()
+    if not request.user.has_perm("fiches.change_any_documentfile"):
+        docfiles = docfiles.filter(
+            models.Q(access_public=True)
+            | models.Q(access_owner=request.user)
+            | models.Q(access_groups__users=request.user)
+            | models.Q(access_groups__groups__in=request.user.groups.all())
+            | models.Q(access_groups__isnull=True)
+        ).distinct()
 
     field_id = request.GET.get("field_id", "id_urls")
 
@@ -329,6 +334,7 @@ def documentfile_frame_list(request):
     return render(request, "fiches/edition/document/documentfile_frame_list.html", context)
 
 
+@permission_required("fiches.add_documentfile", raise_exception=True)
 def documentfile_frame_create(request, doc_id=None, docfile_id=None, create_done=False):
     """
     Ajout de nouveau document depuis la dialogue "Ajouter un nouveau document"

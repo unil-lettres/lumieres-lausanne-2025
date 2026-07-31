@@ -125,6 +125,13 @@ class BiblioForm(forms.ModelForm):
         self.user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
 
+        # The fiche author is provenance metadata, not an ordinary editable
+        # field. Only the explicit ownership permission may reassign it.
+        if "creator" in self.fields and not (
+            self.user and self.user.has_perm("fiches.change_biblio_ownership")
+        ):
+            self.fields["creator"].disabled = True
+
         # When the "volume" field is rendered twice in the edit form (Recueil block + general block),
         # the browser posts two values. Django keeps the last one, which is often empty, causing the
         # saved value to be wiped. Normalise the POST data to keep the first non-empty entry instead.

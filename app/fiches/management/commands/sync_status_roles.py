@@ -36,7 +36,7 @@ from fiches.models.person.person import Person
 class Command(BaseCommand):
     help = (
         "Synchronise Lumières status groups with the latest permission policy:\n"
-        " - doctorants gain the ability to manage bibliography attachments\n"
+        " - doctorants manage bibliography attachments without deleting others' files\n"
         " - doctorants may access and edit third-party transcriptions\n"
         " - directeurs may reassign collection owners\n"
         " - directeurs may manage user profile extra information\n"
@@ -46,7 +46,14 @@ class Command(BaseCommand):
         "Run without --apply for a dry-run preview."
     )
 
-    DOCFILE_PERMS = ("add_documentfile", "change_documentfile", "delete_documentfile")
+    DOCTORANT_DOCFILE_PERMS = (
+        "add_documentfile",
+        "change_documentfile",
+        "delete_documentfile",
+        "change_any_documentfile",
+    )
+    DIRECTOR_DOCFILE_PERMS = (*DOCTORANT_DOCFILE_PERMS, "delete_any_documentfile")
+    DIRECTOR_NOTE_PERMS = ("can_see_note", "can_publish_note")
     DOCTORANT_TRANSCRIPTION_PERMS = (
         "access_unpublished_transcription",
         "change_any_transcription",
@@ -106,9 +113,21 @@ class Command(BaseCommand):
             docfile_perms = self._ensure_docfile_permissions()
             transcription_perms = self._ensure_transcription_permissions()
             self._update_doctorant_permissions(
-                [*docfile_perms.values(), *transcription_perms.values()],
+                [
+                    *(
+                        docfile_perms[codename]
+                        for codename in self.DOCTORANT_DOCFILE_PERMS
+                        if codename in docfile_perms
+                    ),
+                    *transcription_perms.values(),
+                ],
                 apply_changes,
             )
+            self._update_director_permissions(
+                [docfile_perms[codename] for codename in self.DIRECTOR_DOCFILE_PERMS if codename in docfile_perms],
+                apply_changes,
+            )
+            self._update_director_permissions(self._ensure_note_permissions(), apply_changes)
             collection_owner_perm = self._ensure_collection_owner_permission(apply_changes)
             if collection_owner_perm is not None:
                 self._update_director_permissions([collection_owner_perm], apply_changes)
@@ -131,9 +150,10 @@ class Command(BaseCommand):
         """Fetch DocumentFile permissions required for attachment management."""
         ct = ContentType.objects.get_for_model(DocumentFile)
         perms = {
-            perm.codename: perm for perm in Permission.objects.filter(content_type=ct, codename__in=self.DOCFILE_PERMS)
+            perm.codename: perm
+            for perm in Permission.objects.filter(content_type=ct, codename__in=self.DIRECTOR_DOCFILE_PERMS)
         }
-        missing = sorted(set(self.DOCFILE_PERMS) - set(perms))
+        missing = sorted(set(self.DIRECTOR_DOCFILE_PERMS) - set(perms))
         if missing:
             warning = (
                 "Missing DocumentFile permissions: "
@@ -141,6 +161,30 @@ class Command(BaseCommand):
             )
             self.stdout.write(self.style.WARNING(warning))
         return perms
+
+    def _ensure_note_permissions(self):
+        """Fetch every concrete note permission required by editorial directors."""
+        permissions = list(
+            Permission.objects.filter(
+                content_type__app_label="fiches",
+                codename__in=self.DIRECTOR_NOTE_PERMS,
+            )
+        )
+        found = {(permission.content_type_id, permission.codename) for permission in permissions}
+        note_content_types = ContentType.objects.filter(
+            app_label="fiches",
+            model__in=("notebiblio", "notemanuscript", "notetranscription", "notebiography", "noteplace"),
+        )
+        expected = {
+            (content_type.id, codename)
+            for content_type in note_content_types
+            for codename in self.DIRECTOR_NOTE_PERMS
+        }
+        if expected - found:
+            self.stdout.write(
+                self.style.WARNING("Some note permissions are missing. Please run migrations before applying changes.")
+            )
+        return permissions
 
     def _ensure_transcription_permissions(self):
         """Fetch Transcription permissions required for third-party editing."""

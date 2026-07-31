@@ -53,6 +53,7 @@ from fiches.utils import (
     remove_object_index,
     update_object_index,
     user_can_change_documentfile,
+    user_can_delete_biblio,
     user_can_delete_documentfile,
 )
 
@@ -399,7 +400,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     note_qs = NoteBiblio.objects.filter(owner=doc) if doc and doc.id else NoteBiblio.objects.none()
 
     # Restrict notes visibility based on user permissions
-    if not request.user.is_staff:
+    if not request.user.has_perm("fiches.can_see_note"):
         note_qs = note_qs.filter(
             Q(access_owner=request.user)
             | Q(access_groups__isnull=True)
@@ -544,7 +545,7 @@ def cancel_new_bibliography(request, doc_id):
     if (
         biblio.creator_id
         and biblio.creator_id != request.user.id
-        and not request.user.has_perm("fiches.delete_biblio")
+        and not request.user.has_perm("fiches.delete_any_biblio")
     ):
         return HttpResponseForbidden(_("Accès non autorisé"))
 
@@ -560,10 +561,9 @@ def delete(request, doc_id):
     Handles errors gracefully if the redirect URL cannot be resolved.
     Redirects to the main index page after deletion.
     """
-    if not request.user.has_perm("fiches.delete_biblio"):
-        return HttpResponseForbidden("Accès non autorisé")
-
     doc = get_object_or_404(Biblio, pk=doc_id)
+    if not user_can_delete_biblio(request.user, doc):
+        return HttpResponseForbidden("Accès non autorisé")
 
     # Remove Haystack index
     remove_object_index(doc)
@@ -641,10 +641,11 @@ def documentfile_remove(request, doc_id, docfile_id):
         and request.POST.get("doc_id", "") == str(doc_id)
         and request.POST.get("docfile_id") == str(docfile_id)
     ):
+        wants_delete = bool(request.POST.get("docfile_delete"))
+        if wants_delete and not user_can_delete_documentfile(request.user, docfile):
+            return HttpResponseForbidden(_("Accès non autorisé"))
         doc.documentfiles.remove(docfile)
-        if request.POST.get("docfile_delete") and docfile.biblio_set.count() == 0:
-            if not user_can_delete_documentfile(request.user, docfile):
-                return HttpResponseForbidden(_("Accès non autorisé"))
+        if wants_delete and docfile.biblio_set.count() == 0:
             docfile.delete()
         doc.save()
         remove_done = True

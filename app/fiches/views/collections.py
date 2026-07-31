@@ -477,6 +477,8 @@ def remove_object(request):
 def display(request, coll_id):
     coll = get_object_or_404(ObjectCollection, pk=coll_id)
     coll_access = coll.user_access(request.user) or (request.user.usergroup_set.all() & coll.change_groups.all())
+    if not coll_access:
+        return HttpResponseForbidden("Accès non autorisé.")
 
     context = {
         "coll": coll,

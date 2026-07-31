@@ -412,7 +412,7 @@ def edit(request, person_id, version=0, create_bio=False):
             return NoteBiography.objects.none()
         note_qs = NoteBiography.objects.filter(owner_id=bio.pk)
 
-        if not request.user.is_staff:
+        if not request.user.has_perm("fiches.can_see_note"):
             note_qs = note_qs.filter(
                 Q(access_owner=request.user)
                 | (Q(access_groups__isnull=True) | Q(access_groups__in=request.user.usergroup_set.all()))

@@ -58,6 +58,7 @@ from fiches.utils import (
     get_last_model_activity,
     log_model_activity,
     update_object_index,
+    user_can_delete_transcription,
 )
 
 # ==============================================================================#
@@ -178,7 +179,7 @@ def display(request, trans_id):
     facsimile_tile_sources = get_facsimile_tile_sources(trans.facsimile_iiif_url)
 
     note_qs = NoteTranscription.objects.filter(owner=trans)
-    if request.user.is_authenticated and not request.user.is_staff:
+    if request.user.is_authenticated and not request.user.has_perm("fiches.can_see_note"):
         note_qs = note_qs.filter(
             Q(access_public=True)
             | Q(access_owner=request.user)
@@ -242,6 +243,8 @@ def delete(request, trans_id):
     """
     # XXX: maybe not mandatory for biblio delete.
     trans = get_object_or_404(Transcription, pk=trans_id)
+    if not user_can_delete_transcription(request.user, trans):
+        return HttpResponseForbidden("Accès non autorisé")
     biblio = trans.manuscript_b
     if biblio and getattr(biblio, "id", None):
         response = HttpResponseRedirect(reverse("display-bibliography", args=[biblio.id]))
@@ -306,7 +309,7 @@ def edit(request, trans_id=None, man_id=None, doc_id=None, new_trans=False, del_
 
     def get_notetransformset_qs(bio):
         note_qs = NoteTranscription.objects.filter(owner=bio)
-        if not request.user.is_staff:
+        if not request.user.has_perm("fiches.can_see_note"):
             note_qs = note_qs.filter(
                 Q(access_owner=request.user)
                 | (Q(access_groups__isnull=True) | Q(access_groups__in=request.user.usergroup_set.all()))

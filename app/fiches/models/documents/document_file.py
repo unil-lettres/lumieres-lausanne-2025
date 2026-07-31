@@ -45,6 +45,10 @@ class DocumentFile(ACModel):
         db_table = "fiches_documentfile"
         verbose_name = "Fichier"
         verbose_name_plural = "Fichiers"
+        permissions = (
+            ("change_any_documentfile", "Can change any Fichier"),
+            ("delete_any_documentfile", "Can delete any Fichier"),
+        )
 
     def __str__(self) -> str:
         """Return a string representation of the document file."""

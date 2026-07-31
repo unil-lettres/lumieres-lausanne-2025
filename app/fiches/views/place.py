@@ -86,7 +86,7 @@ def _visible_notes(place, user):
     if not getattr(place, "pk", None):
         return NotePlace.objects.none()
     notes = NotePlace.objects.filter(owner_id=place.pk)
-    if not user.is_staff:
+    if not user.has_perm("fiches.can_see_note"):
         notes = notes.filter(
             Q(access_owner=user) | Q(access_groups__isnull=True) | Q(access_groups__in=user.usergroup_set.all())
         ).distinct()

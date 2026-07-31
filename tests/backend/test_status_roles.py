@@ -85,9 +85,31 @@ class SyncStatusRolesTest(TestCase):
                 "add_documentfile",
                 "change_documentfile",
                 "delete_documentfile",
+                "change_any_documentfile",
                 "access_unpublished_transcription",
                 "change_any_transcription",
             }.issubset(self._doctorant_permission_codenames())
+        )
+
+    def test_apply_keeps_attachment_deletion_owner_scoped_for_doctorants(self):
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+
+        self.assertNotIn("delete_any_documentfile", self._doctorant_permission_codenames())
+
+    def test_apply_grants_attachment_and_note_oversight_to_directors(self):
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+
+        director_permissions = self._director_permission_codenames()
+        self.assertTrue(
+            {
+                "add_documentfile",
+                "change_documentfile",
+                "delete_documentfile",
+                "change_any_documentfile",
+                "delete_any_documentfile",
+                "can_see_note",
+                "can_publish_note",
+            }.issubset(director_permissions)
         )
 
     def test_dry_run_does_not_grant_transcription_permissions_to_doctorants(self):
