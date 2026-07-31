@@ -72,6 +72,9 @@ class Person(models.Model):
         verbose_name_plural = _("Personnes")
         ordering = ["name"]
         app_label = "fiches"
+        permissions = (
+            ("add_person_inline", "Can create a Personne from the tagging toolbar"),
+        )
 
     def __str__(self) -> str:
         """Return a readable representation: 'FirstName LastName'."""

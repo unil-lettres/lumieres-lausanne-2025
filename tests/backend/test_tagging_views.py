@@ -39,7 +39,7 @@ def director(db, django_user_model):
     user = django_user_model.objects.create_user(username="director", password="pw")
     user.user_permissions.set(
         Permission.objects.filter(
-            codename__in=["add_person", "add_placerecord", "add_placerecord_inline"],
+            codename__in=["add_person", "add_person_inline", "add_placerecord", "add_placerecord_inline"],
         )
     )
     return user
@@ -124,6 +124,19 @@ def test_create_place_requires_name_and_category(client, director, category):
 
 
 # -- person creation ----------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_create_person_refuses_the_plain_add_permission(client, django_user_model):
+    """Ordinary Personne creation must not open the tagging shortcut."""
+    user = django_user_model.objects.create_user(username="person-editor-only", password="pw")
+    user.user_permissions.set(Permission.objects.filter(codename="add_person"))
+    client.force_login(user)
+
+    response = client.post(reverse("tagging-person-create"), {"name": "Barbeyrac, Jean"})
+
+    assert response.status_code == 403
+    assert not Person.objects.filter(name="Barbeyrac, Jean").exists()
 
 
 @pytest.mark.django_db

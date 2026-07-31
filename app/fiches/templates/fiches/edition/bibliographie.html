@@ -41,7 +41,7 @@
         var doctype_exclusive_fields = {{ doctype_exclusive_fields_js|default:"{}" }};
         var doctype_allexclusive_fields = {{ doctype_allexclusive_fields_js|default:"{}" }};
         /* Gate inline place creation in the place-tag widget (re-checked server-side). */
-        window.LL_NAMETAG = { place: {% if perms.fiches.add_placerecord %}true{% else %}false{% endif %} };
+        window.LL_NAMETAG = { place: {% if perms.fiches.add_placerecord_inline %}true{% else %}false{% endif %} };
     </script>
     
     <!-- 2) Load the dynamic list widget code -->

@@ -33,7 +33,7 @@
 	</style>
 	<script type="text/javascript">
 		// Gate inline place creation in the "Lieu" widget (re-checked server-side).
-		window.LL_NAMETAG = { place: {% if perms.fiches.add_placerecord %}true{% else %}false{% endif %} };
+		window.LL_NAMETAG = { place: {% if perms.fiches.add_placerecord_inline %}true{% else %}false{% endif %} };
 	</script>
 {% endblock head %}
 

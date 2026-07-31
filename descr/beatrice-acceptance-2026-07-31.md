@@ -25,7 +25,7 @@ XLS n'est pas reproduit ici.
 | Références d'une fiche lieu : seul le titre est lié; manuscrits puis littérature primaire puis secondaire | Requêtes, ordre, sous-sections et HTML final | Conforme |
 | Bouton de tagging lieu plus visible avec un globe | Chargement CKEditor réel; bouton « Lier un lieu » et icône 16×16 contrôlés dans Chrome | Conforme |
 | Personne taguée dans une transcription visible sur sa fiche | Cas publié/non publié, autre personne, dédoublonnage et rendu Chrome dans « Littérature primaire > Manuscrit » | Conforme |
-| Création de personnes/lieux depuis le tagging réservée au Directeur | Commande de rôles, permission dédiée et endpoints refusé/autorisé | Conforme |
+| Création de personnes/lieux depuis le tagging réservée au Directeur | Permissions fonctionnelles dédiées, commande de rôles, interface et endpoints refusé/autorisé | Conforme — « admin » est interprété comme Directeur LL pour cette fonction, sans privilèges d'administration technique |
 | Littérature secondaire non indexable par les champs de lieu | Formulaire, conservation du texte sans tag, destination conservée, passage primaire→secondaire et disparition de la fiche lieu | Conforme |
 | Index A–Z de la liste des lieux ne reste plus bloqué | Marquage HTML, filtre serveur, clic Chrome avec navigation `?q=B`, aucun XHR/fetch parasite | Conforme |
 

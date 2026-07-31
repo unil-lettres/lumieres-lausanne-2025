@@ -111,7 +111,14 @@ class SyncStatusRolesTest(TestCase):
         call_command("sync_status_roles", apply=True, stdout=out)
         self.directeurs.refresh_from_db()
 
-        self.assertTrue({"add_person", "add_placerecord"}.issubset(self._director_permission_codenames()))
+        self.assertTrue(
+            {
+                "add_person",
+                "add_person_inline",
+                "add_placerecord",
+                "add_placerecord_inline",
+            }.issubset(self._director_permission_codenames())
+        )
 
     def test_dry_run_does_not_grant_fiche_creation_permissions_to_directors(self):
         out = StringIO()
@@ -119,7 +126,10 @@ class SyncStatusRolesTest(TestCase):
         call_command("sync_status_roles", stdout=out)
         self.directeurs.refresh_from_db()
 
-        self.assertFalse({"add_person", "add_placerecord"} & self._director_permission_codenames())
+        self.assertFalse(
+            {"add_person", "add_person_inline", "add_placerecord", "add_placerecord_inline"}
+            & self._director_permission_codenames()
+        )
 
     def test_apply_grants_place_management_permissions_to_directors(self):
         out = StringIO()
@@ -199,16 +209,18 @@ class SyncStatusRolesTest(TestCase):
             with self.subTest(group=group_name):
                 self.assertEqual(observed, expected)
 
-    def test_only_directors_may_create_a_place_while_tagging(self):
-        """Inline creation from the tagging toolbar is narrower than add_placerecord."""
+    def test_only_directors_may_create_named_entities_while_tagging(self):
+        """Inline creation from tagging is narrower than ordinary fiche creation."""
         chercheurs = Group.objects.create(name="chercheurs")
 
         call_command("sync_status_roles", apply=True, stdout=StringIO())
 
-        self.assertIn("add_placerecord_inline", self._director_permission_codenames())
-        self.assertNotIn(
-            "add_placerecord_inline",
-            set(chercheurs.permissions.values_list("codename", flat=True)),
+        self.assertTrue(
+            {"add_person_inline", "add_placerecord_inline"}.issubset(self._director_permission_codenames())
+        )
+        self.assertFalse(
+            {"add_person_inline", "add_placerecord_inline"}
+            & set(chercheurs.permissions.values_list("codename", flat=True))
         )
 
     def test_director_can_reopen_a_place_fiche_for_editing_after_sync(self):

@@ -248,9 +248,15 @@ class Command(BaseCommand):
                 return None
 
     def _ensure_fiche_creation_permissions(self):
-        """Fetch the person/place 'add' permissions used to create fiches while tagging."""
+        """Fetch normal and tagging-only fiche creation permissions for directors."""
         permissions = []
-        for model, codename in ((Person, "add_person"), (PlaceRecord, "add_placerecord")):
+        required = (
+            (Person, "add_person"),
+            (Person, "add_person_inline"),
+            (PlaceRecord, "add_placerecord"),
+            (PlaceRecord, "add_placerecord_inline"),
+        )
+        for model, codename in required:
             ct = ContentType.objects.get_for_model(model)
             perm = Permission.objects.filter(content_type=ct, codename=codename).first()
             if perm:

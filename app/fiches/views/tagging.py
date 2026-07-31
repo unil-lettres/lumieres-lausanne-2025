@@ -21,9 +21,9 @@
 """AJAX endpoints backing the « Pers » / « Lieu » transcription tagging plugin.
 
 Only fiche *creation* lives here; searching reuses ``ajax_search`` (persons) and
-``place_autocomplete`` (places). Creation is gated on ``add_person`` /
-``add_placerecord`` so that only the « Directeurs » role may create a fiche from
-the tagging window — every other role can solely select an existing fiche.
+``place_autocomplete`` (places). Creation uses dedicated inline permissions so
+that the « Directeurs » role may create a fiche from the tagging window without
+conflating that responsibility with ordinary fiche creation or technical admin.
 """
 
 from django.http import JsonResponse
@@ -42,8 +42,8 @@ def place_categories(request):
 
 @require_POST
 def create_person(request):
-    """Create (or reuse) a Person from the tagging window — gated ``add_person``."""
-    if not request.user.has_perm("fiches.add_person"):
+    """Create (or reuse) a Person from tagging — gated ``add_person_inline``."""
+    if not request.user.has_perm("fiches.add_person_inline"):
         return JsonResponse({"success": False, "error": "forbidden"}, status=403)
     name = (request.POST.get("name") or "").strip()
     if not name:
