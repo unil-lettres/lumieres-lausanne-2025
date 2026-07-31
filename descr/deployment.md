@@ -139,6 +139,8 @@
 - [ ] UI checks
   - [ ] Director account: edit a shared collection and confirm the owner dropdown appears while other fields remain read-only.
   - [ ] Doctorant-only account: edit a bibliographic fiche, add/remove an attachment to ensure permissions work.
+  - [ ] Civiliste-only account: tag existing authorities, edit the required bibliography/transcription and pagination/IIIF fields, and add an attachment.
+  - [ ] Civiliste-only account: confirm that creating a new authority, deleting another user's object, changing ownership, publishing, viewing unrelated confidential notes, managing users/groups and accessing Django admin are all refused.
   - [ ] Global search: multi-keyword query (e.g. “La Harpe lettre”) returns AND-filtered results with proper ordering.
   - [ ] Advanced search: “Paramètres d’affichage” toggles persist (toujours/jamais/journal filters).
 - [ ] Communicate “staging refreshed” to testers/support crew.

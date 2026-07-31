@@ -51,3 +51,58 @@ XLS n'est pas reproduit ici.
   en particulier pour le jugement visuel et le contenu bibliographique réel.
 - Aucun déploiement staging ou production n'a été effectué pendant cette
   validation.
+
+## Checklist avant mise en staging de la branche Xavier
+
+### Intégration et validation automatisée
+
+- [x] Intégrer le dernier commit validé de Xavier dans
+  `staging/named_entities`.
+- [x] Intégrer les corrections incontestables de propriété et de confidentialité
+  pour les bibliographies, transcriptions, pièces jointes, collections privées
+  et notes.
+- [x] Ajouter les permissions dédiées de création d'autorités depuis le tagging.
+- [x] Faire passer la suite complète locale, les tests d'acceptation redondants,
+  les contrôles de migration et la CI GitHub.
+- [x] Vérifier puis rafraîchir additivement le backup local canonique de
+  production, sans écriture en production et sans suppression locale.
+
+### Nouveau rôle métier « civilistes » — porte bloquante
+
+- [ ] Créer un groupe Django `civilistes`, distinct de `directeurs` et de
+  l'administration technique.
+- [ ] Lui permettre de consulter les contenus de travail, de modifier les
+  bibliographies et transcriptions nécessaires, de taguer les autorités
+  existantes, de renseigner pagination/IIIF et d'ajouter les pièces jointes
+  nécessaires.
+- [ ] Ne pas lui accorder la suppression des objets d'autrui, le transfert de
+  propriété, la publication/validation finale, la visibilité générale des notes
+  confidentielles, la gestion des utilisateurs/groupes ni l'accès au Django
+  admin.
+- [ ] Garder la création directe d'une nouvelle personne ou d'un nouveau lieu
+  depuis le tagging sous validation du Directeur LL; le civiliste peut utiliser
+  une autorité existante mais ne crée pas seul une nouvelle autorité.
+- [ ] Ajouter une matrice de tests positifs et négatifs pour `civilistes`, avec
+  un compte dédié et sans héritage accidentel de `directeurs`.
+- [ ] Faire valider par Béatrice sur staging les parcours « tagging existant »,
+  « demande de nouvelle autorité », « pagination/IIIF », « pièce jointe » et
+  « soumission au Directeur LL ».
+- [ ] Après validation seulement, préparer comme opération de production
+  séparée la réaffectation des civilistes actuellement placés dans des groupes
+  trop larges; aucune modification de compte de production ne fait partie du
+  déploiement staging.
+
+### Déploiement et validation staging
+
+- [ ] Rétablir et confirmer l'accès à `plt-tst-2.unil.ch` puis effectuer le
+  préflight en lecture seule de `/var/www/lumieres2` et du projet Compose
+  `lumieres-staging`.
+- [ ] Créer le bundle de rollback staging avant tout changement.
+- [ ] Déployer une image immuable construite depuis le commit final incluant le
+  rôle `civilistes`.
+- [ ] Appliquer les migrations, `collectstatic`, `sync_status_roles --apply` et
+  reconstruire l'index Solr.
+- [ ] Exécuter les tests fonctionnels avec des comptes isolés Directeur LL,
+  Civiliste, Doctorant, Chercheur et utilisateur sans rôle.
+- [ ] Obtenir la validation fonctionnelle finale de Béatrice avant toute
+  préparation de mise en production.
