@@ -22,10 +22,14 @@
 
 from __future__ import annotations
 
+from io import StringIO
+
 import pytest
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Group, Permission
+from django.core.management import call_command
 from django.urls import reverse
-from fiches.models import PlaceCategory, PlaceRecord, ReferenceSite
+
+from fiches.models import PlaceCategory, PlaceRecord, PlaceReferenceSite, ReferenceSite
 
 
 @pytest.fixture
@@ -189,6 +193,32 @@ def test_change_any_permission_lifts_the_ownership_restriction(client, editor, c
 
 
 @pytest.mark.django_db
+def test_director_can_post_changes_to_someone_elses_place_after_role_sync(client, category, django_user_model):
+    """Exercise the exact POST that Béatrice reported as « Accès non autorisé ».
+
+    The permission-level tests prove the role has the right; this cross-layer
+    check proves the edit view accepts and persists a director's actual save.
+    """
+    directors = Group.objects.create(name="directeurs")
+    call_command("sync_status_roles", apply=True, stdout=StringIO())
+    director = django_user_model.objects.create_user(username="director-post", password="pw")
+    director.groups.add(directors)
+    other = django_user_model.objects.create_user(username="original-author", password="pw")
+    place = PlaceRecord.objects.create(name="Lausanne", category=category, creator=other)
+    client.force_login(director)
+
+    response = client.post(
+        reverse("place-edit", args=[place.pk]),
+        {"name": "Lausanne corrigée", "category": category.pk, **_empty_formsets()},
+    )
+
+    assert response.status_code == 302
+    place.refresh_from_db()
+    assert place.name == "Lausanne corrigée"
+    assert place.creator == other
+
+
+@pytest.mark.django_db
 def test_creator_is_stamped_on_creation(client, editor, category):
     """ "Auteur de la fiche" is filled in automatically, like on the biblio fiche."""
     client.force_login(editor)
@@ -240,6 +270,31 @@ def test_related_places_saved_via_widget(client, editor, category):
     response = client.post(reverse("place-create"), data)
     assert response.status_code == 302
     assert other in PlaceRecord.objects.get(name="Lausanne").related_places.all()
+
+
+@pytest.mark.django_db
+def test_editing_a_place_reference_identifier_replaces_it_in_place(client, editor, category, geonames):
+    """Cover the complete form round-trip, not only the shared widget HTML."""
+    place = PlaceRecord.objects.create(name="Lausanne", category=category, creator=editor)
+    PlaceReferenceSite.objects.create(
+        place=place,
+        reference_site=geonames,
+        identifier="wrong-id",
+    )
+    client.force_login(editor)
+
+    response = client.post(
+        reverse("place-edit", args=[place.pk]),
+        {
+            "name": place.name,
+            "category": category.pk,
+            "reference_links": [f"{geonames.pk}|2659994"],
+            **_empty_formsets(),
+        },
+    )
+
+    assert response.status_code == 302
+    assert list(place.reference_links.values_list("identifier", flat=True)) == ["2659994"]
 
 
 @pytest.mark.django_db

@@ -24,11 +24,14 @@ import importlib
 
 from django.http import QueryDict
 from django.test import TestCase
+
 from fiches.forms import BiblioForm
+from fiches.models import PlaceCategory, PlaceRecord
 from fiches.models.contributions import PrimaryKeyword
 from fiches.models.documents import Biblio, DocumentLanguage
 from fiches.models.documents.document import DocumentType
 from fiches.place_tag import PlaceTagWidget
+from fiches.views.place import tagged_biblios_printing
 
 # The migration module name starts with a digit, so it cannot be imported with the
 # usual statement; load it explicitly to reach its data-migration helpers.
@@ -116,6 +119,36 @@ class BiblioPlaceTagFormTest(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
 
         self.assertEqual(form.save().destination, tag)
+
+    def test_switching_an_existing_biblio_to_secondary_removes_it_from_the_place_fiche(self):
+        """Cross the form/model/listing layers for Béatrice's anti-noise rule."""
+        place = PlaceRecord.objects.create(
+            name="Lausanne",
+            category=PlaceCategory.objects.create(name="Ville"),
+        )
+        biblio = Biblio.objects.create(
+            title="Publication à reclasser",
+            document_type=self.doctype,
+            litterature_type="p",
+            language=self.language,
+            place=_place_tag(place.pk, place.name),
+        )
+        self.assertEqual(list(tagged_biblios_printing(place)), [biblio])
+
+        form = BiblioForm(
+            data=self._post_data(
+                title=biblio.title,
+                litterature_type="s",
+                place=biblio.place,
+            ),
+            instance=biblio,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+
+        biblio.refresh_from_db()
+        self.assertEqual(biblio.place, "Lausanne")
+        self.assertEqual(list(tagged_biblios_printing(place)), [])
 
 
 class _FakeApps:

@@ -22,6 +22,7 @@
 
 import pytest
 from django.urls import reverse
+
 from fiches.models import PlaceCategory, PlaceRecord
 
 
@@ -53,6 +54,15 @@ def test_first_letter_filter(client, places):
     assert "Grandson" in body
     assert "Aarberg" not in body
     assert "Zofingue" not in body
+
+
+@pytest.mark.django_db
+def test_alpha_index_is_marked_for_plain_navigation(client, places):
+    """The JS must recognize A-Z links and leave navigation to the browser."""
+    body = client.get(reverse("list-place")).content.decode()
+
+    assert 'class="paginator alpha-index"' in body
+    assert f'href="{reverse("list-place")}?q=G"' in body
 
 
 @pytest.mark.django_db

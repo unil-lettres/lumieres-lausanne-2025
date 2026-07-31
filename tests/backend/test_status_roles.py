@@ -25,8 +25,10 @@ from django.contrib.auth.models import Group, User
 from django.core.management import call_command
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
+
 from fiches.admin import CustomUserAdmin
 from fiches.models import PlaceCategory, PlaceRecord
+from fiches.views.place import may_change, may_delete
 
 
 class SyncStatusRolesTest(TestCase):
@@ -160,6 +162,42 @@ class SyncStatusRolesTest(TestCase):
         self.assertNotIn("delete_any_placerecord", codenames(chercheurs))
         # Directeur LL: no ownership restriction at all.
         self.assertIn("delete_any_placerecord", self._director_permission_codenames())
+
+    def test_place_status_matrix_is_enforced_from_user_to_director(self):
+        """Redundant behavioural pass over every row in Béatrice's XLS matrix."""
+        groups = {
+            "utilisateurs": Group.objects.create(name="utilisateurs"),
+            "étudiants": Group.objects.create(name="étudiants"),
+            "chercheurs": Group.objects.create(name="chercheurs"),
+            "doctorants": self.doctorants,
+            "directeurs": self.directeurs,
+        }
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+        category = PlaceCategory.objects.create(name="Ville")
+        other = User.objects.create_user("place-other", password="pw")
+        expectations = {
+            # group: (may add, change own, change other, delete own, delete other)
+            "utilisateurs": (False, False, False, False, False),
+            "étudiants": (True, True, False, True, False),
+            "chercheurs": (True, True, True, True, False),
+            "doctorants": (True, True, True, True, False),
+            "directeurs": (True, True, True, True, True),
+        }
+
+        for group_name, expected in expectations.items():
+            user = User.objects.create_user(f"matrix-{group_name}", password="pw")
+            user.groups.add(groups[group_name])
+            own_place = PlaceRecord.objects.create(name=f"Own {group_name}", category=category, creator=user)
+            other_place = PlaceRecord.objects.create(name=f"Other {group_name}", category=category, creator=other)
+            observed = (
+                user.has_perm("fiches.add_placerecord"),
+                may_change(user, own_place),
+                may_change(user, other_place),
+                may_delete(user, own_place),
+                may_delete(user, other_place),
+            )
+            with self.subTest(group=group_name):
+                self.assertEqual(observed, expected)
 
     def test_only_directors_may_create_a_place_while_tagging(self):
         """Inline creation from the tagging toolbar is narrower than add_placerecord."""
