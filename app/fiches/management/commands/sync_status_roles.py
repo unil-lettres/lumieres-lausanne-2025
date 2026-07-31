@@ -38,6 +38,7 @@ class Command(BaseCommand):
         "Synchronise Lumières status groups with the latest permission policy:\n"
         " - doctorants manage bibliography attachments without deleting others' files\n"
         " - doctorants may access and edit third-party transcriptions\n"
+        " - civilistes get an exact, least-privilege editorial role\n"
         " - directeurs may reassign collection owners\n"
         " - directeurs may manage user profile extra information\n"
         " - directeurs may create person & place fiches (named-entity tagging)\n"
@@ -92,8 +93,31 @@ class Command(BaseCommand):
     }
     ASSISTANT_NAMES = ("assistants", "assistant")
     DOCTORANT_NAME = "doctorants"
+    CIVILISTE_NAME = "civilistes"
     DIRECTEUR_NAME = "directeurs"
     COLLECTION_OWNER_PERM = "change_collection_owner"
+    CIVILISTE_PERMISSION_SPECS = (
+        # Bibliographic tagging work, including records assigned by a researcher.
+        ("fiches", "biblio", "view_biblio"),
+        ("fiches", "biblio", "add_biblio"),
+        ("fiches", "biblio", "change_biblio"),
+        ("fiches", "biblio", "change_any_biblio"),
+        ("fiches", "biblio", "delete_biblio"),
+        # Transcription, pagination and IIIF work on unpublished assigned records.
+        ("fiches", "transcription", "view_transcription"),
+        ("fiches", "transcription", "add_transcription"),
+        ("fiches", "transcription", "change_transcription"),
+        ("fiches", "transcription", "change_any_transcription"),
+        ("fiches", "transcription", "delete_transcription"),
+        ("fiches", "transcription", "access_unpublished_transcription"),
+        # Attachments may be added or corrected globally, but only their owner may
+        # delete them (enforced by user_can_delete_documentfile).
+        ("fiches", "documentfile", "view_documentfile"),
+        ("fiches", "documentfile", "add_documentfile"),
+        ("fiches", "documentfile", "change_documentfile"),
+        ("fiches", "documentfile", "change_any_documentfile"),
+        ("fiches", "documentfile", "delete_documentfile"),
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -110,6 +134,9 @@ class Command(BaseCommand):
 
         context_manager = transaction.atomic if apply_changes else nullcontext
         with context_manager():
+            civiliste_permissions = self._get_civiliste_permissions()
+            if civiliste_permissions is not None:
+                self._sync_civiliste_permissions(civiliste_permissions, apply_changes)
             docfile_perms = self._ensure_docfile_permissions()
             transcription_perms = self._ensure_transcription_permissions()
             self._update_doctorant_permissions(
@@ -145,6 +172,80 @@ class Command(BaseCommand):
     def _get_group(self, name):
         """Return the first group matching the supplied name (case-insensitive)."""
         return Group.objects.filter(name__iexact=name).first()
+
+    def _get_civiliste_permissions(self):
+        """Resolve the complete Civiliste policy without ambiguous codenames."""
+        permissions = []
+        missing = []
+        for app_label, model, codename in self.CIVILISTE_PERMISSION_SPECS:
+            permission = Permission.objects.filter(
+                content_type__app_label=app_label,
+                content_type__model=model,
+                codename=codename,
+            ).first()
+            if permission is None:
+                missing.append(f"{app_label}.{model}.{codename}")
+            else:
+                permissions.append(permission)
+
+        if missing:
+            self.stdout.write(
+                self.style.WARNING(
+                    "Civiliste permissions are incomplete; refusing to reconcile the group. "
+                    f"Missing: {', '.join(missing)}. Please run migrations first."
+                )
+            )
+            return None
+        return permissions
+
+    def _sync_civiliste_permissions(self, required_permissions, apply_changes):
+        """Reconcile Civilistes to the exact least-privilege editorial policy."""
+        group = self._get_or_create_civiliste_group(apply_changes)
+        if group is None:
+            return
+
+        required_by_id = {permission.id: permission for permission in required_permissions}
+        existing_by_id = {permission.id: permission for permission in group.permissions.select_related("content_type")}
+        additions = [required_by_id[pk] for pk in sorted(required_by_id.keys() - existing_by_id.keys())]
+        removals = [existing_by_id[pk] for pk in sorted(existing_by_id.keys() - required_by_id.keys())]
+
+        if not additions and not removals:
+            self.stdout.write(self.style.SUCCESS(f"'{group.name}' already matches the exact Civiliste policy."))
+            return
+
+        if apply_changes:
+            group.permissions.set(required_permissions)
+        self._report_civiliste_changes(additions, removals, apply_changes)
+
+    def _get_or_create_civiliste_group(self, apply_changes):
+        """Return the Civiliste group, creating it only in apply mode."""
+        group = self._get_group(self.CIVILISTE_NAME)
+        if not group:
+            message = f"Group '{self.CIVILISTE_NAME}' not found."
+            if apply_changes:
+                group = Group.objects.create(name=self.CIVILISTE_NAME)
+                self.stdout.write(self.style.SUCCESS(f"{message} Created new group."))
+            else:
+                self.stdout.write(self.style.WARNING(f"{message} Would create it in apply mode."))
+                return None
+        return group
+
+    def _report_civiliste_changes(self, additions, removals, apply_changes):
+        """Report the exact permission delta applied or proposed for Civilistes."""
+        style = self.style.SUCCESS if apply_changes else self.style.WARNING
+        actions = (
+            ("Granted Civiliste permissions", "Would grant Civiliste permissions"),
+            ("Revoked out-of-policy Civiliste permissions", "Would revoke out-of-policy Civiliste permissions"),
+        )
+        changes = zip(actions, (additions, removals), strict=True)
+        for action_options, permissions in changes:
+            if not permissions:
+                continue
+            action = action_options[0] if apply_changes else action_options[1]
+            labels = ", ".join(
+                f"{permission.content_type.app_label}.{permission.codename}" for permission in permissions
+            )
+            self.stdout.write(style(f"{action}: {labels}"))
 
     def _ensure_docfile_permissions(self):
         """Fetch DocumentFile permissions required for attachment management."""

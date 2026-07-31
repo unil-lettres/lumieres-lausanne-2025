@@ -19,15 +19,22 @@
 # This copyright notice MUST APPEAR in all copies of the file.
 
 from io import StringIO
+from types import SimpleNamespace
 
 from django.contrib.admin.sites import AdminSite
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import Group, Permission, User
 from django.core.management import call_command
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
-
 from fiches.admin import CustomUserAdmin
+from fiches.management.commands.sync_status_roles import Command
 from fiches.models import PlaceCategory, PlaceRecord
+from fiches.utils import (
+    user_can_change_documentfile,
+    user_can_delete_biblio,
+    user_can_delete_documentfile,
+    user_can_delete_transcription,
+)
 from fiches.views.place import may_change, may_delete
 
 
@@ -35,12 +42,115 @@ class SyncStatusRolesTest(TestCase):
     def setUp(self):
         self.directeurs = Group.objects.create(name="directeurs")
         self.doctorants = Group.objects.create(name="doctorants")
+        self.civilistes = Group.objects.create(name="civilistes")
 
     def _director_permission_codenames(self):
         return set(self.directeurs.permissions.values_list("codename", flat=True))
 
     def _doctorant_permission_codenames(self):
         return set(self.doctorants.permissions.values_list("codename", flat=True))
+
+    def _civiliste_permission_specs(self):
+        return set(
+            self.civilistes.permissions.values_list(
+                "content_type__app_label", "content_type__model", "codename"
+            )
+        )
+
+    def test_apply_reconciles_civilistes_to_the_exact_editorial_policy(self):
+        forbidden = Permission.objects.get(
+            content_type__app_label="fiches",
+            content_type__model="transcription",
+            codename="publish_transcription",
+        )
+        self.civilistes.permissions.add(forbidden)
+
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+        self.civilistes.refresh_from_db()
+
+        self.assertEqual(self._civiliste_permission_specs(), set(Command.CIVILISTE_PERMISSION_SPECS))
+
+    def test_dry_run_reports_but_does_not_reconcile_civilistes(self):
+        forbidden = Permission.objects.get(
+            content_type__app_label="fiches",
+            content_type__model="biblio",
+            codename="delete_any_biblio",
+        )
+        self.civilistes.permissions.add(forbidden)
+        before = self._civiliste_permission_specs()
+        out = StringIO()
+
+        call_command("sync_status_roles", stdout=out)
+
+        self.assertEqual(self._civiliste_permission_specs(), before)
+        self.assertIn("Would grant Civiliste permissions", out.getvalue())
+        self.assertIn("Would revoke out-of-policy Civiliste permissions", out.getvalue())
+
+    def test_civiliste_can_work_on_assigned_content_but_not_publish_or_administer(self):
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+        user = User.objects.create_user("civiliste", password="pw")
+        user.groups.add(self.civilistes)
+
+        allowed = {
+            "fiches.add_biblio",
+            "fiches.change_any_biblio",
+            "fiches.add_transcription",
+            "fiches.change_any_transcription",
+            "fiches.access_unpublished_transcription",
+            "fiches.add_documentfile",
+            "fiches.change_any_documentfile",
+        }
+        forbidden = {
+            "fiches.change_biblio_ownership",
+            "fiches.delete_any_biblio",
+            "fiches.change_transcription_ownership",
+            "fiches.delete_any_transcription",
+            "fiches.publish_transcription",
+            "fiches.delete_any_documentfile",
+            "fiches.add_person_inline",
+            "fiches.add_placerecord_inline",
+            "fiches.can_see_note",
+            "fiches.can_publish_note",
+            "auth.change_user",
+            "auth.change_group",
+        }
+
+        self.assertTrue(all(user.has_perm(name) for name in allowed))
+        self.assertFalse(any(user.has_perm(name) for name in forbidden))
+        self.assertFalse(user.is_staff)
+
+    def test_civiliste_deletion_is_owner_scoped_while_attachment_editing_is_not(self):
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+        user = User.objects.create_user("civiliste-owner", password="pw")
+        other = User.objects.create_user("civiliste-other", password="pw")
+        user.groups.add(self.civilistes)
+
+        own = SimpleNamespace(creator_id=user.id, access_owner_id=user.id, author_id=user.id)
+        foreign = SimpleNamespace(creator_id=other.id, access_owner_id=other.id, author_id=other.id)
+
+        self.assertTrue(user_can_delete_biblio(user, own))
+        self.assertFalse(user_can_delete_biblio(user, foreign))
+        self.assertTrue(user_can_delete_transcription(user, own))
+        self.assertFalse(user_can_delete_transcription(user, foreign))
+        self.assertTrue(user_can_change_documentfile(user, foreign))
+        self.assertTrue(user_can_delete_documentfile(user, own))
+        self.assertFalse(user_can_delete_documentfile(user, foreign))
+
+    def test_civiliste_cannot_create_named_entities_from_tagging(self):
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+        user = User.objects.create_user("civiliste-tagging", password="pw")
+        user.groups.add(self.civilistes)
+        category = PlaceCategory.objects.create(name="Ville civiliste")
+        self.client.force_login(user)
+
+        person_response = self.client.post(reverse("tagging-person-create"), {"name": "Nouvelle personne"})
+        place_response = self.client.post(
+            reverse("tagging-place-create"),
+            {"name": "Nouveau lieu", "category": category.pk},
+        )
+
+        self.assertEqual(person_response.status_code, 403)
+        self.assertEqual(place_response.status_code, 403)
 
     def test_apply_grants_user_profile_permissions_to_directors(self):
         out = StringIO()

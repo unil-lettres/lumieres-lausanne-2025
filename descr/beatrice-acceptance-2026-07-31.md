@@ -35,6 +35,8 @@ XLS n'est pas reproduit ici.
 - Première branche combinée : `754 passed`.
 - Tests d'acceptation ciblés ajoutés : `47 passed`, plus `5 subtests`.
 - Suite complète finale : `759 passed`, plus `5 subtests`.
+- Après ajout du rôle `civilistes` : `59` tests ciblés puis `775` tests
+  collectés et exécutés avec succès; Ruff ciblé conforme.
 - Contrôles Django : `manage.py check` sans erreur; aucune migration manquante.
 - Chrome local : parcours A–Z, fiche lieu lecture/édition/sauvegarde,
   référentiel modifié, note connectée, métadonnées de fiche, fiche personne et
@@ -69,20 +71,20 @@ XLS n'est pas reproduit ici.
 
 ### Nouveau rôle métier « civilistes » — porte bloquante
 
-- [ ] Créer un groupe Django `civilistes`, distinct de `directeurs` et de
+- [x] Créer un groupe Django `civilistes`, distinct de `directeurs` et de
   l'administration technique.
-- [ ] Lui permettre de consulter les contenus de travail, de modifier les
+- [x] Lui permettre de consulter les contenus de travail, de modifier les
   bibliographies et transcriptions nécessaires, de taguer les autorités
   existantes, de renseigner pagination/IIIF et d'ajouter les pièces jointes
   nécessaires.
-- [ ] Ne pas lui accorder la suppression des objets d'autrui, le transfert de
+- [x] Ne pas lui accorder la suppression des objets d'autrui, le transfert de
   propriété, la publication/validation finale, la visibilité générale des notes
   confidentielles, la gestion des utilisateurs/groupes ni l'accès au Django
   admin.
-- [ ] Garder la création directe d'une nouvelle personne ou d'un nouveau lieu
+- [x] Garder la création directe d'une nouvelle personne ou d'un nouveau lieu
   depuis le tagging sous validation du Directeur LL; le civiliste peut utiliser
   une autorité existante mais ne crée pas seul une nouvelle autorité.
-- [ ] Ajouter une matrice de tests positifs et négatifs pour `civilistes`, avec
+- [x] Ajouter une matrice de tests positifs et négatifs pour `civilistes`, avec
   un compte dédié et sans héritage accidentel de `directeurs`.
 - [ ] Faire valider par Béatrice sur staging les parcours « tagging existant »,
   « demande de nouvelle autorité », « pagination/IIIF », « pièce jointe » et
