@@ -33,6 +33,7 @@ from fiches.constants import DOCTYPE
 from fiches.forms import NoteFormPlace, PlaceRecordForm
 from fiches.models import Biography, NotePlace, PlaceRecord, PlaceReferenceSite, PlaceVariant
 from fiches.models.documents.document import Biblio, Transcription
+from fiches.utils import get_last_model_activity, log_model_activity
 
 # How many entries each automatic listing on a place fiche shows per page (§3.4).
 LISTING_PAGE_SIZE = 20
@@ -116,6 +117,8 @@ def _save_place(form, formsets, user):
     place = form.save(commit=False)
     if not place.access_owner_id:
         place.access_owner = user
+    if not place.creator_id:
+        place.creator = user
     place.save()
     form.save_m2m()
     for formset in formsets:
@@ -123,7 +126,39 @@ def _save_place(form, formsets, user):
         formset.save()
     _sync_variants(place, form.cleaned_data.get("variants", []))
     _sync_reference_links(place, form.cleaned_data.get("reference_links", []))
+    # Feeds the "Dernière modification" field of the read view. Nothing logged
+    # place activity before, so that field would have stayed empty forever.
+    log_model_activity(place, user)
     return place
+
+
+def may_change(user, place):
+    """Whether this user may edit that place fiche.
+
+    Students only get their own fiches ("seul. propre" in the status matrix);
+    researchers, doctorants and directors hold change_any_placerecord. Mirrors
+    what views.bibliography does with change_any_biblio.
+    """
+    if not user.has_perm("fiches.change_placerecord"):
+        return False
+    if user.has_perm("fiches.change_any_placerecord"):
+        return True
+    # Never compare a NULL author with a NULL user id: pre-existing fiches have
+    # no creator, and AnonymousUser.id is None, so `==` alone would match.
+    return bool(place.creator_id) and place.creator_id == user.id
+
+
+def may_delete(user, place):
+    """Whether this user may delete that place fiche.
+
+    Only directors hold delete_any_placerecord; every other status is limited to
+    the fiches they authored.
+    """
+    if not user.has_perm("fiches.delete_placerecord"):
+        return False
+    if user.has_perm("fiches.delete_any_placerecord"):
+        return True
+    return bool(place.creator_id) and place.creator_id == user.id
 
 
 # -- §3.4 automatic listings: what references this place (via place tags) --------
@@ -214,8 +249,44 @@ def tagged_biblios_writing(place):
 
 
 def tagged_biblios_subject(place):
-    """Publications indexing this place in Sujets — Lieu(x) (§3.4.2 — Publications - Lieu mentionné)."""
-    return Biblio.objects.filter(subj_place=place).order_by("date", "id").distinct()
+    """Publications indexing this place in Sujets — Lieu(x) (§3.4.2 — « Lieu mentionné »).
+
+    Primary literature first, then secondary, each chronologically (client
+    request 2026-07-15). Sorting on the raw column does that for free ("p"
+    before "s") and, unlike splitting the queryset in two, keeps the rows whose
+    type was never set — 61 of them in the current data — visible.
+    """
+    return Biblio.objects.filter(subj_place=place).order_by("litterature_type", "date", "id").distinct()
+
+
+def tagged_biblios_subject_primary(place):
+    """Primary-literature half of the « Lieu mentionné » listing.
+
+    Excluding "s" rather than filtering on "p" keeps the publications whose
+    litterature_type was never set (61 in current data) visible instead of
+    dropping them between the two sub-listings.
+    """
+    return tagged_biblios_subject(place).exclude(litterature_type="s")
+
+
+def tagged_biblios_subject_secondary(place):
+    """Secondary-literature half of the « Lieu mentionné » listing."""
+    return tagged_biblios_subject(place).filter(litterature_type="s")
+
+
+def _accessible_manuscript_ids(user):
+    """Biblio ids of the manuscripts whose transcription this user may read.
+
+    The shared citation template links a manuscript's title to its transcription
+    when the *biblio* id is listed in ``user_accessible_trans`` — so that is what
+    this returns, using the same published/unpublished rule as
+    :func:`tagged_transcriptions`. Left undefined, the template still linked, but
+    only because Django swallows the exception raised by ``not in ''``.
+    """
+    qs = Transcription.objects.exclude(manuscript_b__isnull=True)
+    if not user.has_perm("fiches.access_unpublished_transcription"):
+        qs = qs.filter(published_date__isnull=False)
+    return list(qs.values_list("manuscript_b_id", flat=True))
 
 
 def _listing_page(items, number):
@@ -241,24 +312,36 @@ def display(request, place_id):
     trans_page = _listing_page(tagged_transcriptions(place, user), get("manuscrits_page"))
     printing_page = _listing_page(tagged_biblios_printing(place), get("impression_page"))
     writing_page = _listing_page(tagged_biblios_writing(place), get("redaction_page"))
-    subject_page = _listing_page(tagged_biblios_subject(place), get("mention_page"))
+    # « Lieu mentionné » is one block with three sub-listings (manuscripts,
+    # primary then secondary literature), like the biblio fiche's « Sujets »;
+    # each keeps its own page parameter so they paginate independently.
+    primary_page = _listing_page(tagged_biblios_subject_primary(place), get("mention_prim_page"))
+    secondary_page = _listing_page(tagged_biblios_subject_secondary(place), get("mention_sec_page"))
     context = {
         "place": place,
         "model": PlaceRecord,
-        "visible_notes": [note for note in place.notes.all() if note.user_access(user)],
+        # Notes are access-filtered in the template with the shared access_lazy
+        # filter, like the biblio and bio fiches, so the rule cannot drift here.
         "tagged_persons": persons_page,
         "tagged_transcriptions": trans_page,
         "tagged_printing": printing_page,
         "tagged_writing": writing_page,
-        "tagged_subject": subject_page,
+        "tagged_subject_primary": primary_page,
+        "tagged_subject_secondary": secondary_page,
+        # Consumed by the shared citation template to decide whether a
+        # manuscript's title links through to its transcription.
+        "user_accessible_trans": _accessible_manuscript_ids(user),
         "personnes_remaining": _remaining(persons_page),
         "manuscrits_remaining": _remaining(trans_page),
         "impression_remaining": _remaining(printing_page),
         "redaction_remaining": _remaining(writing_page),
-        "mention_remaining": _remaining(subject_page),
+        "mention_prim_remaining": _remaining(primary_page),
+        "mention_sec_remaining": _remaining(secondary_page),
+        "last_activity": get_last_model_activity(place),
         "add_url": reverse("place-create") if user.has_perm("fiches.add_placerecord") else None,
-        "edit_url": reverse("place-edit", args=[place.pk]) if user.has_perm("fiches.change_placerecord") else None,
-        "delete_url": reverse("place-delete", args=[place.pk]) if user.has_perm("fiches.delete_placerecord") else None,
+        # Ownership-aware, so the buttons never lead to a 403 (cf. may_change/may_delete).
+        "edit_url": reverse("place-edit", args=[place.pk]) if may_change(user, place) else None,
+        "delete_url": reverse("place-delete", args=[place.pk]) if may_delete(user, place) else None,
     }
     return render(request, "fiches/display/place.html", context)
 
@@ -266,11 +349,14 @@ def display(request, place_id):
 @never_cache
 def edit(request, place_id=None, create_place=False):
     """Create or edit a place fiche with its variant, reference and note inlines."""
-    required_perm = "fiches.add_placerecord" if create_place else "fiches.change_placerecord"
-    if not request.user.has_perm(required_perm):
-        return HttpResponseForbidden("Accès non autorisé")
-
-    place = PlaceRecord() if create_place else get_object_or_404(PlaceRecord, pk=place_id)
+    if create_place:
+        if not request.user.has_perm("fiches.add_placerecord"):
+            return HttpResponseForbidden("Accès non autorisé")
+        place = PlaceRecord()
+    else:
+        place = get_object_or_404(PlaceRecord, pk=place_id)
+        if not may_change(request.user, place):
+            return HttpResponseForbidden("Accès non autorisé")
     posted = (request.POST,) if request.method == "POST" else ()
     form = PlaceRecordForm(*posted, instance=place)
     note_formset = NotePlaceFormSet(*posted, instance=place, queryset=_visible_notes(place, request.user))
@@ -322,9 +408,9 @@ def place_autocomplete(request):
 
 
 def delete(request, place_id):
-    """Delete a place fiche (Admin only)."""
-    if not request.user.has_perm("fiches.delete_placerecord"):
-        return HttpResponseForbidden("Accès non autorisé")
+    """Delete a place fiche (own fiches only, unless delete_any_placerecord)."""
     place = get_object_or_404(PlaceRecord, pk=place_id)
+    if not may_delete(request.user, place):
+        return HttpResponseForbidden("Accès non autorisé")
     place.delete()
     return redirect("workspace-main")

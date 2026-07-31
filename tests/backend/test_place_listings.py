@@ -26,7 +26,7 @@ from datetime import UTC, date, datetime
 
 import pytest
 from django.urls import reverse
-from fiches.models import Biography, PlaceCategory, PlaceRecord
+from fiches.models import Biography, NotePlace, PlaceCategory, PlaceRecord
 from fiches.models.documents import Biblio, DocumentLanguage
 from fiches.models.documents.document import DocumentType, Transcription
 from fiches.models.person.biography import Profession
@@ -34,6 +34,8 @@ from fiches.models.person.person import Person
 from fiches.views.place import (
     tagged_biblios_printing,
     tagged_biblios_subject,
+    tagged_biblios_subject_primary,
+    tagged_biblios_subject_secondary,
     tagged_biblios_writing,
     tagged_persons,
     tagged_transcriptions,
@@ -170,6 +172,21 @@ def test_subject_lists_biblios_indexing_the_place(place):
     assert [b.title for b in tagged_biblios_subject(place)] == ["Indexé"]
 
 
+@pytest.mark.django_db
+def test_subject_orders_primary_literature_before_secondary(place):
+    """Client request 2026-07-15: primary literature first, then secondary.
+
+    The secondary entry is deliberately the older one, so a purely
+    chronological sort would list it first.
+    """
+    secondary = make_biblio(LIVRE, "Secondaire", litt="s", date=date(1700, 1, 1))
+    primary = make_biblio(LIVRE, "Primaire", litt="p", date=date(1800, 1, 1))
+    for biblio in (secondary, primary):
+        biblio.subj_place.set([place])
+
+    assert [b.title for b in tagged_biblios_subject(place)] == ["Primaire", "Secondaire"]
+
+
 # -- read view integration ----------------------------------------------------
 
 
@@ -209,3 +226,94 @@ def test_place_page_renders_manuscript_citation_without_error(client, place):
     body = response.content.decode()
     assert "Lieu de rédaction" in body
     assert "biblioref-item" in body
+
+
+@pytest.mark.django_db
+def test_place_page_has_a_single_mention_block(client, place):
+    """Client request 2026-07-15: one « Lieu mentionné » block, built like « Sujets ».
+
+    The two prefixed listings are merged into a single field_wrap carrying
+    italic sub-headings, so the label must appear exactly once.
+    """
+    Transcription.objects.create(text=tag(place), published_date=datetime(2020, 1, 1, tzinfo=UTC))
+    make_biblio(LIVRE, "Indexé").subj_place.set([place])
+
+    body = client.get(reverse("place-display", args=[place.id])).content.decode()
+
+    assert "Publications - Lieu mentionné" not in body
+    assert "Manuscrits - Lieu mentionné" not in body
+    assert body.count("Lieu mentionné") == 1
+    assert 'class="field_wrap subjects"' in body
+
+
+@pytest.mark.django_db
+def test_mention_sub_headings_are_ordered_manuscripts_then_primary_then_secondary(client, place):
+    """Same request: manuscripts, then primary literature, then secondary."""
+    Transcription.objects.create(text=tag(place), published_date=datetime(2020, 1, 1, tzinfo=UTC))
+    make_biblio(LIVRE, "Primaire", litt="p").subj_place.set([place])
+    make_biblio(LIVRE, "Secondaire", litt="s").subj_place.set([place])
+
+    body = client.get(reverse("place-display", args=[place.id])).content.decode()
+
+    assert body.index("Manuscrits:") < body.index("Littérature primaire:") < body.index("Littérature secondaire:")
+
+
+@pytest.mark.django_db
+def test_secondary_literature_lands_in_its_own_sub_listing(client, place):
+    """Secondary literature is reachable only through Sujets → Lieu(x)."""
+    make_biblio(LIVRE, "Primaire", litt="p").subj_place.set([place])
+    make_biblio(LIVRE, "Secondaire", litt="s").subj_place.set([place])
+
+    assert [b.title for b in tagged_biblios_subject_primary(place)] == ["Primaire"]
+    assert [b.title for b in tagged_biblios_subject_secondary(place)] == ["Secondaire"]
+
+
+@pytest.mark.django_db
+def test_publication_with_no_litterature_type_stays_in_the_primary_listing(place):
+    """Excluding "s" rather than filtering "p" keeps the 61 unset rows visible."""
+    make_biblio(LIVRE, "Type absent", litt="").subj_place.set([place])
+
+    assert [b.title for b in tagged_biblios_subject_primary(place)] == ["Type absent"]
+    assert list(tagged_biblios_subject_secondary(place)) == []
+
+
+@pytest.mark.django_db
+def test_note_is_rendered_after_the_mention_listing(client, place, django_user_model):
+    """Client request 2026-07-15: the note belongs after « Lieu mentionné ».
+
+    Same running order as the biblio fiche: listings, then the note, then the
+    author and modification fields.
+    """
+    Transcription.objects.create(text=tag(place), published_date=datetime(2020, 1, 1, tzinfo=UTC))
+    NotePlace.objects.create(owner=place, text="<p>note situee</p>")
+    client.force_login(django_user_model.objects.create_user(username="reader-order", password="pw"))
+
+    body = client.get(reverse("place-display", args=[place.id])).content.decode()
+
+    assert body.index("Lieu mentionné") < body.index("note situee") < body.index("Auteur de la fiche")
+
+
+@pytest.mark.django_db
+def test_listed_reference_links_only_the_title(client, place):
+    """Client request 2026-07-15: not the whole citation in blue — only the title.
+
+    The entry used to be wrapped in one <a>, which coloured everything. The
+    shared citation template links the title itself (class ia-link, orange), so
+    the wrapper had to go and the nolink flag with it.
+    """
+    make_biblio(LIVRE, "Livre indexé", place=tag(place), date=date(1780, 1, 1))
+
+    body = client.get(reverse("place-display", args=[place.id])).content.decode()
+
+    assert '<a class="listing-ref"' not in body
+    assert 'class="title collectable ia-link"' in body
+
+
+@pytest.mark.django_db
+def test_listed_manuscript_keeps_its_fiche_du_manuscrit_link(client, place):
+    """Same request: a transcription entry ends with the manuscript link."""
+    make_biblio(MANUSCRIT, "Manuscrit indexé", place=tag(place), date=date(1765, 1, 1))
+
+    body = client.get(reverse("place-display", args=[place.id])).content.decode()
+
+    assert "fiche du manuscrit" in body

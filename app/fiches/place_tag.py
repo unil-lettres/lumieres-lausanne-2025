@@ -33,9 +33,25 @@ biography form (declared in the models module) can use it without a circular
 import.
 """
 
+import re
+
 from django import forms
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
+
+#: A place tag as produced by this widget and by the transcription "Lieu" button.
+_PLACE_TAG_RE = re.compile(r'<a\b[^>]*\bclass="[^"]*\bll-tag-place\b[^"]*"[^>]*>(.*?)</a>', re.IGNORECASE | re.DOTALL)
+
+
+def strip_place_tags(html):
+    """Unwrap place tags, keeping the text the editor typed.
+
+    Used where a field must stay free of place indexing (secondary-literature
+    biblio places): the link disappears, the wording does not.
+    """
+    if not html:
+        return html
+    return _PLACE_TAG_RE.sub(r"\1", html)
 
 
 class PlaceTagWidget(forms.Widget):

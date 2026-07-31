@@ -24,7 +24,9 @@ from django.contrib.admin.sites import AdminSite
 from django.contrib.auth.models import Group, User
 from django.core.management import call_command
 from django.test import RequestFactory, TestCase
+from django.urls import reverse
 from fiches.admin import CustomUserAdmin
+from fiches.models import PlaceCategory, PlaceRecord
 
 
 class SyncStatusRolesTest(TestCase):
@@ -116,6 +118,74 @@ class SyncStatusRolesTest(TestCase):
         self.directeurs.refresh_from_db()
 
         self.assertFalse({"add_person", "add_placerecord"} & self._director_permission_codenames())
+
+    def test_apply_grants_place_management_permissions_to_directors(self):
+        out = StringIO()
+
+        call_command("sync_status_roles", apply=True, stdout=out)
+        self.directeurs.refresh_from_db()
+
+        self.assertTrue(
+            {"change_placerecord", "delete_placerecord", "view_placerecord"}.issubset(
+                self._director_permission_codenames()
+            )
+        )
+
+    def test_dry_run_does_not_grant_place_management_permissions_to_directors(self):
+        out = StringIO()
+
+        call_command("sync_status_roles", stdout=out)
+        self.directeurs.refresh_from_db()
+
+        self.assertFalse(
+            {"change_placerecord", "delete_placerecord", "view_placerecord"} & self._director_permission_codenames()
+        )
+
+    def test_apply_follows_the_place_status_matrix(self):
+        """ "LL détail des STATUTS revus 2026.07": who may edit/delete whose fiche."""
+        etudiants = Group.objects.create(name="étudiants")
+        chercheurs = Group.objects.create(name="chercheurs")
+
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+
+        def codenames(group):
+            return set(group.permissions.values_list("codename", flat=True))
+
+        # Étudiant: may edit and delete, but only their own fiches.
+        self.assertIn("change_placerecord", codenames(etudiants))
+        self.assertNotIn("change_any_placerecord", codenames(etudiants))
+        self.assertNotIn("delete_any_placerecord", codenames(etudiants))
+        # Chercheur: edits every fiche, deletes only their own.
+        self.assertIn("change_any_placerecord", codenames(chercheurs))
+        self.assertNotIn("delete_any_placerecord", codenames(chercheurs))
+        # Directeur LL: no ownership restriction at all.
+        self.assertIn("delete_any_placerecord", self._director_permission_codenames())
+
+    def test_only_directors_may_create_a_place_while_tagging(self):
+        """Inline creation from the tagging toolbar is narrower than add_placerecord."""
+        chercheurs = Group.objects.create(name="chercheurs")
+
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+
+        self.assertIn("add_placerecord_inline", self._director_permission_codenames())
+        self.assertNotIn(
+            "add_placerecord_inline",
+            set(chercheurs.permissions.values_list("codename", flat=True)),
+        )
+
+    def test_director_can_reopen_a_place_fiche_for_editing_after_sync(self):
+        """Client report 2026-07-15: a director could create a place fiche but
+        saving it, or reopening it later, answered "Accès non autorisé" — they
+        only ever received add_placerecord, never change_placerecord."""
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+        director = User.objects.create_user("director-place", password="pw")
+        director.groups.add(self.directeurs)
+        place = PlaceRecord.objects.create(name="Lausanne", category=PlaceCategory.objects.create(name="Ville"))
+        self.client.force_login(director)
+
+        response = self.client.get(reverse("place-edit", args=[place.pk]))
+
+        self.assertEqual(response.status_code, 200)
 
     def test_user_profile_inline_is_available_to_directors_after_sync(self):
         user = User.objects.create_user("director", is_staff=True)

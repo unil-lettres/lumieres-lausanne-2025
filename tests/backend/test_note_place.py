@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 import pytest
+from django.urls import reverse
 from fiches.models import NotePlace, PlaceCategory, PlaceRecord
 
 
@@ -65,3 +66,54 @@ def test_note_cascades_on_place_delete(lausanne):
     NotePlace.objects.create(owner=lausanne, text="<p>note</p>")
     lausanne.delete()
     assert NotePlace.objects.count() == 0
+
+
+# -- read view: which notes a visitor actually sees ---------------------------
+
+
+@pytest.mark.django_db
+def test_note_for_logged_in_users_is_visible_in_read_mode(client, lausanne, django_user_model):
+    """Client report 2026-07-15: a note set to « Utilisateurs » never showed.
+
+    That state is "not public, no groups", which ACModel.user_access only grants
+    when any_login=True — as the shared access_lazy filter does. The place view
+    called user_access() bare, so the note was filtered out for everyone.
+    """
+    NotePlace.objects.create(owner=lausanne, text="<p>note utilisateurs</p>")
+    reader = django_user_model.objects.create_user(username="reader", password="pw")
+    client.force_login(reader)
+
+    body = client.get(reverse("place-display", args=[lausanne.pk])).content.decode()
+
+    assert "note utilisateurs" in body
+
+
+@pytest.mark.django_db
+def test_note_for_logged_in_users_stays_hidden_from_anonymous(client, lausanne):
+    """The same note must not leak to visitors without a login."""
+    NotePlace.objects.create(owner=lausanne, text="<p>note utilisateurs</p>")
+
+    body = client.get(reverse("place-display", args=[lausanne.pk])).content.decode()
+
+    assert "note utilisateurs" not in body
+
+
+@pytest.mark.django_db
+def test_public_note_is_visible_to_anonymous(client, lausanne):
+    NotePlace.objects.create(owner=lausanne, text="<p>note publique</p>", access_public=True)
+
+    body = client.get(reverse("place-display", args=[lausanne.pk])).content.decode()
+
+    assert "note publique" in body
+
+
+@pytest.mark.django_db
+def test_read_view_shows_each_note_access_level(client, lausanne, django_user_model):
+    """The access badge lets an editor check a note's visibility at a glance."""
+    NotePlace.objects.create(owner=lausanne, text="<p>note utilisateurs</p>")
+    reader = django_user_model.objects.create_user(username="reader", password="pw")
+    client.force_login(reader)
+
+    body = client.get(reverse("place-display", args=[lausanne.pk])).content.decode()
+
+    assert "access_status-user" in body

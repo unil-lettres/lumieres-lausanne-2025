@@ -72,6 +72,29 @@ def test_display_renders(client, category):
 
 
 @pytest.mark.django_db
+def test_display_shows_category_next_to_the_title(client, category):
+    """Client request 2026-07-15: the category belongs in brackets next to the label."""
+    place = PlaceRecord.objects.create(name="Lausanne", category=category)
+
+    response = client.get(reverse("place-display", args=[place.pk]))
+
+    assert '<h2>Lausanne <span class="place-category">(Ville/Village)</span></h2>' in response.content.decode()
+
+
+@pytest.mark.django_db
+def test_display_shows_category_next_to_each_related_place(client, category):
+    """Same request, applied to the « Lieux associés » listing."""
+    place = PlaceRecord.objects.create(name="Lausanne", category=category)
+    hamlet = PlaceCategory.objects.create(name="Hameau")
+    place.related_places.add(PlaceRecord.objects.create(name="Vidy", category=hamlet))
+
+    response = client.get(reverse("place-display", args=[place.pk]))
+
+    body = response.content.decode()
+    assert 'Vidy</a> <span class="place-category">(Hameau)</span>' in body
+
+
+@pytest.mark.django_db
 def test_create_requires_permission(client, django_user_model):
     assert client.get(reverse("place-create")).status_code == 403  # anonymous
     django_user_model.objects.create_user(username="nobody", password="pw")
@@ -114,7 +137,9 @@ def test_create_post_saves_inlines(client, editor, category, geonames):
 
 @pytest.mark.django_db
 def test_edit_updates_place(client, editor, category):
-    place = PlaceRecord.objects.create(name="Lausanne", category=category)
+    # `editor` holds the base permissions only — the status matrix calls that
+    # "seul. propre", so the fiche must be one they authored.
+    place = PlaceRecord.objects.create(name="Lausanne", category=category, creator=editor)
     client.force_login(editor)
     data = {"name": "Lausanne-Ville", "category": category.pk, **_empty_formsets()}
     response = client.post(reverse("place-edit", args=[place.pk]), data)
@@ -125,11 +150,75 @@ def test_edit_updates_place(client, editor, category):
 
 @pytest.mark.django_db
 def test_delete_place(client, editor, category):
-    place = PlaceRecord.objects.create(name="Lausanne", category=category)
+    place = PlaceRecord.objects.create(name="Lausanne", category=category, creator=editor)
     client.force_login(editor)
     response = client.post(reverse("place-delete", args=[place.pk]))
     assert response.status_code == 302
     assert not PlaceRecord.objects.filter(pk=place.pk).exists()
+
+
+@pytest.mark.django_db
+def test_edit_refuses_a_fiche_authored_by_someone_else(client, editor, category, django_user_model):
+    """Status matrix: "modifier — seul. propre" without change_any_placerecord."""
+    other = django_user_model.objects.create_user(username="someone-else", password="pw")
+    place = PlaceRecord.objects.create(name="Lausanne", category=category, creator=other)
+    client.force_login(editor)
+
+    assert client.get(reverse("place-edit", args=[place.pk])).status_code == 403
+
+
+@pytest.mark.django_db
+def test_delete_refuses_a_fiche_authored_by_someone_else(client, editor, category, django_user_model):
+    other = django_user_model.objects.create_user(username="someone-else", password="pw")
+    place = PlaceRecord.objects.create(name="Lausanne", category=category, creator=other)
+    client.force_login(editor)
+
+    assert client.post(reverse("place-delete", args=[place.pk])).status_code == 403
+    assert PlaceRecord.objects.filter(pk=place.pk).exists()
+
+
+@pytest.mark.django_db
+def test_change_any_permission_lifts_the_ownership_restriction(client, editor, category, django_user_model):
+    """Chercheurs / doctorants / directeurs hold change_any_placerecord."""
+    other = django_user_model.objects.create_user(username="someone-else", password="pw")
+    place = PlaceRecord.objects.create(name="Lausanne", category=category, creator=other)
+    editor.user_permissions.add(Permission.objects.get(codename="change_any_placerecord"))
+    client.force_login(editor)
+
+    assert client.get(reverse("place-edit", args=[place.pk])).status_code == 200
+
+
+@pytest.mark.django_db
+def test_creator_is_stamped_on_creation(client, editor, category):
+    """ "Auteur de la fiche" is filled in automatically, like on the biblio fiche."""
+    client.force_login(editor)
+    data = {"name": "Yverdon", "category": category.pk, **_empty_formsets()}
+
+    client.post(reverse("place-create"), data)
+
+    assert PlaceRecord.objects.get(name="Yverdon").creator == editor
+
+
+@pytest.mark.django_db
+def test_display_shows_author_and_last_modification(client, editor, category):
+    """Client request 2026-07-15: the same two auto-filled fields as the biblio fiche.
+
+    Also covers the activity-log wiring: the modification line can only be
+    rendered because saving a place now writes an ActivityLog entry, which it
+    never did before.
+    """
+    editor.first_name, editor.last_name = "Damiano", "Bardelli"
+    editor.save()
+    client.force_login(editor)
+    client.post(reverse("place-create"), {"name": "Yverdon", "category": category.pk, **_empty_formsets()})
+    place = PlaceRecord.objects.get(name="Yverdon")
+
+    body = client.get(reverse("place-display", args=[place.pk])).content.decode()
+
+    assert "Auteur de la fiche" in body
+    assert "Damiano Bardelli" in body
+    assert "Dernière modification" in body
+    assert f"({editor.username})" in body
 
 
 @pytest.mark.django_db

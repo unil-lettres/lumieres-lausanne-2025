@@ -35,6 +35,10 @@
 	.placetag_remove { margin-top: 6px; }
 	.placetag_remove a { color: #b00; cursor: pointer; font-size: 11px; }
 	.placetag_status { color: #666; font-size: 11px; margin-top: 3px; }
+	/* Set by the including form when tagging must be unavailable on a field
+	   (e.g. biblio places while "littérature secondaire" is selected). */
+	.placetag.placetag-tagging-off .placetag_button,
+	.placetag.placetag-tagging-off .placetag_picker { display: none; }
 </style>
 <script type="text/javascript">
 (function ($) {

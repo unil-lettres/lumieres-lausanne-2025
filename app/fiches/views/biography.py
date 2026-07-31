@@ -39,6 +39,7 @@ from django.views.decorators.http import require_POST
 from utils import dbg_logger
 
 from fiches.models import Biblio, Biography, BiographyReferenceSite, ContributionDoc, Person, Relation
+from fiches.models.documents.document import Transcription
 from fiches.models.person.biography import (
     BiographyForm,
     NoteBiography,
@@ -219,7 +220,27 @@ def ajax_add_person(request):
     )
 
 
-def build_person_biblio_dict(person):
+def _person_tag_needle(person_id):
+    """Substring identifying a tag pointing at this person in the stored HTML."""
+    return f'data-person="{person_id}"'
+
+
+def manuscripts_tagging_person(person, user):
+    """Manuscript ids whose transcription text tags this person.
+
+    Indexing a person from a manuscript's biblio fiche fills ``subj_person`` and
+    shows up under « Littérature primaire »; tagging the same name inside the
+    transcription text surfaced nowhere on the person's own fiche (client report
+    2026-07-15). Unpublished transcriptions stay hidden unless the user may read
+    them, the rule the place fiche listings already use.
+    """
+    transcriptions = Transcription.objects.filter(text__contains=_person_tag_needle(person.pk))
+    if not user.has_perm("fiches.access_unpublished_transcription"):
+        transcriptions = transcriptions.filter(published_date__isnull=False)
+    return transcriptions.exclude(manuscript_b__isnull=True).values_list("manuscript_b_id", flat=True)
+
+
+def build_person_biblio_dict(person, user):
     def cd_grouper_doctype(cd):
         return cd.document.document_type
 
@@ -251,11 +272,17 @@ def build_person_biblio_dict(person):
     ]
 
     # Biblio - littérature secondaire
+    # Indexed from the biblio fiche (subj_person) or tagged inside the text of
+    # one of the manuscript's transcriptions — both belong on the person's fiche.
     litt_prim = (
         Biblio.objects.exclude(contributiondoc__person=person)
         .select_related()
-        .filter(litterature_type="p", subj_person=person)
+        .filter(
+            Q(subj_person=person) | Q(id__in=manuscripts_tagging_person(person, user)),
+            litterature_type="p",
+        )
         .order_by("document_type__id", "date", "title")
+        .distinct()
     )
     litt_sec = (
         Biblio.objects.select_related()
@@ -324,7 +351,7 @@ def display(request, person_id, version=0):
     reverse_relations = person.get_reverse_relations()
 
     # Biblio - publications
-    ctx = build_person_biblio_dict(person)
+    ctx = build_person_biblio_dict(person, request.user)
 
     # Activities
     activities = get_grouped_objet_activities(person)
@@ -515,7 +542,7 @@ def edit(request, person_id, version=0, create_bio=False):
         public_notes = NoteBiography.objects.filter(owner_id=bio.pk, access_public=True)
 
     # Biblio - publications
-    ctx = build_person_biblio_dict(person)
+    ctx = build_person_biblio_dict(person, request.user)
 
     ext_template = "fiches/edition/edit_base2.html"
     ctx.update(
@@ -634,6 +661,10 @@ def relations_list(request, person_id=None):
                 "relation_list": relation_list,
             },
         )
+    except Http404:
+        # get_object_or_404 above raises this for an unknown person; without
+        # this clause the catch-all below turned a plain 404 into a 500.
+        raise
     except Exception as e:
         return HttpResponseServerError(f"Error: {str(e)}")
 

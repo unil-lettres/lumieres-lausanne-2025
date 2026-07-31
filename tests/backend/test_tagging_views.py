@@ -37,7 +37,11 @@ def category(db):
 @pytest.fixture
 def director(db, django_user_model):
     user = django_user_model.objects.create_user(username="director", password="pw")
-    user.user_permissions.set(Permission.objects.filter(codename__in=["add_person", "add_placerecord"]))
+    user.user_permissions.set(
+        Permission.objects.filter(
+            codename__in=["add_person", "add_placerecord", "add_placerecord_inline"],
+        )
+    )
     return user
 
 
@@ -58,6 +62,24 @@ def test_place_categories_lists_categories(client, category):
 
 
 # -- place creation -----------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_create_place_refuses_the_plain_add_permission(client, category, django_user_model):
+    """Client request 2026-07-15: inline creation while tagging is director-only.
+
+    Every status may create a place fiche the normal way (add_placerecord), but
+    that must not open the tagging toolbar shortcut, which needs the narrower
+    add_placerecord_inline.
+    """
+    user = django_user_model.objects.create_user(username="editor-only", password="pw")
+    user.user_permissions.set(Permission.objects.filter(codename="add_placerecord"))
+    client.force_login(user)
+
+    response = client.post(reverse("tagging-place-create"), {"name": "Yverdon", "category": category.pk})
+
+    assert response.status_code == 403
+    assert not PlaceRecord.objects.filter(name="Yverdon").exists()
 
 
 @pytest.mark.django_db

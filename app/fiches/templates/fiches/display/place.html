@@ -5,15 +5,16 @@
    This copyright notice MUST APPEAR in all copies of the file.
 -->{% endcomment %}
 {% load i18n %}
+{% load fiches_extras %}
 
 {% block page_title %} | {{ place.name }}{% endblock page_title %}
 {% block main_header_title %}{% trans "Fiche lieu" %}{% endblock main_header_title %}
 
 {% block main_content %}
 <style>
-	.listing-ref .biblioref-item { display: inline; }
+	li.listing-ref .biblioref-item { display: inline; }
 </style>
-<h2>{{ place.name }}</h2>
+<h2>{{ place.name }} <span class="place-category">({{ place.category }})</span></h2>
 
 <div class="field_group">
 	<div class="field_wrap">
@@ -33,7 +34,7 @@
 	{% if place.related_places.all %}
 	<div class="field_wrap">
 		<div class="field_label">{% trans "Lieux associés" %}</div>
-		<div class="field_value">{% for related in place.related_places.all %}<a href="{% url 'place-display' related.pk %}">{{ related.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+		<div class="field_value">{% for related in place.related_places.all %}<a href="{% url 'place-display' related.pk %}">{{ related.name }}</a> <span class="place-category">({{ related.category }})</span>{% if not forloop.last %}, {% endif %}{% endfor %}</div>
 		<div class="fixclear"></div>
 	</div>
 	{% endif %}
@@ -52,16 +53,6 @@
 	</div>
 	{% endif %}
 </div>
-
-{% for note in visible_notes %}
-<div class="field_group">
-	<div class="field_wrap">
-		<div class="field_label">{% trans "Note" %}</div>
-		<div class="field_value rich-text-content"><div class="rich-text-body">{{ note.text|safe }}</div></div>
-		<div class="fixclear"></div>
-	</div>
-</div>
-{% endfor %}
 
 {% comment %} 3.4 automatic listings: what references this place (via place tags).
 Each listing paginates independently; {% templatetag openblock %} querystring {% templatetag closeblock %}
@@ -92,7 +83,7 @@ preserves the other listings' page params while overriding its own. {% endcommen
 		<div class="field_value">
 			<ul>
 			{% for biblio in tagged_printing %}
-				<li><a class="listing-ref" href="{% url 'display-bibliography' biblio.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</a></li>
+				<li class="listing-ref">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio user_accessible_trans=user_accessible_trans only %}</li>
 			{% endfor %}
 			</ul>
 			{% if tagged_printing.has_next %}
@@ -111,7 +102,7 @@ preserves the other listings' page params while overriding its own. {% endcommen
 		<div class="field_value">
 			<ul>
 			{% for biblio in tagged_writing %}
-				<li><a class="listing-ref" href="{% url 'display-bibliography' biblio.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</a></li>
+				<li class="listing-ref">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio user_accessible_trans=user_accessible_trans only %}</li>
 			{% endfor %}
 			</ul>
 			{% if tagged_writing.has_next %}
@@ -123,41 +114,100 @@ preserves the other listings' page params while overriding its own. {% endcommen
 </div>
 {% endif %}
 
-{% if tagged_subject.paginator.count %}
-<div class="field_group" id="mention">
-	<div class="field_wrap">
-		<div class="field_label">{% trans "Publications - Lieu mentionné" %}</div>
+{% comment %} « Lieu mentionné » is a single field_wrap with italic sub-headings,
+built like the biblio fiche's « Sujets » block (same .subjects / .sub_label
+markup) rather than as separate field groups. Order per the client: manuscripts
+first, then primary literature, then secondary — each chronological and
+paginated on its own querystring parameter. {% endcomment %}
+{% if tagged_transcriptions.paginator.count or tagged_subject_primary.paginator.count or tagged_subject_secondary.paginator.count %}
+<div class="field_group">
+	<div class="field_wrap subjects" id="mention">
+		<div class="field_label">{% trans "Lieu mentionné" %}</div>
 		<div class="field_value">
 			<ul>
-			{% for biblio in tagged_subject %}
-				<li><a class="listing-ref" href="{% url 'display-bibliography' biblio.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio nolink=1 noManBiblioLink=1 only %}</a></li>
-			{% endfor %}
-			</ul>
-			{% if tagged_subject.has_next %}
-			<a class="listing-more" href="{% querystring mention_page=tagged_subject.next_page_number %}#mention">{% blocktrans count n=mention_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+			{% if tagged_transcriptions.paginator.count %}
+				<li>
+					<span class="sub_label">{% trans "Manuscrits:" %}</span>
+					<ul>
+					{% for trans in tagged_transcriptions %}
+						{# manuscript_b is nullable (SET_NULL): fall back to the transcription's own label rather than rendering the citation against None. #}
+						<li class="listing-ref">{% if trans.manuscript_b %}{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b user_accessible_trans=user_accessible_trans only %}{% else %}<a href="{% url 'transcription-display' trans.id %}">{{ trans }}</a>{% endif %}</li>
+					{% endfor %}
+					</ul>
+					{% if tagged_transcriptions.has_next %}
+					<a class="listing-more" href="{% querystring manuscrits_page=tagged_transcriptions.next_page_number %}#mention">{% blocktrans count n=manuscrits_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+					{% endif %}
+				</li>
 			{% endif %}
+			{% if tagged_subject_primary.paginator.count %}
+				<li>
+					<span class="sub_label">{% trans "Littérature primaire:" %}</span>
+					<ul>
+					{% for biblio in tagged_subject_primary %}
+						<li class="listing-ref">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio user_accessible_trans=user_accessible_trans only %}</li>
+					{% endfor %}
+					</ul>
+					{% if tagged_subject_primary.has_next %}
+					<a class="listing-more" href="{% querystring mention_prim_page=tagged_subject_primary.next_page_number %}#mention">{% blocktrans count n=mention_prim_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+					{% endif %}
+				</li>
+			{% endif %}
+			{% if tagged_subject_secondary.paginator.count %}
+				<li>
+					<span class="sub_label">{% trans "Littérature secondaire:" %}</span>
+					<ul>
+					{% for biblio in tagged_subject_secondary %}
+						<li class="listing-ref">{% include "fiches/bibliography_references/biblio_template.html" with ref=biblio user_accessible_trans=user_accessible_trans only %}</li>
+					{% endfor %}
+					</ul>
+					{% if tagged_subject_secondary.has_next %}
+					<a class="listing-more" href="{% querystring mention_sec_page=tagged_subject_secondary.next_page_number %}#mention">{% blocktrans count n=mention_sec_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
+					{% endif %}
+				</li>
+			{% endif %}
+			</ul>
 		</div>
 		<div class="fixclear"></div>
 	</div>
 </div>
 {% endif %}
 
-{% if tagged_transcriptions.paginator.count %}
-<div class="field_group" id="manuscrits">
+{% comment %} Notes are gated by the same access_lazy filter as the biblio and bio
+fiches. Filtering with user_access() alone — as this view used to do — hid every
+note whose access is « Utilisateurs » (not public, no groups), because that case
+is only granted when any_login=True. The access badge is shown next to the label,
+again like the other fiches, so an editor can see each note's visibility.
+{% endcomment %}
+{% for note in place.notes.all %}
+{% if note|access_lazy:user %}
+<div class="field_group">
 	<div class="field_wrap">
-		<div class="field_label">{% trans "Manuscrits - Lieu mentionné" %}</div>
-		<div class="field_value">
-			<ul>
-			{% for trans in tagged_transcriptions %}
-				<li><a class="listing-ref" href="{% url 'transcription-display' trans.id %}">{% include "fiches/bibliography_references/biblio_template.html" with ref=trans.manuscript_b nolink=1 noManBiblioLink=1 only %}</a></li>
-			{% endfor %}
-			</ul>
-			{% if tagged_transcriptions.has_next %}
-			<a class="listing-more" href="{% querystring manuscrits_page=tagged_transcriptions.next_page_number %}#manuscrits">{% blocktrans count n=manuscrits_remaining %}afficher la référence suivante{% plural %}afficher les {{ n }} références suivantes{% endblocktrans %}</a>
-			{% endif %}
+		<div class="field_label">
+			{% trans "Note" %}<br/><br/>
+			{% with access_public=note.access_public access_groups=note.access_groups.all %}{% include "fiches/edition/access_status.html" %}{% endwith %}
 		</div>
+		<div class="field_value rich-text-content"><div class="rich-text-body">{{ note.text|safe }}</div></div>
 		<div class="fixclear"></div>
 	</div>
 </div>
 {% endif %}
+{% endfor %}
+
+{% comment %} Same two auto-filled fields as the biblio fiche, in the same
+position and format: the author is the fiche's creator, the modification line
+comes from the activity log. Legacy places have neither, so both render empty —
+exactly as they do on an old biblio fiche. {% endcomment %}
+<div class="field_group">
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Auteur de la fiche" %}</div>
+		{# Guard: the default: filter evaluates its argument, so creator.username would blow up on a fiche with no author. #}
+		<div class="field_value">{% if place.creator %}{{ place.creator.get_full_name|default:place.creator.username }}{% endif %}</div>
+		<div class="fixclear"></div>
+	</div>
+	<div class="field_wrap">
+		<div class="field_label">{% trans "Dernière modification" %}</div>
+		<div class="field_value">{% if last_activity %}{{ last_activity.date|date:"d M Y - H:i" }} ({{ last_activity.user.username }}){% endif %}</div>
+		<div class="fixclear"></div>
+	</div>
+</div>
 {% endblock main_content %}

@@ -81,6 +81,42 @@ class BiblioPlaceTagFormTest(TestCase):
         biblio = form.save()
         self.assertEqual(biblio.destination, tag)
 
+    def test_secondary_literature_drops_place_tags(self):
+        """Client request 2026-07-15: secondary literature must not be place-indexed.
+
+        The place fiche listings scan both "Lieu" and "2e Lieu", so a tag there
+        would flood a place with entries the client considers noise. The wording
+        the editor typed is kept; only the link goes.
+        """
+        form = BiblioForm(
+            data=self._post_data(
+                litterature_type="s",
+                place=_place_tag(42, "Lausanne"),
+                place2=_place_tag(7, "Genève"),
+            ),
+            instance=Biblio(),
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+
+        biblio = form.save()
+
+        self.assertEqual(biblio.place, "Lausanne")
+        self.assertEqual(biblio.place2, "Genève")
+
+    def test_primary_literature_still_keeps_place_tags(self):
+        form = BiblioForm(data=self._post_data(place=_place_tag(42, "Lausanne")), instance=Biblio())
+        self.assertTrue(form.is_valid(), form.errors)
+
+        self.assertIn("ll-tag-place", form.save().place)
+
+    def test_secondary_literature_keeps_the_destination_tag(self):
+        """« Adresse du destinataire » is not one of the indexed location fields."""
+        tag = _place_tag(7, "Genève")
+        form = BiblioForm(data=self._post_data(litterature_type="s", destination=tag), instance=Biblio())
+        self.assertTrue(form.is_valid(), form.errors)
+
+        self.assertEqual(form.save().destination, tag)
+
 
 class _FakeApps:
     """Minimal apps registry returning the real DocumentType for the data migration."""

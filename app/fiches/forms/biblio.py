@@ -40,7 +40,7 @@ from fiches.models.documents import (
 from fiches.forms.place import MultiplePlaceField
 from fiches.models.misc import PlaceRecord, Society
 from fiches.models.person import Person
-from fiches.place_tag import PlaceTagWidget
+from fiches.place_tag import PlaceTagWidget, strip_place_tags
 from fiches.widgets import DynamicList, PersonWidget, StaticList
 
 # DocumentType IDs whose Biblio form requires a specific title/type field.
@@ -206,7 +206,25 @@ class BiblioForm(forms.ModelForm):
         if not cleaned_data.get("subj_primary_kw"):
             self.add_error("subj_primary_kw", primary_kw_msg)
 
+        self._drop_place_tags_on_secondary_literature(cleaned_data)
+
         return cleaned_data
+
+    def _drop_place_tags_on_secondary_literature(self, cleaned_data):
+        """Keep secondary literature out of the place indexing.
+
+        The place fiche listings scan both "Lieu" and "2e Lieu", so tagging a
+        place there would flood it with entries the client considers noise
+        (request 2026-07-15). The buttons are hidden client-side while
+        "littérature secondaire" is selected; this drops any tag that reaches us
+        anyway, keeping the wording the editor typed. "Adresse du destinataire"
+        is left alone: it is not one of the indexed location fields.
+        """
+        if cleaned_data.get("litterature_type") != "s":
+            return
+        for field in ("place", "place2"):
+            if cleaned_data.get(field):
+                cleaned_data[field] = strip_place_tags(cleaned_data[field])
 
     def clean_subj_person(self):
         """Return Person instances for the subj_person M2M field.
