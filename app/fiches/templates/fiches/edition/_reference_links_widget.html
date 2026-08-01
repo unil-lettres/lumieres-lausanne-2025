@@ -23,6 +23,20 @@
 (function ($) {
 	// Reference-site chip widget: référentiel + identifier -> clickable permalink chip.
 	window.refLinkWidget = {
+		setExternalLink: function (node, url) {
+			if (!node) { return; }
+			try {
+				var parsed = new URL(url);
+				if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+					throw new Error("Unsupported URL scheme");
+				}
+				node.href = parsed.href;
+				node.textContent = parsed.href;
+			} catch (error) {
+				node.removeAttribute("href");
+				node.textContent = "";
+			}
+		},
 		// A référentiel's base_url either carries a {id} placeholder or is a prefix.
 		buildUrl: function (baseUrl, ident) {
 			if (!ident) { return ""; }
@@ -41,10 +55,7 @@
 				url = refLinkWidget.buildUrl($input.attr("data-base-url") || "", ident);
 			$entry.find('input[type="hidden"]').val($input.attr("data-site-id") + "|" + ident);
 			var linkNode = $entry.find(".reflist_value_link")[0];
-			if (linkNode) {
-				linkNode.setAttribute("href", url);
-				linkNode.textContent = url;
-			}
+			refLinkWidget.setExternalLink(linkNode, url);
 		},
 		addToList: function (btn, name) {
 			var c = $(btn).closest(".reflist_container"),
@@ -66,8 +77,7 @@
 				.val(ident)
 				.attr("data-site-id", siteId)
 				.attr("data-base-url", baseUrl);
-			link[0].setAttribute("href", url);
-			link[0].textContent = url;
+			refLinkWidget.setExternalLink(link[0], url);
 			hiddenInput.val(siteId + "|" + ident);
 			c.find(".dynamiclist_values").append(chip);
 			dynamiclist_widget.appendDeleteButton(chip[0]);
