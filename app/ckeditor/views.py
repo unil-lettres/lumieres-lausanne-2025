@@ -18,13 +18,18 @@
 #
 # This copyright notice MUST APPEAR in all copies of the file.
 
+import json
 import os
 from datetime import datetime
 
 from django.conf import settings
-from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import SuspiciousFileOperation
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render
 from django.template import RequestContext
+from django.utils.text import get_valid_filename
+from django.views.decorators.http import require_POST
 
 try:
     from PIL import Image, ImageOps
@@ -97,8 +102,15 @@ def get_media_url(path):
 
 
 def get_upload_filename(upload_name, user):
+    original_name = os.path.basename(str(upload_name).replace("\\", "/"))
+    safe_name = get_valid_filename(original_name)
+    if not safe_name:
+        raise SuspiciousFileOperation("Invalid upload filename")
+
     # If CKEDITOR_RESTRICT_BY_USER is True upload file to user specific path.
-    user_path = user.username if getattr(settings, "CKEDITOR_RESTRICT_BY_USER", False) else ""
+    user_path = ""
+    if getattr(settings, "CKEDITOR_RESTRICT_BY_USER", False):
+        user_path = get_valid_filename(str(user.username))
 
     # Generate date based path to put uploaded file.
     date_path = datetime.now().strftime("%Y/%m/%d")
@@ -107,14 +119,18 @@ def get_upload_filename(upload_name, user):
     upload_path = os.path.join(settings.CKEDITOR_UPLOAD_PATH, user_path, date_path)
 
     # Make sure upload_path exists.
-    if not os.path.exists(upload_path):
-        os.makedirs(upload_path)
+    os.makedirs(upload_path, exist_ok=True)
 
     # Get available name and return.
-    return get_available_name(os.path.join(upload_path, upload_name))
+    candidate = os.path.realpath(os.path.join(upload_path, safe_name))
+    if os.path.commonpath((os.path.realpath(upload_path), candidate)) != os.path.realpath(upload_path):
+        raise SuspiciousFileOperation("Upload path escapes CKEDITOR_UPLOAD_PATH")
+    return get_available_name(candidate)
 
 
 @csrf_exempt
+@login_required
+@require_POST
 def upload(request):
     """
     Uploads a file and send back its URL to CKEditor.
@@ -122,27 +138,35 @@ def upload(request):
     TODO:
         Validate uploads
     """
+    try:
+        callback_number = int(request.GET.get("CKEditorFuncNum", ""))
+    except (TypeError, ValueError):
+        return HttpResponseBadRequest("Invalid CKEditor callback")
+    if callback_number < 0:
+        return HttpResponseBadRequest("Invalid CKEditor callback")
+
     # Get the uploaded file from request.
-    upload = request.FILES["upload"]
+    uploaded_file = request.FILES["upload"]
 
     # Open output file in which to store upload.
-    upload_filename = get_upload_filename(upload.name, request.user)
+    upload_filename = get_upload_filename(uploaded_file.name, request.user)
 
     # Iterate through chunks and write to destination.
     with open(upload_filename, "wb+") as out:
-        for chunk in upload.chunks():
+        for chunk in uploaded_file.chunks():
             out.write(chunk)
 
     create_thumbnail(upload_filename)
 
     # Respond with Javascript sending ckeditor upload url.
     url = get_media_url(upload_filename)
+    encoded_url = json.dumps(url).replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
     return HttpResponse(
-        """
+        f"""
     <script type='text/javascript'>
-        window.parent.CKEDITOR.tools.callFunction(%s, '%s');
-    </script>"""
-        % (request.GET["CKEditorFuncNum"], url)
+        window.parent.CKEDITOR.tools.callFunction({callback_number}, {encoded_url});
+    </script>""",
+        content_type="text/html; charset=utf-8",
     )
 
 

@@ -30,6 +30,7 @@ from django.urls import Resolver404, resolve
 from django.utils.dateformat import format
 from django.utils.encoding import force_str, smart_str
 from django.utils.html import urlize
+from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
 
 from fiches.models import UserGroup
@@ -255,7 +256,8 @@ RE_A_TAG = re.compile(r"(<a[^>]+>).*(</a>)")
 
 @register.filter
 def urlizename(url, name="link"):
-    urlized = RE_A_TAG.sub(r"\1%s\2" % name, urlize(url))
+    safe_name = conditional_escape(name)
+    urlized = RE_A_TAG.sub(lambda match: f"{match.group(1)}{safe_name}{match.group(2)}", urlize(url))
     return mark_safe(urlized)
 
 

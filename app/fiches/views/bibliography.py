@@ -19,6 +19,7 @@
 # This copyright notice MUST APPEAR in all copies of the file.
 
 import json
+import logging
 from base64 import b64decode
 from functools import reduce
 from itertools import chain
@@ -60,6 +61,8 @@ from fiches.utils import (
 # ===============================================================================
 # BIBLIOGRAPHY
 # ===============================================================================
+
+logger = logging.getLogger(__name__)
 
 
 def get_biblio_form_def(biblioForm):
@@ -592,11 +595,9 @@ def delete(request, doc_id):
     else:
         try:
             return HttpResponseRedirect(reverse("home"))
-        except Exception as exc:
-            # Return a user-friendly error page if reverse fails
-            return HttpResponseServerError(
-                f"Could not resolve redirect after deletion: {exc}. Please contact the administrator."
-            )
+        except Exception:
+            logger.exception("Could not resolve redirect after bibliography deletion")
+            return HttpResponseServerError("Redirection impossible. Veuillez contacter l’administrateur.")
 
 
 def documentfile_change_list(request, doc_id):
@@ -680,8 +681,9 @@ def get_person_publications(request, person_id):
             .distinct()
         )
         return render(request, "fiches/bibliography_references/publication_list.html", {"publications": publications})
-    except (TypeError, ValueError, ObjectDoesNotExist) as e:
-        return HttpResponseServerError(f"Error: {e}")
+    except (TypeError, ValueError, ObjectDoesNotExist):
+        logger.exception("Could not load publications for a person")
+        return HttpResponseServerError("Impossible de charger les publications.")
 
 
 def endnote(request, doc_id, getid=False):

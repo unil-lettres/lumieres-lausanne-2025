@@ -18,6 +18,7 @@
 #
 # This copyright notice MUST APPEAR in all copies of the file.
 
+import logging
 import re
 from itertools import groupby
 
@@ -58,6 +59,8 @@ from fiches.utils import (
 
 # ===============================================================================
 # BIOGRAPHY
+
+logger = logging.getLogger(__name__)
 # ===============================================================================
 
 
@@ -660,8 +663,9 @@ def relations_list(request, person_id=None):
         # get_object_or_404 above raises this for an unknown person; without
         # this clause the catch-all below turned a plain 404 into a 500.
         raise
-    except Exception as e:
-        return HttpResponseServerError(f"Error: {str(e)}")
+    except Exception:
+        logger.exception("Could not load biography relations")
+        return HttpResponseServerError("Impossible de charger les relations biographiques.")
 
 
 RELATION_MAX_RECURSION_DEPTH = 5

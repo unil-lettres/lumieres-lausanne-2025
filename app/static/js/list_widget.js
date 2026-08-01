@@ -20,6 +20,13 @@
  *    This copyright notice MUST APPEAR in all copies of the file.                      
  *
  ****/
+function createListValueEntry(prefix, name, value, label) {
+	var entry = $('<div>').addClass(prefix + '_value_entry');
+	$('<span>').addClass(prefix + '_value_label').text(label).appendTo(entry);
+	$('<input>', {type: 'hidden', name: name}).val(value).appendTo(entry);
+	return entry;
+}
+
 var staticlist_widget = {
     version: '1'
   , appendDeleteButton: function(obj) { 
@@ -39,11 +46,7 @@ var staticlist_widget = {
 			    value = sl_selector.val();
 				if (!value) { return; }
 			var label = sl_selector.find(":selected").text(),
-    		    template = staticlist_widget.templates[name],
-			    value_entry = $(template.replace('%(label)s' , label)
-    	        					.replace('%(name)s'  , name)
-    	        					.replace('%(value)s' , value)
-    	    );
+				value_entry = createListValueEntry('staticlist', name, value, label);
 			sl_valuelist.append(value_entry);
 			sl_selector.val("");
 			staticlist_widget.appendDeleteButton(value_entry);
@@ -91,11 +94,7 @@ var dynamiclist_widget = {
 						container.find(".dynamiclist_helper_addbut").attr("disabled", "disabled");
 						return;
 					}
-					var template = this.templates[name],
-						value_entry = $(template.replace('%(label)s' , label)
-							.replace('%(name)s'  , name)
-							.replace('%(value)s' , value)
-						);
+					var value_entry = createListValueEntry(this.class_prefix, name, value, label);
 					// Add new entry to the value list
 		          	container.find("div."+this.class_prefix+"_values").append(value_entry);
 					this.appendDeleteButton(value_entry);

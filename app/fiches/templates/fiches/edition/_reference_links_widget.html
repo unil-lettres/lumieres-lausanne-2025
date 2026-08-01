@@ -51,20 +51,19 @@
 				baseUrl = opt.attr("data-base-url") || "",
 				ident = $.trim(c.find(".reflist_id_input").val());
 			if (!siteId || !ident) { return; }
-			var url = refLinkWidget.buildUrl(baseUrl, ident);
-			var chip = $('<div class="reflist_value_entry dynamiclist_value_entry">'
-				+ '<span class="reflist_value_label"></span> '
-				+ '<input type="text" class="reflist_value_id"> '
-				+ '<a class="reflist_value_link" target="_blank" rel="noopener"></a>'
-				+ '<input type="hidden">'
-				+ '</div>');
-			chip.find(".reflist_value_label").text(siteName);
-			chip.find(".reflist_value_id")
+			var url = refLinkWidget.buildUrl(baseUrl, ident),
+				chip = $('<div>').addClass("reflist_value_entry dynamiclist_value_entry"),
+				label = $('<span>').addClass("reflist_value_label").text(siteName),
+				idInput = $('<input>', { type: "text" }).addClass("reflist_value_id"),
+				link = $('<a>', { target: "_blank", rel: "noopener" }).addClass("reflist_value_link"),
+				hiddenInput = $('<input>', { type: "hidden", name: name });
+			chip.append(label, document.createTextNode(" "), idInput, document.createTextNode(" "), link, hiddenInput);
+			idInput
 				.val(ident)
 				.attr("data-site-id", siteId)
 				.attr("data-base-url", baseUrl);
-			chip.find(".reflist_value_link").attr("href", url).text(url);
-			chip.find('input[type="hidden"]').attr("name", name).val(siteId + "|" + ident);
+			link.attr("href", url).text(url);
+			hiddenInput.val(siteId + "|" + ident);
 			c.find(".dynamiclist_values").append(chip);
 			dynamiclist_widget.appendDeleteButton(chip[0]);
 			sel.val("");

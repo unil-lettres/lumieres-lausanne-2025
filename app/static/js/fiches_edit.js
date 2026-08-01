@@ -229,13 +229,20 @@ var fiches_edit = $.extend({}, fiches_edit, {
         }
         
         // Create date widget
-        var output_node = $('<div class="vardate-multifield-container" rel="'+date_node.attr("name")+'" style="display:inline;"/>');
+        var output_node = $('<div>', {
+            'class': 'vardate-multifield-container',
+            rel: date_node.attr('name')
+        }).css('display', 'inline');
         for (d in DATE_FORMAT) {
             c = DATE_FORMAT[d];
             var c_ph = (c=='d') ? "jj" : ((c=='m') ? "mm" : ((c=='y') ? "aaaa" : "") );
-            output_node.append(
-                $('<input type="text" class="' + c + '" placeholder="' + c_ph + '" value="'+formatted_date_list[d]+'" size="' + ((c==='y')?'4':'2') + '"/>')
-            );
+			var input = $('<input>', {
+				type: 'text',
+				'class': c,
+				placeholder: c_ph,
+				size: (c === 'y') ? 4 : 2
+			}).val(formatted_date_list[d]);
+			output_node.append(input);
         }
         
         date_node.after(output_node).hide();
@@ -341,7 +348,10 @@ $(document).ready(function(){
 		}
 		
 		// Create date widget
-		var output_node = $('<div class="vardate-multifield-container" rel="' + date_node.attr("name") + '" style="display:inline;"/>');
+		var output_node = $('<div>', {
+			'class': 'vardate-multifield-container',
+			rel: date_node.attr('name')
+		}).css('display', 'inline');
 		for (d in DATE_FORMAT) {
 			c = DATE_FORMAT[d];
 			var c_ph = "jj";
@@ -354,14 +364,17 @@ $(document).ready(function(){
 					break;
 			}
 			// Only set value for input if its class is in date_format
+			var input = $('<input>', {
+				type: 'text',
+				'class': c,
+				placeholder: c_ph,
+				size: (c === 'y') ? 4 : 2,
+				maxlength: (c === 'y') ? 4 : 2
+			});
 			if (date_format.includes(c)) {
-				output_node.append('<input type="text" class="' + c + '" placeholder="' + c_ph + '" value="'
-								   + formatted_date_list[d] + '" size="' + ((c === 'y') ? '4' : '2') 
-								   + '" maxlength="' + ((c === 'y') ? '4' : '2') + '"/>' );
-			} else {
-				output_node.append('<input type="text" class="' + c + '" placeholder="' + c_ph + '" size="' + ((c === 'y') ? '4' : '2') 
-								   + '" maxlength="' + ((c === 'y') ? '4' : '2') + '"/>' );
+				input.val(formatted_date_list[d]);
 			}
+			output_node.append(input);
 		}
 		output_node.append('<br/><label>entre crochets</label>');
 		for ( d in DATE_FORMAT ) {

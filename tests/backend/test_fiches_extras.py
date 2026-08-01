@@ -297,12 +297,18 @@ def test_sort_biblio_transcription_label():
 def test_urlizename_wraps_url():
     result = fx.urlizename("http://example.com", "click")
     assert "click" in result
-    assert "http://example.com" in result
+    assert result.startswith('<a href="')
 
 
 def test_urlizename_default_link_text():
     result = fx.urlizename("http://example.com")
     assert "link" in result
+
+
+def test_urlizename_escapes_custom_link_text():
+    result = fx.urlizename("http://example.com", '<img src=x onerror="alert(1)">')
+    assert "<img" not in result
+    assert "&lt;img" in result
 
 
 # ---------------------------------------------------------------------------

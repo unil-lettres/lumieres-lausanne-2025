@@ -34,6 +34,8 @@ from pathlib import Path
 from ckeditor import views
 from django.apps import apps
 from django.conf import settings
+from django.core.exceptions import SuspiciousFileOperation
+from django.test import RequestFactory
 
 # Static fixtures shipped with the ckeditor app (dummy.jpg + dummy_thumb.jpg).
 # Resolved via the Django app path so it works on the host and in the container.
@@ -58,7 +60,11 @@ class ViewsTestCase(unittest.TestCase):
         self.test_path = os.path.join(settings.CKEDITOR_UPLOAD_PATH, "arbitrary", "path", "and", "filename.ext")
 
         # Mock user object (no DB needed).
-        self.mock_user = type("User", (object,), dict(username="test_user", is_superuser=False))
+        self.mock_user = type(
+            "User",
+            (object,),
+            dict(username="test_user", is_superuser=False, is_authenticated=True),
+        )
 
     def tearDown(self):
         for key, value in self._orig.items():
@@ -132,3 +138,21 @@ class ViewsTestCase(unittest.TestCase):
             # Upload path ends in the current date structure.
             filename = views.get_upload_filename("test.jpg", self.mock_user)
             self.assertTrue(filename.replace("/test.jpg", "").endswith(date_path))
+
+            # Directory components from either POSIX or Windows clients are discarded.
+            filename = views.get_upload_filename("../../outside.jpg", self.mock_user)
+            self.assertEqual(Path(filename).name, "outside.jpg")
+            self.assertTrue(Path(filename).is_relative_to(Path(tmp)))
+            filename = views.get_upload_filename(r"..\outside-windows.jpg", self.mock_user)
+            self.assertEqual(Path(filename).name, "outside-windows.jpg")
+
+            with self.assertRaises(SuspiciousFileOperation):
+                views.get_upload_filename("..", self.mock_user)
+
+    def test_upload_rejects_invalid_callback_before_writing(self):
+        request = RequestFactory().post("/ckeditor/upload/?CKEditorFuncNum=not-a-number")
+        request.user = self.mock_user
+
+        response = views.upload(request)
+
+        self.assertEqual(response.status_code, 400)
