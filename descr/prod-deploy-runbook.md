@@ -8,6 +8,10 @@ Scope: routine production releases for the Dockerized Lumieres stack on lumieres
 - Production cutover to the Dockerized Django 5 stack is complete.
 - Production DB schema is stabilized; routine releases do not require legacy DB import or schema normalization.
 - Standard production updates are image-based redeploys of the existing compose project under `/u01/projects/dockerized/lumieres2-prod`.
+- Current verified production release as of 2026-07-09: `v2026.07.03`
+  (`unillett/lumieres:v2026.07.03`, revision `c06c2c2`).
+- The 2026-07-09 branch/staging handoff state is recorded in
+  `descr/project-state-2026-07-09.md`.
 - Prod `.env` sets Compose defaults so commands can be run without repeated `-f` flags:
   - `COMPOSE_FILE=docker-compose.yml:docker/docker-compose.prod.yml`
   - `COMPOSE_PROJECT_NAME=lumieres-prod`
@@ -86,7 +90,7 @@ Reasons:
 - Mirrors staging layout, avoids touching /u01/projects/dockerized/django-lumieres.lausanne.
 
 ## Current Prod Snapshot (for reference)
-See: descr/prod-vm-survey-2026-01-20.md
+See: unil-ops/docs/wiki/lumieres-informations-techniques.md
 - Legacy compose: /u01/projects/dockerized/django-lumieres.lausanne
 - Traefik v1.7 proxy with Host:lumieres.unil.ch labels
 - Media: /u01/projects/dockerized/media
@@ -259,6 +263,33 @@ Use a temporary nginx container with the same Traefik Host rule:
   - `manage.py check` passed
   - public checks for `/`, `/projets/`, `/chercher/person/list`, and `/fiches/trans/1288/` returned `HTTP 200`
   - transcription `1288` embedded `308` IIIF tile sources
+
+## TLS Hardening (2026-05-28)
+- UNIL security reported that `lumieres.unil.ch:443` still accepted TLS 1.0
+  and TLS 1.1.
+- TLS termination is handled by the legacy Traefik v1.7 proxy container
+  `django-lumiereslausanne_proxy_1`, with host config mounted from:
+  `/u01/projects/dockerized/proxy_v1file/traefik.toml`
+- Applied:
+  ```toml
+  [entryPoints.https.tls]
+    minVersion = "VersionTLS12"
+  ```
+- Rollback copy:
+  `/u01/projects/dockerized/lumieres2-prod/backups/20260528_142706/traefik.toml.before-tls12`
+- Restarted only the proxy container:
+  ```bash
+  docker restart django-lumiereslausanne_proxy_1
+  ```
+- Validation:
+  - TLS 1.0 handshake fails with `alert protocol version`.
+  - TLS 1.1 handshake fails with `alert protocol version`.
+  - TLS 1.2 handshake succeeds.
+  - `/` and `/projets/` return `HTTP/2 200`.
+- Remaining note: TLS 1.3 still does not negotiate on the legacy
+  `traefik:v1.7-alpine` proxy (`v1.7.26`, Go `1.14.6`). Treat TLS 1.3
+  enablement as a separate proxy modernization task, not part of the
+  deprecated TLS 1.0/1.1 disablement.
 
 The deployment records below keep the exact commands used at the time. For new production work, use the standard procedure above.
 
