@@ -113,6 +113,7 @@ urlpatterns = [
     # Inline fiche creation from the transcription tagging window (Directeurs only).
     path("tagging/place/categories/", views_tagging.place_categories, name="tagging-place-categories"),
     path("tagging/place/create/", views_tagging.create_place, name="tagging-place-create"),
+    path("tagging/person/search/", views_tagging.search_person, name="tagging-person-search"),
     path("tagging/person/create/", views_tagging.create_person, name="tagging-person-create"),
     # Manuscript URLs =================================================================================================
     path("man/<int:man_id>/", bibliography_display_man, name="manuscript-display"),

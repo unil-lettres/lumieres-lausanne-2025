@@ -39,7 +39,6 @@ from django.views.decorators.http import require_POST
 from utils import dbg_logger
 
 from fiches.models import Biblio, Biography, BiographyReferenceSite, ContributionDoc, Person, Relation
-from fiches.models.documents.document import Transcription
 from fiches.models.person.biography import (
     BiographyForm,
     NoteBiography,
@@ -50,6 +49,7 @@ from fiches.models.person.biography import (
     SocietyMembership,
     SocietyMembershipForm,
 )
+from fiches.person_references import tagged_transcriptions
 from fiches.utils import (
     get_grouped_objet_activities,
     log_model_activity,
@@ -220,11 +220,6 @@ def ajax_add_person(request):
     )
 
 
-def _person_tag_needle(person_id):
-    """Substring identifying a tag pointing at this person in the stored HTML."""
-    return f'data-person="{person_id}"'
-
-
 def manuscripts_tagging_person(person, user):
     """Manuscript ids whose transcription text tags this person.
 
@@ -234,7 +229,7 @@ def manuscripts_tagging_person(person, user):
     2026-07-15). Unpublished transcriptions stay hidden unless the user may read
     them, the rule the place fiche listings already use.
     """
-    transcriptions = Transcription.objects.filter(text__contains=_person_tag_needle(person.pk))
+    transcriptions = tagged_transcriptions(person.pk)
     if not user.has_perm("fiches.access_unpublished_transcription"):
         transcriptions = transcriptions.filter(published_date__isnull=False)
     return transcriptions.exclude(manuscript_b__isnull=True).values_list("manuscript_b_id", flat=True)

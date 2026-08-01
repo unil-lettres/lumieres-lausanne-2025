@@ -109,7 +109,9 @@ def test_create_requires_permission(client, django_user_model):
 @pytest.mark.django_db
 def test_create_get_renders_form(client, editor):
     client.force_login(editor)
-    assert client.get(reverse("place-create")).status_code == 200
+    response = client.get(reverse("place-create"))
+    assert response.status_code == 200
+    assert "Nouvelle fiche lieu" in response.content.decode()
 
 
 @pytest.mark.django_db
@@ -153,12 +155,46 @@ def test_edit_updates_place(client, editor, category):
 
 
 @pytest.mark.django_db
+def test_edit_uses_the_specific_place_fiche_title(client, editor, category):
+    place = PlaceRecord.objects.create(name="Lausanne", category=category, creator=editor)
+    client.force_login(editor)
+
+    body = client.get(reverse("place-edit", args=[place.pk])).content.decode()
+
+    assert "Modification de la fiche lieu" in body
+
+
+@pytest.mark.django_db
 def test_delete_place(client, editor, category):
     place = PlaceRecord.objects.create(name="Lausanne", category=category, creator=editor)
     client.force_login(editor)
     response = client.post(reverse("place-delete", args=[place.pk]))
     assert response.status_code == 302
     assert not PlaceRecord.objects.filter(pk=place.pk).exists()
+
+
+@pytest.mark.django_db
+def test_delete_place_refuses_get(client, editor, category):
+    place = PlaceRecord.objects.create(name="Lausanne", category=category, creator=editor)
+    client.force_login(editor)
+
+    response = client.get(reverse("place-delete", args=[place.pk]))
+
+    assert response.status_code == 405
+    assert PlaceRecord.objects.filter(pk=place.pk).exists()
+
+
+@pytest.mark.django_db
+def test_display_renders_place_delete_as_a_csrf_post_form(client, editor, category):
+    place = PlaceRecord.objects.create(name="Lausanne", category=category, creator=editor)
+    client.force_login(editor)
+
+    body = client.get(reverse("place-display", args=[place.pk])).content.decode()
+
+    assert f'<form action="{reverse("place-delete", args=[place.pk])}" method="post"' in body
+    assert 'name="csrfmiddlewaretoken"' in body
+    assert '<a href="#" title="Supprimer la fiche"' in body
+    assert '<button type="submit" title="Supprimer la fiche"' not in body
 
 
 @pytest.mark.django_db
@@ -190,6 +226,39 @@ def test_change_any_permission_lifts_the_ownership_restriction(client, editor, c
     client.force_login(editor)
 
     assert client.get(reverse("place-edit", args=[place.pk])).status_code == 200
+
+
+@pytest.mark.django_db
+def test_related_place_autocomplete_commits_mouse_selection(client, editor, category):
+    """A clicked result becomes a chip immediately, without a second add click."""
+    place = PlaceRecord.objects.create(name="Lausanne", category=category, creator=editor)
+    client.force_login(editor)
+
+    body = client.get(reverse("place-edit", args=[place.pk])).content.decode()
+
+    assert "selectFirst: true, clickFire: true" in body
+    assert "dynamiclist_widget.addToList($button[0], fieldName)" in body
+    assert "data.reverse()" not in body
+    assert ".blur(function () { $(this).search(); })" not in body
+    assert ".fieldWrapper.related_places .dynamiclist_helper_addbut { display: none; }" in body
+
+
+@pytest.mark.django_db
+def test_duplicate_related_place_values_save_as_one_relation(client, editor, category):
+    place = PlaceRecord.objects.create(name="Lausanne", category=category, creator=editor)
+    related = PlaceRecord.objects.create(name="Renens", category=category)
+    client.force_login(editor)
+
+    data = {
+        "name": place.name,
+        "category": category.pk,
+        "related_places": [f"{related.pk}|Renens", f"{related.pk}|Renens"],
+        **_empty_formsets(),
+    }
+    response = client.post(reverse("place-edit", args=[place.pk]), data)
+
+    assert response.status_code == 302
+    assert list(place.related_places.values_list("pk", flat=True)) == [related.pk]
 
 
 @pytest.mark.django_db

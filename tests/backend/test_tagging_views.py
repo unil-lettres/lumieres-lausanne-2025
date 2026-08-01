@@ -161,6 +161,58 @@ def test_create_person_succeeds_for_director(client, director):
 
 
 @pytest.mark.django_db
+def test_person_tagging_search_only_returns_historical_people(client):
+    historical = Person.objects.create(name="Barbeyrac, Jean", modern=False)
+    Person.objects.create(name="Barbeyrac, Jean", modern=True)
+    Person.objects.create(name="Barbeyrac, Jacques", modern=False)
+
+    response = client.get(reverse("tagging-person-search"), {"q": "Jean Barbeyrac"})
+
+    assert response.status_code == 200
+    assert response.content.decode().splitlines() == [historical.format_for_ajax_search()]
+
+
+@pytest.mark.django_db
+def test_person_tagging_search_disambiguates_identical_historical_labels(client):
+    first = Person.objects.create(name="Martin, Jean", modern=False)
+    second = Person.objects.create(name="Martin, Jean", modern=False)
+
+    response = client.get(reverse("tagging-person-search"), {"q": "Martin Jean"})
+
+    assert response.content.decode().splitlines() == [
+        f"Martin, Jean — fiche #{first.pk}|{first.pk}",
+        f"Martin, Jean — fiche #{second.pk}|{second.pk}",
+    ]
+
+
+@pytest.mark.django_db
+def test_create_person_does_not_reuse_modern_author(client, director):
+    modern = Person.objects.create(name="Barbeyrac, Jean", modern=True)
+    client.force_login(director)
+
+    response = client.post(reverse("tagging-person-create"), {"name": "Barbeyrac, Jean"})
+
+    assert response.status_code == 200
+    assert response.json()["created"] is True
+    assert response.json()["id"] != modern.pk
+    assert Person.objects.get(pk=response.json()["id"]).modern is False
+
+
+@pytest.mark.django_db
+def test_create_person_refuses_to_choose_between_historical_homonyms(client, director):
+    first = Person.objects.create(name="Martin, Jean", modern=False)
+    second = Person.objects.create(name="Martin, Jean", modern=False)
+    client.force_login(director)
+
+    response = client.post(reverse("tagging-person-create"), {"name": "Martin, Jean"})
+
+    assert response.status_code == 409
+    assert response.json()["error"] == "ambiguous_name"
+    assert {candidate["id"] for candidate in response.json()["candidates"]} == {first.pk, second.pk}
+    assert Person.objects.filter(name="Martin, Jean", modern=False).count() == 2
+
+
+@pytest.mark.django_db
 def test_create_person_requires_name(client, director):
     client.login(username="director", password="pw")
     assert client.post(reverse("tagging-person-create"), {"name": ""}).status_code == 400

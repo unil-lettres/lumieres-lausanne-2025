@@ -327,6 +327,25 @@ class SyncStatusRolesTest(TestCase):
             {"change_placerecord", "delete_placerecord", "view_placerecord"} & self._director_permission_codenames()
         )
 
+    def test_apply_grants_place_category_admin_permissions_to_directors(self):
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+        self.directeurs.refresh_from_db()
+
+        self.assertTrue(
+            {
+                "view_placecategory",
+                "add_placecategory",
+                "change_placecategory",
+                "delete_placecategory",
+            }.issubset(self._director_permission_codenames())
+        )
+
+    def test_dry_run_does_not_grant_place_category_admin_permissions_to_directors(self):
+        call_command("sync_status_roles", stdout=StringIO())
+        self.directeurs.refresh_from_db()
+
+        self.assertFalse(set(Command.DIRECTOR_PLACE_CATEGORY_PERMS) & self._director_permission_codenames())
+
     def test_apply_follows_the_place_status_matrix(self):
         """ "LL détail des STATUTS revus 2026.07": who may edit/delete whose fiche."""
         etudiants = Group.objects.create(name="étudiants")

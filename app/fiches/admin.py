@@ -67,6 +67,8 @@ from fiches.models.content.free_content import FreeContent
 from fiches.models.content.image import Image
 from fiches.models.content.news import News
 from fiches.models.misc.project import Project
+from fiches.person_references import person_reference_groups
+from fiches.place_references import place_reference_groups
 
 
 class FichesAdminSite(AdminSite):
@@ -157,6 +159,14 @@ class PersonAdmin(admin.ModelAdmin):
     ordering = ("name",)
     inlines = [BiographyInline]
     actions = ["add_biography_action"]
+
+    def get_deleted_objects(self, objs, request):
+        """Expose non-relational tag references in Django's delete preview."""
+        deleted_objects, model_count, perms_needed, protected = super().get_deleted_objects(objs, request)
+        for person in objs:
+            for group in person_reference_groups(person):
+                protected.append(f'{person.name} — {group["label"]} ({group["count"]})')
+        return deleted_objects, model_count, perms_needed, protected
 
     @admin.display(description=_("Biographie"))
     def biography_link(self, obj):
@@ -518,7 +528,10 @@ class PlaceRecordAdmin(admin.ModelAdmin):
     list_filter = ("category",)
     search_fields = ("name", "variants__name")
     ordering = ("name",)
-    autocomplete_fields = ("category", "related_places", "access_owner")
+    # Categories are a small, stable lookup table. Keep them as a regular
+    # select so place editors can choose one without needing Admin access to
+    # the PlaceCategory model (required by Django's autocomplete endpoint).
+    autocomplete_fields = ("related_places", "access_owner")
     filter_horizontal = ("access_groups",)
     inlines = [PlaceVariantInline, PlaceReferenceSiteInline]
     # Business fields first; the access metadata block goes to the bottom, collapsed
@@ -530,6 +543,14 @@ class PlaceRecordAdmin(admin.ModelAdmin):
             {"fields": ("access_public", "access_owner", "access_groups"), "classes": ("collapse",)},
         ),
     )
+
+    def get_deleted_objects(self, objs, request):
+        """Expose HTML and structured references in the Admin delete preview."""
+        deleted_objects, model_count, perms_needed, protected = super().get_deleted_objects(objs, request)
+        for place in objs:
+            for group in place_reference_groups(place):
+                protected.append(f'{place.name} — {group["label"]} ({group["count"]})')
+        return deleted_objects, model_count, perms_needed, protected
 
     @admin.display(description=_("Variantes"))
     def variants_count(self, obj):

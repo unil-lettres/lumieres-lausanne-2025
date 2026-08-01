@@ -79,6 +79,18 @@ def test_manuscript_of_a_tagged_transcription_is_returned(person):
 
 
 @pytest.mark.django_db
+def test_legacy_single_quoted_person_tag_is_returned(person):
+    manuscript = make_manuscript("Lettre ancienne")
+    Transcription.objects.create(
+        text=f"<p><a class='ll-tag-person' data-person = '{person.pk}'>Barbeyrac</a></p>",
+        manuscript_b=manuscript,
+        published_date=datetime(2020, 1, 1, tzinfo=UTC),
+    )
+
+    assert list(manuscripts_tagging_person(person, Reader())) == [manuscript.id]
+
+
+@pytest.mark.django_db
 def test_a_transcription_tagging_someone_else_is_ignored(person):
     other = Person.objects.create(name="Girard, Grégoire")
     Transcription.objects.create(

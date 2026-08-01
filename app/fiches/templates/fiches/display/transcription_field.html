@@ -70,24 +70,19 @@ function toggleTOC() {
         $('#toc-toggle > span').text('Cacher la table des matières');
 
         var trans = $('.transcription-data').first();
-        console.log('TOC DEBUG: Found transcription element:', trans.length);
-        console.log('TOC DEBUG: Transcription HTML:', trans.html().substring(0, 500));
         
         // Removed padding-right adjustment - TOC is now positioned fixed and doesn't need text adjustment
         // trans.css('padding-right', '240px');
         var toc = $('<ul id="transcription-toc"><div class="title">Table des matières</div></ul>');
         var headers = $('h2, h3', trans);
-        console.log('TOC DEBUG: Found headers:', headers.length);
         headers.each(function (i) {
             var header = $(this);
-            console.log('TOC DEBUG: Header', i, ':', this.tagName, header.text());
             var level = (this.tagName === 'H2') ? 1 : 2;
             header.prepend('<a name="toc-' + i + '" class="tocref"></a>');
             header = header.clone().find('.sic, del, .brsep').remove().end();
             toc.append('<li class="toclevel' + level + '"><a href="#toc-' + i
                        + '">' + header.text() + '</a></li>');
         });
-        console.log('TOC DEBUG: TOC HTML:', toc.html());
         // Append to transcription-viewer-container for proper positioning
         var container = $('.transcription-viewer-container');
         if (container.length > 0) {

@@ -89,7 +89,10 @@
     
     <field name="title" type="text_en" indexed="true" stored="true" multiValued="false" />
     
-    <field name="modelSort" type="text_en" indexed="true" stored="true" multiValued="false" />
+    <!-- Exact, single-token discriminator used as the primary result sort.
+         An analysed text field splits values such as A00/C00 and makes the
+         following sort keys interleave otherwise distinct model groups. -->
+    <field name="modelSort" type="string" indexed="true" stored="true" multiValued="false" docValues="true" />
     
     <field name="doctype" type="text_en" indexed="true" stored="true" multiValued="false" />
     

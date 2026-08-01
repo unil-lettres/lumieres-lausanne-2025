@@ -48,6 +48,11 @@ def test_str_representation():
     assert str(PlaceCategory.objects.create(name="Pays")) == "Pays"
 
 
+def test_admin_labels_use_place_type_wording():
+    assert str(PlaceCategory._meta.verbose_name) == "Type de lieu"
+    assert str(PlaceCategory._meta.verbose_name_plural) == "Types de lieux"
+
+
 @pytest.mark.django_db
 def test_name_unique():
     PlaceCategory.objects.create(name="Pays")

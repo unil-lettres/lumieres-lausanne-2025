@@ -27,6 +27,19 @@ from fiches.models.documents.document import Transcription
 
 
 class TranscriptionFormDefaultsTest(SimpleTestCase):
+    def test_facsimile_fields_have_clear_input_hints(self):
+        with patch("fiches.forms.transcription.get_default_publisher_user", return_value=None):
+            form = TranscriptionForm(instance=Transcription())
+
+        url_attrs = form.fields["facsimile_iiif_url"].widget.attrs
+        start_attrs = form.fields["facsimile_start_canvas"].widget.attrs
+
+        self.assertEqual(url_attrs["placeholder"], "https://…/manifest.json")
+        self.assertIn("facsimile-url-status", url_attrs["aria-describedby"])
+        self.assertEqual(start_attrs["min"], 1)
+        self.assertEqual(start_attrs["inputmode"], "numeric")
+        self.assertNotIn("aria-describedby", start_attrs)
+
     def test_published_by_defaults_to_configured_user_when_empty(self):
         instance = Transcription()
         with patch("fiches.forms.transcription.get_default_publisher_user", return_value=SimpleNamespace(pk=12)):

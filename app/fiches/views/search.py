@@ -37,6 +37,7 @@ from django.db import models
 from django.http import (
     Http404,
     HttpResponseBadRequest,
+    HttpResponseForbidden,
     HttpResponseNotFound,
     HttpResponseRedirect,
     JsonResponse,
@@ -256,6 +257,12 @@ def quick_search(request):
 # ---------------------------------------------------------------------
 # 🔍➕ Advanced bibliographic search (kept as DB filters for now)
 # ---------------------------------------------------------------------
+BULK_TRANSCRIPTION_ACCESS_PERMISSIONS = (
+    "fiches.change_any_transcription",
+    "fiches.publish_transcription",
+)
+
+
 def biblio_extended_search(request):
     user = request.user
     context = {"display_collector": True}
@@ -284,6 +291,10 @@ def biblio_extended_search(request):
     context.update({"form": form})
 
     search_action = request.GET.get("search_action")
+    if search_action == "trans_access" and not request.user.has_perms(
+        BULK_TRANSCRIPTION_ACCESS_PERMISSIONS
+    ):
+        return HttpResponseForbidden("Accès non autorisé")
 
     if doSearch and form.is_valid():
         cd = form.cleaned_data
@@ -433,7 +444,7 @@ def biblio_extended_search(request):
 
         # ---- Apply base filters
         dbg_logger.debug(q)
-        results = Biblio.objects.filter(q).order_by("document_type") if q.children else Biblio.objects.all()
+        results = Biblio.objects.filter(q).order_by("document_type") if q.children else None
 
         # ---- Keyword filters (chain after base qs)
         kw_filter_applied = False
@@ -443,22 +454,36 @@ def biblio_extended_search(request):
                 cd.get(f"kw{xidx}_p"),
                 cd.get(f"kw{xidx}_s"),
             )
+            lookup = None
+            keyword = None
             if skw:
-                kw_filter_applied = True
-                if op == "and":
-                    results = results.filter(subj_secondary_kw=skw)
-                elif op == "or":
-                    results = results | results.filter(subj_secondary_kw=skw)
-                elif op == "not":
-                    results = results.exclude(subj_secondary_kw=skw)
+                lookup = "subj_secondary_kw"
+                keyword = skw
             elif pkw:
-                kw_filter_applied = True
-                if op == "and":
-                    results = results.filter(subj_primary_kw=pkw)
-                elif op == "or":
-                    results = results | results.filter(subj_primary_kw=pkw)
-                elif op == "not":
-                    results = results.exclude(subj_primary_kw=pkw)
+                lookup = "subj_primary_kw"
+                keyword = pkw
+            if lookup is None:
+                continue
+
+            kw_filter_applied = True
+            keyword_results = Biblio.objects.filter(**{lookup: keyword})
+            if results is None:
+                # With no preceding criterion, both AND and OR mean "has this
+                # keyword"; NOT starts from the complete bibliography.
+                results = (
+                    Biblio.objects.exclude(**{lookup: keyword})
+                    if op == "not"
+                    else keyword_results
+                )
+            elif op == "and":
+                results = results.filter(**{lookup: keyword})
+            elif op == "or":
+                # The right-hand queryset must be independent of ``results``.
+                # ``results | results.filter(...)`` can never add a record and
+                # made OR either a no-op or an unfiltered search.
+                results = results | keyword_results
+            elif op == "not":
+                results = results.exclude(**{lookup: keyword})
 
         if not q.children and not kw_filter_applied:
             results = Biblio.objects.none()
@@ -717,7 +742,7 @@ def relations(request):
 
 
 @require_POST
-@permission_required(perm="fiches.change_any_transcription")
+@permission_required(perm=BULK_TRANSCRIPTION_ACCESS_PERMISSIONS, raise_exception=True)
 def transcriptions_change_access(request):
     public = "access_public" in request.POST
     private = "access_private" in request.POST

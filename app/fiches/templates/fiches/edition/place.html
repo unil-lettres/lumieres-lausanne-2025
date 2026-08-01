@@ -27,11 +27,15 @@
 		/* Variants and related-places: wider add input, reaching toward the button. */
 		.fieldWrapper.variants .dynamiclist_helper_input,
 		.fieldWrapper.related_places .dynamiclist_helper_input { width: 415px; }
+		/* Picking an autocomplete result adds it immediately; the legacy second
+		   add button is kept in the DOM for the widget helper but hidden from UI. */
+		.fieldWrapper.related_places .dynamiclist_helper_input { width: 550px; }
+		.fieldWrapper.related_places .dynamiclist_helper_addbut { display: none; }
 	</style>
 {% endblock head %}
 
 {% block main_menu %}{% with "lieu" as fiche_type %}{{ block.super }}{% endwith %}{% endblock %}
-{% block main_header_title %}{{ new_object|yesno:"Nouvelle fiche lieu,Modification de fiche lieu" }}{% endblock %}
+{% block main_header_title %}{{ new_object|yesno:"Nouvelle fiche lieu,Modification de la fiche lieu" }}{% endblock %}
 
 {% block but_cancel_onclick %}
 	{% if new_object %}
@@ -73,20 +77,28 @@
 <script type="text/javascript">
 (function ($) {
 	// Related places: search existing places by name and add them as chips.
-	function placeAutocomplete($input) {
+	function placeAutocomplete($input, fieldName) {
 		$input.autocomplete("{% url 'place-autocomplete' %}", {
 			extraParams: { exclude: "{{ form.instance.pk|default:'' }}" },
-			mustMatch: true, autoFill: false, selectFirst: true
+			// This legacy autocomplete plugin does not consistently emit its
+			// result event for mouse selections unless clickFire is enabled.
+			mustMatch: true, autoFill: false, selectFirst: true, clickFire: true
 		})
 		.result(function (event, data) {
 			var $this = $(this);
 			if (data) {
-				if (isNaN(parseInt(data[0]))) { data.reverse(); }
-				$this.siblings(".helper_input_value").val(data[0]);
-				$this.parents(".dynamiclist_container").find(".dynamiclist_helper_addbut").removeAttr("disabled");
+				// Do not reverse `data`: it is the autocomplete cache's own array,
+				// and mutating it makes the subsequent mustMatch check clear the field.
+				var placeId = isNaN(parseInt(data[0], 10)) ? data[1] : data[0];
+				var $container = $this.parents(".dynamiclist_container");
+				var $button = $container.find(".dynamiclist_helper_addbut");
+				$this.siblings(".helper_input_value").val(placeId);
+				$button.removeAttr("disabled");
+				// A dropdown selection is already an explicit choice: turn it into a
+				// chip immediately instead of requiring a second, ambiguous + click.
+				dynamiclist_widget.addToList($button[0], fieldName);
 			}
-		})
-		.blur(function () { $(this).search(); });
+		});
 	}
 
 	$(document).ready(function () {
@@ -109,7 +121,7 @@
 		$related.find(".dynamiclist_value_entry").each(function () {
 			dynamiclist_widget.appendDeleteButton(this);
 		});
-		placeAutocomplete($related.find(".dynamiclist_helper_input"));
+		placeAutocomplete($related.find(".dynamiclist_helper_input"), "{{ form.related_places.html_name|escapejs }}");
 		if ($.fn.button) {
 			$related.find(".dynamiclist_helper_addbut").button({ icons: { primary: "ui-icon-plusthick" } });
 		}

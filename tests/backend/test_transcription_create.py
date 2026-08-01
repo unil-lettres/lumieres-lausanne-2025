@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from django.contrib.auth.models import Permission, User
-from django.test import TestCase
+from django.contrib.staticfiles import finders
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from fiches.models.documents.document import Biblio, DocumentLanguage, DocumentType, Transcription
@@ -67,3 +70,46 @@ class TranscriptionCreateTest(TestCase):
             reverse("transcription-edit", args=[transcription.id]),
             fetch_redirect_response=False,
         )
+
+    def test_edit_page_labels_the_transcription_editor(self):
+        transcription = Transcription.objects.create(
+            manuscript_b=self.biblio,
+            author=self.user,
+            access_owner=self.user,
+        )
+
+        response = self.client.get(reverse("transcription-edit", args=[transcription.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            '<div class="legend" id="transcription-text-title">Transcription</div>',
+            response.content.decode(),
+        )
+        self.assertIn(
+            ".facsimile-viewer-box { width: var(--facsimile-width); margin: 0 0 0 10px; }",
+            response.content.decode(),
+        )
+        self.assertIn("padding-left: 9px;", response.content.decode())
+
+    def test_display_page_does_not_expose_transcription_content_in_toc_debug_logs(self):
+        transcription = Transcription.objects.create(
+            manuscript_b=self.biblio,
+            author=self.user,
+            access_owner=self.user,
+        )
+
+        response = self.client.get(reverse("transcription-display", args=[transcription.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "TOC DEBUG:")
+
+
+class TranscriptionSyncLoggingTest(SimpleTestCase):
+    def test_routine_sync_traces_are_opt_in(self):
+        script = Path(finders.find("fiches/js/transcription-sync.js")).read_text(encoding="utf-8")
+        viewer_controls = Path(finders.find("fiches/js/viewer-controls.js")).read_text(encoding="utf-8")
+
+        self.assertIn("localStorage.getItem('transcription-debug') === '1'", script)
+        self.assertIn("if (debugEnabled && window?.console)", script)
+        self.assertIn("localStorage.getItem('transcription-debug') === '1'", viewer_controls)
+        self.assertNotIn("console.log(", viewer_controls)

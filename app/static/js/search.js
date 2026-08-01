@@ -374,6 +374,16 @@ $(document).ready(function(){
 			$("#result-ordering").val(cookie_order);
 		}
 	} catch (e) {};
+
+	// The biographical search always includes its implicit "has a biography"
+	// filter. Run it on initial load so the tab immediately displays all
+	// biographies (or the restored filtered result set) instead of an empty
+	// results area that requires an unnecessary click on "Chercher".
+	if (typeof search_model_name !== 'undefined' &&
+		search_model_name === 'Person' &&
+		$("#search-results").length) {
+		execute_query();
+	}
 	
 });
 
@@ -408,4 +418,3 @@ $(document).ready(function(){
 		return false;
 	});
 });
-

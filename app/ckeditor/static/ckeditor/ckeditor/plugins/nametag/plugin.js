@@ -28,11 +28,10 @@
       dialogTitle: 'Lier une personne',
       searchLabel: 'Rechercher une personne',
       statusId: 'nametag-status-person',
-      searchUrl: '/fiches/ajax_search/',
-      searchParams: 'app_label=fiches&model_name=Person&search_field=name&outf=_m__format_for_ajax_search',
-      // ajax_search ORs the words of `q`; AND the extra words via and_queries
-      // so "Jean Barbeyrac" matches the person whose name holds both terms.
-      andSearchField: 'name',
+      // Dedicated endpoint: historical authorities only (modern=false), with
+      // all query words combined using AND.
+      searchUrl: '/fiches/tagging/person/search/',
+      searchParams: '',
       // Inline creation (Directeurs only — gated server-side too).
       permKey: 'person',
       createUrl: '/fiches/tagging/person/create/',
@@ -366,7 +365,7 @@
           }
           // Parenthesise the trailing birth-death dates that format_for_ajax_search
           // emits bracketed: "Nom, Prénom [1698-1756]" -> "Nom, Prénom (1698-1756)".
-          var label = line.substring(0, sep).replace(/\s*\[(\d{0,4}-\d{0,4})\]\s*$/, ' ($1)');
+          var label = line.substring(0, sep).replace(/\s*\[(\d{0,4}-\d{0,4})\]/, ' ($1)');
           items.push({ label: label, id: line.substring(sep + 1) });
         });
       }
@@ -518,6 +517,8 @@
       if (xhr.status === 200 && data && data.success) {
         selectResult(dialog, String(data.id), data.label);
         setCreateStatus(conf, data.created ? 'Fiche créée et sélectionnée — validez par OK.' : 'Fiche existante sélectionnée.');
+      } else if (xhr.status === 409 && data && data.error === 'ambiguous_name') {
+        setCreateStatus(conf, 'Plusieurs fiches historiques portent ce nom. Sélectionnez explicitement la bonne fiche dans les résultats.');
       } else if (xhr.status === 403) {
         setCreateStatus(conf, 'Vous n’avez pas le droit de créer cette fiche.');
       } else {

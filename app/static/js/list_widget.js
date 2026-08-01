@@ -53,6 +53,21 @@ var staticlist_widget = {
 var dynamiclist_widget = {
 	    version: '1'
       , class_prefix: 'dynamiclist'
+	  , valueKey: function(value) {
+			var parts = String(value || '').split('|'), id = $.trim(parts.shift());
+			if (id) { return 'id:' + id; }
+			return 'label:' + $.trim(parts.join('|')).toLowerCase();
+	  }
+	  , containsValue: function(container, name, value) {
+			var wanted = this.valueKey(value), found = false, self = this;
+			container.find("div."+this.class_prefix+"_values input[type=hidden]").each(function() {
+				if (this.name === name && self.valueKey(this.value) === wanted) {
+					found = true;
+					return false;
+				}
+			});
+			return found;
+	  }
 	  //, appendDeleteButton: function(obj) { $(obj).append('<button class="delete" onclick="$(this).parent().fadeOut(\'fast\', function(){$(this).remove()}); return false;"><span>Supprimer</span></button>'); }
 	  , appendDeleteButton: function(obj) { 
 	  		var but = $('<button>',{
@@ -69,6 +84,13 @@ var dynamiclist_widget = {
 					label = container.find("."+this.class_prefix+"_helper_input").val(),
 				    value = container.find(".helper_input_value").val();
 				if (value && label) {
+					// Never render or submit the same relation twice. Existing chips
+					// contain "id|label", while the autocomplete helper contains "id".
+					if (this.containsValue(container, name, value)) {
+						container.find("."+this.class_prefix+"_helper_input, .helper_input_value").val("");
+						container.find(".dynamiclist_helper_addbut").attr("disabled", "disabled");
+						return;
+					}
 					var template = this.templates[name],
 						value_entry = $(template.replace('%(label)s' , label)
 							.replace('%(name)s'  , name)
@@ -86,4 +108,3 @@ var dynamiclist_widget = {
 				}
 	      	}
 	};
-

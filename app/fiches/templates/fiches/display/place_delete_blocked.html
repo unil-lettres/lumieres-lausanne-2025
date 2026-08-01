@@ -1,0 +1,31 @@
+{% extends "fiches/fiche_base2.html" %}
+{% comment %}<!--
+   Copyright (C) 2010-2026 Université de Lausanne, SIER
+   This file is part of Lumières.Lausanne (GNU AGPL v3 or later).
+   This copyright notice MUST APPEAR in all copies of the file.
+-->{% endcomment %}
+{% load i18n %}
+
+{% block page_title %} | {% trans "Suppression impossible" %}{% endblock page_title %}
+{% block main_header_title %}{% trans "Fiche lieu" %}{% endblock main_header_title %}
+
+{% block main_content %}
+<h2>{% trans "Suppression impossible" %}</h2>
+<p>
+    {% blocktrans with place_name=place.name %}Le lieu « {{ place_name }} » est encore référencé. Sa suppression créerait des liens orphelins.{% endblocktrans %}
+</p>
+<ul>
+    {% for group in reference_groups %}
+    <li>
+        {{ group.label }} : {{ group.count }}
+        <ul>
+            {% for item in group.items %}
+            <li><a href="{{ item.url }}">{{ item.label }}</a></li>
+            {% endfor %}
+        </ul>
+    </li>
+    {% endfor %}
+</ul>
+<p>{% trans "Corrigez les contenus concernés ou fusionnez ce lieu avec une autre fiche avant de le supprimer." %}</p>
+<p><a href="{% url 'place-display' place.pk %}">{% trans "Retour à la fiche lieu" %}</a></p>
+{% endblock main_content %}

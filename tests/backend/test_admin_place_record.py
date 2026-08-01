@@ -27,6 +27,9 @@ The place fiches must be browsable, searchable and editable from the
 from __future__ import annotations
 
 import pytest
+from django.contrib.admin.widgets import AutocompleteSelect
+from django.contrib.auth.models import Permission
+from django.forms import Select
 from django.urls import reverse
 from fiches.admin import fiches_admin
 from fiches.models import PlaceCategory, PlaceRecord
@@ -47,6 +50,15 @@ def lausanne(category):
 @pytest.fixture
 def admin_user(db, django_user_model):
     return django_user_model.objects.create_superuser(username="boss", password="pw", email="boss@example.org")
+
+
+@pytest.fixture
+def place_editor(db, django_user_model):
+    user = django_user_model.objects.create_user(username="editor", password="pw", is_staff=True)
+    user.user_permissions.add(
+        Permission.objects.get(content_type__app_label="fiches", codename="add_placerecord")
+    )
+    return user
 
 
 def test_place_record_is_registered_in_fiches_admin():
@@ -89,3 +101,19 @@ def test_change_form_opens_for_existing_place(client, admin_user, lausanne):
     client.force_login(admin_user)
     response = client.get(reverse("fiches_admin:fiches_placerecord_change", args=[lausanne.pk]))
     assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_add_form_category_is_available_without_category_admin_permission(client, place_editor, category):
+    """A place editor must be able to choose a category without a 403 AJAX request."""
+    assert not place_editor.has_perm("fiches.view_placecategory")
+    client.force_login(place_editor)
+
+    response = client.get(reverse("fiches_admin:fiches_placerecord_add"))
+
+    assert response.status_code == 200
+    field = response.context["adminform"].form.fields["category"]
+    widget = field.widget.widget
+    assert isinstance(widget, Select)
+    assert not isinstance(widget, AutocompleteSelect)
+    assert any(str(value) == str(category.pk) for value, _label in field.choices)

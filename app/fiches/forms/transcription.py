@@ -88,6 +88,18 @@ class TranscriptionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         """Prefill reviewers and the default publisher for legacy transcriptions."""
         super().__init__(*args, **kwargs)
+        self.fields["facsimile_iiif_url"].widget.attrs.update(
+            {
+                "placeholder": "https://…/manifest.json",
+                "aria-describedby": "facsimile-url-help facsimile-url-status",
+            }
+        )
+        self.fields["facsimile_start_canvas"].widget.attrs.update(
+            {
+                "min": 1,
+                "inputmode": "numeric",
+            }
+        )
         if self.instance and self.instance.pk and not self.is_bound:
             reviewer_ids = list(
                 TranscriptionReviewer.objects.filter(transcription_id=self.instance.pk).values_list(

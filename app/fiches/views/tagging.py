@@ -20,17 +20,46 @@
 
 """AJAX endpoints backing the « Pers » / « Lieu » transcription tagging plugin.
 
-Only fiche *creation* lives here; searching reuses ``ajax_search`` (persons) and
-``place_autocomplete`` (places). Creation uses dedicated inline permissions so
-that the « Directeurs » role may create a fiche from the tagging window without
+Person searching and inline fiche creation live here; place searching reuses
+``place_autocomplete``. Creation uses dedicated inline permissions so that the
+« Directeurs » role may create a fiche from the tagging window without
 conflating that responsibility with ordinary fiche creation or technical admin.
 """
 
-from django.http import JsonResponse
+from collections import Counter
+
+from django.db.models import Q
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_GET, require_POST
 
 from fiches.models import PlaceCategory, PlaceRecord
 from fiches.models.person.person import Person
+
+
+@require_GET
+def search_person(request):
+    """Search historical person authorities for transcription tagging.
+
+    ``Person`` also stores modern secondary-literature contributors.  Those
+    records are not valid named entities in a historical transcription, so the
+    tagging picker deliberately searches only ``modern=False`` records.
+    Multiple words are combined with AND to avoid the overly broad generic
+    autocomplete behaviour.
+    """
+    query = (request.GET.get("q") or "").strip()
+    persons = Person.objects.filter(modern=False)
+    for word in query.split():
+        persons = persons.filter(Q(name__icontains=word))
+    results = []
+    for person in persons.order_by("name", "pk")[:50]:
+        label, person_id = person.format_for_ajax_search().rsplit("|", 1)
+        results.append((label, person_id))
+    label_counts = Counter(label.casefold() for label, _person_id in results)
+    lines = [
+        f"{label}{f' — fiche #{person_id}' if label_counts[label.casefold()] > 1 else ''}|{person_id}"
+        for label, person_id in results
+    ]
+    return HttpResponse("\n".join(lines), content_type="text/plain; charset=utf-8")
 
 
 @require_GET
@@ -49,10 +78,22 @@ def create_person(request):
     if not name:
         return JsonResponse({"success": False, "error": "empty_name"}, status=400)
 
-    person = Person.objects.filter(name__iexact=name).first()
-    created = False
-    if person is None:
-        person, created = Person.objects.get_or_create(name=name, defaults={"modern": False})
+    matches = list(Person.objects.filter(name__iexact=name, modern=False).order_by("pk")[:2])
+    if len(matches) > 1:
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "ambiguous_name",
+                "candidates": [
+                    {"id": person.pk, "label": person.format_for_ajax_search().rsplit("|", 1)[0]}
+                    for person in matches
+                ],
+            },
+            status=409,
+        )
+
+    created = not matches
+    person = matches[0] if matches else Person.objects.create(name=name, modern=False)
     return JsonResponse({"success": True, "id": person.id, "label": person.name, "created": created})
 
 

@@ -26,6 +26,19 @@
 (function (window) {
     'use strict';
 
+    var debugEnabled = window.TranscriptionDebug === true;
+    try {
+        debugEnabled = debugEnabled || localStorage.getItem('transcription-debug') === '1';
+    } catch (_) {}
+
+    function debugLog() {
+        if (debugEnabled && window.console) console.debug.apply(console, arguments);
+    }
+
+    function debugWarn() {
+        if (debugEnabled && window.console) console.warn.apply(console, arguments);
+    }
+
     /**
      * ViewerControls class to manage OpenSeadragon viewer controls
      */
@@ -61,37 +74,37 @@
 
             // Navigation controls
             this.bindButton('viewer-prev-page', function () {
-                console.log('=======================================================================');
+                debugLog('=======================================================================');
                 if (!self.viewer) return;
 
                 var currentPage = self.viewer.currentPage();
                 var totalPages = self.getTotalPages();
 
-                console.log('Previous clicked - Current:', currentPage, 'Total:', totalPages);
+                debugLog('Previous clicked - Current:', currentPage, 'Total:', totalPages);
 
                 if (totalPages > 1 && currentPage > 0) {
                     var targetPage = currentPage - 1;
-                    console.log('Going to page:', targetPage);
+                    debugLog('Going to page:', targetPage);
                     self.viewer.goToPage(targetPage);
                 }
-                console.log('=======================================================================');
+                debugLog('=======================================================================');
             });
 
             this.bindButton('viewer-next-page', function () {
-                console.log('=======================================================================');
+                debugLog('=======================================================================');
                 if (!self.viewer) return;
 
                 var currentPage = self.viewer.currentPage();
                 var totalPages = self.getTotalPages();
 
-                console.log('Next clicked - Current:', currentPage, 'Total:', totalPages);
+                debugLog('Next clicked - Current:', currentPage, 'Total:', totalPages);
 
                 if (totalPages > 1 && currentPage < totalPages - 1) {
                     var targetPage = currentPage + 1;
-                    console.log('Going to page:', targetPage);
+                    debugLog('Going to page:', targetPage);
                     self.viewer.goToPage(targetPage);
                 }
-                console.log('=======================================================================');
+                debugLog('=======================================================================');
             });
 
             // Zoom controls
@@ -129,7 +142,7 @@
                 // Convert from 1-based display to 0-based index
                 var targetIndex = targetPage - 1;
                 
-                console.log('Page input: navigating to page', targetPage, '(index', targetIndex + ')');
+                debugLog('Page input: navigating to page', targetPage, '(index', targetIndex + ')');
                 self.viewer.goToPage(targetIndex);
             });
         },
@@ -211,7 +224,7 @@
 
             // Try multiple methods to get total pages
             if (this.viewer.tileSources && Array.isArray(this.viewer.tileSources)) {
-                console.log('Total pages from tileSources:', this.viewer.tileSources.length);
+                debugLog('Total pages from tileSources:', this.viewer.tileSources.length);
                 return this.viewer.tileSources.length;
             }
 
@@ -222,11 +235,11 @@
 
             if (this.viewer.world && typeof this.viewer.world.getItemCount === 'function') {
                 var itemCount = this.viewer.world.getItemCount();
-                console.log('Total pages from world.getItemCount:', itemCount);
+                debugLog('Total pages from world.getItemCount:', itemCount);
                 return Math.max(1, itemCount);
             }
 
-            console.log('Defaulting to 1 page');
+            debugLog('Defaulting to 1 page');
             return 1;
         },
 
@@ -244,7 +257,7 @@
                 var currentPage = currentPageIndex + 1; // Convert to 1-based for display
                 var totalPages = this.getTotalPages();
 
-                console.log('Page indicator update - Index:', currentPageIndex, 'Display:', currentPage, 'Total:', totalPages);
+                debugLog('Page indicator update - Index:', currentPageIndex, 'Display:', currentPage, 'Total:', totalPages);
 
                 pageInputEl.value = currentPage;
                 pageInputEl.max = totalPages;
@@ -257,12 +270,12 @@
                 if (prevBtn) {
                     var canGoPrev = totalPages > 1 && currentPageIndex > 0;
                     prevBtn.disabled = !canGoPrev;
-                    console.log('Previous button enabled:', canGoPrev);
+                    debugLog('Previous button enabled:', canGoPrev);
                 }
                 if (nextBtn) {
                     var canGoNext = totalPages > 1 && currentPageIndex < totalPages - 1;
                     nextBtn.disabled = !canGoNext;
-                    console.log('Next button enabled:', canGoNext);
+                    debugLog('Next button enabled:', canGoNext);
                 }
             }
         },
@@ -306,17 +319,17 @@
      */
     window.initViewerControls = function (viewerInstance) {
         if (!viewerInstance) {
-            console.warn('ViewerControls: No viewer instance provided');
+            debugWarn('ViewerControls: No viewer instance provided');
             return null;
         }
 
         // Destroy any existing controls first to prevent duplicate event bindings
         if (window.viewerControlsInstance && typeof window.viewerControlsInstance.destroy === 'function') {
-            console.log('Destroying existing viewer controls instance');
+            debugLog('Destroying existing viewer controls instance');
             window.viewerControlsInstance.destroy();
         }
 
-        console.log('Creating new viewer controls instance');
+        debugLog('Creating new viewer controls instance');
         window.viewerControlsInstance = new ViewerControls(viewerInstance);
         return window.viewerControlsInstance;
     };

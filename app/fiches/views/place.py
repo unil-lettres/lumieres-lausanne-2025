@@ -28,11 +28,13 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.html import strip_tags
 from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_POST
 
 from fiches.constants import DOCTYPE
 from fiches.forms import NoteFormPlace, PlaceRecordForm
 from fiches.models import Biography, NotePlace, PlaceRecord, PlaceReferenceSite, PlaceVariant
 from fiches.models.documents.document import Biblio, Transcription
+from fiches.place_references import place_reference_groups
 from fiches.utils import get_last_model_activity, log_model_activity
 
 # How many entries each automatic listing on a place fiche shows per page (§3.4).
@@ -342,6 +344,8 @@ def display(request, place_id):
         # Ownership-aware, so the buttons never lead to a 403 (cf. may_change/may_delete).
         "edit_url": reverse("place-edit", args=[place.pk]) if may_change(user, place) else None,
         "delete_url": reverse("place-delete", args=[place.pk]) if may_delete(user, place) else None,
+        # Place deletion is POST-only and checks every structured / HTML reference.
+        "delete_via_post": True,
     }
     return render(request, "fiches/display/place.html", context)
 
@@ -407,10 +411,19 @@ def place_autocomplete(request):
     return HttpResponse("\n".join(lines), content_type="text/plain; charset=utf-8")
 
 
+@require_POST
 def delete(request, place_id):
-    """Delete a place fiche (own fiches only, unless delete_any_placerecord)."""
+    """Delete an unreferenced place fiche after ownership and integrity checks."""
     place = get_object_or_404(PlaceRecord, pk=place_id)
     if not may_delete(request.user, place):
         return HttpResponseForbidden("Accès non autorisé")
+    reference_groups = place_reference_groups(place)
+    if reference_groups:
+        return render(
+            request,
+            "fiches/display/place_delete_blocked.html",
+            {"place": place, "reference_groups": reference_groups},
+            status=409,
+        )
     place.delete()
     return redirect("workspace-main")

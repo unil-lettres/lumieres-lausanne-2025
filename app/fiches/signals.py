@@ -30,10 +30,13 @@ processor (a no-op under the test backend, ``BaseSignalProcessor``).
 """
 
 from django.apps import apps
-from django.db.models.signals import post_delete, post_save
+from django.db.models.deletion import ProtectedError
+from django.db.models.signals import post_delete, post_save, pre_delete
 from django.dispatch import receiver
 
-from fiches.models import PlaceRecord, PlaceReferenceSite, PlaceVariant
+from fiches.models import Person, PlaceRecord, PlaceReferenceSite, PlaceVariant
+from fiches.person_references import person_reference_groups
+from fiches.place_references import place_reference_groups
 
 
 @receiver(post_save, sender=PlaceVariant)
@@ -47,3 +50,31 @@ def reindex_place_for_satellite_change(sender, instance, **kwargs):
     except PlaceRecord.DoesNotExist:
         return  # place removed (cascade delete) — its own signal drops the doc
     apps.get_app_config("haystack").signal_processor.handle_save(PlaceRecord, place)
+
+
+@receiver(pre_delete, sender=Person)
+def protect_referenced_person_deletion(sender, instance, **kwargs):
+    """Reject hard deletion when it would orphan or erase editorial links."""
+    groups = person_reference_groups(instance)
+    if not groups:
+        return
+    protected_objects = [obj for group in groups for obj in group["objects"]]
+    labels = ", ".join(f'{group["label"]}: {group["count"]}' for group in groups)
+    raise ProtectedError(
+        f'La personne « {instance.name} » est encore référencée ({labels}).',
+        protected_objects,
+    )
+
+
+@receiver(pre_delete, sender=PlaceRecord)
+def protect_referenced_place_deletion(sender, instance, **kwargs):
+    """Reject every deletion path that would orphan a persisted place tag."""
+    groups = place_reference_groups(instance)
+    if not groups:
+        return
+    protected_objects = [obj for group in groups for obj in group["objects"]]
+    labels = ", ".join(f'{group["label"]}: {group["count"]}' for group in groups)
+    raise ProtectedError(
+        f'Le lieu « {instance.name} » est encore référencé ({labels}).',
+        protected_objects,
+    )

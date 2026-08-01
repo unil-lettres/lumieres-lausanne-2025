@@ -52,8 +52,8 @@ class PlaceCategory(models.Model):
 
     class Meta:
         app_label = "fiches"
-        verbose_name = _("Catégorie de lieu")
-        verbose_name_plural = _("Catégories de lieux")
+        verbose_name = _("Type de lieu")
+        verbose_name_plural = _("Types de lieux")
         ordering = ("name",)
 
     def __str__(self):
