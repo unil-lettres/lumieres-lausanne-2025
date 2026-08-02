@@ -215,3 +215,8 @@ descr/devis/
 
 # CKEditor uploads (CKEDITOR_UPLOAD_PATH)
 app/uploads/
+
+# Internal operational documentation is maintained outside this public repo.
+AGENTS.md
+TODO.md
+descr/
