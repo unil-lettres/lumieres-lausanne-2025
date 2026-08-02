@@ -219,3 +219,8 @@ app/uploads/
 # Env variants (keep the template tracked)
 .env.*
 !.env.template
+
+# Internal operational documentation is maintained outside this public repo.
+AGENTS.md
+TODO.md
+descr/
