@@ -19,12 +19,12 @@ services:
     depends_on:
       db: { condition: service_healthy }
     env_file: .env.staging
-    working_dir: /app/app
+    working_dir: /app
     environment:
       - DJANGO_SETTINGS_MODULE=lumieres_project.settings
     volumes:
-      - /var/www/lumieres2/static:/app/app/lumieres_project/staticfiles
-      - /var/www/lumieres2/media:/app/app/media
+      - /var/www/lumieres2/static:/app/lumieres_project/staticfiles
+      - /var/www/lumieres2/media:/app/media
       - /var/www/lumieres2/logging:/app/logging
     ports: ["8000:8000"]
     command: ["gunicorn","lumieres_project.wsgi:application","--bind","0.0.0.0:8000","--workers","3","--timeout","120"]

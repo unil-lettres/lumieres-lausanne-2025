@@ -22,12 +22,12 @@ services:
       db: { condition: service_healthy }
       solr: { condition: service_healthy }
     env_file: .env
-    working_dir: /app/app
+    working_dir: /app
     environment:
       - DJANGO_SETTINGS_MODULE=lumieres_project.settings
     volumes:
-      - /u01/projects/dockerized/lumieres2-prod/static:/app/app/lumieres_project/staticfiles
-      - /u01/projects/dockerized/media:/app/app/media
+      - /u01/projects/dockerized/lumieres2-prod/static:/app/lumieres_project/staticfiles
+      - /u01/projects/dockerized/media:/app/media
       - /u01/projects/dockerized/lumieres2-prod/logging:/app/logging
     ports: ["8000:8000"]
     command: ["gunicorn","lumieres_project.wsgi:application","--bind","0.0.0.0:8000","--workers","3","--timeout","120"]

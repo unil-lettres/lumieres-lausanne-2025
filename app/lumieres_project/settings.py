@@ -34,7 +34,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent  # /app/lumieres/lumieres_project
+BASE_DIR = Path(__file__).resolve().parent  # /app/lumieres_project
 
 # ------------------------------
 # Quick-start development settings - unsuitable for production
@@ -218,7 +218,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Additional directories to search for static files (in dev)
 STATICFILES_DIRS = [
-    BASE_DIR.parent / "static",  # /app/lumieres/static
+    BASE_DIR.parent / "static",  # /app/static
 ]
 
 # ------------------------------
@@ -283,8 +283,7 @@ CACHES = {
 # Logging configurations
 # -----------------------------
 
-logfile = Path(BASE_DIR).parent.parent
-logfile = logfile / "logging" / f"debug_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
+logfile = BASE_DIR.parent / "logging" / f"debug_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
 logfile.parent.mkdir(parents=True, exist_ok=True)
 
 LOGGING = {
