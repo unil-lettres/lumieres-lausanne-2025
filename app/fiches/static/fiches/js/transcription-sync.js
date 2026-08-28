@@ -47,11 +47,20 @@ This copyright notice MUST APPEAR in all copies of the file.
   var SCROLL_THRESHOLD_OFFSET = 60; // px from container top
   var SCROLL_TARGET_OFFSET = 50;   // px offset for target scroll position
 
+  // Routine synchronization traces are useful while diagnosing a viewer but
+  // should not flood every user's console. Developers can opt in with either
+  // `window.TranscriptionDebug = true` before this script loads, or:
+  // localStorage.setItem('transcription-debug', '1'); location.reload();
+  var debugEnabled = window.TranscriptionDebug === true;
+  try {
+    debugEnabled = debugEnabled || localStorage.getItem('transcription-debug') === '1';
+  } catch (_) {}
+
   function log() {
-    if (window?.console) console.log.apply(console, arguments);
+    if (debugEnabled && window?.console) console.debug.apply(console, arguments);
   }
   function warn() {
-    if (window?.console) console.warn.apply(console, arguments);
+    if (debugEnabled && window?.console) console.warn.apply(console, arguments);
   }
   function error() {
     if (window?.console) console.error.apply(console, arguments);

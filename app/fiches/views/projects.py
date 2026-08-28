@@ -1,25 +1,22 @@
-# -*- coding: utf-8 -*-
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
 #
-#    Copyright (C) 2010-2012 Université de Lausanne, RISET
-#    < http://www.unil.ch/riset/ >
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#    This file is part of Lumières.Lausanne.
-#    Lumières.Lausanne is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
 #
-#    Lumières.Lausanne is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-#    This copyright notice MUST APPEAR in all copies of the file.
-#
-import logging  # XXX: delete it
+# This copyright notice MUST APPEAR in all copies of the file.
 
 import re
 
@@ -29,10 +26,8 @@ from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.csrf import csrf_exempt
-from fiches.models import *
-from fiches.templatetags.collector import editable_projects
 
-logger = logging.getLogger(__name__)  # XXX: delete it
+from fiches.models import Project
 
 
 def index_project(request, proj_slug=None):
@@ -130,8 +125,7 @@ def get_project_description(request, proj_id=None):
         "lit_prim": lit_prim,
         "lit_sec": lit_sec,
         "transcriptions": transcriptions,
-    }   
-    logger.debug(f"{__file__}.get_project_description() : {context}")
+    }
     return render(request, "fiches/ajax/project_description.html", context)
 
 
@@ -209,7 +203,6 @@ def add_object(request):
     Add an object to a project,
     object and project specifications (id and type) are passed by POST variables
     """
-
     if not request.user.has_perm("fiches.change_project"):
         return
 
@@ -240,7 +233,6 @@ def add_object(request):
 
     # Get the model of the object, given by item_type
     try:
-        # model = models.get_model('fiches', item_type)
         model = apps.get_model("fiches", item_type)
     except LookupError:
         return return_error("item type error")
@@ -252,17 +244,16 @@ def add_object(request):
         return return_error("object error")
 
     # Add the object to the collection
-    # project.add_object(obj)
     if hasattr(project, "add_object"):
         project.add_object(obj)
 
-    # if model == Transcription:
-    #     project.add_object(obj.manuscript_b)
     # Special case for Transcription
-    if model == apps.get_model("fiches", "Transcription"):
-        if hasattr(project, "add_object"):
-            if hasattr(obj, "manuscript_b"):
-                project.add_object(obj.manuscript_b)
+    if (
+        model == apps.get_model("fiches", "Transcription")
+        and hasattr(project, "add_object")
+        and hasattr(obj, "manuscript_b")
+    ):
+        project.add_object(obj.manuscript_b)
 
     return HttpResponse("ok", content_type="text/plain")
 
@@ -273,7 +264,6 @@ def remove_object(request):
     Remove an object from a project,
     object and collection specifications (id and type) are passed by POST variables
     """
-
     if not request.user.has_perm("fiches.change_project"):
         return
 
@@ -312,8 +302,7 @@ def remove_object(request):
 
     # Keep project.transcriptions and project.bibliographies in sync for
     # transcription entries shown in the transcriptions tab.
-    if model == apps.get_model("fiches", "Transcription"):
-        if hasattr(obj, "manuscript_b"):
-            project.remove_object(obj.manuscript_b)
+    if model == apps.get_model("fiches", "Transcription") and hasattr(obj, "manuscript_b"):
+        project.remove_object(obj.manuscript_b)
 
     return HttpResponse("ok", content_type="text/plain")

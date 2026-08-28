@@ -1,0 +1,85 @@
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
+#
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# This copyright notice MUST APPEAR in all copies of the file.
+
+"""Regression tests for runtime bugs surfaced by the ruff lint pass.
+
+Each test exercises a code path that previously raised at runtime (NameError
+from a missing/mis-scoped import) before the F821 fixes.
+"""
+
+import pytest
+
+
+@pytest.mark.django_db
+def test_biography_get_absolute_url_resolves():
+    """`reverse` was imported in the class body, so undefined in the method (F821)."""
+    from fiches.models.person.biography import Biography
+    from fiches.models.person.person import Person
+
+    person = Person.objects.create(name="Test, Person")
+    bio = Biography.objects.create(person=person)
+
+    url = bio.get_absolute_url()
+    assert str(person.pk) in url
+
+
+def test_fiches_search_form_get_models_uses_haystack_connection():
+    """`connections` was used in get_models() without being imported (F821)."""
+    from fiches.forms import FichesSearchForm
+
+    # With no selected models the form falls back to the Haystack unified index;
+    # that branch referenced the undefined `connections` name before the fix.
+    assert isinstance(FichesSearchForm().get_models(), list)
+
+
+def test_get_all_relations_has_no_mutable_default_args():
+    """`_get_all_relations` mutated its list defaults in place, leaking state
+    across calls (ruff B006); defaults must not be mutable containers."""
+    from fiches.views.biography import _get_all_relations
+
+    assert not any(isinstance(d, (list, dict, set)) for d in _get_all_relations.__defaults__)
+
+
+def test_biography_view_imports_httpresponseservererror():
+    """`HttpResponseServerError` was only reachable via a `from fiches.models
+    import *` that never provided it (ruff F405 masking a missing django.http
+    import) — a latent NameError on the error path."""
+    import fiches.views.biography as biography_views
+
+    assert hasattr(biography_views, "HttpResponseServerError")
+
+
+@pytest.mark.django_db
+def test_free_content_get_content_missing_returns_none():
+    """get_content's bare except was narrowed to DoesNotExist (E722); a missing
+    name must still return None rather than raise."""
+    from fiches.models import FreeContent
+
+    assert FreeContent.objects.get_content("does-not-exist") is None
+
+
+@pytest.mark.django_db
+def test_person_get_valid_biography_none_without_valid_bio():
+    """get_valid_biography's bare except was narrowed to IndexError (E722); a
+    person with no valid biography must still return None."""
+    from fiches.models.person.person import Person
+
+    person = Person.objects.create(name="Nobody, Valid")
+    assert person.get_valid_biography() is None

@@ -1,0 +1,48 @@
+name: lumieres-staging
+
+services:
+  db:
+    image: mysql:9.3
+    restart: unless-stopped
+    env_file: .env.staging
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL","mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  web:
+    image: unillett/lumieres:stage-latest
+    restart: unless-stopped
+    depends_on:
+      db: { condition: service_healthy }
+    env_file: .env.staging
+    working_dir: /app
+    environment:
+      - DJANGO_SETTINGS_MODULE=lumieres_project.settings
+    volumes:
+      - /var/www/lumieres2/static:/app/lumieres_project/staticfiles
+      - /var/www/lumieres2/media:/app/media
+      - /var/www/lumieres2/logging:/app/logging
+    ports: ["8000:8000"]
+    command: ["gunicorn","lumieres_project.wsgi:application","--bind","0.0.0.0:8000","--workers","3","--timeout","120"]
+
+  solr:
+    image: ${LUMIERES_SOLR_IMAGE:-unillett/lumieres:solr-8.11.4-log4j-2.25.5}
+    restart: unless-stopped
+    ports: ["8983:8983"]
+    volumes:
+      - /var/www/lumieres2/solr/configsets/lumieres:/var/solr/configsets/lumieres:ro
+      - /var/www/lumieres2/solr/data:/var/solr/data
+    command: >
+      bash -lc "solr-precreate lumieres /var/solr/configsets/lumieres && solr-foreground"
+    healthcheck:
+      test: ["CMD-SHELL","wget -qO- 'http://localhost:8983/solr/admin/cores?action=STATUS&core=lumieres' | grep -q '\"name\":\"lumieres\"'"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db_data: {}

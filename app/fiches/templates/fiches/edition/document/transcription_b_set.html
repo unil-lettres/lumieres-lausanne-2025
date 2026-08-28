@@ -33,15 +33,19 @@
 {% for transcription in doc.transcription_set.all %}{% spaceless %}
     <li>
 
-    {% if perms.fiches.delete_transcription %}
+	{% if perms.fiches.delete_transcription %}
+	{% if perms.fiches.delete_any_transcription or request.user == transcription.author or request.user == transcription.access_owner %}
 		<button class="transcription-delbut delete" onclick="if (window.confirm('Supprimer la transcription ?\n(ne peut pas être annulé)\n')) { document.location.href='{% url 'transcription-delete' transcription.id %}' }; return false;">Supprimer</button>&nbsp;
+	{% endif %}
 	{% endif %}
 	   
         <span>{{ transcription }}</span>
         <span>[<a class="access" href="{% url 'transcription-display' transcription.id %}">afficher</a>]</span>
 	   
     {% if perms.fiches.change_transcription %}
+	{% if not transcription.access_public or perms.fiches.publish_transcription %}
 	   <span>&nbsp;[<a class="access" href="{% url 'transcription-edit' transcription.id %}">éditer</a>]</span>
+	{% endif %}
 	{% endif %}
 	 
     </li>{% endspaceless %}

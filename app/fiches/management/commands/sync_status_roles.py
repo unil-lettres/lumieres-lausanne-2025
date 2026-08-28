@@ -1,3 +1,23 @@
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
+#
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# This copyright notice MUST APPEAR in all copies of the file.
+
 from contextlib import nullcontext
 
 from django.contrib.auth.models import Group, Permission
@@ -9,20 +29,33 @@ from django.db.models import Q
 from fiches.models.core.user_profile import UserProfile
 from fiches.models.documents.document_file import DocumentFile
 from fiches.models.misc.object_collection import ObjectCollection
+from fiches.models.misc.place import PlaceCategory, PlaceRecord
+from fiches.models.person.person import Person
 
 
 class Command(BaseCommand):
     help = (
         "Synchronise Lumières status groups with the latest permission policy:\n"
-        " - doctorants gain the ability to manage bibliography attachments\n"
+        " - doctorants manage bibliography attachments without deleting others' files\n"
         " - doctorants may access and edit third-party transcriptions\n"
+        " - civilistes get an exact, least-privilege editorial role\n"
         " - directeurs may reassign collection owners\n"
         " - directeurs may manage user profile extra information\n"
+        " - directeurs may create person & place fiches (named-entity tagging)\n"
+        " - directeurs may manage place categories in the Admin\n"
+        " - every status group gets its Fiche lieu access from the status matrix\n"
         " - assistants status is retired\n"
         "Run without --apply for a dry-run preview."
     )
 
-    DOCFILE_PERMS = ("add_documentfile", "change_documentfile", "delete_documentfile")
+    DOCTORANT_DOCFILE_PERMS = (
+        "add_documentfile",
+        "change_documentfile",
+        "delete_documentfile",
+        "change_any_documentfile",
+    )
+    DIRECTOR_DOCFILE_PERMS = (*DOCTORANT_DOCFILE_PERMS, "delete_any_documentfile")
+    DIRECTOR_NOTE_PERMS = ("can_see_note", "can_publish_note")
     DOCTORANT_TRANSCRIPTION_PERMS = (
         "access_unpublished_transcription",
         "change_any_transcription",
@@ -33,10 +66,65 @@ class Command(BaseCommand):
         "delete_userprofile",
         "view_userprofile",
     )
+    DIRECTOR_PLACE_CATEGORY_PERMS = (
+        "view_placecategory",
+        "add_placecategory",
+        "change_placecategory",
+        "delete_placecategory",
+    )
+    #: Fiche lieu access per status, from the client's "LL détail des STATUTS
+    #: revus 2026.07". The matrix grants "modifier"/"supprimer" either fully or
+    #: only on one's own fiches; the latter is expressed by withholding the
+    #: matching "_any_" permission, which views.place.may_change / may_delete
+    #: then read as "own fiches only" (same convention as Biblio).
+    BASE_PLACE_PERMS = (
+        "view_placerecord",
+        "add_placerecord",
+        "change_placerecord",
+        "delete_placerecord",
+    )
+    PLACE_PERMS_BY_GROUP = {
+        # Étudiant: modifier + supprimer seulement ses propres fiches.
+        "étudiants": BASE_PLACE_PERMS,
+        # Chercheur / Doctorant LL: modifier toutes, supprimer seulement les leurs.
+        "chercheurs": (*BASE_PLACE_PERMS, "change_any_placerecord"),
+        "doctorants": (*BASE_PLACE_PERMS, "change_any_placerecord"),
+        # Directeur LL: tout, sans restriction de propriété, plus la création
+        # depuis la barre de tag (hors matrice: demande client du 2026-07-15).
+        "directeurs": (
+            *BASE_PLACE_PERMS,
+            "change_any_placerecord",
+            "delete_any_placerecord",
+            "add_placerecord_inline",
+        ),
+    }
     ASSISTANT_NAMES = ("assistants", "assistant")
     DOCTORANT_NAME = "doctorants"
+    CIVILISTE_NAME = "civilistes"
     DIRECTEUR_NAME = "directeurs"
     COLLECTION_OWNER_PERM = "change_collection_owner"
+    CIVILISTE_PERMISSION_SPECS = (
+        # Bibliographic tagging work, including records assigned by a researcher.
+        ("fiches", "biblio", "view_biblio"),
+        ("fiches", "biblio", "add_biblio"),
+        ("fiches", "biblio", "change_biblio"),
+        ("fiches", "biblio", "change_any_biblio"),
+        ("fiches", "biblio", "delete_biblio"),
+        # Transcription, pagination and IIIF work on unpublished assigned records.
+        ("fiches", "transcription", "view_transcription"),
+        ("fiches", "transcription", "add_transcription"),
+        ("fiches", "transcription", "change_transcription"),
+        ("fiches", "transcription", "change_any_transcription"),
+        ("fiches", "transcription", "delete_transcription"),
+        ("fiches", "transcription", "access_unpublished_transcription"),
+        # Attachments may be added or corrected globally, but only their owner may
+        # delete them (enforced by user_can_delete_documentfile).
+        ("fiches", "documentfile", "view_documentfile"),
+        ("fiches", "documentfile", "add_documentfile"),
+        ("fiches", "documentfile", "change_documentfile"),
+        ("fiches", "documentfile", "change_any_documentfile"),
+        ("fiches", "documentfile", "delete_documentfile"),
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -53,17 +141,35 @@ class Command(BaseCommand):
 
         context_manager = transaction.atomic if apply_changes else nullcontext
         with context_manager():
+            self._sync_civiliste_role(apply_changes)
             docfile_perms = self._ensure_docfile_permissions()
             transcription_perms = self._ensure_transcription_permissions()
             self._update_doctorant_permissions(
-                [*docfile_perms.values(), *transcription_perms.values()],
+                [
+                    *(
+                        docfile_perms[codename]
+                        for codename in self.DOCTORANT_DOCFILE_PERMS
+                        if codename in docfile_perms
+                    ),
+                    *transcription_perms.values(),
+                ],
                 apply_changes,
             )
+            self._update_director_permissions(
+                [docfile_perms[codename] for codename in self.DIRECTOR_DOCFILE_PERMS if codename in docfile_perms],
+                apply_changes,
+            )
+            self._update_director_permissions(self._ensure_note_permissions(), apply_changes)
             collection_owner_perm = self._ensure_collection_owner_permission(apply_changes)
             if collection_owner_perm is not None:
                 self._update_director_permissions([collection_owner_perm], apply_changes)
             user_profile_perms = self._ensure_user_profile_permissions()
             self._update_director_permissions(user_profile_perms, apply_changes)
+            fiche_creation_perms = self._ensure_fiche_creation_permissions()
+            self._update_director_permissions(fiche_creation_perms, apply_changes)
+            place_category_perms = self._ensure_place_category_permissions()
+            self._update_director_permissions(place_category_perms, apply_changes)
+            self._sync_place_permissions(apply_changes)
             self._retire_assistant_group(apply_changes)
 
         self.stdout.write(self.style.SUCCESS("Status synchronisation complete."))
@@ -74,14 +180,126 @@ class Command(BaseCommand):
         """Return the first group matching the supplied name (case-insensitive)."""
         return Group.objects.filter(name__iexact=name).first()
 
+    def _get_civiliste_permissions(self):
+        """Resolve the complete Civiliste policy without ambiguous codenames."""
+        permissions = []
+        missing = []
+        for app_label, model, codename in self.CIVILISTE_PERMISSION_SPECS:
+            permission = Permission.objects.filter(
+                content_type__app_label=app_label,
+                content_type__model=model,
+                codename=codename,
+            ).first()
+            if permission is None:
+                missing.append(f"{app_label}.{model}.{codename}")
+            else:
+                permissions.append(permission)
+
+        if missing:
+            self.stdout.write(
+                self.style.WARNING(
+                    "Civiliste permissions are incomplete; refusing to reconcile the group. "
+                    f"Missing: {', '.join(missing)}. Please run migrations first."
+                )
+            )
+            return None
+        return permissions
+
+    def _sync_civiliste_role(self, apply_changes):
+        """Reconcile the Civiliste group and audit elevated account access."""
+        civiliste_permissions = self._get_civiliste_permissions()
+        if civiliste_permissions is not None:
+            self._sync_civiliste_permissions(civiliste_permissions, apply_changes)
+        self._warn_civiliste_account_conflicts()
+
+    def _sync_civiliste_permissions(self, required_permissions, apply_changes):
+        """Reconcile Civilistes to the exact least-privilege editorial policy."""
+        group = self._get_or_create_civiliste_group(apply_changes)
+        if group is None:
+            return
+
+        required_by_id = {permission.id: permission for permission in required_permissions}
+        existing_by_id = {permission.id: permission for permission in group.permissions.select_related("content_type")}
+        additions = [required_by_id[pk] for pk in sorted(required_by_id.keys() - existing_by_id.keys())]
+        removals = [existing_by_id[pk] for pk in sorted(existing_by_id.keys() - required_by_id.keys())]
+
+        if not additions and not removals:
+            self.stdout.write(self.style.SUCCESS(f"'{group.name}' already matches the exact Civiliste policy."))
+            return
+
+        if apply_changes:
+            group.permissions.set(required_permissions)
+        self._report_civiliste_changes(additions, removals, apply_changes)
+
+    def _get_or_create_civiliste_group(self, apply_changes):
+        """Return the Civiliste group, creating it only in apply mode."""
+        group = self._get_group(self.CIVILISTE_NAME)
+        if not group:
+            message = f"Group '{self.CIVILISTE_NAME}' not found."
+            if apply_changes:
+                group = Group.objects.create(name=self.CIVILISTE_NAME)
+                self.stdout.write(self.style.SUCCESS(f"{message} Created new group."))
+            else:
+                self.stdout.write(self.style.WARNING(f"{message} Would create it in apply mode."))
+                return None
+        return group
+
+    def _report_civiliste_changes(self, additions, removals, apply_changes):
+        """Report the exact permission delta applied or proposed for Civilistes."""
+        style = self.style.SUCCESS if apply_changes else self.style.WARNING
+        actions = (
+            ("Granted Civiliste permissions", "Would grant Civiliste permissions"),
+            ("Revoked out-of-policy Civiliste permissions", "Would revoke out-of-policy Civiliste permissions"),
+        )
+        changes = zip(actions, (additions, removals), strict=True)
+        for action_options, permissions in changes:
+            if not permissions:
+                continue
+            action = action_options[0] if apply_changes else action_options[1]
+            labels = ", ".join(
+                f"{permission.content_type.app_label}.{permission.codename}" for permission in permissions
+            )
+            self.stdout.write(style(f"{action}: {labels}"))
+
+    def _warn_civiliste_account_conflicts(self):
+        """Report Civiliste accounts that inherit Director or technical-admin rights."""
+        group = self._get_group(self.CIVILISTE_NAME)
+        if group is None:
+            return
+
+        civiliste_user_ids = group.user_set.values("pk")
+        conflicts = group.user_set.model.objects.filter(pk__in=civiliste_user_ids).filter(
+            Q(groups__name__iexact=self.DIRECTEUR_NAME) | Q(is_staff=True) | Q(is_superuser=True)
+        ).distinct()
+        if not conflicts.exists():
+            self.stdout.write(self.style.SUCCESS("No Civiliste account has conflicting elevated access."))
+            return
+
+        details = []
+        for user in conflicts.prefetch_related("groups"):
+            reasons = []
+            if any(member_group.name.casefold() == self.DIRECTEUR_NAME for member_group in user.groups.all()):
+                reasons.append(self.DIRECTEUR_NAME)
+            if user.is_staff:
+                reasons.append("is_staff")
+            if user.is_superuser:
+                reasons.append("is_superuser")
+            details.append(f"{user.username} ({', '.join(reasons)})")
+        self.stdout.write(
+            self.style.WARNING(
+                "Civiliste account conflict(s) detected; memberships were not changed: "
+                f"{'; '.join(details)}. Resolve before staging."
+            )
+        )
+
     def _ensure_docfile_permissions(self):
         """Fetch DocumentFile permissions required for attachment management."""
         ct = ContentType.objects.get_for_model(DocumentFile)
         perms = {
             perm.codename: perm
-            for perm in Permission.objects.filter(content_type=ct, codename__in=self.DOCFILE_PERMS)
+            for perm in Permission.objects.filter(content_type=ct, codename__in=self.DIRECTOR_DOCFILE_PERMS)
         }
-        missing = sorted(set(self.DOCFILE_PERMS) - set(perms))
+        missing = sorted(set(self.DIRECTOR_DOCFILE_PERMS) - set(perms))
         if missing:
             warning = (
                 "Missing DocumentFile permissions: "
@@ -89,6 +307,30 @@ class Command(BaseCommand):
             )
             self.stdout.write(self.style.WARNING(warning))
         return perms
+
+    def _ensure_note_permissions(self):
+        """Fetch every concrete note permission required by editorial directors."""
+        permissions = list(
+            Permission.objects.filter(
+                content_type__app_label="fiches",
+                codename__in=self.DIRECTOR_NOTE_PERMS,
+            )
+        )
+        found = {(permission.content_type_id, permission.codename) for permission in permissions}
+        note_content_types = ContentType.objects.filter(
+            app_label="fiches",
+            model__in=("notebiblio", "notemanuscript", "notetranscription", "notebiography", "noteplace"),
+        )
+        expected = {
+            (content_type.id, codename)
+            for content_type in note_content_types
+            for codename in self.DIRECTOR_NOTE_PERMS
+        }
+        if expected - found:
+            self.stdout.write(
+                self.style.WARNING("Some note permissions are missing. Please run migrations before applying changes.")
+            )
+        return permissions
 
     def _ensure_transcription_permissions(self):
         """Fetch Transcription permissions required for third-party editing."""
@@ -128,11 +370,7 @@ class Command(BaseCommand):
                 f"{', '.join(missing)}. Please run migrations before applying changes."
             )
             self.stdout.write(self.style.WARNING(warning))
-        return [
-            perms[codename]
-            for codename in self.DIRECTOR_USER_PROFILE_PERMS
-            if codename in perms
-        ]
+        return [perms[codename] for codename in self.DIRECTOR_USER_PROFILE_PERMS if codename in perms]
 
     def _update_doctorant_permissions(self, required_permissions, apply_changes):
         """Grant required working permissions to doctorants."""
@@ -179,9 +417,7 @@ class Command(BaseCommand):
             perm = Permission.objects.get(content_type=ct, codename=self.COLLECTION_OWNER_PERM)
             if not apply_changes:
                 self.stdout.write(
-                    self.style.SUCCESS(
-                        "Custom permission 'fiches.change_collection_owner' already exists."
-                    )
+                    self.style.SUCCESS("Custom permission 'fiches.change_collection_owner' already exists.")
                 )
             return perm
         except Permission.DoesNotExist:
@@ -191,20 +427,99 @@ class Command(BaseCommand):
                     codename=self.COLLECTION_OWNER_PERM,
                     name="Can change collection owner",
                 )
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        "Created custom permission 'fiches.change_collection_owner'."
-                    )
-                )
+                self.stdout.write(self.style.SUCCESS("Created custom permission 'fiches.change_collection_owner'."))
                 return perm
             else:
                 self.stdout.write(
                     self.style.WARNING(
-                        "Permission 'fiches.change_collection_owner' is missing. "
-                        "Would create it in apply mode."
+                        "Permission 'fiches.change_collection_owner' is missing. Would create it in apply mode."
                     )
                 )
                 return None
+
+    def _ensure_fiche_creation_permissions(self):
+        """Fetch normal and tagging-only fiche creation permissions for directors."""
+        permissions = []
+        required = (
+            (Person, "add_person"),
+            (Person, "add_person_inline"),
+            (PlaceRecord, "add_placerecord"),
+            (PlaceRecord, "add_placerecord_inline"),
+        )
+        for model, codename in required:
+            ct = ContentType.objects.get_for_model(model)
+            perm = Permission.objects.filter(content_type=ct, codename=codename).first()
+            if perm:
+                permissions.append(perm)
+            else:
+                self.stdout.write(
+                    self.style.WARNING(f"Missing permission '{codename}'. Please run migrations before applying.")
+                )
+        return permissions
+
+    def _ensure_place_category_permissions(self):
+        """Fetch the lookup-table permissions required by editorial directors."""
+        ct = ContentType.objects.get_for_model(PlaceCategory)
+        available = {
+            permission.codename: permission
+            for permission in Permission.objects.filter(
+                content_type=ct,
+                codename__in=self.DIRECTOR_PLACE_CATEGORY_PERMS,
+            )
+        }
+        missing = sorted(set(self.DIRECTOR_PLACE_CATEGORY_PERMS) - set(available))
+        if missing:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Missing PlaceCategory permissions: {', '.join(missing)}. "
+                    "Please run migrations before applying changes."
+                )
+            )
+        return [
+            available[codename]
+            for codename in self.DIRECTOR_PLACE_CATEGORY_PERMS
+            if codename in available
+        ]
+
+    def _sync_place_permissions(self, apply_changes):
+        """Align every status group with the Fiche lieu column of the status matrix."""
+        ct = ContentType.objects.get_for_model(PlaceRecord)
+        available = {perm.codename: perm for perm in Permission.objects.filter(content_type=ct)}
+        for group_name, codenames in self.PLACE_PERMS_BY_GROUP.items():
+            missing = sorted(set(codenames) - set(available))
+            if missing:
+                warning = (
+                    f"Missing PlaceRecord permissions: {', '.join(missing)}. "
+                    "Please run migrations before applying changes."
+                )
+                self.stdout.write(self.style.WARNING(warning))
+            perms = [available[codename] for codename in codenames if codename in available]
+            self._update_group_permissions(group_name, perms, apply_changes)
+
+    def _update_group_permissions(self, group_name, permissions, apply_changes):
+        """Grant the supplied permissions to that status group, creating it if needed."""
+        group = self._get_group(group_name)
+        if not group:
+            message = f"Group '{group_name}' not found."
+            if apply_changes:
+                group = Group.objects.create(name=group_name)
+                self.stdout.write(self.style.SUCCESS(f"{message} Created new group."))
+            else:
+                self.stdout.write(self.style.WARNING(f"{message} Would create it in apply mode."))
+                return
+
+        existing_ids = set(group.permissions.values_list("id", flat=True))
+        missing = [permission for permission in permissions if permission.id not in existing_ids]
+        if not missing:
+            self.stdout.write(self.style.SUCCESS(f"'{group.name}' already holds its place fiche permissions."))
+            return
+
+        labels = ", ".join(permission.codename for permission in missing)
+        if apply_changes:
+            group.permissions.add(*missing)
+            self.stdout.write(self.style.SUCCESS(f"Granted place fiche permissions to '{group.name}': {labels}"))
+        else:
+            self.stdout.write(self.style.WARNING(f"Would grant place fiche permissions to '{group.name}': {labels}"))
 
     def _update_director_permissions(self, permissions, apply_changes):
         """Ensure directors hold the required administrative permissions."""
@@ -222,27 +537,15 @@ class Command(BaseCommand):
         missing_permissions = [permission for permission in permissions if permission.id not in existing_ids]
 
         if not missing_permissions:
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"'{group.name}' already holds required director permissions."
-                )
-            )
+            self.stdout.write(self.style.SUCCESS(f"'{group.name}' already holds required director permissions."))
             return
 
         perm_labels = ", ".join(permission.codename for permission in missing_permissions)
         if apply_changes:
             group.permissions.add(*missing_permissions)
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"Granted director permissions to '{group.name}': {perm_labels}"
-                )
-            )
+            self.stdout.write(self.style.SUCCESS(f"Granted director permissions to '{group.name}': {perm_labels}"))
         else:
-            self.stdout.write(
-                self.style.WARNING(
-                    f"Would grant director permissions to '{group.name}': {perm_labels}"
-                )
-            )
+            self.stdout.write(self.style.WARNING(f"Would grant director permissions to '{group.name}': {perm_labels}"))
 
     def _retire_assistant_group(self, apply_changes):
         """Remove the assistant status group entirely."""
@@ -267,8 +570,5 @@ class Command(BaseCommand):
                 note += f" {total_users} user(s) lost that status."
             self.stdout.write(self.style.SUCCESS(note))
         else:
-            note = (
-                f"Would remove assistant group(s) ({label}). "
-                f"{total_users} associated user(s) currently assigned."
-            )
+            note = f"Would remove assistant group(s) ({label}). {total_users} associated user(s) currently assigned."
             self.stdout.write(self.style.WARNING(note))

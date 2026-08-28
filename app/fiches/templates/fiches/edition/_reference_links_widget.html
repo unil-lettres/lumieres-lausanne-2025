@@ -1,0 +1,103 @@
+{% comment %}<!--
+   Shared reference-site chip widget assets (référentiels), included by the place
+   and biography fiche edit forms. Requires jQuery and list_widget.js
+   (dynamiclist_widget) to be loaded by the including page.
+-->{% endcomment %}
+<style>
+	/* Reference sites: référentiel dropdown + identifier + button on one line. */
+	.fieldWrapper.reference_links .reflist_site_select,
+	.fieldWrapper.reference_links .reflist_id_input,
+	.fieldWrapper.reference_links .reflist_addbut {
+		display: inline-block; vertical-align: middle;
+	}
+	.fieldWrapper.reference_links .reflist_site_select,
+	.fieldWrapper.reference_links .reflist_id_input { margin-right: 6px; }
+	.fieldWrapper.reference_links .reflist_id_input { width: 204px; }
+	.fieldWrapper.reference_links .reflist_addbut { margin-right: 0; }
+	/* Saved links: one per line, with an editable identifier. */
+	.fieldWrapper.reference_links .reflist_value_entry { display: block; }
+	.fieldWrapper.reference_links .reflist_value_label { display: inline-block; min-width: 90px; }
+	.fieldWrapper.reference_links .reflist_value_id { width: 110px; margin-right: 6px; }
+</style>
+<script type="text/javascript">
+(function ($) {
+	// Reference-site chip widget: référentiel + identifier -> clickable permalink chip.
+	window.refLinkWidget = {
+		setExternalLink: function (node, url) {
+			if (!node) { return; }
+			try {
+				var parsed = new URL(url);
+				if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+					throw new Error("Unsupported URL scheme");
+				}
+				node.href = parsed.href;
+				node.textContent = parsed.href;
+			} catch (error) {
+				node.removeAttribute("href");
+				node.textContent = "";
+			}
+		},
+		// A référentiel's base_url either carries a {id} placeholder or is a prefix.
+		buildUrl: function (baseUrl, ident) {
+			if (!ident) { return ""; }
+			return baseUrl.indexOf("{id}") >= 0
+				? baseUrl.replace("{id}", ident)
+				: (baseUrl.replace(/\/+$/, "") + "/" + ident);
+		},
+		// Keep the submitted "siteId|identifier" payload and the visible permalink
+		// in step with the identifier input, so a typo is fixed in place instead of
+		// deleting the link and retyping it. An emptied identifier drops the link
+		// on save: the field's clean() skips entries without one.
+		syncEntry: function (input) {
+			var $input = $(input),
+				$entry = $input.closest(".reflist_value_entry"),
+				ident = $.trim($input.val()),
+				url = refLinkWidget.buildUrl($input.attr("data-base-url") || "", ident);
+			$entry.find('input[type="hidden"]').val($input.attr("data-site-id") + "|" + ident);
+			var linkNode = $entry.find(".reflist_value_link")[0];
+			refLinkWidget.setExternalLink(linkNode, url);
+		},
+		addToList: function (btn, name) {
+			var c = $(btn).closest(".reflist_container"),
+				sel = c.find(".reflist_site_select"),
+				opt = sel.find("option:selected"),
+				siteId = sel.val(),
+				siteName = $.trim(opt.text()),
+				baseUrl = opt.attr("data-base-url") || "",
+				ident = $.trim(c.find(".reflist_id_input").val());
+			if (!siteId || !ident) { return; }
+			var url = refLinkWidget.buildUrl(baseUrl, ident),
+				chip = $('<div>').addClass("reflist_value_entry dynamiclist_value_entry"),
+				label = $('<span>').addClass("reflist_value_label").text(siteName),
+				idInput = $('<input>', { type: "text" }).addClass("reflist_value_id"),
+				link = $('<a>', { target: "_blank", rel: "noopener" }).addClass("reflist_value_link"),
+				hiddenInput = $('<input>', { type: "hidden", name: name });
+			chip.append(label, document.createTextNode(" "), idInput, document.createTextNode(" "), link, hiddenInput);
+			idInput
+				.val(ident)
+				.attr("data-site-id", siteId)
+				.attr("data-base-url", baseUrl);
+			refLinkWidget.setExternalLink(link[0], url);
+			hiddenInput.val(siteId + "|" + ident);
+			c.find(".dynamiclist_values").append(chip);
+			dynamiclist_widget.appendDeleteButton(chip[0]);
+			sel.val("");
+			c.find(".reflist_id_input").val("");
+		}
+	};
+
+	$(document).ready(function () {
+		var $refs = $(".fieldWrapper.reference_links");
+		$refs.find(".reflist_value_entry").each(function () {
+			dynamiclist_widget.appendDeleteButton(this);
+		});
+		if ($.fn.button) {
+			$refs.find(".reflist_addbut").button({ icons: { primary: "ui-icon-plusthick" } });
+		}
+		// Delegated, so chips added after page load are covered too.
+		$(document).on("input", ".fieldWrapper.reference_links .reflist_value_id", function () {
+			refLinkWidget.syncEntry(this);
+		});
+	});
+})(jQuery);
+</script>

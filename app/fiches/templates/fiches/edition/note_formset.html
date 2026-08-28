@@ -224,7 +224,7 @@ var init_when_doc_ready = false;
         var note_formset = $(".note-formset");
 		
        {% with usergroups=user|access_grouplist %}
-	   var usergroups = {% if user.is_staff %}true{% else %}{% if usergroups|length > 0 %}['{{ usergroups|join:"', '" }}']{% else %}[]{% endif %}{% endif %};
+	   var usergroups = {% if perms.fiches.can_see_note %}true{% else %}{% if usergroups|length > 0 %}['{{ usergroups|join:"', '" }}']{% else %}[]{% endif %}{% endif %};
 	   {% endwith %}
 	   if (usergroups !== true) {
 			$(".note-formset select[name$=access_groups] option").each(function(){

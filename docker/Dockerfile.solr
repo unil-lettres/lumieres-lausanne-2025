@@ -1,0 +1,73 @@
+FROM solr:8.11.4@sha256:122a041ef84b9567336ebfd7769512fc21a476cee740ce7b06c5971fd7055710 AS patched
+
+USER root
+
+ARG LOG4J_VERSION=2.25.5
+
+RUN set -eux; \
+    patch_log4j() { \
+        artifact="$1"; \
+        expected_sha256="$2"; \
+        targets="$(find /opt/solr-8.11.4 -type f -name "${artifact}-*.jar")"; \
+        if [ -z "$targets" ]; then \
+            return 0; \
+        fi; \
+        jar="/tmp/${artifact}-${LOG4J_VERSION}.jar"; \
+        wget -q \
+          "https://repo.maven.apache.org/maven2/org/apache/logging/log4j/${artifact}/${LOG4J_VERSION}/${artifact}-${LOG4J_VERSION}.jar" \
+          -O "$jar"; \
+        echo "${expected_sha256}  ${jar}" | sha256sum -c -; \
+        for target in $targets; do \
+            target_dir="${target%/*}"; \
+            rm -f "$target"; \
+            cp "$jar" "${target_dir}/${artifact}-${LOG4J_VERSION}.jar"; \
+        done; \
+        rm -f "$jar"; \
+    }; \
+    patch_log4j log4j-1.2-api 4dd812dc5a6343f542a9e0046b1ec78ecf10bdd5a8c15745101cdd8b9aa24974; \
+    patch_log4j log4j-api 64777f73ea0b3104c04eb82befbdccc30a425a19e83ad06cb2f93aa303511863; \
+    patch_log4j log4j-core 050c4f85deb48b055e9c041ac39043fbb79ce477841a11a1eb2969c86c6a0072; \
+    patch_log4j log4j-layout-template-json 27c37313e20c16bf0178e38d9d1a5c7320e34c03aa35bc2c66a589ea14abf545; \
+    patch_log4j log4j-slf4j-impl 3d25b926bc6025c47ec010459749c12aa66b9d5537ba1922d67d89a098a66607; \
+    patch_log4j log4j-web 9cf04225fab77a5d433dcad2ee62b8341cc0546d0e6941515bb9f8d5a199377c; \
+    remaining="$(find /opt/solr-8.11.4 -type f -name 'log4j-*.jar' ! -name "*-${LOG4J_VERSION}.jar" -print)"; \
+    if [ -n "$remaining" ]; then \
+        echo "$remaining"; \
+        exit 1; \
+    fi; \
+    find /opt/solr-8.11.4 -type f -name 'log4j-*.jar' -print; \
+    chown -R 0:0 /opt/solr-8.11.4; \
+    chown -R 8983:0 /var/solr
+
+# Flatten the patched filesystem into a fresh image. Credentialed scanners then
+# see only the patched JARs, not vulnerable files retained in lower Solr layers.
+FROM scratch
+
+COPY --from=patched / /
+
+ENV PATH="/opt/solr/bin:/opt/docker-solr/scripts:/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
+    JAVA_HOME="/opt/java/openjdk" \
+    LANG="en_US.UTF-8" \
+    LANGUAGE="en_US:en" \
+    LC_ALL="en_US.UTF-8" \
+    SOLR_USER="solr" \
+    SOLR_UID="8983" \
+    SOLR_GROUP="solr" \
+    SOLR_GID="8983" \
+    SOLR_INCLUDE="/etc/default/solr.in.sh" \
+    SOLR_HOME="/var/solr/data" \
+    SOLR_PID_DIR="/var/solr" \
+    SOLR_LOGS_DIR="/var/solr/logs" \
+    LOG4J_PROPS="/var/solr/log4j2.xml"
+
+LABEL maintainer="UNIL Lettres" \
+      org.opencontainers.image.title="Lumieres Solr" \
+      org.opencontainers.image.version="8.11.4-log4j-2.25.5" \
+      org.opencontainers.image.source="https://github.com/unil-lettres/lumieres-lausanne-2025"
+
+WORKDIR /opt/solr
+VOLUME ["/var/solr"]
+EXPOSE 8983
+USER 8983
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["solr-foreground"]

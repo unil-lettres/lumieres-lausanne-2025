@@ -1,40 +1,34 @@
-# -*- coding: utf-8 -*-
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
 #
-#    Copyright (C) 2010-2012 Université de Lausanne, RISET
-#    < http://www.unil.ch/riset/ >
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#    This file is part of Lumières.Lausanne.
-#    Lumières.Lausanne is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
 #
-#    Lumières.Lausanne is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-#    This copyright notice MUST APPEAR in all copies of the file.
-#
+# This copyright notice MUST APPEAR in all copies of the file.
+
+import contextlib
 import json
-import logging  # XXX: delete it
 import os
 import unicodedata
 from mimetypes import guess_type
-
-# from django.core.servers.basehttp import FileWrapper
 from wsgiref.util import FileWrapper
 
 from django.apps import apps
 from django.conf import settings
-
-# from django.views.generic import create_update
-from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.decorators import permission_required
 from django.contrib.auth.forms import PasswordChangeForm
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import models
 from django.http import (
@@ -46,22 +40,23 @@ from django.http import (
     HttpResponseServerError,
 )
 from django.shortcuts import get_object_or_404, render
-from django.template import Context, RequestContext, loader
-
-# from django.core.urlresolvers import reverse
+from django.template import loader
 from django.urls import reverse
 from django.utils.encoding import smart_str
 from django.utils.translation import gettext_lazy as _
-from django.views.decorators.cache import cache_page, never_cache
-from django.views.decorators.vary import vary_on_headers
-
-# from lumieres_project.urls import MyPasswordChangeForm
-from fiches.models import ACModel, ActivityLog, Finding, FreeContent, News, Transcription
 from utils import dbg_logger
-from fiches.forms import DocumentFileForm
-from fiches.utils import user_can_change_documentfile
 
-logger = logging.getLogger(__name__)  # XXX: delete it
+from fiches.forms import DocumentFileForm
+from fiches.models import (
+    ACModel,
+    ActivityLog,
+    DocumentFile,
+    Finding,
+    FreeContent,
+    News,
+    Transcription,
+)
+from fiches.utils import user_can_change_documentfile
 
 
 def main_index(request):
@@ -74,12 +69,14 @@ def main_index(request):
     # XXX: issue #9 Error placeholders
     transcriptions = Transcription.objects.latest_published_by_date(3)
 
-    context = {"text": text, "last_findings": findings, "last_news": news, "last_transcriptions": transcriptions}
-
-    # logger.debug(f"{__file__}.main_index() : {context}")
+    context = {
+        "text": text,
+        "last_findings": findings,
+        "last_news": news,
+        "last_transcriptions": transcriptions,
+    }
 
     return render(request, "fiches/home2.html", context)
-    # return render("fiches/home2.html", context, context_instance=RequestContext(request))
 
 
 def maintenance(request):
@@ -90,7 +87,6 @@ def maintenance(request):
 
     if maintenance_enabled:
         return render(request, "maintenance.html")
-        # return render("maintenance.html", {}, context_instance=RequestContext(request))
     else:
         return main_index(request)
 
@@ -137,13 +133,13 @@ def ajax_search(request):
     if and_queries is not None:
         try:
             and_queries = json.loads(and_queries)
-        except:
+        except json.JSONDecodeError:
             and_queries = None
 
     if not_queries is not None:
         try:
             not_queries = json.loads(not_queries)
-        except:
+        except json.JSONDecodeError:
             not_queries = None
 
     if search_field and app_label and model_name:
@@ -163,12 +159,11 @@ def ajax_search(request):
             elif field_name.startswith("_null_"):
                 return "%s__isnull" % field_name[6:]
             # If the field is a ForeignKey (endswith _id), use exact
-            elif field_name.endswith('_id'):
+            elif field_name.endswith("_id"):
                 return "%s__exact" % field_name
             else:
                 return "%s__icontains" % field_name
 
-        # model = models.get_model(app_label, model_name)
         model = apps.get_model(app_label, model_name)
         if issubclass(model, ACModel):
             if settings.DEBUG:
@@ -177,11 +172,8 @@ def ajax_search(request):
                 return HttpResponseNotFound()
 
         q = models.Q()
-        # q = Q()
         for bit in query.split():
             q = q | models.Q(**{construct_search(smart_str(search_field)): smart_str(bit)})
-
-        #        dbg_logger.debug("``and_queries`` -> %s" % and_queries)
 
         if and_queries is not None:
             for and_q in and_queries:
@@ -189,33 +181,24 @@ def ajax_search(request):
                     and_q["value"] = bool(and_q["value"] == "true")
                 try:
                     q = q & models.Q(**{construct_search(smart_str(and_q["field"])): and_q["value"]})
-                except:
+                except Exception:
                     if settings.DEBUG:
                         raise
                     pass
 
-        #        dbg_logger.debug("``q`` -> %s" % q)
-
         nq = models.Q()
-        # nq = Q()
         if not_queries is not None:
             for not_q in not_queries:
-                try:
+                with contextlib.suppress(Exception):
                     nq = nq & models.Q(**{construct_search(smart_str(not_q["field"])): not_q["value"]})
-                except:
-                    pass
 
-        if query is None:
-            qs = model._default_manager.all()
-        else:
-            qs = model._default_manager.filter(q).exclude(nq).distinct()
+        qs = model._default_manager.all() if query is None else model._default_manager.filter(q).exclude(nq).distinct()
 
         #
         # Format data for output
         #
         data_list = []
         if outformat == "u":
-            # data_list = [u"%s\n" % f.__unicode__() for f in qs]
             data_list = ["%s\n" % str(f) for f in qs]
 
         elif outformat.startswith("_f__"):
@@ -226,7 +209,6 @@ def ajax_search(request):
                     data_set = set(data_list)
                     data_list = list(data_set | data_set)
             except AttributeError:
-                # data_list = [u"%s\n" % f.__unicode__() for f in qs]
                 data_list = ["%s\n" % str(f) for f in qs]
 
         elif outformat.startswith("_m__"):
@@ -237,12 +219,10 @@ def ajax_search(request):
                     data_set = set(data_list)
                     data_list = list(data_set | data_set)
             except AttributeError:
-                dbg_logger.debug("attribute not found" % method)
-                # data_list = [u"%s\n" % f.__unicode__() for f in qs]
+                dbg_logger.debug("Requested output method was not found")
                 data_list = ["%s\n" % str(f) for f in qs]
 
         else:
-            # data_list = [u"%s|%s\n" % (f.__unicode__(), f.pk) for f in qs]
             data_list = ["%s|%s\n" % (str(f), f.pk) for f in qs]
 
         data = "".join(data_list)
@@ -276,9 +256,8 @@ def serve_documentfile(request, documentfile_key, attachment=True):
     if content_type is None:
         content_type = "application/octet-stream"
 
-    # wrapper = FileWrapper(file(path_to_file))
-    # Create a file wrapper around the file
-    wrapper = FileWrapper(open(path_to_file, "rb"))
+    # Create a file wrapper around the file (kept open for the streaming response)
+    wrapper = FileWrapper(open(path_to_file, "rb"))  # noqa: SIM115
     response = HttpResponse(wrapper, content_type=content_type)
     response["ETag"] = ""
     response["Content-Length"] = os.path.getsize(path_to_file)
@@ -286,8 +265,6 @@ def serve_documentfile(request, documentfile_key, attachment=True):
         # Normalize the filename to ASCII
         filename = os.path.basename(path_to_file)
         ascii_filename = unicodedata.normalize("NFKD", filename).encode("ascii", "ignore").decode("ascii")
-        # attachment_name = unicodedata.normalize('NFKD', path_to_file).encode('ascii','ignore')
-        # response['Content-Disposition'] = 'attachment; filename=%s' % os.path.basename(attachment_name)
 
         # Set the Content-Disposition header
         response["Content-Disposition"] = f'attachment; filename="{ascii_filename}"'
@@ -295,6 +272,7 @@ def serve_documentfile(request, documentfile_key, attachment=True):
     return response
 
 
+@permission_required("fiches.add_documentfile", raise_exception=True)
 def documentfile_frame_list(request):
     """
     Affiche la liste des documents disponibles dans la dialogue "Ajouter un nouveau document"
@@ -310,10 +288,14 @@ def documentfile_frame_list(request):
     else:
         docfiles = DocumentFile.objects.all()
 
-    if not request.user.is_staff:
-        q_nogroup = models.Q(access_groups__exact=None)
-        q_usergroups = models.Q(access_groups__in=[g.id for g in request.user.groups.all()])
-        docfiles = docfiles.filter(q_nogroup | q_usergroups).distinct()
+    if not request.user.has_perm("fiches.change_any_documentfile"):
+        docfiles = docfiles.filter(
+            models.Q(access_public=True)
+            | models.Q(access_owner=request.user)
+            | models.Q(access_groups__users=request.user)
+            | models.Q(access_groups__groups__in=request.user.groups.all())
+            | models.Q(access_groups__isnull=True)
+        ).distinct()
 
     field_id = request.GET.get("field_id", "id_urls")
 
@@ -351,16 +333,8 @@ def documentfile_frame_list(request):
 
     return render(request, "fiches/edition/document/documentfile_frame_list.html", context)
 
-    # return list_detail.object_list(
-    #     request,
-    #     queryset = docfiles,
-    #     template_object_name = "docfile",
-    #     template_name = "fiches/edition/document/documentfile_frame_list.html",
-    #     extra_context = { 'field_id': field_id, "q": q },
-    #     paginate_by = 15,
-    # )
 
-
+@permission_required("fiches.add_documentfile", raise_exception=True)
 def documentfile_frame_create(request, doc_id=None, docfile_id=None, create_done=False):
     """
     Ajout de nouveau document depuis la dialogue "Ajouter un nouveau document"
@@ -374,9 +348,7 @@ def documentfile_frame_create(request, doc_id=None, docfile_id=None, create_done
                 docfile.access_owner = request.user
             docfile.save()
             form.save_m2m()
-            return HttpResponseRedirect(
-                reverse("docfile-frame-create-done", kwargs={"docfile_id": docfile.id})
-            )
+            return HttpResponseRedirect(reverse("docfile-frame-create-done", kwargs={"docfile_id": docfile.id}))
     else:
         form = DocumentFileForm()
 
@@ -447,7 +419,9 @@ def workspace(request):
     """
     Affiche l'Espace de travail
     """
-    from lumieres_project.urls import MyPasswordChangeForm  # Lazy import inside the function
+    from lumieres_project.urls import (
+        MyPasswordChangeForm,
+    )  # Lazy import inside the function
 
     instructions = FreeContent.objects.get_content("workspace>instructions")
     return render(
@@ -455,7 +429,6 @@ def workspace(request):
         "fiches/workspace/main.html",
         {"form": MyPasswordChangeForm(user=request.user), "instructions": instructions},
     )
-    # return None
 
 
 def workspace_collections(request, coll_id=None, coll_slug=None):
@@ -470,10 +443,11 @@ def workspace_collections(request, coll_id=None, coll_slug=None):
     Typically, you load this partial into main.html via an AJAX call or a tab click
     (not by directly rendering main.html itself).
     """
-    from django.contrib.auth.forms import PasswordChangeForm
-    from django.http import Http404
     from fiches.models import ObjectCollection
-    from fiches.views.collections import get_coll, get_user_coll_list  # Reuse your old helpers
+    from fiches.views.collections import (
+        get_coll,
+        get_user_coll_list,
+    )  # Reuse your old helpers
 
     # 1) Ensure the user has at least one collection
     coll_list = get_user_coll_list(request.user)
@@ -530,7 +504,11 @@ def workspace_collections(request, coll_id=None, coll_slug=None):
 @permission_required("fiches.change_activitylog")
 def last_activities(request):
     last_activities = ActivityLog.objects.order_by("-date")[:100]
-    return render(request, "fiches/workspace/last_activities.html", {"last_activities": last_activities})
+    return render(
+        request,
+        "fiches/workspace/last_activities.html",
+        {"last_activities": last_activities},
+    )
 
 
 def presentation(request, what="projet"):
@@ -559,10 +537,4 @@ def debug_test(request):
     """
     Pour test et debug
     """
-    assert False, "Pour tester"
-    return HttpResponse("empty")
-
-
-from .bibliography import *
-from .biography import *
-from .transcription import *
+    raise AssertionError("Pour tester")

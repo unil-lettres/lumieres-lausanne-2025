@@ -374,6 +374,16 @@ $(document).ready(function(){
 			$("#result-ordering").val(cookie_order);
 		}
 	} catch (e) {};
+
+	// The biographical search always includes its implicit "has a biography"
+	// filter. Run it on initial load so the tab immediately displays all
+	// biographies (or the restored filtered result set) instead of an empty
+	// results area that requires an unnecessary click on "Chercher".
+	if (typeof search_model_name !== 'undefined' &&
+		search_model_name === 'Person' &&
+		$("#search-results").length) {
+		execute_query();
+	}
 	
 });
 
@@ -386,6 +396,12 @@ $(document).ready(function(){
 // Pagination
 $(document).ready(function(){
 	$(".paginator .pagination a").live('click', function(){
+		// The A-Z index of the "Liste des personnes" / "Liste des lieux" tabs reuses
+		// the paginator markup, but its links are plain navigation to another URL,
+		// not result pagination. Hijacking them cancelled the navigation and fired
+		// an AJAX search with a bare letter as "q", which the search endpoint
+		// rejects — so "Recherche en cours..." stayed on screen for good.
+		if ($(this).closest(".paginator").hasClass("alpha-index")) { return true; }
 		$("#search-results").text("").
 		append(
 			$('<div>', { 
@@ -402,4 +418,3 @@ $(document).ready(function(){
 		return false;
 	});
 });
-

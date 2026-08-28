@@ -1,31 +1,42 @@
-# -*- coding: utf-8 -*-
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
 #
-#    Copyright (C) ...
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-from haystack.indexes import *
-from haystack import indexes
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# This copyright notice MUST APPEAR in all copies of the file.
+
 import datetime
 import unicodedata
+
 from django.apps import apps  # ← use the app registry (robust to module path changes)
-# from django.db.models import Q  # (unused here)
-
-# No direct model imports; they may have moved.
-# from fiches.models import DocumentFile, PrimaryKeyword, SecondaryKeyword, Person, Society, NoteBase, ACModel
-# from fiches.models.document import Biblio, Manuscript, Transcription
-
+from haystack import indexes
 
 # Migrating from haystack 1.x to 2.x
 # https://django-haystack.readthedocs.io/en/master/migration_from_1_to_2.html
 
+
 class BiblioIndex(indexes.SearchIndex, indexes.Indexable):
-    text            = indexes.CharField(document=True, use_template=True)
-    authors         = indexes.CharField(use_template=True)
-    biblio_persons  = indexes.MultiValueField()
-    title           = indexes.CharField(model_attr="title")
-    modelSort       = indexes.CharField(default="B00")
-    doctype         = indexes.CharField(model_attr="document_type__id")
-    sort1           = indexes.CharField(null=True, stored=True)
-    sort2           = indexes.CharField(null=True, stored=True)
+    text = indexes.CharField(document=True, use_template=True)
+    authors = indexes.CharField(use_template=True)
+    biblio_persons = indexes.MultiValueField()
+    title = indexes.CharField(model_attr="title")
+    modelSort = indexes.CharField(default="B00")
+    doctype = indexes.CharField(model_attr="document_type__id")
+    sort1 = indexes.CharField(null=True, stored=True)
+    sort2 = indexes.CharField(null=True, stored=True)
 
     def _doc_type_label(self, obj):
         return (getattr(obj.document_type, "name", "") or "").strip().lower()
@@ -44,7 +55,7 @@ class BiblioIndex(indexes.SearchIndex, indexes.Indexable):
         if not value:
             return ""
         normalized = unicodedata.normalize("NFKD", value)
-        return ''.join(ch for ch in normalized if not unicodedata.combining(ch))
+        return "".join(ch for ch in normalized if not unicodedata.combining(ch))
 
     def _normalize_author(self, obj):
         name = getattr(obj, "first_author_name", "") or ""
@@ -84,7 +95,7 @@ class BiblioIndex(indexes.SearchIndex, indexes.Indexable):
             except Exception:
                 return "9999-12-31"
         if isinstance(value, str):
-            digits = ''.join(ch for ch in value if ch.isdigit())
+            digits = "".join(ch for ch in value if ch.isdigit())
             if len(digits) >= 4:
                 return f"{digits[:4]}-12-31"
             return "9999-12-31"
@@ -119,22 +130,12 @@ class BiblioIndex(indexes.SearchIndex, indexes.Indexable):
         return self.get_model().objects.all()
 
 
-
-# class ManuscriptIndex(SearchIndex):
-#     text = CharField(document=True, use_template=True, template_name='search/indexes/fiches/biblio_text.txt')
-#     title = CharField(model_attr='title')
-#     modelSort = CharField(default="CCC")
-#     def get_queryset(self):
-#         return ManuscriptB.objects.all()
-# site.register(ManuscriptB, ManuscriptIndex)
-
-
 class PersonIndex(indexes.SearchIndex, indexes.Indexable):
-    text        = indexes.CharField(document=True, use_template=True)
+    text = indexes.CharField(document=True, use_template=True)
     person_name = indexes.CharField(model_attr="name")
-    modelSort   = indexes.CharField(default="A00")
-    sort1       = indexes.CharField(null=True)
-    sort2       = indexes.CharField(null=True)
+    modelSort = indexes.CharField(default="A00")
+    sort1 = indexes.CharField(null=True)
+    sort2 = indexes.CharField(null=True)
 
     def prepare_modelSort(self, obj):
         return "A00"
@@ -159,18 +160,14 @@ class PersonIndex(indexes.SearchIndex, indexes.Indexable):
 
     def index_queryset(self, using=None):
         """Used when the entire index for model is updated."""
-        return (
-            self.get_model()
-            .objects.filter(biography__isnull=False, biography__valid=True)
-            .distinct()
-        )
+        return self.get_model().objects.filter(biography__isnull=False, biography__valid=True).distinct()
 
 
 class TranscriptionIndex(indexes.SearchIndex, indexes.Indexable):
-    text      = indexes.CharField(document=True, use_template=True)
+    text = indexes.CharField(document=True, use_template=True)
     modelSort = indexes.CharField(default="C00")
-    sort1     = indexes.CharField(null=True)
-    sort2     = indexes.CharField(null=True)
+    sort1 = indexes.CharField(null=True)
+    sort2 = indexes.CharField(null=True)
 
     def prepare_modelSort(self, obj):
         return "C00"
@@ -190,6 +187,32 @@ class TranscriptionIndex(indexes.SearchIndex, indexes.Indexable):
     def get_model(self):
         # resolve at runtime: fiches.Transcription
         return apps.get_model("fiches", "Transcription")
+
+    def index_queryset(self, using=None):
+        """Used when the entire index for model is updated."""
+        return self.get_model().objects.all()
+
+
+class PlaceRecordIndex(indexes.SearchIndex, indexes.Indexable):
+    text = indexes.CharField(document=True, use_template=True)
+    place_name = indexes.CharField(model_attr="name")
+    category = indexes.CharField(model_attr="category__name")
+    modelSort = indexes.CharField(default="D00")
+    sort1 = indexes.CharField(null=True)
+    sort2 = indexes.CharField(null=True)
+
+    def prepare_modelSort(self, obj):
+        return "D00"
+
+    def prepare_sort1(self, obj):
+        return (obj.name or "").strip().casefold()
+
+    def prepare_sort2(self, obj):
+        return (getattr(obj.category, "name", "") or "").strip().casefold()
+
+    def get_model(self):
+        # resolve at runtime: fiches.PlaceRecord
+        return apps.get_model("fiches", "PlaceRecord")
 
     def index_queryset(self, using=None):
         """Used when the entire index for model is updated."""

@@ -35,15 +35,12 @@
 	<ul class="ui-tabs-nav ui-helper-reset ui-helper-clearfix ui-widget-header">
 		<li class="ui-state-default ui-corner-top ui-tabs-selected ui-state-active"><a>Recherche bibliographique</a></li>
 		<li class="ui-state-default ui-corner-top"><a href="{% url 'list-person' %}">Liste des personnes</a></li>
+		<li class="ui-state-default ui-corner-top"><a href="{% url 'list-place' %}">Liste des lieux</a></li>
 		<li class="ui-state-default ui-corner-top"><a href="{% url 'search-person' %}">Recherche biographique</a></li>
 	</ul>
 </div>
-{% if perms.fiches.change_any_transcription %}
-<div class="toolbar">
-	<div class="tb_but tb_but_text trans-access-change"><a href="?search_action=trans_access&{{ qs }}" title="Changer les accès aux transcriptions"><img src="{% static 'css/images/world_edit.png' %}" width="16" height="16" /><span >Changer accès trans.</span ></a ></div >
-	<div class="tb_right_cap"></div>
-</div>
-{% endif %}
+{# The legacy bulk transcription-access action is intentionally hidden. #}
+{# Individual access remains editable from each transcription's edit page. #}
 <div class="clear"></div>
 {% endblock %}
 

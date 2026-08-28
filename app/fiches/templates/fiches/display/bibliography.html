@@ -278,6 +278,13 @@
         <div class="field_value">{{ doc.manuscript_type }}</div>
         <div class="fixclear"></div>
     </div>
+        {% if doc.document_nature %}
+    <div class="field_wrap">
+        <div class="field_label">Nature du document</div>
+        <div class="field_value">{{ doc.document_nature }}</div>
+        <div class="fixclear"></div>
+    </div>
+        {% endif %}
     {% endif %}
 
 
@@ -306,7 +313,7 @@
         {#<!--  Lieu  -->#} {#<!-- ##### Pour tous les type ##### -->#}
 	    <div class="field_wrap">
 	        <div class="field_label">Lieu</div>
-	        <div class="field_value">{{ doc.place|default:"[s.l.]" }}</div>
+	        <div class="field_value">{{ doc.place|default:"[s.l.]"|safe }}</div>
 	        <div class="fixclear"></div>
 	    </div>
 	
@@ -323,7 +330,16 @@
         {#<!--  2e Lieu  -->#}
 	    <div class="field_wrap">
 	        <div class="field_label">2e Lieu</div>
-	        <div class="field_value">{{ doc.place2 }}</div>
+	        <div class="field_value">{{ doc.place2|safe }}</div>
+	        <div class="fixclear"></div>
+	    </div>
+	    {% endif %}
+
+		{% if doc.document_type.id == DOCTYPE.MANUSCRIT and doc.destination %}
+        {#<!--  Lieu de destination (manuscrits)  -->#}
+	    <div class="field_wrap">
+	        <div class="field_label">Lieu de destination</div>
+	        <div class="field_value">{{ doc.destination|safe }}</div>
 	        <div class="fixclear"></div>
 	    </div>
 	    {% endif %}
@@ -467,6 +483,17 @@
                         {% endfor %}
                         </ul>
                     </li>
+                {% endif %}
+                {#<!--  Lieux (§4.3) — cliquables vers la fiche lieu  -->#}
+                {% if subj_place %}
+                <li>
+                    <span class="sub_label">Lieu(x):</span>
+                    <ul>
+                    {% for place in subj_place %}
+                        <li><a href="{% url 'place-display' place.pk %}">{{ place }}</a></li>
+                    {% endfor %}
+                    </ul>
+                </li>
                 {% endif %}
                 {#<!--  Personnes  -->#}
                 {% if subj_person %}

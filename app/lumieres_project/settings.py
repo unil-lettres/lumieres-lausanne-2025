@@ -1,3 +1,23 @@
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
+#
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# This copyright notice MUST APPEAR in all copies of the file.
+
 """
 Django settings for lumieres project.
 
@@ -11,10 +31,10 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 import os
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent  # /app/lumieres/lumieres_project
+BASE_DIR = Path(__file__).resolve().parent  # /app/lumieres_project
 
 # ------------------------------
 # Quick-start development settings - unsuitable for production
@@ -82,13 +102,11 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sites",
-
     # Third-party apps
     "haystack",
     "ckeditor",
     "ckeditor_uploader",
     "sorl.thumbnail",
-
     # Custom apps
     "fiches",
     "pagination",
@@ -200,7 +218,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Additional directories to search for static files (in dev)
 STATICFILES_DIRS = [
-    BASE_DIR.parent / "static",  # /app/lumieres/static
+    BASE_DIR.parent / "static",  # /app/static
 ]
 
 # ------------------------------
@@ -265,37 +283,32 @@ CACHES = {
 # Logging configurations
 # -----------------------------
 
-logfile = Path(BASE_DIR).parent.parent
-logfile = logfile / "logging" / f"debug_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
+logfile = BASE_DIR.parent / "logging" / f"debug_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
 logfile.parent.mkdir(parents=True, exist_ok=True)
 
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-
     "formatters": {
         "simple": {"format": "%(levelname)s %(name)s: %(message)s"},
     },
-
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "level": "INFO",          # ↓ show info+ on console (no DEBUG spam)
+            "level": "INFO",  # ↓ show info+ on console (no DEBUG spam)
             "formatter": "simple",
         },
         "file": {
             "class": "logging.FileHandler",
-            "level": "DEBUG",         # keep full detail in file
+            "level": "DEBUG",  # keep full detail in file
             "filename": str(logfile),
         },
     },
-
     # Default/root logger
     "root": {
         "handlers": ["console", "file"],
         "level": "INFO",
     },
-
     "loggers": {
         # Silence the autoreload “first seen with mtime …” chatter
         "django.utils.autoreload": {

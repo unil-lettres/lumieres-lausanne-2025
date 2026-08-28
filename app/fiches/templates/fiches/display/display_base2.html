@@ -78,9 +78,19 @@
     
     {% if delete_url %}
         <div class="tb_but delete">
+            {% if delete_via_post %}
+            <form action="{{ delete_url }}" method="post" style="display: inline; margin: 0; padding: 0;">
+                {% csrf_token %}
+                <a href="#" title="{% trans 'Supprimer la fiche' %}"
+                   onclick="if (confirm('{% trans "Vous êtes sur le point de supprimer définitivement une fiche. Cette opération est irrémédiable. Etes-vous sûr de vouloir continuer ?" %}')) { this.closest('form').submit(); } return false;">
+                    <img src="{% static 'css/images/trash_red.png' %}" width="16" height="16" alt="{% trans 'Supprimer la fiche' %}" />
+                </a>
+            </form>
+            {% else %}
             <a href="{{ delete_url }}" title="{% trans 'Supprimer la fiche' %}" onclick="return delete_fiche();">
                 <img src="{% static 'css/images/trash_red.png' %}" width="16" height="16" alt="{% trans 'Supprimer la fiche' %}" />
             </a>
+            {% endif %}
         </div>
     {% endif %}
 {% endblock main_header_toolbar_buttons %}

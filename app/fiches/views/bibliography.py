@@ -1,50 +1,60 @@
-#    Copyright (C) 2010-2012 Université de Lausanne, RISET
-#    < http://www.unil.ch/riset/ >
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
 #
-#    This file is part of Lumières.Lausanne.
-#    Lumières.Lausanne is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#    Lumières.Lausanne is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-#    This copyright notice MUST APPEAR in all copies of the file.
-#
+# This copyright notice MUST APPEAR in all copies of the file.
+
 import json
+import logging
 from base64 import b64decode
 from functools import reduce
 from itertools import chain
 
-from django.db import connection, IntegrityError, transaction
+from django.core.exceptions import ObjectDoesNotExist
+from django.db import IntegrityError, connection, transaction
 from django.db.models import Q
 from django.forms.models import inlineformset_factory
-from django.http import Http404, HttpResponse, HttpResponseForbidden, HttpResponseRedirect, HttpResponseServerError, JsonResponse
-from django.core.exceptions import ObjectDoesNotExist
+from django.http import (
+    Http404,
+    HttpResponse,
+    HttpResponseForbidden,
+    HttpResponseRedirect,
+    HttpResponseServerError,
+    JsonResponse,
+)
 from django.shortcuts import get_object_or_404, render
 from django.template.context_processors import csrf
 from django.urls import reverse
-from django.utils.dateformat import format
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
+
 from fiches.forms import BiblioForm, ContributionDocForm, ContributionDocSecForm, NoteFormBiblio
 from fiches.models import Biblio, ContributionDoc, DocumentType, PrimaryKeyword, SecondaryKeyword
-from fiches.models.documents import DocumentFile, NoteBiblio, Manuscript
+from fiches.models.documents import DocumentFile, Manuscript, NoteBiblio
 from fiches.utils import (
     get_last_model_activity,
     log_model_activity,
     remove_object_index,
     update_object_index,
     user_can_change_documentfile,
+    user_can_delete_biblio,
     user_can_delete_documentfile,
 )
 
@@ -52,19 +62,17 @@ from fiches.utils import (
 # BIBLIOGRAPHY
 # ===============================================================================
 
+logger = logging.getLogger(__name__)
 
-def get_biblio_formDef(biblioForm):
-    i = 0
+
+def get_biblio_form_def(biblioForm):
     flst = {}
     # Build mapping for visible fields
-    for f in biblioForm.visible_fields():
+    for i, f in enumerate(biblioForm.visible_fields()):
         flst[f.html_name] = i
-        i += 1
-    i = 0
     # Build mapping for hidden fields
-    for f in biblioForm.hidden_fields():
+    for i, f in enumerate(biblioForm.hidden_fields()):
         flst[f.html_name] = i
-        i += 1
 
     formdef = {
         "fieldsets": (
@@ -84,6 +92,7 @@ def get_biblio_formDef(biblioForm):
                     },
                     {"name": "short_title", "tooltip_id": "ctxt-help-biblio-short-title", "class": "single-line"},
                     {"name": "manuscript_type", "template": None, "required": True},
+                    {"name": "document_nature"},
                 ),
             },
             {
@@ -103,6 +112,7 @@ def get_biblio_formDef(biblioForm):
                     {"name": "dictionary_title", "required": True},
                     {"name": "place", "tooltip_id": "ctxt-help-biblio-place", "recommanded": True},
                     {"name": "place2", "tooltip_id": "ctxt-help-biblio-place2", "recommanded": True},
+                    {"name": "destination"},
                     {"name": "publisher", "tooltip_id": "ctxt-help-biblio-publisher"},
                     {"name": "publisher2"},
                     {"name": "collection", "tooltip_id": "ctxt-help-biblio-collection"},
@@ -134,6 +144,7 @@ def get_biblio_formDef(biblioForm):
                         "sep": "<br/>",
                         "template": "fiches/edition/keywords/simple_keywords.html",
                     },
+                    {"name": "subj_place", "class": "single-line", "sep": "<br/>"},
                     {"name": "subj_person", "class": "single-line", "sep": "<br/>"},
                     {"name": "subj_society", "class": "single-line", "sep": "<br/>"},
                 ),
@@ -169,10 +180,7 @@ def get_biblio_formDef(biblioForm):
                 name = f["name"]
                 if "map_to" in f and f["map_to"]:
                     name = f["map_to"]
-                if f.get("hidden", False):
-                    fields_list = biblioForm.hidden_fields()
-                else:
-                    fields_list = biblioForm.visible_fields()
+                fields_list = biblioForm.hidden_fields() if f.get("hidden", False) else biblioForm.visible_fields()
                 idx = flst.get(name)
                 if idx is not None and idx < len(fields_list):
                     f["field"] = fields_list[idx]
@@ -197,7 +205,6 @@ def get_person_biblio(
     These parameters can be passed as obects (contribution_type and document_type) or
     only the id's of the objetcs. In some situation it is preferable to pass the id, so we can avoid some DB hits
     """
-
     cd = ContributionDoc.objects.select_related().filter(person=person)
 
     # ----- Filter on litterature type
@@ -211,7 +218,7 @@ def get_person_biblio(
     if contribution_type and not contribution_type_id:
         try:
             contribution_type_id = contribution_type.id
-        except:
+        except AttributeError:
             contribution_type = contribution_type_id = None
     if contribution_type_id:
         cd = cd.filter(contribution_type__id=contribution_type_id)
@@ -220,7 +227,7 @@ def get_person_biblio(
     if document_type and not document_type_id:
         try:
             document_type_id = document_type.id
-        except:
+        except AttributeError:
             document_type = document_type_id = None
     if document_type_id:
         cd = cd.filter(document__document_type__id=document_type_id)
@@ -231,7 +238,6 @@ def get_person_biblio(
     # List of the document ids
     doc_ids = cd.values_list("document_id", flat=True)
 
-    # model = models.get_model(app_label, model_name)
     return output_model.objects.filter(pk__in=doc_ids)
 
 
@@ -290,14 +296,13 @@ def display(request, doc_id):
                     "word": skw.word,
                 }
             )
-        else:
-            # If a SecondaryKeyword has no primary_keyword, treat it as top-level or skip
-            if skw.word not in kw_dict:
-                kw_dict[skw.word] = {
-                    "id": skw.id,
-                    "word": skw.word,
-                    "skw": [],
-                }
+        # If a SecondaryKeyword has no primary_keyword, treat it as top-level or skip
+        elif skw.word not in kw_dict:
+            kw_dict[skw.word] = {
+                "id": skw.id,
+                "word": skw.word,
+                "skw": [],
+            }
             # Optionally do nothing else, or add logic as needed
 
     # Decide on your base template
@@ -316,6 +321,7 @@ def display(request, doc_id):
         "SHOW_EMPTY_FIELDS": True,
         "DOCTYPE": DOCTYPE,
         "subj_person": doc.subj_person.all(),
+        "subj_place": doc.subj_place.all(),
     }
 
     return render(request, "fiches/display/bibliography.html", context)
@@ -330,7 +336,6 @@ def create(request, doctype=1):
 @never_cache
 def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     """Handles creation and modification of bibliography records (fiches bibliographiques)."""
-
     # -------------------------------
     # Permission Checks
     # -------------------------------
@@ -398,7 +403,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     note_qs = NoteBiblio.objects.filter(owner=doc) if doc and doc.id else NoteBiblio.objects.none()
 
     # Restrict notes visibility based on user permissions
-    if not request.user.is_staff:
+    if not request.user.has_perm("fiches.can_see_note"):
         note_qs = note_qs.filter(
             Q(access_owner=request.user)
             | Q(access_groups__isnull=True)
@@ -451,6 +456,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
                 doc.subj_secondary_kw.set(biblioForm.cleaned_data.get("subj_secondary_kw", []))
                 doc.subj_person.set(biblioForm.cleaned_data.get("subj_person", []))
                 doc.subj_society.set(biblioForm.cleaned_data.get("subj_society", []))
+                doc.subj_place.set(biblioForm.cleaned_data.get("subj_place", []))
 
                 # Set a default depot for newly created documents
                 if new_doc:
@@ -517,7 +523,7 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
             "form": biblioForm,
             "model": Biblio,
             "new_object": new_doc,
-            "biblio_formdef": get_biblio_formDef(biblioForm),
+            "biblio_formdef": get_biblio_form_def(biblioForm),
             "noteFormset": noteFormset,
             "publicNotes": public_notes,
             "contributionFormset": contributionFormset,
@@ -539,7 +545,11 @@ def cancel_new_bibliography(request, doc_id):
 
     biblio = get_object_or_404(Biblio, pk=doc_id)
 
-    if biblio.creator_id and biblio.creator_id != request.user.id and not request.user.has_perm("fiches.delete_biblio"):
+    if (
+        biblio.creator_id
+        and biblio.creator_id != request.user.id
+        and not request.user.has_perm("fiches.delete_any_biblio")
+    ):
         return HttpResponseForbidden(_("Accès non autorisé"))
 
     remove_object_index(biblio)
@@ -554,11 +564,9 @@ def delete(request, doc_id):
     Handles errors gracefully if the redirect URL cannot be resolved.
     Redirects to the main index page after deletion.
     """
-
-    if not request.user.has_perm("fiches.delete_biblio"):
-        return HttpResponseForbidden("Accès non autorisé")
-
     doc = get_object_or_404(Biblio, pk=doc_id)
+    if not user_can_delete_biblio(request.user, doc):
+        return HttpResponseForbidden("Accès non autorisé")
 
     # Remove Haystack index
     remove_object_index(doc)
@@ -587,21 +595,13 @@ def delete(request, doc_id):
     else:
         try:
             return HttpResponseRedirect(reverse("home"))
-        except Exception as exc:
-            # Return a user-friendly error page if reverse fails
-            return HttpResponseServerError(
-                f"Could not resolve redirect after deletion: {exc}. " "Please contact the administrator."
-            )
+        except Exception:
+            logger.exception("Could not resolve redirect after bibliography deletion")
+            return HttpResponseServerError("Redirection impossible. Veuillez contacter l’administrateur.")
 
 
 def documentfile_change_list(request, doc_id):
     doc = get_object_or_404(Biblio, pk=doc_id)
-    # return render('fiches/edition/document/documentfile_change_list.html',
-    #                           {
-    #                            'doc': doc,
-    #                            },
-    #                           context_instance=RequestContext(request)
-    # )
 
     return render(request, "fiches/edition/document/documentfile_change_list.html", {"doc": doc})
 
@@ -637,15 +637,19 @@ def documentfile_remove(request, doc_id, docfile_id):
     # Number of Biblio objects linked to this documentfile
     nb_ref = docfile.biblio_set.count()
 
-    if request.method == "POST":
-        if request.POST.get("doc_id", "") == str(doc_id) and request.POST.get("docfile_id") == str(docfile_id):
-            doc.documentfiles.remove(docfile)
-            if request.POST.get("docfile_delete") and docfile.biblio_set.count() == 0:
-                if not user_can_delete_documentfile(request.user, docfile):
-                    return HttpResponseForbidden(_("Accès non autorisé"))
-                docfile.delete()
-            doc.save()
-            remove_done = True
+    if (
+        request.method == "POST"
+        and request.POST.get("doc_id", "") == str(doc_id)
+        and request.POST.get("docfile_id") == str(docfile_id)
+    ):
+        wants_delete = bool(request.POST.get("docfile_delete"))
+        if wants_delete and not user_can_delete_documentfile(request.user, docfile):
+            return HttpResponseForbidden(_("Accès non autorisé"))
+        doc.documentfiles.remove(docfile)
+        if wants_delete and docfile.biblio_set.count() == 0:
+            docfile.delete()
+        doc.save()
+        remove_done = True
 
     # c.update({
     #    'doc': doc,
@@ -661,7 +665,6 @@ def documentfile_remove(request, doc_id, docfile_id):
         "remove_done": remove_done,
         "framed": True,
     }
-    # return render('fiches/edition/document/documentfile_remove.html', c, context_instance=RequestContext(request))
 
     return render(request, "fiches/edition/document/documentfile_remove.html", c)
 
@@ -678,8 +681,9 @@ def get_person_publications(request, person_id):
             .distinct()
         )
         return render(request, "fiches/bibliography_references/publication_list.html", {"publications": publications})
-    except (TypeError, ValueError, ObjectDoesNotExist) as e:
-        return HttpResponseServerError("Error: {}".format(e))
+    except (TypeError, ValueError, ObjectDoesNotExist):
+        logger.exception("Could not load publications for a person")
+        return HttpResponseServerError("Impossible de charger les publications.")
 
 
 def endnote(request, doc_id, getid=False):
@@ -733,11 +737,11 @@ def endnote(request, doc_id, getid=False):
         ref_bit.append(("ET", doc.publisher))
         try:
             ref_bit.append(("DA", doc.date.isoformat()))
-        except:
+        except AttributeError:
             ref_bit.append(("DA", "000-00-00"))
         try:
             ref_bit.append(("YE", doc.date.year))
-        except:
+        except AttributeError:
             ref_bit.append(("YE", ""))
 
         ref_bit.append(("PA", doc.pages))
@@ -767,7 +771,7 @@ def endnote(request, doc_id, getid=False):
 
         try:
             ref_bit.append(("AC", doc.access_date.isoformat()))
-        except:
+        except AttributeError:
             ref_bit.append(("AC", ""))
 
         ref_bit.append(("DB", "lumieres.VD"))
@@ -775,7 +779,6 @@ def endnote(request, doc_id, getid=False):
 
         references.append("\n".join(["REF"] + ["%s- %s" % (label, value) for label, value in ref_bit] + ["END"]))
 
-    # return HttpResponse("\n\n".join(references), mimetype="text/plain ; charset=utf-8")
     return HttpResponse("\n\n".join(references), content_type="text/plain; charset=utf-8")
 
 
