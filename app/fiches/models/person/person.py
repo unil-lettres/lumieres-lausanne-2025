@@ -1,13 +1,32 @@
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
+#
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# This copyright notice MUST APPEAR in all copies of the file.
+
 # models/person.py
 
 import re
+
 from django.conf import LazySettings
 from django.db import models
-from django.utils.translation import gettext_lazy as _
-from django.urls import reverse
-
 from django.db.models import Q
-from collections import OrderedDict
+from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
 
 from fiches.models.person.relation import Relation
 
@@ -37,14 +56,8 @@ class Person(models.Model):
         The higher id value ( the last biography version created ) has a version number of '0'
         """
         nb_bio = self.biography_set.all().count()
-        i = 0
-        for b in self.biography_set.all().order_by("pk"):
-            i += 1
-            if settings.DEBUG:
-                old_vers = b.version
+        for i, b in enumerate(self.biography_set.all().order_by("pk"), start=1):
             b.version = nb_bio - i
-            # if settings.DEBUG:
-            #     dbg_logger.debug("bio.id <%s>: old<%s> -> <new>%s" % (b.id, old_vers, b.version))
             if not dry_run:
                 b.save()
 
@@ -59,6 +72,9 @@ class Person(models.Model):
         verbose_name_plural = _("Personnes")
         ordering = ["name"]
         app_label = "fiches"
+        permissions = (
+            ("add_person_inline", "Can create a Personne from the tagging toolbar"),
+        )
 
     def __str__(self) -> str:
         """Return a readable representation: 'FirstName LastName'."""
@@ -119,8 +135,7 @@ class Person(models.Model):
             except ValueError:
                 version = 0
 
-        if version < 0:
-            version = 0
+        version = max(version, 0)
 
         try:
             return self.biography_set.get(version=version)
@@ -136,7 +151,7 @@ class Person(models.Model):
         """
         try:
             bio = list(self.biography_set.filter(valid=True).order_by("id")).pop()
-        except:
+        except IndexError:
             bio = None
         return bio
 
@@ -230,6 +245,4 @@ class Person(models.Model):
         exclude_people = exclude_people or []
         if self.get_relations(exclude_people=exclude_people):
             return True
-        if self.get_reverse_relations(exclude_people=exclude_people):
-            return True
-        return False
+        return bool(self.get_reverse_relations(exclude_people=exclude_people))

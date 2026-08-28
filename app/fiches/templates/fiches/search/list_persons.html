@@ -31,6 +31,7 @@
 	<ul class="ui-tabs-nav ui-helper-reset ui-helper-clearfix ui-widget-header">
 		<li class="ui-state-default ui-corner-top"><a href="{% url 'search-biblio' %}">Recherche bibliographique</a></li>
 		<li class="ui-state-default ui-corner-top ui-tabs-selected ui-state-active"><a>Liste des personnes</a></li>
+		<li class="ui-state-default ui-corner-top"><a href="{% url 'list-place' %}">Liste des lieux</a></li>
 		<li class="ui-state-default ui-corner-top"><a href="{% url 'search-person' %}">Recherche biographique</a></li>
 	</ul>
 </div>
@@ -47,7 +48,7 @@
 
 <div id="search-results">
 
-<div class="paginator">
+<div class="paginator alpha-index">
 	<div class="pagination">
 		{% for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" %}
 		{% if first_letter == c %}

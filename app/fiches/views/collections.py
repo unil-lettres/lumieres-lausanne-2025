@@ -1,24 +1,23 @@
-# -*- coding: utf-8 -*-
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
 #
-#    Copyright (C) 2010-2012 Université de Lausanne, RISET
-#    < http://www.unil.ch/riset/ >
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#    This file is part of Lumières.Lausanne.
-#    Lumières.Lausanne is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
 #
-#    Lumières.Lausanne is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
-#    This copyright notice MUST APPEAR in all copies of the file.
-#
+# This copyright notice MUST APPEAR in all copies of the file.
+
 import json
 import re
 
@@ -33,11 +32,11 @@ from django.http import (
     HttpResponseServerError,
 )
 from django.shortcuts import get_object_or_404, render
-from django.template import RequestContext
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
+
 from fiches.forms import ObjectCollectionForm
-from fiches.models import *
+from fiches.models import ObjectCollection, Project
 from fiches.templatetags.collector import editable_projects
 
 
@@ -54,7 +53,7 @@ def get_coll(user, coll_id=None, create_if_none=False):
     else:
         try:
             coll = ObjectCollection.objects.get(pk=coll_id)
-        except:
+        except ObjectCollection.DoesNotExist:
             coll = None
     return coll
 
@@ -69,7 +68,7 @@ def get_user_coll_list(user, create_if_none=True):
 
         coll_list = list(coll_list)
         return coll_list
-    except:
+    except AttributeError:
         return None
 
 
@@ -81,14 +80,13 @@ def get_writable_shared_coll_list(user):
     if etitable_grps.count() > 0:
         for g in etitable_grps:
             coll_list |= set(g.objectcollections.all())
-    coll_list = sorted(list(coll_list))
+    coll_list = sorted(coll_list)
     return coll_list
 
 
 def get_editable_coll_list(user, create_if_none=True):
     coll_dict = {
         "user": get_user_coll_list(user, create_if_none=create_if_none),
-        #'contrib':  user.get_profile().get_contrib_coll()
         "contrib": user.profile.get_contrib_coll(),
     }
     return coll_dict
@@ -130,7 +128,6 @@ def index(request, coll_id=None, coll_slug=None, no_cache=False):
     request.session["cur_coll"] = coll.id
 
     # Get all UserGroups this user is member of
-    # user_groups = request.user.get_profile().get_usergroups()
     user_groups = request.user.profile.get_usergroups()
 
     # Access is granted if ACModel.user_access is True OR if the user is member of a change_group
@@ -146,7 +143,7 @@ def index(request, coll_id=None, coll_slug=None, no_cache=False):
         shared_coll = (
             ObjectCollection.objects.exclude(owner=request.user).filter(access_groups__in=user_groups).distinct()
         )
-    except:
+    except Exception:
         shared_coll = None
 
     try:
@@ -156,19 +153,8 @@ def index(request, coll_id=None, coll_slug=None, no_cache=False):
             .filter(change_groups__in=user_groups)
             .distinct()
         )
-    except:
+    except Exception:
         contrib_coll = None
-
-    # response = render('fiches/collections/index.html',
-    #                           { 'coll': coll,
-    #                             'coll_access': coll_access,
-    #                             'coll_change': coll_change,
-    #                             'coll_list': coll_list,
-    #                             'shared_coll': shared_coll,
-    #                             'contrib_coll': contrib_coll,
-    #                           },
-    #                           context_instance=RequestContext(request)
-    # )
 
     context = {
         "coll": coll,
@@ -192,7 +178,6 @@ def tab_index(request, coll_id=None, coll_slug=None, no_cache=False):
     """
     Collection Index to be used inside a tab. For the workspace collection's tab
     """
-
     print("DEBUG: tab_index was called with coll_id =", coll_id)
 
     if request.GET.get("w", None) is not None:
@@ -229,7 +214,6 @@ def tab_index(request, coll_id=None, coll_slug=None, no_cache=False):
     request.session["cur_coll"] = coll.id
 
     # Get all UserGroups this user is member of
-    # user_groups = request.user.get_profile().get_usergroups()
     user_groups = request.user.profile.get_usergroups()
 
     # Access is granted if ACModel.user_access is True OR if the user is member of a change_group
@@ -244,7 +228,7 @@ def tab_index(request, coll_id=None, coll_slug=None, no_cache=False):
             .filter(change_groups__in=user_groups)
             .distinct()
         )
-    except:
+    except Exception:
         contrib_coll = None
 
     try:
@@ -255,7 +239,7 @@ def tab_index(request, coll_id=None, coll_slug=None, no_cache=False):
             .filter(access_groups__in=user_groups)
             .distinct()
         )
-    except:
+    except Exception:
         shared_coll = None
 
     response = render(
@@ -313,7 +297,6 @@ def get_user_list(request, format="select"):
     Return the list of the collections that belongs to the current user
     """
     user_coll_list = get_user_coll_list(request.user)
-    # shared_coll_list = request.user.get_profile().get_contrib_coll()
     shared_coll_list = request.user.profile.get_contrib_coll()
 
     current_collection = request.session.get("cur_coll", "-1")
@@ -350,19 +333,22 @@ def get_in_collection_list(request):
     """
     Return the list of user accessible collections and projects the requested item belongs to
     """
-    if request.GET["type"] == "Person":
-        collections = ObjectCollection.objects.filter(persons=request.GET["id"])
-        projects = Project.objects.filter(persons=request.GET["id"])
-    elif request.GET["type"] == "Biblio":
-        collections = ObjectCollection.objects.filter(bibliographies=request.GET["id"])
-        projects = Project.objects.filter(bibliographies=request.GET["id"])
-    elif request.GET["type"] == "Transcription":
-        collections = ObjectCollection.objects.filter(transcriptions=request.GET["id"])
-        projects = Project.objects.filter(transcriptions=request.GET["id"])
+    # Both parameters are supplied by client-side JS. A missing "type" used to
+    # raise MultiValueDictKeyError, and an unknown one left `collections` and
+    # `projects` unbound — both surfaced to the user as a 500.
+    related_field = {
+        "Person": "persons",
+        "Biblio": "bibliographies",
+        "Transcription": "transcriptions",
+    }.get(request.GET.get("type"))
+    item_id = request.GET.get("id")
+    if related_field is None or not item_id:
+        return HttpResponseBadRequest("Error: missing or unknown item type/id")
+
+    collections = ObjectCollection.objects.filter(**{related_field: item_id})
+    projects = Project.objects.filter(**{related_field: item_id})
 
     # filter out the collections/projects the user cannot access
-    # accessible_coll = set(get_user_coll_list(request.user)) \
-    #                   | set(request.user.get_profile().get_contrib_coll())
     accessible_coll = set(get_user_coll_list(request.user)) | set(request.user.profile.get_contrib_coll())
     collections = set(collections) & accessible_coll
     accessible_proj = editable_projects(request.user)
@@ -395,10 +381,6 @@ def add_object(request):
     coll_id = request.POST.get("coll_id", "")
 
     # Get the model of the object, given by item_type
-    # try:
-    #     model = models.get_model('fiches', item_type)
-    # except:
-    #     return return_error("item type error")
     try:
         model = apps.get_model("fiches", item_type)
         if model is None:
@@ -425,12 +407,10 @@ def add_object(request):
             coll = ObjectCollection.objects.get(pk=coll_id)
         coll_id = coll.id
         request.session["cur_coll"] = coll_id
-    except:
+    except (ValueError, ObjectCollection.DoesNotExist):
         return return_error("collection error")
 
     # Verify change permission
-    # can_change_coll = (coll.owner == request.user) or ( request.user.usergroup_set.all() & coll.change_groups.all() )
-    # can_change_coll = (coll.owner == request.user) or ( request.user.get_profile().get_contrib_coll().filter(pk=coll.id) )
     can_change_coll = (coll.owner == request.user) or (request.user.profile.get_contrib_coll().filter(pk=coll.id))
     if not can_change_coll:
         return return_error("collection permission error")
@@ -438,7 +418,6 @@ def add_object(request):
     # Get the object
     try:
         obj = model._default_manager.get(pk=item_id)
-    # except:
     except model.DoesNotExist:
         return return_error("object error")
 
@@ -456,7 +435,7 @@ def remove_object(request):
     """
 
     def return_error(msg=""):
-        return HttpResponse("Error: %s" % msg, status=500)
+        return HttpResponseBadRequest("Error: %s" % msg)
 
     if request.method != "POST":
         return return_error("method error")
@@ -472,21 +451,19 @@ def remove_object(request):
     # Get the model and the object, given by item_type and item_id
     try:
         model = apps.get_model("fiches", item_type)
-    except:
+    except LookupError:
         return return_error("item type error")
     try:
         obj = model._default_manager.get(pk=item_id)
-    except:
+    except model.DoesNotExist:
         return return_error("object error")
 
     # Get the collection
     try:
         coll = ObjectCollection.objects.get(pk=coll_id)
-    except:
+    except ObjectCollection.DoesNotExist:
         return return_error("collection not found error")
 
-    # can_change_coll = (coll.owner == request.user) or ( request.user.usergroup_set.all() & coll.change_groups.all() )
-    # can_change_coll = (coll.owner == request.user) or ( request.user.get_profile().get_contrib_coll().filter(pk=coll.id) )
     can_change_coll = (coll.owner == request.user) or (request.user.profile.get_contrib_coll().filter(pk=coll.id))
     if not can_change_coll:
         return return_error("collection permission error")
@@ -500,11 +477,8 @@ def remove_object(request):
 def display(request, coll_id):
     coll = get_object_or_404(ObjectCollection, pk=coll_id)
     coll_access = coll.user_access(request.user) or (request.user.usergroup_set.all() & coll.change_groups.all())
-    # response = render('fiches/collections/display.html',{
-    #                             'coll': coll,
-    #                             'coll_access': coll_access,
-    #                             }, context_instance=RequestContext(request)
-    # )
+    if not coll_access:
+        return HttpResponseForbidden("Accès non autorisé.")
 
     context = {
         "coll": coll,
@@ -524,10 +498,6 @@ def short_info(request, coll_id):
     - group access
     """
     coll = get_object_or_404(ObjectCollection, pk=coll_id)
-    # return render('fiches/collections/shortinfo.html',
-    #                           { 'coll': coll },
-    #                           context_instance=RequestContext(request)
-    # )
     return render(request, "fiches/collections/shortinfo.html", {"coll": coll})
 
 
@@ -613,8 +583,4 @@ def delete(request, coll_id):
         return HttpResponseServerError("Problème lors de la suppression de la collection: " + str(e))
 
     # Redirect to the workspace home page.
-    # Option 1: If you have a named URL for workspace home:
     return HttpResponseRedirect(reverse("workspace-main"))
-
-    # Option 2: Hardcode the URL (uncomment the line below if you prefer)
-    # return HttpResponseRedirect('/espace_de_travail')

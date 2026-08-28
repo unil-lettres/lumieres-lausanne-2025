@@ -1,50 +1,73 @@
-# -*- coding: utf-8 -*-
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
 #
-#  (c) Université de Lausanne — Lumières.Lausanne
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# This copyright notice MUST APPEAR in all copies of the file.
 
 # stdlib
+import calendar
+import contextlib
 import copy
 import datetime
-import calendar
 import json
 import shlex
 from base64 import b64decode
 
+from django.apps import apps
+
 # Django
 from django.conf import settings
-from django.apps import apps
-from django.db import models
-from django.db.models import Q
-from django.http import (
-    HttpResponse, Http404, HttpResponseRedirect, HttpResponseNotFound, JsonResponse
-)
-from django.shortcuts import render, get_object_or_404
-from django.urls import reverse
-from django.core.paginator import Paginator, InvalidPage
-from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import permission_required
+from django.core.paginator import InvalidPage, Paginator
+from django.db import models
+from django.http import (
+    Http404,
+    HttpResponseBadRequest,
+    HttpResponseForbidden,
+    HttpResponseNotFound,
+    HttpResponseRedirect,
+    JsonResponse,
+)
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
+from haystack.inputs import AutoQuery
+
+# Haystack (Solr) for quick search
+from haystack.query import SearchQuerySet
 
 # Project utils
 from utils import dbg_logger
 
+from fiches.models import ActivityLog, Person, PlaceRecord, Project, RelationType, Society, UserGroup
+
 # Domain models
-from fiches.models.documents.document import Biblio, Transcription, DocumentType
-from fiches.models import UserGroup, ActivityLog, Person, Project, Society, RelationType
-from fiches.utils import get_default_publisher_user
+from fiches.models.documents.document import Biblio, DocumentType, Transcription
 
 # Forms / search models
 from fiches.models.search.search import (
-    QuickSearchForm,
     BiblioExtendedSearchForm,
-    JournaltitleView,   # used by filter_builder()
-    SearchFilters,      # used by save_filters()
+    JournaltitleView,  # used by filter_builder()
+    QuickSearchForm,
+    SearchFilters,  # used by save_filters()
 )
+from fiches.utils import get_default_publisher_user
 
-# Haystack (Solr) for quick search
-from haystack.query import SearchQuerySet
-from haystack.inputs import AutoQuery
 
 # ---------------------------------------------------------------------
 # Helpers
@@ -69,11 +92,7 @@ def _accessible_transcription_ids(user):
             | models.Q(access_groups__users=user)
             | models.Q(access_groups__groups__user=user)
             | models.Q(project__members=user)
-            | (
-                models.Q(access_public=False)
-                & models.Q(access_private=False)
-                & models.Q(access_groups__isnull=True)
-            )
+            | (models.Q(access_public=False) & models.Q(access_private=False) & models.Q(access_groups__isnull=True))
         ).distinct()
 
     return list(qs.values_list("id", flat=True))
@@ -135,6 +154,7 @@ def quick_search(request):
 
     # Base SQS (query)
     sqs = SearchQuerySet().all()
+
     def _apply_term_filters(sqs_obj, query_string):
         if not query_string:
             return sqs_obj
@@ -173,10 +193,7 @@ def quick_search(request):
 
     # Normalize facet list/tuples to dict
     # Solr returns list of (value, count) tuples with Haystack.
-    if isinstance(raw, list):
-        ct_counts = {k: v for k, v in raw}
-    else:
-        ct_counts = raw  # already a dict
+    ct_counts = dict(raw) if isinstance(raw, list) else raw  # already a dict
 
     counts = {
         "biblio": int(ct_counts.get(ct_map["biblio"], 0)),
@@ -223,17 +240,14 @@ def quick_search(request):
         {
             "form": form,
             "query": q,
-
             # pagination context expected by your {% paginate %} tag
             "page": page,
-            "page_obj": page,          # so you don't need the {% with %} wrapper
+            "page_obj": page,  # so you don't need the {% with %} wrapper
             "paginator": paginator,
             "qs": qs,
-
             # type filters
             "counts": counts,
             "selected_types": selected_types,
-
             # keeps collector button logic working if you use it on this page
             "display_collector": True,
         },
@@ -243,6 +257,12 @@ def quick_search(request):
 # ---------------------------------------------------------------------
 # 🔍➕ Advanced bibliographic search (kept as DB filters for now)
 # ---------------------------------------------------------------------
+BULK_TRANSCRIPTION_ACCESS_PERMISSIONS = (
+    "fiches.change_any_transcription",
+    "fiches.publish_transcription",
+)
+
+
 def biblio_extended_search(request):
     user = request.user
     context = {"display_collector": True}
@@ -253,9 +273,7 @@ def biblio_extended_search(request):
         if user.has_perm("fiches.view_unpublished_project"):
             project_qs = Project.objects.all()
         else:
-            project_qs = Project.objects.filter(
-                models.Q(publish=True) | models.Q(members=user)
-            ).distinct()
+            project_qs = Project.objects.filter(models.Q(publish=True) | models.Q(members=user)).distinct()
 
     doSearch = len(request.GET) > 0
     if doSearch:
@@ -273,6 +291,10 @@ def biblio_extended_search(request):
     context.update({"form": form})
 
     search_action = request.GET.get("search_action")
+    if search_action == "trans_access" and not request.user.has_perms(
+        BULK_TRANSCRIPTION_ACCESS_PERMISSIONS
+    ):
+        return HttpResponseForbidden("Accès non autorisé")
 
     if doSearch and form.is_valid():
         cd = form.cleaned_data
@@ -325,30 +347,25 @@ def biblio_extended_search(request):
                 if not user.is_authenticated:
                     q_trans &= models.Q(transcription__access_public=True)
                 elif not user.has_perm("fiches.access_unpublished_transcription"):
-                    q_trans &= (
-                        models.Q(transcription__access_public=True)
+                    q_trans &= models.Q(transcription__access_public=True) | (
+                        models.Q(transcription__author=user)
+                        | models.Q(transcription__author2=user)
+                        | models.Q(transcription__access_groups__users=user)
+                        | models.Q(transcription__access_groups__groups__user=user)
+                        | models.Q(transcription__project__members=user)
                         | (
-                            models.Q(transcription__author=user)
-                            | models.Q(transcription__author2=user)
-                            | models.Q(transcription__access_groups__users=user)
-                            | models.Q(transcription__access_groups__groups__user=user)
-                            | models.Q(transcription__project__members=user)
-                            | (
-                                models.Q(transcription__access_public=False)
-                                & models.Q(transcription__access_private=False)
-                                & models.Q(transcription__access_groups__isnull=True)
-                            )
+                            models.Q(transcription__access_public=False)
+                            & models.Q(transcription__access_private=False)
+                            & models.Q(transcription__access_groups__isnull=True)
                         )
                     )
-                q &= (
-                    models.Q(document_type__in=doctype)
-                    | (models.Q(document_type__id=DOCTYPE_MANUSCRIPT_ID) & q_trans)
+                q &= models.Q(document_type__in=doctype) | (
+                    models.Q(document_type__id=DOCTYPE_MANUSCRIPT_ID) & q_trans
                 )
 
         # For template logic
         user_accessible_trans = _accessible_transcription_ids(user) if onlyTrans != "1" else True
         context.update({"user_accessible_trans": user_accessible_trans or [-1]})
-
 
         # Publication date (aaaa.mm)
         if cd.get("date_from") or cd.get("date_to"):
@@ -376,9 +393,7 @@ def biblio_extended_search(request):
                     date_to_m = 12
             except ValueError:
                 date_to_m = 12
-            date_to = datetime.date(
-                date_to_y, date_to_m, calendar.monthrange(date_to_y, date_to_m)[1]
-            )
+            date_to = datetime.date(date_to_y, date_to_m, calendar.monthrange(date_to_y, date_to_m)[1])
             q &= models.Q(date__range=(date_from, date_to))
 
         # Modification date (activity log)
@@ -398,7 +413,7 @@ def biblio_extended_search(request):
 
         # Language (primary or secondary)
         if cd.get("l"):
-            q &= (models.Q(language=cd.get("l")) | models.Q(language_sec=cd.get("l")))
+            q &= models.Q(language=cd.get("l")) | models.Q(language_sec=cd.get("l"))
 
         # Depot
         if cd.get("depot"):
@@ -429,7 +444,7 @@ def biblio_extended_search(request):
 
         # ---- Apply base filters
         dbg_logger.debug(q)
-        results = Biblio.objects.filter(q).order_by("document_type") if q.children else Biblio.objects.all()
+        results = Biblio.objects.filter(q).order_by("document_type") if q.children else None
 
         # ---- Keyword filters (chain after base qs)
         kw_filter_applied = False
@@ -439,22 +454,36 @@ def biblio_extended_search(request):
                 cd.get(f"kw{xidx}_p"),
                 cd.get(f"kw{xidx}_s"),
             )
+            lookup = None
+            keyword = None
             if skw:
-                kw_filter_applied = True
-                if op == "and":
-                    results = results.filter(subj_secondary_kw=skw)
-                elif op == "or":
-                    results = results | results.filter(subj_secondary_kw=skw)
-                elif op == "not":
-                    results = results.exclude(subj_secondary_kw=skw)
+                lookup = "subj_secondary_kw"
+                keyword = skw
             elif pkw:
-                kw_filter_applied = True
-                if op == "and":
-                    results = results.filter(subj_primary_kw=pkw)
-                elif op == "or":
-                    results = results | results.filter(subj_primary_kw=pkw)
-                elif op == "not":
-                    results = results.exclude(subj_primary_kw=pkw)
+                lookup = "subj_primary_kw"
+                keyword = pkw
+            if lookup is None:
+                continue
+
+            kw_filter_applied = True
+            keyword_results = Biblio.objects.filter(**{lookup: keyword})
+            if results is None:
+                # With no preceding criterion, both AND and OR mean "has this
+                # keyword"; NOT starts from the complete bibliography.
+                results = (
+                    Biblio.objects.exclude(**{lookup: keyword})
+                    if op == "not"
+                    else keyword_results
+                )
+            elif op == "and":
+                results = results.filter(**{lookup: keyword})
+            elif op == "or":
+                # The right-hand queryset must be independent of ``results``.
+                # ``results | results.filter(...)`` can never add a record and
+                # made OR either a no-op or an unfiltered search.
+                results = results | keyword_results
+            elif op == "not":
+                results = results.exclude(**{lookup: keyword})
 
         if not q.children and not kw_filter_applied:
             results = Biblio.objects.none()
@@ -480,7 +509,7 @@ def biblio_extended_search(request):
             try:
                 page = paginator.page(request.GET.get("page", 1))
             except InvalidPage:
-                raise Http404
+                raise Http404 from None
             context.update(
                 {
                     "page": page,
@@ -489,9 +518,7 @@ def biblio_extended_search(request):
                 }
             )
         else:
-            qs = request.META.get("QUERY_STRING", "").replace(
-                f"&page={int(request.GET.get('page', 1))}", ""
-            )
+            qs = request.META.get("QUERY_STRING", "").replace(f"&page={int(request.GET.get('page', 1))}", "")
             context.update(
                 {
                     "results": results,
@@ -508,6 +535,7 @@ def biblio_extended_search(request):
         else "fiches/search/actions/trans_access.html",
         context,
     )
+
 
 # ---------------------------------------------------------------------
 # Legacy filter builder / generic search endpoints (left as-is)
@@ -553,7 +581,7 @@ def filter_builder(request, model_name="Person", sfid=None):
 
 
 def do_search(request):
-    def get_Q(params):
+    def get_q(params):
         q = models.Q()
         for p in params:
             if p["type"] == "date" and p["op"] in ("lt", "gt"):
@@ -594,11 +622,14 @@ def do_search(request):
         return q
 
     qparam = request.GET.get("q", "")
-    try:
+    with contextlib.suppress(Exception):
         qparam = b64decode(qparam)
-    except Exception:
-        pass
-    query_def = json.loads(qparam)
+    # A missing or malformed "q" is a client error: it used to raise
+    # JSONDecodeError and reach the user as a 500 on the main search endpoint.
+    try:
+        query_def = json.loads(qparam)
+    except (TypeError, ValueError):
+        return HttpResponseBadRequest("Error: missing or malformed search query")
 
     order_by = request.GET.get("o") or "title"
     if order_by == "author":
@@ -622,15 +653,14 @@ def do_search(request):
 
     for f_def in query_def["filters"]:
         dbg_logger.debug(f_def)
-        f_q = get_Q(f_def["params"])
+        f_q = get_q(f_def["params"])
         dbg_logger.debug(f_q)
         if result_qs is None:
             result_qs = model.objects.filter(f_q)
+        elif f_def["op"] == "and":
+            result_qs = model.objects.filter(f_q) & result_qs
         else:
-            if f_def["op"] == "and":
-                result_qs = model.objects.filter(f_q) & result_qs
-            else:
-                result_qs = model.objects.filter(f_q) | result_qs
+            result_qs = model.objects.filter(f_q) | result_qs
 
         if display_columns.get(f_def["cl"]) != "off":
             display_columns[f_def["cl"]] = "on"
@@ -690,9 +720,9 @@ def save_settings(request):
 
 def save_filters(request):
     q = request.GET.get("q", "")
-    query_def = json.loads(q)
+    query_def = json.loads(q)  # noqa: F841
     sf_id = request.GET.get("sfid")
-    sf = SearchFilters.objects.get_or_create(pk=sf_id)
+    SearchFilters.objects.get_or_create(pk=sf_id)
     # TODO: persist query_def to the model (left as legacy placeholder)
 
 
@@ -712,7 +742,7 @@ def relations(request):
 
 
 @require_POST
-@permission_required(perm="fiches.change_any_transcription")
+@permission_required(perm=BULK_TRANSCRIPTION_ACCESS_PERMISSIONS, raise_exception=True)
 def transcriptions_change_access(request):
     public = "access_public" in request.POST
     private = "access_private" in request.POST
@@ -747,8 +777,21 @@ def list_persons(request):
     persons = Person.objects.filter(**filter_params).order_by("name").distinct()
     return render(request, "fiches/search/list_persons.html", {"persons": persons, "first_letter": first_letter})
 
+
+def list_places(request):
+    """Alphabetical "Liste des lieux" tab of the advanced search (§5).
+
+    Mirrors ``list_persons``: an A-Z first-letter filter over the place fiches,
+    each linking to its public read view.
+    """
+    first_letter = request.GET.get("q")
+    places = PlaceRecord.objects.all()
+    if first_letter:
+        places = places.filter(name__istartswith=first_letter)
+    places = places.order_by("name").distinct()
+    return render(request, "fiches/search/list_places.html", {"places": places, "first_letter": first_letter})
+
+
 def req_search_view(request):
     """Compat alias kept for legacy imports."""
-    # You can also return quick_search(request) if you prefer:
-    # return quick_search(request)
     return search_general(request)

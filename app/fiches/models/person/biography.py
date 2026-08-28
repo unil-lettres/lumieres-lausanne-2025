@@ -1,42 +1,39 @@
-#    Copyright (C) 2010-2012 Université de Lausanne, RISET
-#    < http://www.unil.ch/riset/ >
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
 #
-#    This file is part of Lumières.Lausanne.
-#    Lumières.Lausanne is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#    Lumières.Lausanne is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-#    This copyright notice MUST APPEAR in all copies of the file.
-#
+# This copyright notice MUST APPEAR in all copies of the file.
 
-from ckeditor.fields import RichTextField, RichTextFormField
+from ckeditor.fields import RichTextField
 from django import forms
-from django.apps import apps
 from django.db import models
 from django.forms import ModelForm
+from django.urls import reverse
 from django.utils.dateformat import format
 from django.utils.translation import gettext_lazy as _
+
 from fiches.base_forms import NoteFormBase
 from fiches.constants import DATE_DISPLAY_FORMAT, DATE_INPUT_FORMATS
 from fiches.models.misc.notes import NoteBase
 from fiches.models.person import Person
 from fiches.models.person.relation import Relation, RelationType
-
-# from fiches.fields import PersonField, PersonWidget
+from fiches.place_tag import PlaceTagWidget
+from fiches.reference_forms import ReferenceLinkField
 from fiches.widgets import PersonWidget
-
-# Import Relation & RelationType from the new file:
-# from fiches.models.person.relation import Relation, RelationType
-
 
 
 # ===============================================================================
@@ -81,12 +78,14 @@ class Biography(models.Model):
     version = models.IntegerField(editable=False, default=0)
     valid = models.BooleanField(default=False)
 
-    birth_place = models.CharField(max_length=256, verbose_name=_("Lieu de naissance"), blank=True)
+    # Place fields hold tagged HTML (<a class="ll-tag ll-tag-place" …>) per §2.2,
+    # like the transcription tags, so they are TextField rather than CharField.
+    birth_place = models.TextField(verbose_name=_("Lieu de naissance"), blank=True)
     birth_date = models.DateField(verbose_name=_("Date de naissance"), blank=True, null=True)
     birth_date_f = models.CharField(max_length=15, blank=True)
     birth_date_approx = models.BooleanField(_("Date de naissance approximative"), default=False)
 
-    death_place = models.CharField(max_length=256, verbose_name=_("Lieu de décès"), blank=True)
+    death_place = models.TextField(verbose_name=_("Lieu de décès"), blank=True)
     death_date = models.DateField(verbose_name=_("Date de décès"), blank=True, null=True)
     death_date_f = models.CharField(max_length=15, blank=True)
     death_date_approx = models.BooleanField(_("Date de décès approximative"), default=False)
@@ -94,7 +93,7 @@ class Biography(models.Model):
     religion = models.ForeignKey(
         Religion, verbose_name=_("Confession"), blank=True, null=True, on_delete=models.SET_NULL
     )
-    origin = models.CharField(_("Lieu d'origine"), max_length=512, blank=True)
+    origin = models.TextField(_("Lieu d'origine"), blank=True)
     nationality = models.ForeignKey(
         Nationality, verbose_name=_("Nationalité"), blank=True, null=True, on_delete=models.SET_NULL
     )
@@ -137,8 +136,6 @@ class Biography(models.Model):
     def __str__(self):
         return self.person_name()
 
-    from django.urls import reverse
-
     def get_absolute_url(self):
         return reverse("biography-display", args=[str(self.person_id)])
 
@@ -154,7 +151,7 @@ class Biography(models.Model):
 
 
 class BiographyForm(ModelForm):
-    birth_place = forms.CharField(label=_("Lieu"), required=False)
+    birth_place = forms.CharField(label=_("Lieu"), required=False, widget=PlaceTagWidget())
     birth_date = forms.DateField(
         widget=forms.DateInput(format=DATE_DISPLAY_FORMAT),
         input_formats=DATE_INPUT_FORMATS,
@@ -163,7 +160,7 @@ class BiographyForm(ModelForm):
     )
     birth_date_f = forms.CharField(widget=forms.HiddenInput(attrs={"class": "vardateformat"}), required=False)
 
-    death_place = forms.CharField(label=_("Lieu"), required=False)
+    death_place = forms.CharField(label=_("Lieu"), required=False, widget=PlaceTagWidget())
     death_date = forms.DateField(
         widget=forms.DateInput(format=DATE_DISPLAY_FORMAT),
         input_formats=DATE_INPUT_FORMATS,
@@ -172,13 +169,29 @@ class BiographyForm(ModelForm):
     )
     death_date_f = forms.CharField(widget=forms.HiddenInput(attrs={"class": "vardateformat"}), required=False)
 
+    # External reference-site permalinks (référentiels), scoped to person fiches.
+    reference_links = ReferenceLinkField(
+        applies="person",
+        required=False,
+        label=_("Sites de référence"),
+    )
+
     def person_name(self):
         return self.instance.person_name()
+
+    def __init__(self, *args, **kwargs):
+        """Preload the biography's external reference-site links into the widget."""
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            self.initial.setdefault(
+                "reference_links",
+                [f"{link.reference_site_id}|{link.identifier}" for link in self.instance.reference_links.all()],
+            )
 
     class Meta:
         model = Biography
         fields = "__all__"
-        widgets = {"archive": forms.Textarea()}
+        widgets = {"archive": forms.Textarea(), "origin": PlaceTagWidget()}
 
     class Media:
         css = {
@@ -188,6 +201,7 @@ class BiographyForm(ModelForm):
             "js/lib/jquery/jquery.bgiframe.min.js",
             "js/lib/jquery/jquery.ajaxQueue.js",
             "js/lib/jquery/jquery.autocomplete.min.js",
+            "js/list_widget.js",
         )
 
 
@@ -196,7 +210,7 @@ class BiographyForm(ModelForm):
 # ------------------------------------------------------------------------------
 class NoteBiography(NoteBase):
     owner = models.ForeignKey("fiches.Biography", on_delete=models.CASCADE)
-    
+
     @property
     def rte_type(self):
         """Return CKE to be compatible with note_formset.html template."""
@@ -209,7 +223,7 @@ class NoteBiography(NoteBase):
 class NoteFormBiography(NoteFormBase):
     # Add virtual rte_type field for template compatibility
     rte_type = forms.CharField(initial="CKE", widget=forms.HiddenInput(), required=False)
-    
+
     class Meta:
         model = NoteBiography
         fields = "__all__"
@@ -260,11 +274,11 @@ class RelationForm(ModelForm):
         # If no `related_person` is chosen, remove `relation_type`
         if related_person is None:
             cleaned_data["relation_type"] = None
-        else:
-            # If related_person is set, relation_type must be set
-            if relation_type is None:
-                from django.core.exceptions import ValidationError
-                raise ValidationError({"relation_type": "Type de relation obligatoire si une personne est sélectionnée."})
+        # If related_person is set, relation_type must be set
+        elif relation_type is None:
+            from django.core.exceptions import ValidationError
+
+            raise ValidationError({"relation_type": "Type de relation obligatoire si une personne est sélectionnée."})
 
         return cleaned_data
 
@@ -282,11 +296,13 @@ class Profession(models.Model):
     end_date_f = models.CharField(max_length=15, blank=True, null=True)
     end_date_approx = models.BooleanField(_("Date de fin approximative"), default=False)
     position = models.CharField(_("Poste"), max_length=256)
-    place = models.CharField(_("Lieu"), max_length=256, blank=True)
+    place = models.TextField(_("Lieu"), blank=True)
 
     def get_formatted_dates(self):
         if self.begin_date:
-            begin_date = format(self.begin_date, self.begin_date_f.replace("%", "").replace("-", ".").replace("/", "."))
+            begin_date = format(
+                self.begin_date, self.begin_date_f.replace("%", "").replace("-", ".").replace("/", ".")
+            )
         else:
             begin_date = "?"
         if self.begin_date_approx:
@@ -327,9 +343,7 @@ class ProfessionForm(ModelForm):
     end_date_f = forms.CharField(widget=forms.HiddenInput(attrs={"class": "vardateformat"}), required=False)
     end_date_approx = forms.BooleanField(required=False)
     position = forms.CharField(label=_("Poste"))
-    place = forms.CharField(
-        widget=forms.TextInput(attrs={"class": "profession-place"}), label=_("Lieu"), required=False
-    )
+    place = forms.CharField(widget=PlaceTagWidget(), label=_("Lieu"), required=False)
 
 
 # ===============================================================================
@@ -353,10 +367,7 @@ class SocietyMembership(models.Model):
         if self.begin_date_approx and begin_date is not None:
             begin_date = "v. %s" % begin_date
 
-        if self.end_date:
-            end_date = format(self.end_date, self.end_date_f.replace("%", "").replace("-", "."))
-        else:
-            end_date = "?"
+        end_date = format(self.end_date, self.end_date_f.replace("%", "").replace("-", ".")) if self.end_date else "?"
         if self.end_date_approx and end_date != "?":
             end_date = "v. %s" % end_date
 
@@ -406,3 +417,49 @@ class SocietyMembershipForm(ModelForm):
             for k in ("begin_date", "begin_date_f", "begin_date_approx", "end_date", "end_date_f", "end_date_approx"):
                 cleaned_data.pop(k, None)
         return cleaned_data
+
+
+class BiographyReferenceSite(models.Model):
+    """A biography's permalink on an external reference site (référentiel).
+
+    Mirrors the place-to-référentiel pivot: one row per (biography, référentiel)
+    holding the external identifier, from which the full permalink is built.
+    """
+
+    biography = models.ForeignKey(
+        Biography,
+        verbose_name=_("Biographie"),
+        on_delete=models.CASCADE,
+        related_name="reference_links",
+        # Biography is a legacy INT-PK table; target it without a DB-level FK
+        # constraint (the cascade stays ORM-level), per the db_constraint
+        # convention used for the other legacy-table relations.
+        db_constraint=False,
+    )
+    reference_site = models.ForeignKey(
+        "fiches.ReferenceSite",
+        verbose_name=_("Site de référence"),
+        on_delete=models.PROTECT,
+        related_name="biography_links",
+    )
+    identifier = models.CharField(_("Identifiant"), max_length=255)
+
+    class Meta:
+        app_label = "fiches"
+        verbose_name = _("Site de référence de la biographie")
+        verbose_name_plural = _("Sites de référence de la biographie")
+        ordering = ("reference_site__name",)
+        constraints = [
+            models.UniqueConstraint(
+                fields=["biography", "reference_site"],
+                name="unique_reference_site_per_biography",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.reference_site}: {self.identifier}"
+
+    @property
+    def url(self):
+        """Return the permalink built from the reference site and identifier."""
+        return self.reference_site.build_url(self.identifier)

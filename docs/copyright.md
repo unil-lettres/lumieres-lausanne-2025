@@ -1,11 +1,14 @@
-# The Project Copyright
+# Copyright Header
 
-The following copyright header must appear in all copies of the files
-in this project. Please include it at the top of each source file as
-plain text.
+All source files must include the copyright notice below at the top of the file
+as a comment (not as a docstring).
+
+- Replace `{YEAR}` with the current year.
+- If the file starts with a shebang (`#!...`), place an empty line after the
+  shebang, then the copyright header.
 
 ```
-Copyright (C) 2010-2025 Université de Lausanne, SIER
+Copyright (C) 2010-{YEAR} Université de Lausanne, SIER
 Service Infrastructure Enseignement et Recherche
 <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
 

@@ -38,6 +38,7 @@ pip-delete-this-directory.txt
 
 # Unit test / coverage reports
 htmlcov/
+tests/reports/
 .tox/
 .nox/
 .coverage
@@ -183,7 +184,6 @@ logging/
 
 # Ignore Django collected static files
 staticfiles/
-migrations/
 
 # Solr
 solr/data/
@@ -215,10 +215,6 @@ descr/devis/
 
 # CKEditor uploads (CKEDITOR_UPLOAD_PATH)
 app/uploads/
-
-# Env variants (keep the template tracked)
-.env.*
-!.env.template
 
 # Internal operational documentation is maintained outside this public repo.
 AGENTS.md

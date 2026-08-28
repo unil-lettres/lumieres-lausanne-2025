@@ -30,6 +30,13 @@
 
 {% block head_js %}
 	{{ block.super }}
+	{# Named-entity tagging: tell the CKEditor plugin which fiches this user may create (Directeurs only). #}
+	<script type="text/javascript">
+		window.LL_NAMETAG = {
+			person: {% if perms.fiches.add_person_inline %}true{% else %}false{% endif %},
+			place: {% if perms.fiches.add_placerecord_inline %}true{% else %}false{% endif %}
+		};
+	</script>
 	<script src="{% static 'js/lib/jquery/jquery.bgiframe.min.js' %}"></script>
 	<script src="{% static 'js/lib/jquery/jquery.ajaxQueue.js' %}"></script>
 	<script src="{% static 'js/lib/jquery/jquery.autocomplete.min.js' %}"></script>
@@ -90,31 +97,58 @@
 		form.transcription label.inner-label { background-color: #fff; color: #000; font-weight: normal; margin:0; padding: 0;}
 		
 		form.transcription .trans-text-container { margin-top: 3px; position: relative; }
-		/* Facsimile URL field: align on viewer width and give the input room */
-		.fieldWrapper.facsimile_iiif_url,
-		.fieldWrapper.facsimile_start_canvas {
+		/* IIIF settings use the same fieldset/legend/fieldWrapper grammar as the
+		   other classic transcription sections. */
+		/* The fieldset border contributes one pixel before its 10px padding.
+		   Compensate for it so its contents share the editor's 10px inset. */
+		form.transcription fieldset.facsimile-config {
+			margin-bottom: 12px;
+			padding-left: 9px;
+		}
+		.facsimile-config .fieldWrapper { min-height: 23px; }
+		.facsimile-config-control {
+			min-width: 0;
+			margin-left: 165px;
+		}
+		.facsimile-url-actions {
 			display: flex;
+			gap: 8px;
 			align-items: center;
-			gap: 10px;
-			max-width: var(--facsimile-width);
-			width: 100%;
-			flex-wrap: wrap;
 		}
-		.fieldWrapper.facsimile_iiif_url label,
-		.fieldWrapper.facsimile_start_canvas label { margin: 0; min-width: 140px; }
-		.fieldWrapper.facsimile_iiif_url input[type="text"],
-		.fieldWrapper.facsimile_iiif_url input[type="url"],
-		.fieldWrapper.facsimile_iiif_url #id_facsimile_iiif_url {
-			flex: 1 1 50ch; /* target ~50 characters */
-			width: 50ch;
-			min-width: 50ch;
-			max-width: 100%;
+		form.transcription .facsimile-url-actions #id_facsimile_iiif_url {
+			box-sizing: border-box;
+			flex: 1 1 auto;
+			width: auto;
+			min-width: 0;
 		}
-		.fieldWrapper.facsimile_iiif_url button { flex: 0 0 auto; }
-		.fieldWrapper.facsimile_start_canvas input[type="number"],
-		.fieldWrapper.facsimile_start_canvas #id_facsimile_start_canvas {
-			width: 10ch;
+		.facsimile-url-actions button { flex: 0 0 auto; }
+		form.transcription .facsimile-start-control #id_facsimile_start_canvas {
+			box-sizing: border-box;
+			width: 7ch;
 		}
+		.facsimile-help,
+		.facsimile-status {
+			margin-top: 3px;
+			color: #666;
+			font-size: 10px;
+			line-height: 1.35;
+		}
+		.facsimile-status.is-success { color: #287328; }
+		.facsimile-status.is-error { color: #a40000; }
+		.facsimile-status.is-loading { color: #574c2e; }
+		.facsimile-remove {
+			display: none;
+			margin: 3px 0 0;
+			padding: 0;
+			border: 0;
+			background: transparent;
+			color: #900;
+			font: inherit;
+			font-size: 10px;
+			text-decoration: underline;
+			cursor: pointer;
+		}
+		.facsimile-config .errorlist { margin: 3px 0 0; }
 /*		form.transcription fieldset.access { border-left: 0; } */
 		form.transcription .author_name { font-size: 120%; }
 		form.transcription .fieldWrapper.reviewers {
@@ -204,7 +238,9 @@
 			margin: 0; /* no offset */
 		}
 		:root { --facsimile-width: 850px; }
-		.facsimile-viewer-box { width: var(--facsimile-width); margin:0; }
+		/* Fieldset contents are inset by 10px; match that edge so the viewer,
+		   the “Transcription” heading and the editor share one left margin. */
+		.facsimile-viewer-box { width: var(--facsimile-width); margin: 0 0 0 10px; }
 		.facsimile-viewer-box .viewer-control-bar { width:854px; margin-bottom:8px; }
 		.transcription-title { margin:0 0 8px 0; }
 		.edit-form.transcription { margin-top:0; }
@@ -288,24 +324,36 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 	{{ transForm.manuscript_b }}
 	
 	{#<!-- ========== TEXT ========== -->#}
-		<fieldset class="no-border">
-			<div class="fieldWrapper facsimile_iiif_url">
-			    <div>{{ transForm.facsimile_iiif_url.errors }}</div>
-			    <label for="id_facsimile_iiif_url">{{ transForm.facsimile_iiif_url.label }}{% tooltiplink "ctxt-help-facsimile-iiif-url" %}</label>
-			    {{ transForm.facsimile_iiif_url }}
-			    <button type="button" id="validate-facsimile-url" style="margin-left: 10px;">Charger</button>
-				<div id="ctxt-help-facsimile-iiif-url" style="display:none">
-					<h6>URL IIIF du facsimilé</h6>
-					<p>URL du manifeste IIIF</p>
+		<fieldset class="facsimile-config" aria-labelledby="facsimile-config-title">
+				<div class="legend" id="facsimile-config-title">Fac-similé IIIF</div>
+				<div class="fieldWrapper facsimile-url-row">
+					<label for="id_facsimile_iiif_url">URL du manifeste{% tooltiplink "ctxt-help-facsimile-iiif-url" %}</label>
+					<div class="facsimile-config-control">
+						<div class="facsimile-url-actions">
+							{{ transForm.facsimile_iiif_url }}
+							<button type="button" id="validate-facsimile-url">Charger</button>
+						</div>
+						<div id="facsimile-url-help" class="facsimile-help">URL d’un manifeste IIIF ou d’un fichier <code>info.json</code>.</div>
+						{{ transForm.facsimile_iiif_url.errors }}
+						<div id="facsimile-url-status" class="facsimile-status" role="status" aria-live="polite"></div>
+						<button type="button" id="remove-facsimile-url" class="facsimile-remove">Retirer le fac-similé</button>
+					</div>
+					<div class="fixclear"></div>
 				</div>
-			</div>
-			<div class="fieldWrapper facsimile_start_canvas">
-			    <div>{{ transForm.facsimile_start_canvas.errors }}</div>
-			    <label for="id_facsimile_start_canvas">{{ transForm.facsimile_start_canvas.label }}</label>
-			    {{ transForm.facsimile_start_canvas }}
-			    <span class="helptext">{{ transForm.facsimile_start_canvas.help_text }}</span>
-			</div>
-			<div class="fixclear"></div>
+
+				<div class="fieldWrapper facsimile-start-row">
+					<label for="id_facsimile_start_canvas">Image de départ</label>
+					<div class="facsimile-config-control facsimile-start-control">
+						{{ transForm.facsimile_start_canvas }}
+						{{ transForm.facsimile_start_canvas.errors }}
+					</div>
+					<div class="fixclear"></div>
+				</div>
+				<div id="ctxt-help-facsimile-iiif-url" style="display:none">
+					<h6>URL du manifeste IIIF</h6>
+					<p>URL d’un manifeste IIIF ou d’un fichier image <code>info.json</code>.</p>
+				</div>
+		</fieldset>
 
 		<!-- Facsimile Viewer moved below URL field and above transcription text -->
 		<div class="facsimile-viewer-panel" id="facsimile-viewer-panel">
@@ -315,6 +363,8 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 			</div>
 		</div>
 
+		<fieldset class="no-border" aria-labelledby="transcription-text-title">
+			<div class="legend" id="transcription-text-title">Transcription</div>
 			<div class="fieldWrapper text">
 			    <div>{{ transForm.text.errors }}
 			    {#{{ transForm.text.label_tag }}#}</div>
@@ -582,38 +632,76 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 			}
 		});
 
-	// Handle facsimile URL validation and toggle load/unload
+	// Handle facsimile URL validation and viewer configuration.
 	var facsimileViewer = null;
+	var loadedFacsimileUrl = '';
+
+	function setFacsimileStatus(message, state) {
+		$('#facsimile-url-status')
+			.removeClass('is-success is-error is-loading')
+			.addClass(state ? 'is-' + state : '')
+			.text(message || '');
+	}
+
+	function facsimileImageCount(data) {
+		if (data && data.items && data.items.length) {
+			return data.items.length;
+		}
+		if (data && data.sequences && data.sequences[0] && data.sequences[0].canvases) {
+			return data.sequences[0].canvases.length;
+		}
+		return 1; // A direct Image API info.json describes one image.
+	}
+
+	function markFacsimileLoaded(url, imageCount) {
+		loadedFacsimileUrl = url;
+		$('#validate-facsimile-url').data('loaded', true).text('Recharger');
+		$('#remove-facsimile-url').show();
+		$('#id_facsimile_start_canvas').prop('disabled', false);
+		setFacsimileStatus(
+			'✓ Fac-similé chargé' + (imageCount ? ' — ' + imageCount + ' image' + (imageCount > 1 ? 's' : '') : '') + '.',
+			'success'
+		);
+	}
 	
 	// Auto-load viewer if URL is already present in database
 	(function autoLoadViewer() {
 		var existingUrl = $('#id_facsimile_iiif_url').val().trim();
 		if (existingUrl) {
-			// Load viewer silently without validation
+			loadedFacsimileUrl = existingUrl;
+			$('#validate-facsimile-url').data('loaded', true).text('Recharger');
+			$('#remove-facsimile-url').show();
+			$('#id_facsimile_start_canvas').prop('disabled', false);
+			setFacsimileStatus('Chargement du fac-similé enregistré…', 'loading');
 			loadFacsimileViewer(existingUrl);
-			$('#validate-facsimile-url').data('loaded', true).text('Supprimer');
-			$('#id_facsimile_iiif_url').prop('disabled', true);
-			$('<input type="hidden" name="facsimile_iiif_url" value="' + existingUrl + '">').insertAfter('#id_facsimile_iiif_url');
+		} else {
+			$('#id_facsimile_start_canvas').prop('disabled', true);
 		}
 	})();
+
+	$('#id_facsimile_iiif_url').on('input', function() {
+		var currentUrl = $(this).val().trim();
+		$('#id_facsimile_start_canvas').prop('disabled', !currentUrl);
+		if (!currentUrl) {
+			$('#validate-facsimile-url').text('Charger');
+			setFacsimileStatus(loadedFacsimileUrl ? 'URL effacée — enregistrez ou retirez le fac-similé.' : '', '');
+		} else if (loadedFacsimileUrl && currentUrl !== loadedFacsimileUrl) {
+			$('#validate-facsimile-url').text('Recharger');
+			setFacsimileStatus('URL modifiée — rechargez le fac-similé pour la vérifier.', 'loading');
+		} else {
+			$('#validate-facsimile-url').text(loadedFacsimileUrl ? 'Recharger' : 'Charger');
+		}
+	});
 	
 	$('#validate-facsimile-url').click(function() {
 		var $btn = $(this);
-		var loaded = $btn.data('loaded') === true;
-		// If already loaded, act as "Supprimer" (unload)
-		if (loaded) {
-			unloadFacsimileViewer();
-			$btn.data('loaded', false).text('Charger');
-			$('#id_facsimile_iiif_url').prop('disabled', false);
-			return;
-		}
-		// Otherwise, try to validate and load
 		var url = $('#id_facsimile_iiif_url').val().trim();
 		if (!url) {
-			alert('Veuillez d\'abord saisir une URL de manifeste IIIF.');
+			setFacsimileStatus('Indiquez d’abord une URL de manifeste IIIF.', 'error');
+			$('#id_facsimile_iiif_url').focus();
 			return;
 		}
-		// Show loading
+		setFacsimileStatus('Chargement et vérification de l’URL…', 'loading');
 		$btn.prop('disabled', true).text('Chargement...');
 		
 		$.ajax({
@@ -621,33 +709,33 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 			dataType: 'json',
 			timeout: 10000,
 			success: function(data) {
-				// valid manifest / info.json
 				loadFacsimileViewer(url);
-				$btn.data('loaded', true).text('Supprimer');
-				// disable input to prevent edits and add hidden field to submit value
-				$('#id_facsimile_iiif_url').prop('disabled', true);
-				$('<input type="hidden" name="facsimile_iiif_url" value="' + url + '">').insertAfter('#id_facsimile_iiif_url');
+				markFacsimileLoaded(url, facsimileImageCount(data));
 			},
 			error: function(xhr, status, error) {
-				var msg = '✗ URL de manifeste IIIF invalide.\n';
+				var msg = 'URL de manifeste IIIF invalide. ';
 				if (status === 'timeout') {
-					msg += 'Délai d\'attente dépassé.';
+					msg += 'Délai d’attente dépassé.';
 				} else if (xhr.status === 0) {
-					msg += 'Erreur réseau - URL non accessible.';
+					msg += 'Erreur réseau — URL non accessible.';
 				} else {
 					msg += 'HTTP ' + xhr.status + ': ' + error;
 				}
-				alert(msg);
+				setFacsimileStatus(msg, 'error');
 			},
 			complete: function() {
 				$btn.prop('disabled', false);
-				// if not marked loaded, ensure text is Charger
-				if ($btn.data('loaded') !== true) {
-					$btn.text('Charger');
-				}
+				$btn.text(loadedFacsimileUrl ? 'Recharger' : 'Charger');
 			}
 		});
-	});		// Function to unload facsimile viewer and clear state
+	});
+
+	$('#remove-facsimile-url').click(function() {
+		unloadFacsimileViewer();
+		$('#id_facsimile_iiif_url').focus();
+	});
+
+		// Function to unload facsimile viewer and clear state
 		function unloadFacsimileViewer() {
 			if (facsimileViewer && typeof facsimileViewer.destroy === 'function') {
 				try {
@@ -661,10 +749,14 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 			var viewerDiv = document.getElementById('facsimile-viewer');
 			if (viewerDiv) viewerDiv.innerHTML = '';
 			$('#facsimile-viewer-panel').removeClass('visible');
-			// clear input value, remove hidden field, enable input
+			// Clear the configuration; the remote IIIF resource is never deleted.
+			loadedFacsimileUrl = '';
 			$('#id_facsimile_iiif_url').val('');
 			$('input[type="hidden"][name="facsimile_iiif_url"]').remove();
-			$('#id_facsimile_iiif_url').prop('disabled', false);
+			$('#id_facsimile_start_canvas').val('').prop('disabled', true);
+			$('#validate-facsimile-url').data('loaded', false).text('Charger');
+			$('#remove-facsimile-url').hide();
+			setFacsimileStatus('Fac-similé retiré de cette transcription.', 'success');
 		}
 		
 		// Function to load facsimile viewer
@@ -721,17 +813,21 @@ return fiches_edit.cancelEdition('{{ cancel_url }}');
 						
 						if (tileSources.length > 0) {
 							initFacsimileViewer(tileSources);
+							markFacsimileLoaded(iiifUrl, tileSources.length);
 						} else {
 							showFacsimileError('Erreur: Impossible d\'extraire les images du manifeste IIIF');
+							setFacsimileStatus('Impossible d’extraire les images du manifeste IIIF.', 'error');
 						}
 					})
 					.catch(function(error) {
 						console.error('Failed to load manifest:', error);
 						showFacsimileError('Erreur: Impossible de charger le manifeste IIIF<br><small>' + error.message + '</small>');
+						setFacsimileStatus('Impossible de charger le manifeste IIIF : ' + error.message, 'error');
 					});
 			} else {
 				// Direct image info.json URL
 				initFacsimileViewer([iiifUrl]);
+				markFacsimileLoaded(iiifUrl, 1);
 			}
 		}
 		

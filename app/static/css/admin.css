@@ -17,6 +17,23 @@
 #navigation { float: right; padding-right: 10px; }
 #navigation li { list-style: none; }
 
+/* Dashboard and application indexes already list every available model in
+   the main column. Keep the global sidebar for lists and edit forms, where it
+   provides useful cross-model navigation, but avoid duplicating it here. */
+body.dashboard #nav-sidebar,
+body.dashboard .toggle-nav-sidebar {
+    display: none;
+}
+
+body.dashboard #main > #nav-sidebar + .content {
+    max-width: 100%;
+}
+
+body.dashboard #content {
+    width: auto;
+    max-width: 960px;
+}
+
 a:link, a:visited { color: #827554; }
 a:hover { color: #423A28; }
 
@@ -132,4 +149,3 @@ body.theme-dark, html.theme-dark {
     padding: 6px 12px;
     margin: 0 2px;
 }
-

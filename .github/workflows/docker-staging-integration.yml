@@ -1,0 +1,102 @@
+name: docker-staging-integration
+
+on:
+  push:
+    branches:
+      - staging/named_entities
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  APP_TAG: named-entities-${{ github.sha }}
+  SOLR_TAG: solr-8.11.4-log4j-2.25.5-${{ github.sha }}
+  SOLR_STABLE_TAG: solr-8.11.4-log4j-2.25.5
+
+jobs:
+  build:
+    name: Build ${{ matrix.service }} (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - service: app
+            platform: linux/amd64
+            os: ubuntu-latest
+            dockerfile: ./docker/Dockerfile.app
+            target: runtime
+          - service: app
+            platform: linux/arm64
+            os: ubuntu-26.04-arm
+            dockerfile: ./docker/Dockerfile.app
+            target: runtime
+          - service: solr
+            platform: linux/amd64
+            os: ubuntu-latest
+            dockerfile: ./docker/Dockerfile.solr
+            target: ""
+          - service: solr
+            platform: linux/arm64
+            os: ubuntu-26.04-arm
+            dockerfile: ./docker/Dockerfile.solr
+            target: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build image
+        uses: unil-lettres/actions/docker-build@a748a9fc8898ca74654dea5db7d6d4209893aa7e
+        with:
+          context: .
+          dockerfile: ${{ matrix.dockerfile }}
+          target: ${{ matrix.target }}
+          platform: ${{ matrix.platform }}
+          image_repository: ${{ vars.DOCKERHUB_REPOSITORY }}
+          name_prefix: ${{ matrix.service }}
+          dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+          dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  merge-app:
+    name: Merge app manifest
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    steps:
+      - name: Download app digests
+        uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-app-*
+          merge-multiple: true
+
+      - name: Merge app image
+        uses: unil-lettres/actions/docker-merge@a748a9fc8898ca74654dea5db7d6d4209893aa7e
+        with:
+          image_repository: ${{ vars.DOCKERHUB_REPOSITORY }}
+          tag: ${{ env.APP_TAG }}
+          dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+          dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  merge-solr:
+    name: Merge Solr manifest
+    runs-on: ubuntu-latest
+    needs: [build]
+
+    steps:
+      - name: Download Solr digests
+        uses: actions/download-artifact@v8
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-solr-*
+          merge-multiple: true
+
+      - name: Merge Solr image
+        uses: unil-lettres/actions/docker-merge@a748a9fc8898ca74654dea5db7d6d4209893aa7e
+        with:
+          image_repository: ${{ vars.DOCKERHUB_REPOSITORY }}
+          tag: ${{ env.SOLR_TAG }}
+          additional_tag: ${{ env.SOLR_STABLE_TAG }}
+          dockerhub_username: ${{ secrets.DOCKERHUB_USERNAME }}
+          dockerhub_token: ${{ secrets.DOCKERHUB_TOKEN }}

@@ -1,0 +1,44 @@
+# Override dev: builds the dev stage (runserver + dev deps) and adds phpmyadmin.
+# Usage: docker compose -f docker-compose.yml -f docker/docker-compose.dev.yml watch
+
+services:
+  app:
+    build:
+      target: dev
+    environment:
+      DJANGO_ENV: ${DJANGO_ENV:-development}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-1}
+      DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-lumieres_project.settings}
+    volumes:
+      # Backend tests live at the repo root (tests/backend). Bind-mounting them
+      # makes edits live inside the container immediately, so `pytest tests/...`
+      # always sees the current files — no watch/sync rule needed (unlike ./app,
+      # which is baked into the image and synced via develop.watch below).
+      - ./tests:/app/tests
+    develop:
+      watch:
+        - action: sync
+          path: ./app
+          target: /app
+          ignore:
+            - __pycache__/
+            - "*.pyc"
+            - "*.pyo"
+            - .pytest_cache/
+            - .ruff_cache/
+            - media/
+            - staticfiles/
+        - action: rebuild
+          path: ./pyproject.toml
+        - action: rebuild
+          path: ./uv.lock
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PMA_HOST: db
+    ports:
+      - 8001:80

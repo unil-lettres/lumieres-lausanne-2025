@@ -1,16 +1,29 @@
-# Copyright (C) 2025 Lumières.Lausanne
-# See docs/copyright.md
+# Copyright (C) 2010-2026 Université de Lausanne, SIER
+# Service Infrastructure Enseignement et Recherche
+# <https://www.unil.ch/lettres/fr/home/menuinst/faculte/administration-du-decanat.html>
 #
-# This file is part of the Lumières.Lausanne project and is licensed under the terms
-# described in the LICENSE file found at the root of this source tree.
+# This file is part of Lumières.Lausanne.
+# Lumières.Lausanne is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Lumières.Lausanne is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# This copyright notice MUST APPEAR in all copies of the file.
 
 # fiches/models/documents/document.py
 
-import re
 from os.path import basename
-from ckeditor.fields import RichTextField
 from types import SimpleNamespace
 
+from ckeditor.fields import RichTextField
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -19,6 +32,7 @@ from django.db.models import Q
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
+
 from fiches.models.contributions.ac_model import ACModel
 from fiches.models.contributions.keyword import PrimaryKeyword, SecondaryKeyword
 from fiches.models.contributiontype import ContributionType
@@ -34,6 +48,7 @@ LITTERATURE_TYPE_CHOICES = (("p", _("Primaire")), ("s", _("Secondaire")))
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+
 from fiches.models.documents.document_file import DocumentFile
 
 
@@ -122,6 +137,31 @@ class ManuscriptType(models.Model):
         ordering = ["sorting"]
 
 
+class DocumentNature(models.Model):
+    """Admin-managed list for a manuscript's "Nature du document" (shown under "Type d'écrit")."""
+
+    name = models.CharField(max_length=128)
+    sorting = models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = _("Nature du document")
+        verbose_name_plural = _("Natures de document")
+        app_label = "fiches"
+        ordering = ["sorting"]
+
+
+def get_default_language():
+    """Default language for a Biblio: the "Français" DocumentLanguage.
+
+    Defined at module level (not as a staticmethod) so Django can serialize it
+    in migrations as an importable reference.
+    """
+    return DocumentLanguage.objects.get_or_create(name="Français")[0].id
+
+
 class Biblio(models.Model):
     """
     Fiche bibliographique
@@ -136,35 +176,23 @@ class Biblio(models.Model):
     )
 
     title = models.TextField(_("Titre"))
-    short_title = models.CharField(
-        _("Titre court"), max_length=512, blank=True, null=True
-    )
-    litterature_type = models.CharField(
-        _("Type de littérature"), max_length=2, choices=LITTERATURE_TYPE_CHOICES
-    )
-    document_type = models.ForeignKey(
-        "DocumentType", verbose_name=_("Type de document"), on_delete=models.CASCADE
-    )
+    short_title = models.CharField(_("Titre court"), max_length=512, blank=True, null=True)
+    litterature_type = models.CharField(_("Type de littérature"), max_length=2, choices=LITTERATURE_TYPE_CHOICES)
+    document_type = models.ForeignKey("DocumentType", verbose_name=_("Type de document"), on_delete=models.CASCADE)
 
     # Book Type ( Chapitre de Livre )
     book_title = models.CharField(_("Titre du livre"), max_length=512, blank=True)
-    collection = models.CharField(
-        _("Collection et n° du volume"), max_length=512, blank=True
-    )
+    collection = models.CharField(_("Collection et n° du volume"), max_length=512, blank=True)
 
     # Journal Type ( Revue )
     journal_title = models.CharField(_("Titre de la revue"), max_length=512, blank=True)
     journal_num = models.CharField(_("N° de la revue"), max_length=30, blank=True)
-    journal_abr = models.CharField(
-        _("Abréviation de la revue"), max_length=60, blank=True
-    )
+    journal_abr = models.CharField(_("Abréviation de la revue"), max_length=60, blank=True)
     series_title = models.CharField(_("Titre du numéro"), max_length=512, blank=True)
     series_text = models.CharField(_("Texte de la série"), max_length=512, blank=True)
 
     # Dictionary Type ( Dictionnaire )
-    dictionary_title = models.CharField(
-        _("Titre de dictionnaire"), max_length=256, blank=True
-    )
+    dictionary_title = models.CharField(_("Titre de dictionnaire"), max_length=256, blank=True)
 
     # Manuscript type
     inscription = models.CharField(_("Dédicace"), max_length=256, blank=True)
@@ -175,10 +203,20 @@ class Biblio(models.Model):
         null=True,
         on_delete=models.SET_NULL,
     )
+    # "Nature du document": admin-managed list, manuscripts only (shown under "Type d'écrit").
+    document_nature = models.ForeignKey(
+        "DocumentNature",
+        verbose_name=_("Nature du document"),
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+    )
 
-    place = models.CharField(_("Lieu"), max_length=64, blank=True)
+    # Place fields are TextField (not CharField) so they can hold the inline place-tag HTML (§4.2).
+    place = models.TextField(_("Lieu"), blank=True)
     publisher = models.CharField(_("Editeur"), max_length=256, blank=True)
-    place2 = models.CharField(_("2e Lieu"), max_length=64, blank=True)
+    place2 = models.TextField(_("2e Lieu"), blank=True)
+    destination = models.TextField(_("Lieu de destination"), blank=True)
     publisher2 = models.CharField(_("2e Editeur"), max_length=256, blank=True)
     edition = models.CharField(_("Date de 1ère Edition"), max_length=128, blank=True)
     date = models.DateField(_("Date"), blank=True, null=True)
@@ -192,38 +230,27 @@ class Biblio(models.Model):
         null=True,
         default=None,
     )
-    volume_nb = models.IntegerField(
-        _("Nb de volumes"), blank=True, null=True, default=None
-    )
+    volume_nb = models.IntegerField(_("Nb de volumes"), blank=True, null=True, default=None)
     pages = models.CharField(_("Pages"), max_length=64, blank=True)
 
     urls = models.TextField(_("URLs"), blank=True)
     documentfiles = models.ManyToManyField("DocumentFile", blank=True)
-    abstract = RichTextField(
-        verbose_name=_("Résumé"), config_name="note_ckeditor", blank=True
-    )
+    abstract = RichTextField(verbose_name=_("Résumé"), config_name="note_ckeditor", blank=True)
 
     # Subjects
-    subj_primary_kw = models.ManyToManyField(
-        "PrimaryKeyword", verbose_name=_("Mot clé principal"), blank=True
-    )
-    subj_secondary_kw = models.ManyToManyField(
-        "SecondaryKeyword", verbose_name=_("Mot clé secondaire"), blank=True
-    )
-    subj_person = models.ManyToManyField(
-        "Person", verbose_name=_("Personne"), blank=True
-    )
-    subj_society = models.ManyToManyField(
-        "Society", verbose_name=_("Société/Académie"), blank=True
-    )
+    subj_primary_kw = models.ManyToManyField("PrimaryKeyword", verbose_name=_("Mot clé principal"), blank=True)
+    subj_secondary_kw = models.ManyToManyField("SecondaryKeyword", verbose_name=_("Mot clé secondaire"), blank=True)
+    # Place subjects (§4.3): indexed like persons, shown between keywords and persons.
+    # db_constraint=False: the legacy fiches_biblio.id is type-incompatible with the
+    # FK column Django generates for the join table (MySQL errno 3780), as for other
+    # new relations to legacy INT-PK tables.
+    subj_place = models.ManyToManyField("PlaceRecord", verbose_name=_("Lieu"), blank=True, db_constraint=False)
+    subj_person = models.ManyToManyField("Person", verbose_name=_("Personne"), blank=True)
+    subj_society = models.ManyToManyField("Society", verbose_name=_("Société/Académie"), blank=True)
 
     isbn = models.CharField(_("ISBN"), max_length=24, blank=True)
     serie = models.CharField(_("Série"), max_length=64, blank=True)
     serie_num = models.CharField(_("N° de la série"), max_length=64, blank=True)
-
-    @staticmethod
-    def get_default_language():
-        return DocumentLanguage.objects.get_or_create(name="Français")[0].id
 
     # XXX: fixing issue XavierBeheydt/lumieres-lausanne#9
     def get_authors_contributions(self):
@@ -231,9 +258,7 @@ class Biblio(models.Model):
         Return only the contributions flagged as "author" (code == 0).
         Older templates expect this helper to exclude collaborators, editors, etc.
         """
-        author_filter = Q(contribution_type__code=ContributionType.AUTHOR_CODE) | Q(
-            contribution_type__isnull=True
-        )
+        author_filter = Q(contribution_type__code=ContributionType.AUTHOR_CODE) | Q(contribution_type__isnull=True)
         return (
             ContributionDoc.objects.filter(document=self)
             .filter(author_filter)
@@ -259,35 +284,21 @@ class Biblio(models.Model):
         }
 
         contributions = (
-            ContributionDoc.objects.filter(document=self)
-            .select_related("person", "contribution_type")
-            .order_by("pk")
+            ContributionDoc.objects.filter(document=self).select_related("person", "contribution_type").order_by("pk")
         )
 
         for contrib in contributions:
             person = contrib.person
             if not person:
                 continue
-            ctype = (
-                (contrib.contribution_type.name or "").lower()
-                if contrib.contribution_type
-                else ""
-            )
+            ctype = (contrib.contribution_type.name or "").lower() if contrib.contribution_type else ""
 
-            if (
-                contrib.contribution_type is None
-                or contrib.contribution_type.code == ContributionType.AUTHOR_CODE
-            ):
+            if contrib.contribution_type is None or contrib.contribution_type.code == ContributionType.AUTHOR_CODE:
                 # Authors are handled separately via get_authors_contributions()
                 continue
             if "dir" in ctype:  # directeur / directrice
                 buckets["directors"].append(person)
-            elif (
-                "édit" in ctype
-                or "editeur" in ctype
-                or "éditeur" in ctype
-                or "editor" in ctype
-            ):
+            elif "édit" in ctype or "editeur" in ctype or "éditeur" in ctype or "editor" in ctype:
                 buckets["publishers"].append(person)
             elif "trad" in ctype:
                 buckets["translators"].append(person)
@@ -309,19 +320,11 @@ class Biblio(models.Model):
             names = format_names(persons)
             if not names:
                 return ""
-            return format_html(
-                '<span class="contributor {}">{} {}</span>', css_class, names, suffix
-            )
+            return format_html('<span class="contributor {}">{} {}</span>', css_class, names, suffix)
 
-        directors_display = make_label(
-            buckets["directors"], "contrib-director", "(dir.)"
-        )
-        publishers_display = make_label(
-            buckets["publishers"], "contrib-publisher", "(éd.)"
-        )
-        translators_display = make_label(
-            buckets["translators"], "contrib-translator", "(trad.)"
-        )
+        directors_display = make_label(buckets["directors"], "contrib-director", "(dir.)")
+        publishers_display = make_label(buckets["publishers"], "contrib-publisher", "(éd.)")
+        translators_display = make_label(buckets["translators"], "contrib-translator", "(trad.)")
 
         return SimpleNamespace(
             **buckets,
@@ -355,10 +358,6 @@ class Biblio(models.Model):
         verbose_name="Lieu de dépôt",
     )
 
-    # legacy_depot = models.CharField(
-    #     max_length=128, blank=True, null=True, verbose_name=_("Lieu de dépôt (texte)")
-    # )
-
     cote = models.CharField(_("Cote"), max_length=150, blank=True)
 
     authorization = models.BooleanField(_("Autorisation"), default=False, blank=True)
@@ -382,9 +381,7 @@ class Biblio(models.Model):
         null=True,
         on_delete=models.SET_NULL,
     )
-    first_author_name = models.CharField(
-        max_length=215, editable=False, blank=True, default=""
-    )
+    first_author_name = models.CharField(max_length=215, editable=False, blank=True, default="")
 
     def __str__(self):
         return self.title
@@ -469,9 +466,7 @@ class ContributionDoc(models.Model):
     def __str__(self):
         # If person or contribution_type is None, avoid error by using safe strings
         person_str = str(self.person) if self.person else _("(Aucun contributeur)")
-        contrib_str = (
-            str(self.contribution_type) if self.contribution_type else _("(Aucun type)")
-        )
+        contrib_str = str(self.contribution_type) if self.contribution_type else _("(Aucun type)")
         return f"{person_str} ({contrib_str})"
 
     class Meta:
@@ -479,8 +474,6 @@ class ContributionDoc(models.Model):
         verbose_name = _("Contribution pour Document")
         verbose_name_plural = _("Contributions pour Document")
         ordering = ("contribution_type", "person")
-        # If the old project had unique constraints, e.g.:
-        # unique_together = (("person", "document", "contribution_type"),)
 
 
 # .............................................................................
@@ -490,9 +483,7 @@ class ContributionDoc(models.Model):
 # ..............................................................................
 class ManuscriptBManager(models.Manager):
     def get_queryset(self):
-        return (
-            super(ManuscriptBManager, self).get_queryset().filter(document_type__id=5)
-        )
+        return super().get_queryset().filter(document_type__id=5)
 
 
 class ManuscriptB(Biblio):
@@ -599,9 +590,7 @@ class Manuscript(models.Model):
     depot = models.CharField(_("Lieu de dépôt"), max_length=128, blank=True)
 
     cote = models.CharField(_("Cote"), max_length=150, blank=True)
-    authorization = models.BooleanField(
-        _("Autorisation"), default=False, null=True, blank=True
-    )
+    authorization = models.BooleanField(_("Autorisation"), default=False, null=True, blank=True)
 
     extra = models.CharField(_("Extra"), max_length=128, blank=True)
 
@@ -611,9 +600,7 @@ class Manuscript(models.Model):
     subj_secondary_kw = models.ManyToManyField(
         SecondaryKeyword, verbose_name=_("Mot clé secondaire"), blank=True
     )  # null=True
-    subj_society = models.ManyToManyField(
-        Society, verbose_name=_("Société"), blank=True
-    )  # null=True
+    subj_society = models.ManyToManyField(Society, verbose_name=_("Société"), blank=True)  # null=True
 
     creator = models.ForeignKey(
         User,
@@ -632,9 +619,7 @@ class Manuscript(models.Model):
         on_delete=models.SET_NULL,
     )
 
-    biblio_man = models.ForeignKey(
-        Biblio, blank=True, null=True, on_delete=models.SET_NULL
-    )  # Add on_delete here
+    biblio_man = models.ForeignKey(Biblio, blank=True, null=True, on_delete=models.SET_NULL)  # Add on_delete here
 
     def __str__(self):
         return self.title
@@ -644,22 +629,16 @@ class Manuscript(models.Model):
 
     def save(self, force_insert=False, force_update=False, *args, **kwargs):
         try:
-            first_author_person = (
-                self.contributionman_set.filter(contribution_type__code=0)
-                .order_by("pk")[0]
-                .person
-            )
+            first_author_person = self.contributionman_set.filter(contribution_type__code=0).order_by("pk")[0].person
         except IndexError:
             first_author_person = None
         self.first_author = first_author_person
-        super(Manuscript, self).save(force_insert, force_update, *args, **kwargs)
+        super().save(force_insert, force_update, *args, **kwargs)
 
     def getFirstAuthorName(self):
         try:
             first_author_name = (
-                self.contributionman_set.filter(contribution_type__code=0)
-                .order_by("pk")[0]
-                .person.name
+                self.contributionman_set.filter(contribution_type__code=0).order_by("pk")[0].person.name
             )
         except IndexError:
             first_author_name = None
@@ -696,52 +675,6 @@ class NoteManuscript(NoteBase):
 # ===============================================================================
 # CONTRIBUTIONS
 # ===============================================================================
-
-# class ContributionDoc(models.Model):
-#     person = models.ForeignKey(
-#         'fiches.Person',
-#         verbose_name=_("Contributeur"),
-#         null=True,
-#         blank=True,
-#         on_delete=models.SET_NULL,
-#         related_name='contribution_docs'  # Prevents reverse accessor clashes
-#     )
-#     document = models.ForeignKey(
-#         'fiches.Document',
-#         verbose_name=_("Document"),
-#         null=True,
-#         blank=True,
-#         on_delete=models.SET_NULL,
-#         related_name='contribution_docs_documents'  # Unique related_name
-#     )
-#     contribution_type = models.ForeignKey(
-#         'fiches.ContributionType',
-#         verbose_name=_("Type de contribution"),
-#         limit_choices_to={'type__in': ['doc', 'any']},
-#         null=True,
-#         blank=True,
-#         on_delete=models.SET_NULL,
-#         related_name='contribution_docs_types'  # Unique related_name
-#     )
-#     biblio = models.ForeignKey(
-#         'fiches.Biblio',  # Reference to 'fiches.Biblio'
-#         verbose_name=_("Biblio"),
-#         null=True,
-#         blank=True,
-#         on_delete=models.SET_NULL,
-#         related_name='contribution_docs_biblio'  # Unique related_name
-#     )
-#     in_brackets = models.BooleanField(_("Entre crochets"), default=False)
-
-#     def __str__(self):
-#         return f"{self.person} ({self.contribution_type})"
-
-#     class Meta:
-#         app_label = "fiches"
-#         verbose_name = _("Contribution pour Document")
-#         verbose_name_plural = _("Contributions pour Document")
-#         ordering = ('contribution_type', 'person')
-#         unique_together = ('person', 'document', 'contribution_type', 'biblio')
 
 
 # @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\\
@@ -819,13 +752,9 @@ from django.db import models
 
 
 class Transcription(ACModel):
-    manuscript = models.ForeignKey(
-        "fiches.Manuscript", blank=True, null=True, on_delete=models.SET_NULL
-    )
+    manuscript = models.ForeignKey("fiches.Manuscript", blank=True, null=True, on_delete=models.SET_NULL)
 
-    manuscript_b = models.ForeignKey(
-        "fiches.Biblio", blank=True, null=True, on_delete=models.SET_NULL
-    )
+    manuscript_b = models.ForeignKey("fiches.Biblio", blank=True, null=True, on_delete=models.SET_NULL)
 
     author = models.ForeignKey(
         User,
@@ -836,9 +765,7 @@ class Transcription(ACModel):
         blank=True,
     )
 
-    cite_author = models.BooleanField(
-        blank=True, default=False, verbose_name=_("Citer l'auteur")
-    )
+    cite_author = models.BooleanField(blank=True, default=False, verbose_name=_("Citer l'auteur"))
     author2 = models.ForeignKey(
         User,
         verbose_name=_("2e auteur"),
@@ -847,21 +774,13 @@ class Transcription(ACModel):
         null=True,
         on_delete=models.SET_NULL,
     )
-    cite_author2 = models.BooleanField(
-        blank=True, default=False, verbose_name=_("Citer le 2e auteur")
-    )
+    cite_author2 = models.BooleanField(blank=True, default=False, verbose_name=_("Citer le 2e auteur"))
 
-    status = models.IntegerField(
-        _("État"), choices=TRANSCRIPTION_CHOICES["status"], default=0
-    )
-    scope = models.IntegerField(
-        _("Transcription"), choices=TRANSCRIPTION_CHOICES["scope"], default=0
-    )
+    status = models.IntegerField(_("État"), choices=TRANSCRIPTION_CHOICES["status"], default=0)
+    scope = models.IntegerField(_("Transcription"), choices=TRANSCRIPTION_CHOICES["scope"], default=0)
 
     text = RichTextField(config_name="transcription_ckeditor", blank=True)
-    envelope = RichTextField(
-        verbose_name=_("Enveloppe"), config_name="envelope_ckeditor", blank=True
-    )
+    envelope = RichTextField(verbose_name=_("Enveloppe"), config_name="envelope_ckeditor", blank=True)
 
     # IIIF facsimile manifest URL (manifest.json or info.json)
     facsimile_iiif_url = models.URLField(
@@ -876,14 +795,10 @@ class Transcription(ACModel):
         null=True,
     )
 
-    access_private = models.BooleanField(
-        blank=True, default=True, verbose_name=_("Privé")
-    )
+    access_private = models.BooleanField(blank=True, default=True, verbose_name=_("Privé"))
 
     # Publication and modification timestamps
-    published_date = models.DateTimeField(
-        _("Date de mise en ligne"), blank=True, null=True
-    )
+    published_date = models.DateTimeField(_("Date de mise en ligne"), blank=True, null=True)
     published_by = models.ForeignKey(
         User,
         verbose_name=_("Mise en ligne par"),
@@ -892,9 +807,7 @@ class Transcription(ACModel):
         null=True,
         on_delete=models.SET_NULL,
     )
-    modified_date = models.DateTimeField(
-        _("Date de modification"), blank=True, null=True
-    )
+    modified_date = models.DateTimeField(_("Date de modification"), blank=True, null=True)
     modified_by = models.ForeignKey(
         User,
         verbose_name=_("Dernière modification par"),
@@ -912,9 +825,7 @@ class Transcription(ACModel):
         Dynamically fetch the reviewers associated with this transcription.
         """
         return User.objects.filter(
-            id__in=TranscriptionReviewer.objects.filter(
-                transcription_id=self.id
-            ).values_list("user_id", flat=True)
+            id__in=TranscriptionReviewer.objects.filter(transcription_id=self.id).values_list("user_id", flat=True)
         )
 
     def __str__(self):
