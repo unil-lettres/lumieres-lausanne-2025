@@ -27,6 +27,7 @@ from django.db import transaction
 from django.db.models import Q
 
 from fiches.models.core.user_profile import UserProfile
+from fiches.models.documents.document import DocumentNature
 from fiches.models.documents.document_file import DocumentFile
 from fiches.models.misc.object_collection import ObjectCollection
 from fiches.models.misc.place import PlaceCategory, PlaceRecord
@@ -43,6 +44,7 @@ class Command(BaseCommand):
         " - directeurs may manage user profile extra information\n"
         " - directeurs may create person & place fiches (named-entity tagging)\n"
         " - directeurs may manage place categories in the Admin\n"
+        " - directeurs may manage document natures in the Admin\n"
         " - every status group gets its Fiche lieu access from the status matrix\n"
         " - assistants status is retired\n"
         "Run without --apply for a dry-run preview."
@@ -71,6 +73,12 @@ class Command(BaseCommand):
         "add_placecategory",
         "change_placecategory",
         "delete_placecategory",
+    )
+    DIRECTOR_DOCUMENT_NATURE_PERMS = (
+        "view_documentnature",
+        "add_documentnature",
+        "change_documentnature",
+        "delete_documentnature",
     )
     #: Fiche lieu access per status, from the client's "LL détail des STATUTS
     #: revus 2026.07". The matrix grants "modifier"/"supprimer" either fully or
@@ -163,12 +171,7 @@ class Command(BaseCommand):
             collection_owner_perm = self._ensure_collection_owner_permission(apply_changes)
             if collection_owner_perm is not None:
                 self._update_director_permissions([collection_owner_perm], apply_changes)
-            user_profile_perms = self._ensure_user_profile_permissions()
-            self._update_director_permissions(user_profile_perms, apply_changes)
-            fiche_creation_perms = self._ensure_fiche_creation_permissions()
-            self._update_director_permissions(fiche_creation_perms, apply_changes)
-            place_category_perms = self._ensure_place_category_permissions()
-            self._update_director_permissions(place_category_perms, apply_changes)
+            self._sync_director_admin_permissions(apply_changes)
             self._sync_place_permissions(apply_changes)
             self._retire_assistant_group(apply_changes)
 
@@ -480,6 +483,41 @@ class Command(BaseCommand):
             for codename in self.DIRECTOR_PLACE_CATEGORY_PERMS
             if codename in available
         ]
+
+    def _ensure_document_nature_permissions(self):
+        """Fetch the document-nature permissions required by editorial directors."""
+        ct = ContentType.objects.get_for_model(DocumentNature)
+        available = {
+            permission.codename: permission
+            for permission in Permission.objects.filter(
+                content_type=ct,
+                codename__in=self.DIRECTOR_DOCUMENT_NATURE_PERMS,
+            )
+        }
+        missing = sorted(set(self.DIRECTOR_DOCUMENT_NATURE_PERMS) - set(available))
+        if missing:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Missing DocumentNature permissions: {', '.join(missing)}. "
+                    "Please run migrations before applying changes."
+                )
+            )
+        return [
+            available[codename]
+            for codename in self.DIRECTOR_DOCUMENT_NATURE_PERMS
+            if codename in available
+        ]
+
+    def _sync_director_admin_permissions(self, apply_changes):
+        """Grant the lookup-table and fiche-creation permissions required by directors."""
+        permission_groups = (
+            self._ensure_user_profile_permissions(),
+            self._ensure_fiche_creation_permissions(),
+            self._ensure_place_category_permissions(),
+            self._ensure_document_nature_permissions(),
+        )
+        for permissions in permission_groups:
+            self._update_director_permissions(permissions, apply_changes)
 
     def _sync_place_permissions(self, apply_changes):
         """Align every status group with the Fiche lieu column of the status matrix."""
