@@ -683,6 +683,17 @@ class CustomUserAdmin(UserAdmin):
     """Custom admin for User model with UserProfile inline."""
 
     inlines = (UserProfileInline,)
+    list_display = (*UserAdmin.list_display, "field_of_research")
+
+    def get_queryset(self, request):
+        """Load profiles with users so the additional changelist column is query-efficient."""
+        return super().get_queryset(request).select_related("profile")
+
+    @admin.display(description=_("Domaine de recherche / Historique"), ordering="profile__field_of_research")
+    def field_of_research(self, obj):
+        """Return the user's research/history note, if a profile exists."""
+        profile = getattr(obj, "profile", None)
+        return profile.field_of_research if profile else ""
 
 
 class FichesGroupAdmin(GroupAdmin):
