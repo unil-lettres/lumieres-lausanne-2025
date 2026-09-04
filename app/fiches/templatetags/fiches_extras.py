@@ -19,6 +19,7 @@
 # This copyright notice MUST APPEAR in all copies of the file.
 
 import datetime
+import html
 import re
 import urllib.parse as urlparse
 
@@ -29,8 +30,7 @@ from django.template.loader import get_template
 from django.urls import Resolver404, resolve
 from django.utils.dateformat import format
 from django.utils.encoding import force_str, smart_str
-from django.utils.html import urlize
-from django.utils.html import conditional_escape
+from django.utils.html import conditional_escape, strip_tags, urlize
 from django.utils.safestring import mark_safe
 
 from fiches.models import UserGroup
@@ -101,6 +101,17 @@ def field_verbose_name(model, field):
     except (StopIteration, AttributeError):
         output = ""
     return output
+
+
+@register.filter
+def has_display_value(value):
+    """Return whether text or rich HTML contains visible, non-whitespace content."""
+    if value is None:
+        return False
+    if not isinstance(value, str):
+        return bool(value)
+    text = html.unescape(strip_tags(value)).replace("\xa0", " ")
+    return bool(text.strip())
 
 
 @register.filter

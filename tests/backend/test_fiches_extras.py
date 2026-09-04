@@ -133,6 +133,16 @@ def test_field_verbose_name_missing_field_returns_empty():
     assert fx.field_verbose_name(Person, "does_not_exist") == ""
 
 
+@pytest.mark.parametrize("value", [None, "", "   ", "<p></p>", "<p>&nbsp;</p>", "<div>\n<br>\t</div>"])
+def test_has_display_value_rejects_visually_empty_content(value):
+    assert fx.has_display_value(value) is False
+
+
+@pytest.mark.parametrize("value", ["Lausanne", "<p>Texte</p>", "<p>&Eacute;crivain</p>"])
+def test_has_display_value_accepts_visible_content(value):
+    assert fx.has_display_value(value) is True
+
+
 def test_meta_returns_meta_attribute():
     from fiches.models.person.person import Person
 
