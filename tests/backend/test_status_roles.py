@@ -30,7 +30,7 @@ from django.urls import reverse
 
 from fiches.admin import CustomUserAdmin
 from fiches.management.commands.sync_status_roles import Command
-from fiches.models import PlaceCategory, PlaceRecord
+from fiches.models import DocumentNature, PlaceCategory, PlaceRecord
 from fiches.utils import (
     user_can_change_documentfile,
     user_can_delete_biblio,
@@ -345,6 +345,34 @@ class SyncStatusRolesTest(TestCase):
         self.directeurs.refresh_from_db()
 
         self.assertFalse(set(Command.DIRECTOR_PLACE_CATEGORY_PERMS) & self._director_permission_codenames())
+
+    def test_apply_grants_document_nature_admin_permissions_to_directors(self):
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+        self.directeurs.refresh_from_db()
+
+        self.assertTrue(
+            set(Command.DIRECTOR_DOCUMENT_NATURE_PERMS).issubset(self._director_permission_codenames())
+        )
+
+    def test_dry_run_does_not_grant_document_nature_admin_permissions_to_directors(self):
+        call_command("sync_status_roles", stdout=StringIO())
+        self.directeurs.refresh_from_db()
+
+        self.assertFalse(set(Command.DIRECTOR_DOCUMENT_NATURE_PERMS) & self._director_permission_codenames())
+
+    def test_director_can_manage_document_natures_in_the_admin_after_sync(self):
+        call_command("sync_status_roles", apply=True, stdout=StringIO())
+        director = User.objects.create_user("director-document-nature", password="pw", is_staff=True)
+        director.groups.add(self.directeurs)
+        DocumentNature.objects.create(name="Lettre autographe", sorting=1)
+        self.client.force_login(director)
+
+        changelist = self.client.get(reverse("fiches_admin:fiches_documentnature_changelist"))
+        add_form = self.client.get(reverse("fiches_admin:fiches_documentnature_add"))
+
+        self.assertEqual(changelist.status_code, 200)
+        self.assertContains(changelist, "Lettre autographe")
+        self.assertEqual(add_form.status_code, 200)
 
     def test_apply_follows_the_place_status_matrix(self):
         """ "LL détail des STATUTS revus 2026.07": who may edit/delete whose fiche."""

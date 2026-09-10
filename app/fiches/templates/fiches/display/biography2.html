@@ -183,7 +183,9 @@
     ==    Naissance et Décès
     =======================================
     {% endcomment %}
+    {% if bio.birth_date or bio.birth_place|has_display_value or bio.death_date or bio.death_place|has_display_value %}
     <div class="field_group">
+        {% if bio.birth_date or bio.birth_place|has_display_value %}
         <div class="field_wrap">
             <div class="field_label">Naissance</div>
             <div class="field_value">
@@ -193,7 +195,9 @@
             </div>
             <div class="fixclear"></div>
         </div>
+        {% endif %}
 
+        {% if bio.death_date or bio.death_place|has_display_value %}
         <div class="field_wrap">
             <div class="field_label">Décès</div>
             <div class="field_value">
@@ -203,54 +207,72 @@
             </div>
             <div class="fixclear"></div>
         </div>
+        {% endif %}
     </div>
+    {% endif %}
 
     {% comment %}
     =======================================
     == Religion, origine, nationalité, formation
     =======================================
     {% endcomment %}
+    {% if bio.religion or bio.origin|has_display_value or bio.nationality or bio.activity_places|has_display_value %}
     <div class="field_group">
+        {% if bio.religion %}
         <div class="field_wrap">
             <div class="field_label">{{ bio|field_verbose_name:"religion" }}</div>
             <div class="field_value">{{ bio.religion|default:"" }}</div>
             <div class="fixclear"></div>
         </div>
+        {% endif %}
+        {% if bio.origin|has_display_value %}
         <div class="field_wrap">
             <div class="field_label">{{ bio|field_verbose_name:"origin" }}</div>
             <div class="field_value">{{ bio.origin|default:""|safe }}</div>
             <div class="fixclear"></div>
         </div>
+        {% endif %}
+        {% if bio.nationality %}
         <div class="field_wrap">
             <div class="field_label">Nationalité</div>
             <div class="field_value">{{ bio.nationality|default:"" }}</div>
             <div class="fixclear"></div>
         </div>
+        {% endif %}
+        {% if bio.activity_places|has_display_value %}
         <div class="field_wrap">
             <div class="field_label">{{ bio|field_verbose_name:"activity_places" }}</div>
             <div class="field_value">{{ bio.activity_places|default:""|linebreaks }}</div>
             <div class="fixclear"></div>
         </div>
+        {% endif %}
     </div>
+    {% endif %}
 
     {% comment %}
     =======================================
     ==  Fonctions publiques, Sociétés, Lieux d'activités, Séjour à l'étranger
     =======================================
     {% endcomment %}
+    {% if bio.public_functions|has_display_value or bio.comments_on_work|has_display_value or bio.profession_set.all or bio.societymembership_set.all or bio.education|has_display_value or bio.abroad_stays|has_display_value %}
     <div class="field_group">
+        {% if bio.public_functions|has_display_value %}
         <div class="field_wrap">
             <div class="field_label">{{ bio|field_verbose_name:"public_functions" }}</div>
             <div class="field_value">{{ bio.public_functions|default:""|safe }}</div>
             <div class="fixclear"></div>
         </div>
+        {% endif %}
 
+        {% if bio.comments_on_work|has_display_value %}
         <div class="field_wrap">
             <div class="field_label">Commentaires sur son oeuvre/ses écrits</div>
             <div class="field_value">{{ bio.comments_on_work|default:""|safe }}</div>
             <div class="fixclear"></div>
         </div>
+        {% endif %}
 
+        {% if bio.profession_set.all %}
         <div class="field_wrap">
             <div class="field_label">Fonctions publiques et privées</div>
             <div class="field_value">
@@ -264,7 +286,9 @@
                 </ul>
             </div>
         </div>
+        {% endif %}
 
+        {% if bio.societymembership_set.all %}
         <div class="field_wrap">
             <div class="field_label">Sociétés et académies</div>
             <div class="field_value">
@@ -285,8 +309,9 @@
             </div>
             <div class="fixclear"></div>
         </div>
+        {% endif %}
 
-        {% if bio.education %}
+        {% if bio.education|has_display_value %}
         <div class="field_wrap">
             <div class="field_label">{{ bio|field_verbose_name:"education" }}</div>
             <div class="field_value">{{ bio.education|default:""|linebreaks }}</div>
@@ -294,7 +319,7 @@
         </div>
         {% endif %}
 
-        {% if bio.abroad_stays %}
+        {% if bio.abroad_stays|has_display_value %}
         <div class="field_wrap">
             <div class="field_label">{{ bio|field_verbose_name:"abroad_stays" }}</div>
             <div class="field_value">{{ bio.abroad_stays|default:""|linebreaks }}</div>
@@ -302,12 +327,14 @@
         </div>
         {% endif %}
     </div>
+    {% endif %}
 
     {% comment %}
     =======================================
     ==    Relations Et Contact
     =======================================
     {% endcomment %}
+    {% if relations or reverse_relations or person.has_relations %}
     <div class="field_group">
         <div class="field_wrap">
             <div class="field_label">Relations et contacts</div>
@@ -376,6 +403,7 @@
             <div class="fixclear"></div>
         </div>
     </div>
+    {% endif %}
 
     <div class="field_group bio-note">
         {% for note in bio.notebiography_set.all %}
@@ -422,15 +450,19 @@
     ==    Bibliographie
     =======================================
     {% endcomment %}
+    {% if bio.archive|has_display_value or contrib_man or ref_list or litt_prim or litt_sec %}
     <div class="field_group">
+        {% if bio.archive|has_display_value %}
         <div class="field_wrap">
             <div class="field_label">{{ bio|field_verbose_name:"archive" }}</div>
             <div class="field_value">{{ bio.archive|safe }}</div>
         </div>
+        {% endif %}
         {% include "fiches/display/person_bibliography.html" %}
     </div>
+    {% endif %}
 
-    {% if perms.fiches.change_activitylog %}
+    {% if perms.fiches.change_activitylog and activities %}
     <div class="field_group">
         <div class="field_wrap">
             <div class="field_label">Auteurs de la fiche</div>
