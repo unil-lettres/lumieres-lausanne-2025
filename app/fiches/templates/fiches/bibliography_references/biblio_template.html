@@ -90,7 +90,7 @@
                 {% endif %}
 
                 {#<!-- Place -->#}
-                <span>, {{ ref.place|striptags|default:"[s.l.]" }}</span>
+                <span>, {{ ref.place|place_plaintext|default:"[s.l.]" }}</span>
 
                 {#<!-- Dates -->#}
                 <span>, {{ ref|date_biblio:"date" }}{% if ref.date2 %}-{{ ref|date_biblio:"date2" }}{% endif %}</span>
@@ -148,15 +148,17 @@
             {% endif %}
 
             {#<!-- Lieu -->#}
-            <span class="place">, {{ ref.place|striptags|default:"[s.l.]" }}</span>
+            <span class="place">, {{ ref.place|place_plaintext|default:"[s.l.]" }}</span>
 
             {#<!-- Editeur -->#}
             <span class="publisher"> : {{ ref.publisher|default:"[s.n.]" }}</span>
 
             {#<!-- 2e Lieu -->#}
-            {% if ref.place2 %}
-                <span class="place"> ; {{ ref.place2|striptags }}</span>
-            {% endif %}
+            {% with ref.place2|place_plaintext as place2 %}
+                {% if place2 %}
+                    <span class="place"> ; {{ place2 }}</span>
+                {% endif %}
+            {% endwith %}
 
             {#<!-- 2e Editeur -->#}
             {% if ref.publisher2 %}

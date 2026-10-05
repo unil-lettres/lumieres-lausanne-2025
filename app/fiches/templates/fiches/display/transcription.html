@@ -315,7 +315,7 @@
 						<em>{{ ref.short_title|default:ref.title }}</em>,
 						{% endif %}
 
-						<span>{{ ref.place|default:"[s.l.]" }}, </span>
+						<span>{{ ref.place|place_plaintext|default:"[s.l.]" }}, </span>
 				        <span>{{ ref|date_biblio:"date" }}{% if ref.date2 %}-{{ ref|date_biblio:"date2" }}{% endif %}</span>
 			        	{% if ref.book_title and ref.volume %}<span>, vol.&nbsp;{{ ref.volume }}</span>{% endif %}
 						{% if ref.book_title and ref.pages %}<span>, p.&nbsp;{{ ref.pages }}</span>{% endif %}
