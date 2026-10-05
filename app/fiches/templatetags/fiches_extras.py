@@ -34,8 +34,10 @@ from django.utils.html import conditional_escape, strip_tags, urlize
 from django.utils.safestring import mark_safe
 
 from fiches.models import UserGroup
+from fiches.place_text import place_plaintext
 
 register = template.Library()
+register.filter("place_plaintext", place_plaintext)
 
 
 # http://www.djangosnippets.org/snippets/847/

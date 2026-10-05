@@ -48,6 +48,7 @@ from django.views.decorators.http import require_POST
 from fiches.forms import BiblioForm, ContributionDocForm, ContributionDocSecForm, NoteFormBiblio
 from fiches.models import Biblio, ContributionDoc, DocumentType, PrimaryKeyword, SecondaryKeyword
 from fiches.models.documents import DocumentFile, Manuscript, NoteBiblio
+from fiches.place_text import place_plaintext
 from fiches.utils import (
     get_last_model_activity,
     log_model_activity,
@@ -733,7 +734,7 @@ def endnote(request, doc_id, getid=False):
         ref_bit.append(("VO", doc.volume))
         ref_bit.append(("NV", doc.volume_nb))
         ref_bit.append(("EN", doc.edition))
-        ref_bit.append(("LI", doc.place))
+        ref_bit.append(("LI", place_plaintext(doc.place)))
         ref_bit.append(("ET", doc.publisher))
         try:
             ref_bit.append(("DA", doc.date.isoformat()))
