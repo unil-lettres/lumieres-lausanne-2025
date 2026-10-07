@@ -25,6 +25,7 @@ of them touch the database. Migrated from the legacy ``ckeditor/tests.py``
 and modernised (assertTrue/assertFalse, hermetic temp upload dir).
 """
 
+import io
 import os
 import tempfile
 import unittest
@@ -35,7 +36,9 @@ from ckeditor import views
 from django.apps import apps
 from django.conf import settings
 from django.core.exceptions import SuspiciousFileOperation
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import RequestFactory
+from PIL import Image
 
 # Static fixtures shipped with the ckeditor app (dummy.jpg + dummy_thumb.jpg).
 # Resolved via the Django app path so it works on the host and in the container.
@@ -156,3 +159,25 @@ class ViewsTestCase(unittest.TestCase):
         response = views.upload(request)
 
         self.assertEqual(response.status_code, 400)
+
+    def test_upload_creates_readable_image_and_thumbnail(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            settings.MEDIA_ROOT = tmp
+            settings.CKEDITOR_UPLOAD_PATH = tmp
+            for mode, image_format in [("RGB", "JPEG"), ("RGBA", "PNG")]:
+                with self.subTest(image_format=image_format):
+                    data = io.BytesIO()
+                    Image.new(mode, (160, 100)).save(data, format=image_format)
+                    filename = f"upload.{image_format.lower()}"
+                    upload = SimpleUploadedFile(filename, data.getvalue(), content_type=f"image/{image_format.lower()}")
+                    request = RequestFactory().post("/ckeditor/upload/?CKEditorFuncNum=1", {"upload": upload})
+                    request.user = self.mock_user
+                    response = views.upload(request)
+                    self.assertEqual(response.status_code, 200)
+                    original = next(Path(tmp).rglob(filename))
+                    with Image.open(original) as image:
+                        self.assertEqual(image.size, (160, 100))
+                    with Image.open(views.get_thumb_filename(str(original))) as thumbnail:
+                        self.assertEqual(thumbnail.size, (75, 75))
+                        self.assertEqual(thumbnail.mode, "RGB")
+                    self.assertIn(filename, response.content.decode())

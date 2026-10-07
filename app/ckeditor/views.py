@@ -83,7 +83,7 @@ def create_thumbnail(filename):
         image = image.convert("RGB")
 
     # scale and crop to thumbnail
-    imagefit = ImageOps.fit(image, THUMBNAIL_SIZE, Image.ANTIALIAS)
+    imagefit = ImageOps.fit(image, THUMBNAIL_SIZE, Image.Resampling.LANCZOS)
     imagefit.save(get_thumb_filename(filename))
 
 
