@@ -232,7 +232,8 @@ MEDIA_ROOT = BASE_DIR.parent / "media"
 # CKEditor Configuration
 # ------------------------------
 
-CKEDITOR_UPLOAD_PATH = BASE_DIR.parent / "uploads"
+# django-ckeditor storage paths are relative to MEDIA_ROOT.
+CKEDITOR_UPLOAD_PATH = "uploads/"
 
 from .settings_ckeditor_configs import CKEDITOR_CONFIGS
 

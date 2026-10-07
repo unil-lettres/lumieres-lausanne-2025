@@ -35,10 +35,33 @@ from pathlib import Path
 from ckeditor import views
 from django.apps import apps
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.core.exceptions import SuspiciousFileOperation
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import RequestFactory
+from django.test import RequestFactory, TestCase, override_settings
 from PIL import Image
+
+
+class RoutedUploadTest(TestCase):
+    def test_staff_upload_uses_relative_media_storage_path(self):
+        user = User.objects.create_user("upload-editor", is_staff=True)
+        self.client.force_login(user)
+        # Retain the production upload-path setting; isolate only media storage.
+        with tempfile.TemporaryDirectory() as tmp, override_settings(MEDIA_ROOT=tmp):
+            for image_format in ("PNG", "JPEG"):
+                with self.subTest(image_format=image_format):
+                    data = io.BytesIO()
+                    Image.new("RGB", (120, 80)).save(data, format=image_format)
+                    filename = f"routed.{image_format.lower()}"
+                    response = self.client.post(
+                        "/ckeditor/upload/?CKEditorFuncNum=1",
+                        {"upload": SimpleUploadedFile(filename, data.getvalue())},
+                    )
+                    self.assertEqual(response.status_code, 200)
+                    self.assertIn("/media/uploads/", response.content.decode())
+                    stored = next((Path(tmp) / "uploads").rglob(filename))
+                    with Image.open(stored) as image:
+                        self.assertEqual(image.size, (120, 80))
 
 # Static fixtures shipped with the ckeditor app (dummy.jpg + dummy_thumb.jpg).
 # Resolved via the Django app path so it works on the host and in the container.

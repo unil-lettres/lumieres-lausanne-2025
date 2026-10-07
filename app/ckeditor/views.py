@@ -49,6 +49,11 @@ except ImportError:
 THUMBNAIL_SIZE = (75, 75)
 
 
+def get_upload_root():
+    """Resolve storage-relative settings while retaining legacy absolute paths."""
+    return os.path.join(settings.MEDIA_ROOT, settings.CKEDITOR_UPLOAD_PATH)
+
+
 def get_available_name(name):
     """
     Returns a filename that's free on the target storage system, and
@@ -93,7 +98,7 @@ def get_media_url(path):
     """
     upload_prefix = getattr(settings, "CKEDITOR_UPLOAD_PREFIX", None)
     if upload_prefix:
-        url = upload_prefix + path.replace(settings.CKEDITOR_UPLOAD_PATH, "")
+        url = upload_prefix + path.replace(get_upload_root(), "")
     else:
         url = settings.MEDIA_URL + path.replace(settings.MEDIA_ROOT, "")
 
@@ -116,7 +121,7 @@ def get_upload_filename(upload_name, user):
     date_path = datetime.now().strftime("%Y/%m/%d")
 
     # Complete upload path (upload_path + date_path).
-    upload_path = os.path.join(settings.CKEDITOR_UPLOAD_PATH, user_path, date_path)
+    upload_path = os.path.join(get_upload_root(), user_path, date_path)
 
     # Make sure upload_path exists.
     os.makedirs(upload_path, exist_ok=True)
@@ -184,7 +189,7 @@ def get_image_browse_urls(user=None):
     else:
         user_path = ""
 
-    browse_path = os.path.join(settings.CKEDITOR_UPLOAD_PATH, user_path)
+    browse_path = os.path.join(get_upload_root(), user_path)
 
     for root, _dirs, files in os.walk(browse_path):
         for filename in [os.path.join(root, x) for x in files]:
