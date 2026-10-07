@@ -14,6 +14,9 @@ services:
       retries: 10
 
   web:
+    # Preserve the deployed identity for existing heterogeneous media permissions.
+    # Switching UID requires a separately reviewed data-permission migration.
+    user: "0:0"
     image: unillett/lumieres:stage-latest
     restart: unless-stopped
     depends_on:
