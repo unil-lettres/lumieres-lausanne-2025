@@ -192,7 +192,9 @@ class ViewsTestCase(unittest.TestCase):
                     data = io.BytesIO()
                     Image.new(mode, (160, 100)).save(data, format=image_format)
                     filename = f"upload.{image_format.lower()}"
-                    upload = SimpleUploadedFile(filename, data.getvalue(), content_type=f"image/{image_format.lower()}")
+                    upload = SimpleUploadedFile(
+                        filename, data.getvalue(), content_type=f"image/{image_format.lower()}"
+                    )
                     request = RequestFactory().post("/ckeditor/upload/?CKEditorFuncNum=1", {"upload": upload})
                     request.user = self.mock_user
                     response = views.upload(request)
