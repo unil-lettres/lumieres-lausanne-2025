@@ -1,0 +1,48 @@
+name: Dependency checks
+
+on:
+  pull_request:
+    paths:
+      - pyproject.toml
+      - uv.lock
+      - docker/**
+      - docker-compose*.yml
+      - app/**
+      - tests/**
+      - .dockerignore
+      - .github/dependabot.yml
+      - .github/workflows/dependency-checks.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  application:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build development test image from the locked dependencies
+        run: docker build --target dev -f docker/Dockerfile.app -t lumieres-dependency-tests .
+      - name: Run backend suite with isolated SQLite and no network
+        run: |
+          mkdir -p app/logging
+          docker run --rm --network none --read-only \
+            --tmpfs /tmp:rw,nosuid,nodev \
+            --tmpfs /workspace/app/logging:rw,nosuid,nodev \
+            -v "$PWD:/workspace:ro" -w /workspace \
+            -e PYTHONDONTWRITEBYTECODE=1 -e PYTHONPATH=/workspace/app \
+            --entrypoint python lumieres-dependency-tests -m pytest \
+            -p no:cacheprovider --basetemp=/tmp/pytest --tb=short
+      - name: Build the default image used by release workflows
+        run: docker build -f docker/Dockerfile.app -t lumieres-dependency-runtime .
+      - name: Verify the actual runtime artifact
+        run: |
+          docker run --rm --network none --read-only \
+            --tmpfs /tmp:rw,nosuid,nodev \
+            --tmpfs /app/logging:rw,nosuid,nodev,uid=10001,gid=10001 \
+            --tmpfs /app/media:rw,nosuid,nodev,uid=10001,gid=10001 \
+            -v "$PWD/tests/container/check_runtime.py:/tmp/check_runtime.py:ro" \
+            -e PYTHONPATH=/app -e DJANGO_SETTINGS_MODULE=lumieres_project.settings_test \
+            --entrypoint python lumieres-dependency-runtime /tmp/check_runtime.py

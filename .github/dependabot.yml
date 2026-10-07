@@ -1,0 +1,47 @@
+version: 2
+updates:
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: monthly
+      time: "05:00"
+      timezone: Europe/Zurich
+    open-pull-requests-limit: 1
+    groups:
+      python-compatible:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: docker
+    directory: /docker
+    schedule:
+      interval: monthly
+      time: "05:30"
+      timezone: Europe/Zurich
+    open-pull-requests-limit: 1
+    groups:
+      container-patches:
+        patterns: ["*"]
+    ignore:
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+      time: "05:45"
+      timezone: Europe/Zurich
+    open-pull-requests-limit: 1
+    groups:
+      actions-compatible:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+# The default branch is dev: omit target-branch so security updates use this
+# configuration too. Compose database/proxy majors and custom JS stay manual.

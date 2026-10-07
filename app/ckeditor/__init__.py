@@ -27,11 +27,13 @@ if "ckeditor" in settings.INSTALLED_APPS:
     # Confirm CKEDITOR_UPLOAD_PATH setting has been specified.
     if not hasattr(settings, "CKEDITOR_UPLOAD_PATH"):
         raise ImproperlyConfigured(
-            "django-ckeditor requires CKEDITOR_UPLOAD_PATH setting. This setting specifies an absolute path to your ckeditor media upload directory. Make sure you have write permissions for the path, i.e.: CKEDITOR_UPLOAD_PATH = '/home/media/media.lawrence.com/uploads'"
+            "django-ckeditor requires CKEDITOR_UPLOAD_PATH, relative to MEDIA_ROOT for ckeditor_uploader."
         )
 
-    # If a CKEDITOR_UPLOAD_PATH settings has been specified, confirm it exists.
-    if getattr(settings, "CKEDITOR_UPLOAD_PATH", None) and not os.path.exists(settings.CKEDITOR_UPLOAD_PATH):
+    # Legacy absolute paths must already exist. Storage creates relative upload
+    # directories on first use; do not require or create them at import time.
+    upload_path = getattr(settings, "CKEDITOR_UPLOAD_PATH", None)
+    if upload_path and os.path.isabs(upload_path) and not os.path.exists(upload_path):
         raise ImproperlyConfigured(
             "django-ckeditor CKEDITOR_UPLOAD_PATH setting error, no such file or directory: '%s'"
             % settings.CKEDITOR_UPLOAD_PATH
