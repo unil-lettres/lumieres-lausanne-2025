@@ -14,7 +14,7 @@ dependencies = [
   "django-js-asset>=2.2.0",
   "gunicorn>=23.0,<24.0",
   "mysqlclient>=2.2.7",
-  "pillow>=12.3,<13",
+  "pillow>=12.3,<14",
   "pysolr>=3.9.0",
   "sorl-thumbnail>=12.7.0",
 ]
