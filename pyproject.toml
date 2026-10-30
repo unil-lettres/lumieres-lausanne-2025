@@ -14,7 +14,7 @@ dependencies = [
   "django-js-asset>=2.2.0",
   "gunicorn>=23.0,<24.0",
   "mysqlclient>=2.2.7",
-  "pillow>=12.3,<13",
+  "pillow>=13.0.0,<14",
   "pysolr>=3.9.0",
   "sorl-thumbnail>=12.7.0",
 ]
@@ -32,7 +32,7 @@ docs = ["mkdocs>=1.6.1"]
 [tool.uv]
 package = false
 # Security floors for transitive dependencies, without making them direct imports.
-constraint-dependencies = ["sqlparse>=0.6.0", "setuptools>=83.0.0,<84", "urllib3>=2.8.0"]
+constraint-dependencies = ["certifi>=2026.10.23", "sqlparse>=0.6.0", "setuptools>=83.0.0,<84", "urllib3>=2.8.0"]
 
 # Ruff replaces black (formatting) + isort (import sorting) + flake8 and its
 # plugins (linting). Run with `make lint` / `make format` (see make/lint.mk).
