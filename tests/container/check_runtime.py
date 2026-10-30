@@ -26,7 +26,8 @@ for module in ("pytest", "ruff", "ty"):
 minimums = {
     "Django": (5, 2, 18),
     "django-haystack": (3, 4, 0),
-    "pillow": (12, 3, 0),
+    "pillow": (13, 0, 0),
+    "certifi": (2026, 10, 23),
     "sqlparse": (0, 6, 0),
     "setuptools": (83, 0, 0),
     "urllib3": (2, 8, 0),
