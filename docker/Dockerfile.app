@@ -1,6 +1,6 @@
 # Pin the same Python base for builders and runtime; uv stays in build/dev stages.
 FROM ghcr.io/astral-sh/uv:0.13.6@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0 AS uv
-FROM python:3.13-slim-bookworm@sha256:a1165e272e578941b84abc79e4ab38a0305cd12803a5c4247979ac7655f4d641 AS python-base
+FROM python:3.13-slim-bookworm@sha256:281d39ff02e3b389401586134ff9e6572954687822a58055ec07a60ded4e0b7f AS python-base
 RUN python -m pip install --no-cache-dir --upgrade pip==26.2.1
 
 ########## Common base with uv + build tools ##########
