@@ -40,6 +40,18 @@ register = template.Library()
 register.filter("place_plaintext", place_plaintext)
 
 
+@register.simple_tag(takes_context=True)
+def bibliography_transcription_link(context, ref):
+    """Use the search view's exact readable target; retain other callers' contract."""
+    if "search_transcription_links" in context:
+        return context["search_transcription_links"].get(ref.pk)
+    allowed = context.get("user_accessible_trans")
+    if allowed is not True and ref.pk not in (allowed or []):
+        return None
+    transcription = next(iter(ref.transcription_set.all()), None)
+    return transcription.pk if transcription else None
+
+
 # http://www.djangosnippets.org/snippets/847/
 @register.filter
 def in_group2(user, groups):

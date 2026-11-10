@@ -28,6 +28,7 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators.csrf import csrf_exempt
 
 from fiches.models import Project
+from fiches.views.search import _search_transcription_links
 
 
 def index_project(request, proj_slug=None):
@@ -77,7 +78,6 @@ def display_project(request, proj_id=None, proj_slug=None):
 
     lit_prim = (
         project.bibliographies.filter(litterature_type="p")
-        .exclude(document_type__id=5)
         .order_by("document_type__id", "first_author")
     )
     lit_sec = project.bibliographies.filter(litterature_type="s").order_by("document_type__id", "first_author")
@@ -88,6 +88,9 @@ def display_project(request, proj_id=None, proj_slug=None):
     context = {
         "ext_template": ext_template,
         "proj": project,
+        "search_transcription_links": _search_transcription_links(
+            request.user, project.bibliographies.values_list("pk", flat=True)
+        ),
         "lit_prim": lit_prim,
         "lit_sec": lit_sec,
         "transcriptions": transcriptions,
@@ -114,7 +117,6 @@ def get_project_description(request, proj_id=None):
 
     lit_prim = (
         project.bibliographies.filter(litterature_type="p")
-        .exclude(document_type__id=5)
         .order_by("document_type__id", "first_author")
     )
     lit_sec = project.bibliographies.filter(litterature_type="s").order_by("document_type__id", "first_author")
@@ -122,6 +124,9 @@ def get_project_description(request, proj_id=None):
 
     context = {
         "proj": project,
+        "search_transcription_links": _search_transcription_links(
+            request.user, project.bibliographies.values_list("pk", flat=True)
+        ),
         "lit_prim": lit_prim,
         "lit_sec": lit_sec,
         "transcriptions": transcriptions,
@@ -133,6 +138,15 @@ def get_project_transcription(request, proj_id=None):
     """ """
 
     project = get_object_or_404(Project, pk=proj_id)
+
+    if not (
+        project.publish
+        or (
+            request.user.is_authenticated
+            and (request.user.has_perm("fiches.view_unpublished_project") or project.is_editable(request.user))
+        )
+    ):
+        return HttpResponseForbidden("Accès non autorisé")
     transcription_list = project.get_transcriptions(request.user)
 
     ordering = []
@@ -152,7 +166,15 @@ def get_project_transcription(request, proj_id=None):
 
     showTitle = request.GET.get("showTitle", False)
 
-    context = {"transcription_list": transcription_list, "nbitem": nbitem, "orderby": orderby, "showTitle": showTitle}
+    context = {
+        "transcription_list": transcription_list,
+        "nbitem": nbitem,
+        "orderby": orderby,
+        "showTitle": showTitle,
+        "search_transcription_links": _search_transcription_links(
+            request.user, transcription_list.values_list("manuscript_b_id", flat=True)
+        ),
+    }
 
     return render(request, "fiches/list/project_transcription_list.html", context)
 
@@ -161,12 +183,18 @@ def get_project_bibliography(request, proj_id=None, litt_type="p"):
     """ """
 
     project = get_object_or_404(Project, pk=proj_id)
-    # box 'littérature primaire' displays all bibliographies except the manuscripts
-    # (they are shown in the transcriptions box).
-    # box 'littérature secondaire' displays all the bibliographies.
+
+    if not (
+        project.publish
+        or (
+            request.user.is_authenticated
+            and (request.user.has_perm("fiches.view_unpublished_project") or project.is_editable(request.user))
+        )
+    ):
+        return HttpResponseForbidden("Accès non autorisé")
+    # Bibliographic membership does not require a transcription.
+    # Transcriptions remain available in their separate section.
     bibliography_list = project.bibliographies.filter(litterature_type=litt_type)
-    if litt_type == "p":
-        bibliography_list = bibliography_list.exclude(document_type__id=5)
 
     ordering = []
     orderby = request.GET.get("orderby", "d")
@@ -187,6 +215,9 @@ def get_project_bibliography(request, proj_id=None, litt_type="p"):
 
     context = {
         "bibliography_list": bibliography_list,
+        "search_transcription_links": _search_transcription_links(
+            request.user, bibliography_list.values_list("pk", flat=True)
+        ),
         "nbitem": nbitem,
         "orderby": orderby,
         "litt_type": litt_type,

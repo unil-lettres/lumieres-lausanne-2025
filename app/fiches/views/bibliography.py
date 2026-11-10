@@ -25,7 +25,7 @@ from functools import reduce
 from itertools import chain
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import IntegrityError, connection, transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.forms.models import inlineformset_factory
 from django.http import (
@@ -458,11 +458,6 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
                 doc.subj_person.set(biblioForm.cleaned_data.get("subj_person", []))
                 doc.subj_society.set(biblioForm.cleaned_data.get("subj_society", []))
                 doc.subj_place.set(biblioForm.cleaned_data.get("subj_place", []))
-
-                # Set a default depot for newly created documents
-                if new_doc:
-                    with connection.cursor() as cursor:
-                        cursor.execute("UPDATE fiches_biblio SET depot_id = %s WHERE id = %s", [None, doc.id])
 
                 noteFormset.instance = doc
                 noteFormset.save()

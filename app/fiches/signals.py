@@ -20,13 +20,14 @@
 
 """Search-index signals for place named entities.
 
-A place's search document embeds data from satellite models — its name variants
-and its external reference links (identifier, référentiel + identifier and full
-permalink). Those live in separate models, so Haystack's realtime signal
+A place's search document embeds data from satellite models — its name variants,
+its public notes and its external reference links (identifier, référentiel +
+identifier and full permalink). Those live in separate models, so Haystack's realtime signal
 processor (which only reacts to ``PlaceRecord`` saves) never refreshes a place
 when one of them changes. These receivers re-index the parent place whenever a
 satellite row is created, updated or deleted, delegating to the active signal
-processor (a no-op under the test backend, ``BaseSignalProcessor``).
+processor. Test settings use an in-process search backend: BaseSignalProcessor
+alone does not disable direct calls to handle_save.
 """
 
 from django.apps import apps
@@ -34,11 +35,13 @@ from django.db.models.deletion import ProtectedError
 from django.db.models.signals import post_delete, post_save, pre_delete
 from django.dispatch import receiver
 
-from fiches.models import Person, PlaceRecord, PlaceReferenceSite, PlaceVariant
+from fiches.models import NotePlace, Person, PlaceRecord, PlaceReferenceSite, PlaceVariant
 from fiches.person_references import person_reference_groups
 from fiches.place_references import place_reference_groups
 
 
+@receiver(post_save, sender=NotePlace)
+@receiver(post_delete, sender=NotePlace)
 @receiver(post_save, sender=PlaceVariant)
 @receiver(post_delete, sender=PlaceVariant)
 @receiver(post_save, sender=PlaceReferenceSite)
@@ -46,7 +49,8 @@ from fiches.place_references import place_reference_groups
 def reindex_place_for_satellite_change(sender, instance, **kwargs):
     """Re-index the parent place so satellite changes reach the search backend."""
     try:
-        place = PlaceRecord.objects.get(pk=instance.place_id)
+        place_id = instance.owner_id if isinstance(instance, NotePlace) else instance.place_id
+        place = PlaceRecord.objects.get(pk=place_id)
     except PlaceRecord.DoesNotExist:
         return  # place removed (cascade delete) — its own signal drops the doc
     apps.get_app_config("haystack").signal_processor.handle_save(PlaceRecord, place)

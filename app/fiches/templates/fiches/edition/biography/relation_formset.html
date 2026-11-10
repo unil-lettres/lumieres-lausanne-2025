@@ -161,6 +161,63 @@
 
 
     function bindRelatedPersonAutocomplete(o) {
+        var input = $(o),
+            target = $("[name='" + input.attr('name').substr("lookup_".length) + "']"),
+            selectedName = input.val(),
+            creating = false,
+            createButton = null;
+        var hint = $('<small class="relation-person-hint" role="status"></small>')
+            .text("Sélectionnez une personne dans les suggestions" +
+                (canAddPerson ? " ou créez-la explicitement." : "."))
+            .css({display: 'block'}).insertAfter(input);
+
+        function refreshSelection() {
+            // A changed label must never retain the previous person's hidden ID.
+            if (input.val() !== selectedName) { target.val(""); }
+            var unresolved = !!$.trim(input.val()) && !target.val();
+            hint.toggle(unresolved);
+            if (createButton) { createButton.prop('disabled', creating || !unresolved); }
+        }
+
+        if (canAddPerson) {
+            createButton = $('<button type="button" class="relation-person-create"></button>')
+                .text("Créer une personne").insertAfter(hint).click(function() {
+                    refreshSelection();
+                    var name = $.trim(input.val());
+                    if (creating || !name || target.val()) { return; }
+                    if (!window.confirm('Créer la personne « ' + name + ' » dans le catalogue ?')) { return; }
+                    creating = true;
+                    input.prop('readonly', true);
+                    refreshSelection();
+                    createRelatedPerson(name, function(person) {
+                        target.val(person.id);
+                        input.val(person.name);
+                        selectedName = person.name;
+                        input.flushCache();
+                    }, function() {
+                        creating = false;
+                        input.prop('readonly', false);
+                        refreshSelection();
+                    });
+                });
+        }
+
+        // Both save actions submit this form through jQuery. Do not silently
+        // discard an unresolved relation, or save while creation is in flight.
+        input.closest('form').bind('submit', function(event) {
+            var row = input.closest('.relation-form');
+            if (!$.contains(document.documentElement, input[0]) ||
+                row.find(':checkbox:checked').length) { return; }
+            refreshSelection();
+            if (creating || ($.trim(input.val()) && !target.val())) {
+                event.preventDefault();
+                input.focus();
+                alert(creating ? "Création en cours, veuillez patienter." :
+                    "Relations et contacts : sélectionnez une personne dans les suggestions" +
+                    (canAddPerson ? " ou utilisez « Créer une personne »." : "."));
+                return false;
+            }
+        });
    	    $(o).autocomplete("{% url 'ajax-search' %}", {
 				extraParams: {
 					search_field: "name",
@@ -180,44 +237,13 @@
 	            }
    	        })
 
-			.result(function(event, data, formatted) {
-                var $t = $(this);
-                var n = $t.attr('name');
-                var target = $("[name='" + n.substr("lookup_".length) + "']");
-                if (data) {
-                    // data[1] = id, data[0] = label
-                    target.val(data[1]); // Only the ID goes into the hidden field
-                } else {
-                    // Si pas de sélection, on refuse la saisie libre
-                    target.val("");
-                    $t.val("");
-                }
+            .result(function(event, data) {
+                target.val(data ? data[1] : "");
+                selectedName = data ? input.val() : "";
+                refreshSelection();
             })
-
-            .blur(function(){ $(this).search(); })
-
-            .change(function(){
-                var $t = $(this),
-                    v = $.trim($t.val()),
-                    n = $t.attr('name'),
-                    target = $("[name='"+n.substr("lookup_".length)+"']");
-                if (!v) {
-                  target.val("");
-                  return;
-                }
-                if (!target.val()) {
-                    if (canAddPerson) {
-                        createRelatedPerson(v, function(person){
-                            target.val(person.id);
-                            $t.val(person.name);
-                        });
-                    } else {
-                        target.val("");
-                    }
-                }
-            })
-
-            .change();
+            .bind('input change', refreshSelection);
+        refreshSelection();
    }
 
 
@@ -226,7 +252,7 @@
        return tokenField.val();
    }
 
-   function createRelatedPerson(name, callback) {
+   function createRelatedPerson(name, callback, complete) {
        if (!canAddPerson || !addPersonUrl) { return; }
        var trimmed = $.trim(name || "");
        if (!trimmed) { return; }
@@ -244,13 +270,13 @@
                if (typeof callback === "function") {
                    callback(payload);
                }
-           } else if (resp && resp.error) {
-               alert(resp.error);
+           } else {
+               alert((resp && resp.error) || "Impossible d'enregistrer la nouvelle personne.");
            }
        }).fail(function(xhr){
            var msg = (xhr.responseJSON && xhr.responseJSON.error) ? xhr.responseJSON.error : "Impossible d'enregistrer la nouvelle personne.";
            alert(msg);
-       });
+       }).always(complete);
    }
 
 

@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import pytest
 from django.apps import apps
-from fiches.models import PlaceCategory, PlaceRecord, PlaceReferenceSite, PlaceVariant, ReferenceSite
+from fiches.models import NotePlace, PlaceCategory, PlaceRecord, PlaceReferenceSite, PlaceVariant, ReferenceSite
 from fiches.search_indexes import PlaceRecordIndex
 
 
@@ -119,3 +119,45 @@ def test_reference_link_create_reindexes_parent_place(lausanne, geonames, monkey
     )
     PlaceReferenceSite.objects.create(place=lausanne, reference_site=geonames, identifier="2659994")
     assert calls == [lausanne]
+
+
+@pytest.mark.django_db
+def test_only_public_note_text_is_indexed(lausanne):
+    NotePlace.objects.create(owner=lausanne, text="<p>jardinsoleil</p>", access_public=True)
+    NotePlace.objects.create(owner=lausanne, text="secretprive", access_public=False)
+    text = PlaceRecordIndex().prepare(lausanne)["text"]
+    assert "jardinsoleil" in text
+    assert "<p>" not in text
+    assert "secretprive" not in text
+
+
+@pytest.mark.django_db
+def test_note_lifecycle_refreshes_searchable_text(lausanne, monkeypatch):
+    documents = []
+    monkeypatch.setattr(
+        apps.get_app_config("haystack").signal_processor,
+        "handle_save",
+        lambda sender, instance, **kw: documents.append(PlaceRecordIndex().prepare(instance)["text"]),
+    )
+    note = NotePlace.objects.create(owner=lausanne, text="ancienmot", access_public=True)
+    assert "ancienmot" in documents[-1]
+    note.text = "nouveaumot"
+    note.save()
+    assert "nouveaumot" in documents[-1] and "ancienmot" not in documents[-1]
+    note.access_public = False
+    note.save()
+    assert "nouveaumot" not in documents[-1]
+    note.access_public = True
+    note.save()
+    assert "nouveaumot" in documents[-1]
+    note.delete()
+    assert "nouveaumot" not in documents[-1]
+    assert len(documents) == 5
+
+
+@pytest.mark.django_db
+def test_place_note_cascade_does_not_fail(lausanne, monkeypatch):
+    NotePlace.objects.create(owner=lausanne, text="note", access_public=True)
+    monkeypatch.setattr(apps.get_app_config("haystack").signal_processor, "handle_save", lambda *a, **kw: None)
+    lausanne.delete()
+    assert not NotePlace.objects.exists()
