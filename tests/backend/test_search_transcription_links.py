@@ -118,3 +118,99 @@ class SearchTranscriptionLinksTests(TestCase):
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, f'id="Transcription__{public.pk}"')
             self.assertNotContains(response, f'id="Transcription__{private.pk}"')
+
+    def test_public_home_and_latest_pages_link_to_readable_transcription(self):
+        from django.utils import timezone
+        trans = self.transcription(access_public=True, access_private=False, published_date=timezone.now())
+        for path in ['/', '/publications/dernieres-transcriptions/']:
+            response = self.client.get(path)
+            self.assertContains(response, self.ref.title)
+            self.assertContains(response, f'id="Transcription__{trans.pk}"')
+
+    def test_missing_context_resolves_access_instead_of_hiding_every_link(self):
+        private = self.transcription(access_private=True, access_owner=self.owner)
+        public = self.transcription(access_private=False, access_public=True)
+        for user, expected in [(AnonymousUser(), public), (self.owner, private), (self.other, public)]:
+            body = render_to_string('fiches/bibliography_references/biblio_template.html', {'ref': self.ref, 'user': user})
+            self.assertIn(f'id="Transcription__{expected.pk}"', body)
+
+    def test_missing_user_is_anonymous_and_explicit_empty_map_stays_authoritative(self):
+        private = self.transcription(access_private=True)
+        public = self.transcription(access_private=False, access_public=True)
+        for extra, expected in [({}, public), ({'search_transcription_links': {}}, None), ({'nolink': True}, None)]:
+            body = render_to_string('fiches/bibliography_references/biblio_template.html', {'ref': self.ref, **extra})
+            self.assertNotIn(f'id="Transcription__{private.pk}"', body)
+            self.assertEqual(f'id="Transcription__{public.pk}"' in body, expected is not None)
+
+    def test_legacy_allow_list_cannot_authorize_private_transcription(self):
+        private = self.transcription(access_private=True)
+        public = self.transcription(access_private=False, access_public=True)
+        body = render_to_string('fiches/bibliography_references/biblio_template.html', {
+            'ref': self.ref, 'user_accessible_trans': [self.ref.pk], 'user': AnonymousUser(),
+        })
+        self.assertNotIn(f'id="Transcription__{private.pk}"', body)
+        self.assertIn(f'id="Transcription__{public.pk}"', body)
+
+    def test_biblioref_never_reuses_another_readers_or_render_modes_html(self):
+        from django.core.cache import cache
+        from django.template import Context, Template
+        cache.clear()
+        trans = self.transcription(access_private=True, access_owner=self.owner)
+        template = Template('{% load fiches_extras %}{% biblioref %}')
+        for user, extra, expected in [
+            (self.owner, {}, True), (AnonymousUser(), {}, False),
+            (self.owner, {'nolink': True}, False), (self.owner, {}, True),
+            (self.other, {}, False),
+        ]:
+            body = template.render(Context({'ref': self.ref, 'user': user, **extra}))
+            self.assertEqual(f'id="Transcription__{trans.pk}"' in body, expected)
+        trans.access_private = False
+        trans.access_public = True
+        trans.save()
+        self.assertIn(f'id="Transcription__{trans.pk}"', template.render(Context({'ref': self.ref})))
+        trans.access_private = True
+        trans.save()
+        self.assertNotIn(f'id="Transcription__{trans.pk}"', template.render(Context({'ref': self.ref})))
+
+    def test_person_and_collection_references_follow_readers_access(self):
+        from types import SimpleNamespace
+        trans = self.transcription(access_private=True, access_owner=self.owner)
+        collection = SimpleNamespace(name='Validation', bibliographies=SimpleNamespace(all=[self.ref]))
+        for template, context in [
+            ('fiches/display/person_bibliography.html', {'litt_prim': [self.ref]}),
+            ('fiches/collections/details.html', {'coll': collection, 'coll_access': True, 'in_popup': True}),
+        ]:
+            for user, expected in [(self.owner, True), (AnonymousUser(), False), (self.owner, True)]:
+                body = render_to_string(template, {**context, 'user': user})
+                self.assertIn(self.ref.title, body)
+                self.assertEqual(f'id="Transcription__{trans.pk}"' in body, expected)
+
+    def test_project_print_keeps_public_transcription_link(self):
+        from fiches.models import Project
+        project = Project.objects.create(name='Validation', url='validation', owner=self.owner, publish=True)
+        project.bibliographies.add(self.ref)
+        trans = self.transcription(access_private=False, access_public=True)
+        response = self.client.get(reverse('project-display-id', args=[project.pk]), {'print': 1})
+        self.assertContains(response, f'id="Transcription__{trans.pk}"')
+
+    def test_request_user_is_used_when_context_user_is_absent(self):
+        from types import SimpleNamespace
+        trans = self.transcription(access_private=True, access_owner=self.owner)
+        body = render_to_string('fiches/bibliography_references/biblio_template.html', {
+            'ref': self.ref, 'request': SimpleNamespace(user=self.owner),
+        })
+        self.assertIn(f'id="Transcription__{trans.pk}"', body)
+
+    def test_place_references_forward_reader_through_isolated_includes(self):
+        from django.core.paginator import Paginator
+        from fiches.models import PlaceCategory, PlaceRecord
+        category = PlaceCategory.objects.create(name='Ville/Village')
+        place = PlaceRecord.objects.create(name='Validation', category=category)
+        trans = self.transcription(access_private=True, access_owner=self.owner)
+        for user, expected in [(self.owner, True), (AnonymousUser(), False)]:
+            body = render_to_string('fiches/display/place.html', {
+                'place': place, 'user': user, 'user_accessible_trans': [self.ref.pk],
+                'tagged_writing': Paginator([self.ref], 20).page(1),
+            })
+            self.assertIn(self.ref.title, body)
+            self.assertEqual(f'id="Transcription__{trans.pk}"' in body, expected)

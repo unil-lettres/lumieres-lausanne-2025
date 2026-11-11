@@ -109,7 +109,7 @@
             {% for t in last_transcriptions %}
             <li>
                 <div class="ellipsis">
-                    {% include "fiches/bibliography_references/biblio_template.html" with ref=t.manuscript_b noManBiblioLink=1 %}
+                    {% include "fiches/bibliography_references/biblio_template.html" with ref=t.manuscript_b reference_transcription=t noManBiblioLink=1 %}
                 </div>
             </li>
             {% endfor %}

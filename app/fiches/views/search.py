@@ -66,33 +66,20 @@ from fiches.models.search.search import (
     QuickSearchForm,
     SearchFilters,  # used by save_filters()
 )
+from fiches.transcription_links import readable_transcription_links as _search_transcription_links, readable_transcriptions
 from fiches.utils import get_default_publisher_user
 
 
 # ---------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------
+
+
 def _apply_term_filters(sqs_obj, query_string):
     """Keep quoted phrases intact for Haystack and require every search term."""
     for term in smart_split(query_string):
         sqs_obj = sqs_obj.filter(content=AutoQuery(term))
     return sqs_obj
-
-
-def _search_transcription_links(user, manuscript_ids):
-    """Choose a readable transcription per result, using the display-page rules."""
-    links = {}
-    full_access = user.has_perm("fiches.change_any_transcription") or user.has_perm(
-        "fiches.access_unpublished_transcription"
-    )
-    transcriptions = Transcription.objects.filter(
-        manuscript_b_id__in=manuscript_ids
-    ).select_related("access_owner").order_by("id")
-    for transcription in transcriptions:
-        manuscript_id = transcription.manuscript_b_id
-        if manuscript_id not in links and (full_access or transcription.user_access(user)):
-            links[manuscript_id] = transcription.id
-    return links
 
 
 def _activity_log_object_ids_for_date_range(model_name, date_from, date_to):
@@ -334,22 +321,7 @@ def biblio_extended_search(request):
                 q &= models.Q(document_type__in=doctype)
             else:
                 doctype = doctype.exclude(id=DOCTYPE_MANUSCRIPT_ID)
-                q_trans = models.Q(transcription__isnull=False)
-                if not user.is_authenticated:
-                    q_trans &= models.Q(transcription__access_public=True)
-                elif not user.has_perm("fiches.access_unpublished_transcription"):
-                    q_trans &= models.Q(transcription__access_public=True) | (
-                        models.Q(transcription__author=user)
-                        | models.Q(transcription__author2=user)
-                        | models.Q(transcription__access_groups__users=user)
-                        | models.Q(transcription__access_groups__groups__user=user)
-                        | models.Q(transcription__project__members=user)
-                        | (
-                            models.Q(transcription__access_public=False)
-                            & models.Q(transcription__access_private=False)
-                            & models.Q(transcription__access_groups__isnull=True)
-                        )
-                    )
+                q_trans = models.Q(transcription__in=readable_transcriptions(user).values("pk"))
                 q &= models.Q(document_type__in=doctype) | (
                     models.Q(document_type__id=DOCTYPE_MANUSCRIPT_ID) & q_trans
                 )

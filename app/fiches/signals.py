@@ -32,12 +32,22 @@ alone does not disable direct calls to handle_save.
 
 from django.apps import apps
 from django.db.models.deletion import ProtectedError
-from django.db.models.signals import post_delete, post_save, pre_delete
+from django.db.models.signals import post_delete, post_save, pre_delete, pre_save
 from django.dispatch import receiver
 
 from fiches.models import NotePlace, Person, PlaceRecord, PlaceReferenceSite, PlaceVariant
 from fiches.person_references import person_reference_groups
 from fiches.place_references import place_reference_groups
+
+
+@receiver(pre_save, sender=NotePlace)
+def remember_previous_note_place(sender, instance, using, raw=False, **kwargs):
+    """Capture persisted ownership before a note is moved (including imports)."""
+    instance._previous_indexed_place_id = None
+    if not raw and instance.pk:
+        instance._previous_indexed_place_id = sender.objects.using(using).filter(
+            pk=instance.pk
+        ).values_list("owner_id", flat=True).first()
 
 
 @receiver(post_save, sender=NotePlace)
@@ -48,12 +58,14 @@ from fiches.place_references import place_reference_groups
 @receiver(post_delete, sender=PlaceReferenceSite)
 def reindex_place_for_satellite_change(sender, instance, **kwargs):
     """Re-index the parent place so satellite changes reach the search backend."""
-    try:
-        place_id = instance.owner_id if isinstance(instance, NotePlace) else instance.place_id
-        place = PlaceRecord.objects.get(pk=place_id)
-    except PlaceRecord.DoesNotExist:
-        return  # place removed (cascade delete) — its own signal drops the doc
-    apps.get_app_config("haystack").signal_processor.handle_save(PlaceRecord, place)
+    if kwargs.get("raw"):
+        return
+    place_id = instance.owner_id if isinstance(instance, NotePlace) else instance.place_id
+    place_ids = {place_id}
+    if isinstance(instance, NotePlace):
+        place_ids.add(getattr(instance, "_previous_indexed_place_id", None))
+    for place in PlaceRecord.objects.using(kwargs.get("using")).filter(pk__in=place_ids):
+        apps.get_app_config("haystack").signal_processor.handle_save(PlaceRecord, place)
 
 
 @receiver(pre_delete, sender=Person)

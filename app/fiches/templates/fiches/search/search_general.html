@@ -198,7 +198,7 @@
 				    <span class="results-model grouper_1">Contenu de la transcription</span>
 					<ul class="results-item-list">
 		            {% for result in results.list %}
-					    <li>{% include "fiches/bibliography_references/biblio_template.html" with ref=result.object.manuscript_b q=request.META.QUERY_STRING link_target="search_result" %}</li>
+					    <li>{% include "fiches/bibliography_references/biblio_template.html" with ref=result.object.manuscript_b reference_transcription=result.object q=request.META.QUERY_STRING link_target="search_result" %}</li>
 		                {#<li><a href="{{ result.object.get_absolute_url }}">{{ result.object }}</a></li>#}
 		            {% endfor %}
 					</ul>

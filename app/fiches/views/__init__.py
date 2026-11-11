@@ -57,6 +57,7 @@ from fiches.models import (
     Transcription,
 )
 from fiches.utils import user_can_change_documentfile
+from fiches.transcription_links import readable_transcription_links
 
 
 def main_index(request):
@@ -67,13 +68,15 @@ def main_index(request):
     news = News.objects.filter(published=True)[:3]
     findings = Finding.objects.filter(published=True)[:3]
     # XXX: issue #9 Error placeholders
-    transcriptions = Transcription.objects.latest_published_by_date(3)
+    transcriptions = list(Transcription.objects.latest_published_by_date(3).select_related("manuscript_b"))
+    transcription_links = readable_transcription_links(request.user, [t.manuscript_b_id for t in transcriptions])
 
     context = {
         "text": text,
         "last_findings": findings,
         "last_news": news,
         "last_transcriptions": transcriptions,
+        "search_transcription_links": transcription_links,
     }
 
     return render(request, "fiches/home2.html", context)
