@@ -32,7 +32,7 @@
 <h3 class="ia">Transcriptions</h3>
 <ul class="results-item-list" style="margin-top: 1em;">
 	{% for t in last_transcriptions %}
-	<li style="padding-left: 0;">{% include "fiches/bibliography_references/biblio_template.html" with ref=t.manuscript_b %}</li>
+	<li style="padding-left: 0;">{% include "fiches/bibliography_references/biblio_template.html" with ref=t.manuscript_b reference_transcription=t %}</li>
 	{% endfor %}
 </ul>
 

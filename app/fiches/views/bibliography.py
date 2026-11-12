@@ -25,7 +25,7 @@ from functools import reduce
 from itertools import chain
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import IntegrityError, connection, transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.forms.models import inlineformset_factory
 from django.http import (
@@ -426,6 +426,10 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
     if request.method == "POST":
         # This fix #19 can be improved with a deeper fix date fields management.
         req_post = request.POST.copy()
+        # An omitted control is not an explicit request to clear the deposit.
+        # Keep an existing value, while still validating supplied values (including "").
+        if not new_doc and "depot" not in req_post:
+            req_post["depot"] = str(doc.depot_id) if doc.depot_id is not None else ""
         post_lit_type = req_post.get("litterature_type")
         date_f_val = req_post.get("date_f")
         if date_f_val is not None:
@@ -458,11 +462,6 @@ def edit(request, doc_id=None, new_doc=False, new_doctype=1):
                 doc.subj_person.set(biblioForm.cleaned_data.get("subj_person", []))
                 doc.subj_society.set(biblioForm.cleaned_data.get("subj_society", []))
                 doc.subj_place.set(biblioForm.cleaned_data.get("subj_place", []))
-
-                # Set a default depot for newly created documents
-                if new_doc:
-                    with connection.cursor() as cursor:
-                        cursor.execute("UPDATE fiches_biblio SET depot_id = %s WHERE id = %s", [None, doc.id])
 
                 noteFormset.instance = doc
                 noteFormset.save()

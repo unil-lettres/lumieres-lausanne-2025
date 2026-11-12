@@ -621,7 +621,7 @@
     	{#<!--  Auteur de la fiche -->#}
         <div class="field_wrap">
             <div class="field_label">{{ doc|field_verbose_name:"creator" }}</div>
-            <div class="field_value">{{ doc.creator.get_full_name|default:doc.creator.username }}</div>
+            <div class="field_value">{% if doc.creator %}{{ doc.creator.get_full_name|default:doc.creator.username }}{% endif %}</div>
             <div class="fixclear"></div>
         </div>
 		{#<!--  Date de modification -->#}

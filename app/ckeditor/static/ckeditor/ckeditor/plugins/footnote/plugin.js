@@ -24,6 +24,7 @@ CKEDITOR.plugins.add('footnote', {
                 dialog_note_text: 'Footnote Contents',
                 dialog_note_text_empty_error: "footnote cannot be empty",
                 location_label: "Type of footnote",
+                location_invalid_error: "Please select a valid footnote type.",
                 location_select: [['Editorial Footnote', 'note-editorial'], ['Document Footnote', 'note-document']],
             },
             fr: {
@@ -38,6 +39,7 @@ CKEDITOR.plugins.add('footnote', {
                     dialog_note_text: 'Contenu de la note',
                     dialog_note_text_empty_error: "la note ne peut pas être vide",
                     location_label: "Type de note",
+                    location_invalid_error: "Veuillez choisir un type de note valide.",
                     location_select: [['Note éditoriale', 'note-editorial'], ['Note de document', 'note-document']],
                 }
             };
@@ -160,10 +162,15 @@ CKEDITOR.plugins.add('footnote', {
                         label: local_lang.location_label,
                         items:  local_lang.location_select,
                         
-                        //validate : CKEDITOR.dialog.validate.notEmpty( "Correction field cannot be empty" )
+                        validate: function(){
+                            var value = this.getValue();
+                            if (value !== "note-editorial" && value !== "note-document")
+                                return local_lang.location_invalid_error;
+                            return true;
+                        },
                         
                         setup: function(element){
-                            this.setValue(element.getAttribute("class"));
+                            this.setValue(element.getAttribute("class") || "note-editorial");
                         },
                         commit: function(element){
                             var className = this.getValue();

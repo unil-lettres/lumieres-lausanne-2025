@@ -77,12 +77,13 @@
             {% endif %}
         {% elif ref.document_type.id == 5 %}
             {#<!-- ##### Manuscript ##### -->#}
+            {% bibliography_transcription_link ref as transcription_link_id %}
             {% with ref.transcription_set.all|length as nb_trans %}
                 {#<!-- Titre -->#}
                 {% if ref.book_title %}
-                    <span>, &laquo;{% if nolink or nb_trans == 0 or ref.id not in user_accessible_trans %}{{ ref.short_title|default:ref.title }}{% else %}<a id="Transcription__{{ ref.transcription_set.all.0.id }}" href="{% url 'transcription-display' ref.transcription_set.all.0.id %}{% if q %}?{{ q }}{% endif %}" class="ia-link" target="{{ link_target|default:"_top" }}" {% if ref.short_title %}title="{{ ref.title }}" {% endif %}>{{ ref.short_title|default:ref.title }}</a>{% endif %}&raquo;, in <em>{{ ref.book_title }}</em>{% if ref.volume %}, vol. {{ ref.volume }}{% endif %}</span>
+                    <span>, &laquo;{% if nolink or not transcription_link_id %}{{ ref.short_title|default:ref.title }}{% else %}<a id="Transcription__{{ transcription_link_id }}" href="{% url 'transcription-display' transcription_link_id %}{% if q %}?{{ q }}{% endif %}" class="ia-link" target="{{ link_target|default:"_top" }}" {% if ref.short_title %}title="{{ ref.title }}" {% endif %}>{{ ref.short_title|default:ref.title }}</a>{% endif %}&raquo;, in <em>{{ ref.book_title }}</em>{% if ref.volume %}, vol. {{ ref.volume }}{% endif %}</span>
                 {% else %}
-                    <span>, <em>{% if nolink or nb_trans == 0 or ref.id not in user_accessible_trans %}{{ ref.short_title|default:ref.title }}{% else %}<a id="Transcription__{{ ref.transcription_set.all.0.id }}" href="{% url 'transcription-display' ref.transcription_set.all.0.id %}{% if q %}?{{ q }}{% endif %}" class="ia-link" target="{{ link_target|default:"_top" }}" {% if ref.short_title %}title="{{ ref.title }}" {% endif %}>{{ ref.short_title|default:ref.title }}</a>{% endif %}</em></span>
+                    <span>, <em>{% if nolink or not transcription_link_id %}{{ ref.short_title|default:ref.title }}{% else %}<a id="Transcription__{{ transcription_link_id }}" href="{% url 'transcription-display' transcription_link_id %}{% if q %}?{{ q }}{% endif %}" class="ia-link" target="{{ link_target|default:"_top" }}" {% if ref.short_title %}title="{{ ref.title }}" {% endif %}>{{ ref.short_title|default:ref.title }}</a>{% endif %}</em></span>
                 {% endif %}
 
                 {% if ref.litterature_type == 's' %}

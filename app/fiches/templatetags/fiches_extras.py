@@ -35,9 +35,41 @@ from django.utils.safestring import mark_safe
 
 from fiches.models import UserGroup
 from fiches.place_text import place_plaintext
+from fiches.transcription_links import TranscriptionLinks, readable_transcription_links, readable_transcriptions
 
 register = template.Library()
 register.filter("place_plaintext", place_plaintext)
+
+
+@register.simple_tag(takes_context=True)
+def bibliography_transcription_link(context, ref):
+    """Resolve a readable target even when the caller has no precomputed map."""
+    if context.get("nolink"):
+        return None
+    request = context.get("request")
+    user = context.get("user") or getattr(request, "user", None) or AnonymousUser()
+    exact = context.get("reference_transcription")
+    if exact is not None:
+        # A transcription result must never silently link to another version.
+        if "search_transcription_links" in context and ref.pk not in context["search_transcription_links"]:
+            return None
+        if "user_accessible_trans" in context:
+            allowed = context["user_accessible_trans"]
+            if allowed is not True and ref.pk not in (allowed or []):
+                return None
+        links = context.get("search_transcription_links")
+        if isinstance(links, TranscriptionLinks):
+            return exact.pk if links.readable_ids.get(exact.pk) == ref.pk else None
+        return readable_transcriptions(user).filter(pk=exact.pk, manuscript_b_id=ref.pk).values_list("pk", flat=True).first()
+    # A supplied map is complete for its view: an absent entry is a denial.
+    if "search_transcription_links" in context:
+        return context["search_transcription_links"].get(ref.pk)
+    if "user_accessible_trans" in context:
+        allowed = context["user_accessible_trans"]
+        if allowed is not True and ref.pk not in (allowed or []):
+            return None
+    # Legacy manuscript lists restrict results; they never grant private access.
+    return readable_transcription_links(user, [ref.pk]).get(ref.pk)
 
 
 # http://www.djangosnippets.org/snippets/847/
@@ -412,9 +444,6 @@ def timstamp(parser, token):
     return TimestampNode(token.split_contents()[1])
 
 
-from django.core.cache import cache
-
-
 class BiblioRefNode(template.Node):
     # XXX: issue #9 Error placeholders
     def __init__(self, template_filename="fiches/bibliography_references/biblio_template.html"):
@@ -425,14 +454,11 @@ class BiblioRefNode(template.Node):
         if not ref:
             return ""
 
-        ref_key = f"lumieres__biblioref__{ref.id}"
-        ref_string = cache.get(ref_key)
-        if ref_string is None:
-            # Ensure context is a dictionary
-            context_dict = context.flatten() if hasattr(context, "flatten") else dict(context)
-            ref_string = self.template.render(context_dict)
-            cache.set(ref_key, ref_string, 60 * 60 * 24 * 3)  # Cache for 3 days
-        return ref_string
+        # Rendered references depend on the reader's permissions and flags such
+        # as nolink. A persistent cache keyed only by bibliography ID leaks links
+        # between readers and retains stale access decisions after edits.
+        context_dict = context.flatten() if hasattr(context, "flatten") else dict(context)
+        return self.template.render(context_dict)
 
 
 @register.tag(name="biblioref")
