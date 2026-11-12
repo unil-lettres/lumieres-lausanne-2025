@@ -178,6 +178,21 @@ class BiblioCreateTest(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIsNone(Biblio.objects.get().depot_id)
 
+    def test_omitted_depot_preserves_existing_value_for_both_save_actions(self):
+        depot = Depot.objects.create(name="Bibliothèque conservée")
+        payload = self._manuscript_payload(str(depot.pk))
+        self.client.post(reverse("bibliography-create", kwargs={"doctype": "5"}), payload)
+        biblio = Biblio.objects.get()
+        payload.pop("depot")
+        for action in ("on", ""):
+            with self.subTest(continue_editing=action):
+                payload.update(__continue=action, title="Titre modifié sans champ dépôt")
+                response = self.client.post(reverse("bibliography-edit", args=[biblio.pk]), payload)
+                self.assertEqual(response.status_code, 302)
+                biblio.refresh_from_db()
+                self.assertEqual(biblio.depot_id, depot.pk)
+                self.assertEqual(biblio.title, payload["title"])
+
 
 class BiblioActivityLogDateTest(TestCase):
     def test_registration_date_filter_includes_whole_end_day(self):
