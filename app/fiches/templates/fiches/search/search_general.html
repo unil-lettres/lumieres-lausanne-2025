@@ -162,7 +162,7 @@
 		        {% endif %}
 
 		        {% if results.grouper == "person" %}
-				    <span class="results-model grouper_1">{{ results.list.0.verbose_name }}</span>
+				    <span class="results-model grouper_1">Personnes</span>
 					<ul class="results-item-list">
 						{% comment %} ordering handled at Solr level; keep iteration order {% endcomment %}
 		            {% for result in results.list %}{% with result.object as person %}

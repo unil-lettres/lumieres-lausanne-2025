@@ -19,6 +19,8 @@
 # This copyright notice MUST APPEAR in all copies of the file.
 
 import json
+from hashlib import sha256
+from pathlib import Path
 
 from django import forms
 from django.conf import settings
@@ -30,6 +32,12 @@ from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
 
 json_encode = json.JSONEncoder().encode
+
+# CKEditor's own timestamp stays fixed when our custom plugin changes.
+# Register a content-versioned URL from the uncached page before loading it.
+FOOTNOTE_VERSION = sha256(
+    (Path(__file__).parent / "static/ckeditor/ckeditor/plugins/footnote/plugin.js").read_bytes()
+).hexdigest()[:16]
 
 DEFAULT_CONFIG = {
     "skin": "kama",
@@ -86,9 +94,18 @@ class CKEditorWidget(forms.Textarea):
         self.config["filebrowserUploadUrl"] = reverse("ckeditor_upload")
         self.config["filebrowserBrowseUrl"] = reverse("ckeditor_browse")
 
+        footnote_registration = ""
+        if "footnote" in [plugin.strip() for plugin in self.config.get("extraPlugins", "").split(",")]:
+            footnote_registration = (
+                'CKEDITOR.plugins.addExternal("footnote", '
+                'CKEDITOR.basePath + "plugins/footnote/", '
+                f'"plugin.js?v={FOOTNOTE_VERSION}");'
+            )
+
         return mark_safe(f"""
         <textarea {flatatt(attrs)}>{conditional_escape(force_str(value))}</textarea>
         <script type="text/javascript">
+            {footnote_registration}
             CKEDITOR.replace("{attrs.get("id", name)}", {json_encode(self.config)});
         </script>
         """)

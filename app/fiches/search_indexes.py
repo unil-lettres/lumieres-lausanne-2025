@@ -197,12 +197,13 @@ class PlaceRecordIndex(indexes.SearchIndex, indexes.Indexable):
     text = indexes.CharField(document=True, use_template=True)
     place_name = indexes.CharField(model_attr="name")
     category = indexes.CharField(model_attr="category__name")
-    modelSort = indexes.CharField(default="D00")
+    modelSort = indexes.CharField(default="A10")
     sort1 = indexes.CharField(null=True)
     sort2 = indexes.CharField(null=True)
 
     def prepare_modelSort(self, obj):
-        return "D00"
+        # Places follow people, before bibliography and transcription groups.
+        return "A10"
 
     def prepare_sort1(self, obj):
         return (obj.name or "").strip().casefold()

@@ -31,6 +31,15 @@ from fiches.models import Project
 from fiches.views.search import _search_transcription_links
 
 
+def _project_bibliographies(project, litterature_type):
+    bibliographies = project.bibliographies.filter(litterature_type=litterature_type)
+    if litterature_type == "p":
+        # A transcribed manuscript belongs in the transcription section only.
+        # Existence is independent of the reader's transcription permissions.
+        bibliographies = bibliographies.exclude(document_type_id=5, transcription__isnull=False)
+    return bibliographies
+
+
 def index_project(request, proj_slug=None):
     q = Q()
     if request.user.is_authenticated:
@@ -77,7 +86,7 @@ def display_project(request, proj_id=None, proj_slug=None):
         return HttpResponseForbidden("Accès non autorisé")
 
     lit_prim = (
-        project.bibliographies.filter(litterature_type="p")
+        _project_bibliographies(project, "p")
         .order_by("document_type__id", "first_author")
     )
     lit_sec = project.bibliographies.filter(litterature_type="s").order_by("document_type__id", "first_author")
@@ -116,7 +125,7 @@ def get_project_description(request, proj_id=None):
         return HttpResponseForbidden("Accès non autorisé")
 
     lit_prim = (
-        project.bibliographies.filter(litterature_type="p")
+        _project_bibliographies(project, "p")
         .order_by("document_type__id", "first_author")
     )
     lit_sec = project.bibliographies.filter(litterature_type="s").order_by("document_type__id", "first_author")
@@ -192,9 +201,7 @@ def get_project_bibliography(request, proj_id=None, litt_type="p"):
         )
     ):
         return HttpResponseForbidden("Accès non autorisé")
-    # Bibliographic membership does not require a transcription.
-    # Transcriptions remain available in their separate section.
-    bibliography_list = project.bibliographies.filter(litterature_type=litt_type)
+    bibliography_list = _project_bibliographies(project, litt_type)
 
     ordering = []
     orderby = request.GET.get("orderby", "d")
