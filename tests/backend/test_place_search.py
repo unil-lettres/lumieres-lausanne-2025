@@ -25,7 +25,7 @@ from __future__ import annotations
 import pytest
 from django.apps import apps
 from fiches.models import NotePlace, PlaceCategory, PlaceRecord, PlaceReferenceSite, PlaceVariant, ReferenceSite
-from fiches.search_indexes import PlaceRecordIndex
+from fiches.search_indexes import BiblioIndex, PersonIndex, PlaceRecordIndex, TranscriptionIndex
 
 
 @pytest.fixture
@@ -50,7 +50,19 @@ def test_index_model_queryset_and_modelsort(lausanne):
     index = PlaceRecordIndex()
     assert index.get_model() is PlaceRecord
     assert lausanne in index.index_queryset()
-    assert index.prepare_modelSort(lausanne) == "D00"
+    assert index.prepare_modelSort(lausanne) == index.fields["modelSort"].default
+
+
+@pytest.mark.django_db
+def test_places_sort_between_people_and_bibliography_before_pagination(lausanne):
+    """Solr must rank groups globally, not reorder only one rendered page."""
+    ranks = {
+        "person": PersonIndex().prepare_modelSort(None),
+        "place": PlaceRecordIndex().prepare_modelSort(lausanne),
+        "biblio": BiblioIndex().fields["modelSort"].default,
+        "transcription": TranscriptionIndex().prepare_modelSort(None),
+    }
+    assert sorted(ranks, key=ranks.get) == ["person", "place", "biblio", "transcription"]
 
 
 @pytest.mark.django_db

@@ -82,18 +82,44 @@ class ProjectManuscriptsTests(TestCase):
         self.assertNotContains(first, extra.title)
         self.assertContains(second, extra.title)
 
-    def test_public_transcription_and_bibliography_both_remain(self):
+    def test_transcribed_manuscript_only_appears_in_transcriptions(self):
         trans = Transcription.objects.create(manuscript_b=self.ref, author=self.owner, access_public=True, access_private=False)
         self.assertContains(self.get("project-transcription-list"), self.ref.title)
-        self.assertContains(self.get("project-littprim-list"), reverse("transcription-display", args=[trans.pk]))
-        self.assertContains(self.get("project-littprim-list"), reverse("display-bibliography", args=[self.ref.pk]))
+        self.assertNotContains(self.get("project-littprim-list"), self.ref.title)
+        for name, query in [("project-display-id", {}), ("project-display-id", {"print": 1}), ("project-description", {})]:
+            response = self.get(name, **query)
+            self.assertNotIn(self.ref, response.context["lit_prim"])
+            self.assertIn(trans, response.context["transcriptions"])
+        self.assertTrue(self.project.bibliographies.filter(pk=self.ref.pk).exists())
 
     def test_private_transcription_does_not_gain_public_link(self):
         trans = Transcription.objects.create(manuscript_b=self.ref, author=self.owner, access_private=True, access_public=False)
         for response in [self.get("project-littprim-list"), self.get("project-display-id", print=1)]:
-            self.assertContains(response, self.ref.title)
+            self.assertNotContains(response, self.ref.title)
             self.assertNotContains(response, f'id="Transcription__{trans.pk}"')
         self.assertNotContains(self.get("project-transcription-list"), self.ref.title)
+        self.client.force_login(self.owner)
+        self.assertNotContains(self.get("project-littprim-list"), self.ref.title)
+        self.assertContains(self.get("project-transcription-list"), self.ref.title)
+
+    def test_transcription_exclusion_preserves_other_document_types_and_secondary(self):
+        book_kind = DocumentType.objects.create(id=1, name="Livre", code=1)
+        book = Biblio.objects.create(title="Livre avec transcription", document_type=book_kind, litterature_type="p", creator=self.owner)
+        self.project.bibliographies.add(book)
+        for ref in [book, self.secondary]:
+            Transcription.objects.create(manuscript_b=ref, author=self.owner, access_public=True)
+        self.assertContains(self.get("project-littprim-list"), book.title)
+        self.assertContains(self.get("project-littsec-list"), self.secondary.title)
+
+    def test_multiple_transcriptions_do_not_duplicate_remaining_manuscripts(self):
+        for _ in range(2):
+            Transcription.objects.create(manuscript_b=self.ref, author=self.owner, access_public=True)
+        untouched = Biblio.objects.create(title="Manuscrit toujours sans transcription", document_type=self.ref.document_type, litterature_type="p", creator=self.owner)
+        self.project.bibliographies.add(untouched)
+        response = self.get("project-littprim-list", nbitem=1)
+        self.assertContains(response, untouched.title)
+        self.assertNotContains(response, self.ref.title)
+        self.assertEqual(list(response.context["bibliography_list"]), [untouched])
 
     def test_unpublished_project_hidden_in_every_read_route(self):
         self.project.publish = False
