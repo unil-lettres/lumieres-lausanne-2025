@@ -32,6 +32,8 @@ from fiches.models.contributions import PrimaryKeyword
 from fiches.models.documents.document import (
     Biblio,
     ContributionDoc,
+    Depot,
+    ManuscriptType,
     DocumentLanguage,
     DocumentType,
 )
@@ -131,6 +133,65 @@ class BiblioCreateTest(TestCase):
             reverse("display-bibliography", args=[biblio.id]),
             fetch_redirect_response=False,
         )
+
+
+    def _manuscript_payload(self, depot):
+        DocumentType.objects.get_or_create(id=5, defaults={"name": "Manuscrit", "code": 5})
+        manuscript_type, _ = ManuscriptType.objects.get_or_create(name="Lettre")
+        payload = self._article_payload()
+        payload.update(document_type="5", litterature_type="p", manuscript_type=str(manuscript_type.pk), depot=depot)
+        payload.pop("journal_title")
+        return payload
+
+    def test_manuscript_creation_preserves_depot_for_both_save_actions(self):
+        depot = Depot.objects.create(name="Bibliothèque de validation")
+        for action in ("on", ""):
+            with self.subTest(continue_editing=action):
+                payload = self._manuscript_payload(str(depot.pk))
+                payload["__continue"] = action
+                response = self.client.post(reverse("bibliography-create", kwargs={"doctype": "5"}), payload)
+                self.assertEqual(response.status_code, 302)
+                biblio = Biblio.objects.latest("pk")
+                self.assertEqual(biblio.depot_id, depot.pk)
+                destination = "bibliography-edit" if action else "display-bibliography"
+                self.assertRedirects(response, reverse(destination, args=[biblio.pk]), fetch_redirect_response=False)
+
+    def test_repeated_manuscript_edits_preserve_replace_and_clear_depot(self):
+        first = Depot.objects.create(name="Première bibliothèque")
+        second = Depot.objects.create(name="Deuxième bibliothèque")
+        payload = self._manuscript_payload(str(first.pk))
+        self.client.post(reverse("bibliography-create", kwargs={"doctype": "5"}), payload)
+        biblio = Biblio.objects.get()
+        for depot_id in (first.pk, second.pk, None):
+            for action in ("on", ""):
+                with self.subTest(depot_id=depot_id, continue_editing=action):
+                    payload.update(depot=str(depot_id) if depot_id else "", __continue=action)
+                    response = self.client.post(reverse("bibliography-edit", args=[biblio.pk]), payload)
+                    self.assertEqual(response.status_code, 302)
+                    biblio.refresh_from_db()
+                    self.assertEqual(biblio.depot_id, depot_id)
+
+    def test_manuscript_without_depot_can_be_created(self):
+        response = self.client.post(
+            reverse("bibliography-create", kwargs={"doctype": "5"}), self._manuscript_payload("")
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIsNone(Biblio.objects.get().depot_id)
+
+    def test_omitted_depot_preserves_existing_value_for_both_save_actions(self):
+        depot = Depot.objects.create(name="Bibliothèque conservée")
+        payload = self._manuscript_payload(str(depot.pk))
+        self.client.post(reverse("bibliography-create", kwargs={"doctype": "5"}), payload)
+        biblio = Biblio.objects.get()
+        payload.pop("depot")
+        for action in ("on", ""):
+            with self.subTest(continue_editing=action):
+                payload.update(__continue=action, title="Titre modifié sans champ dépôt")
+                response = self.client.post(reverse("bibliography-edit", args=[biblio.pk]), payload)
+                self.assertEqual(response.status_code, 302)
+                biblio.refresh_from_db()
+                self.assertEqual(biblio.depot_id, depot.pk)
+                self.assertEqual(biblio.title, payload["title"])
 
 
 class BiblioActivityLogDateTest(TestCase):

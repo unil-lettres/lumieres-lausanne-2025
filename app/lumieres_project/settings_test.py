@@ -38,9 +38,12 @@ DATABASES = {
     }
 }
 
-# Disable Haystack's realtime signal so saving an indexed model does not
-# try to push to Solr during tests.
+# Disable automatic Haystack signal registration. Custom receivers can still
+# call handle_save directly, so also replace every external search connection.
 HAYSTACK_SIGNAL_PROCESSOR = "haystack.signals.BaseSignalProcessor"
+HAYSTACK_CONNECTIONS = {
+    "default": {"ENGINE": "haystack.backends.simple_backend.SimpleEngine"},
+}
 
 # Cheap password hasher for faster user creation in tests.
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]

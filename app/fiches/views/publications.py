@@ -23,6 +23,7 @@ from django.shortcuts import get_object_or_404, render
 
 from fiches.models import Finding, FreeContent
 from fiches.models.documents import Transcription
+from fiches.transcription_links import readable_transcription_links
 
 
 def finding_index(request, finding_id=None):
@@ -53,9 +54,10 @@ def last_transcriptions(request):
     Last published transcriptions page
     """
     content = FreeContent.objects.get_content("publications>last_transcriptions")
-    transcriptions = Transcription.objects.latest_published_by_date(50)
+    transcriptions = list(Transcription.objects.latest_published_by_date(50).select_related("manuscript_b"))
+    transcription_links = readable_transcription_links(request.user, [t.manuscript_b_id for t in transcriptions])
 
-    context = {"content": content, "last_transcriptions": transcriptions}
+    context = {"content": content, "last_transcriptions": transcriptions, "search_transcription_links": transcription_links}
     return render(request, "fiches/publications/last_transcriptions.html", context)
 
 

@@ -6,3 +6,6 @@
 {{ ref.reference_site.name }} {{ ref.identifier }}
 {{ ref.url }}
 {% endfor %}
+{% comment %}This shared public index must never contain restricted notes.{% endcomment %}
+{% for note in object.notes.all %}{% if note.access_public %}{{ note.text|striptags }}
+{% endif %}{% endfor %}

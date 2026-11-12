@@ -105,6 +105,13 @@
 							Personnes ({{ counts.person }})
 						</label>
 					</li>
+                    <li>
+                        <label for="id_models_3">
+                            <input type="checkbox" name="t" id="id_models_3" value="place"
+                                {% if not selected_types or 'place' in selected_types %}checked{% endif %}>
+                            Lieux ({{ counts.place }})
+                        </label>
+                    </li>
 				</ul>
 			</div>
 		</div>
@@ -174,11 +181,24 @@
 		        {% endif %}
 
 
+                {% if results.grouper == "placerecord" %}
+                    <span class="results-model grouper_1">Lieux</span>
+                    <ul class="results-item-list">
+                    {% for result in results.list %}{% with result.object as place %}
+                        <li>
+                            <a href="{% url 'place-display' place.id %}" target="search_result"
+                               title="Afficher la fiche lieu dans une nouvelle fenêtre">{{ place.name }}</a>
+                            {% if place.category %}<span class="place-category">({{ place.category }})</span>{% endif %}
+                        </li>
+                    {% endwith %}{% endfor %}
+                    </ul>
+                {% endif %}
+
 		        {% if results.grouper == "transcription" %}
 				    <span class="results-model grouper_1">Contenu de la transcription</span>
 					<ul class="results-item-list">
 		            {% for result in results.list %}
-					    <li>{% include "fiches/bibliography_references/biblio_template.html" with ref=result.object.manuscript_b q=request.META.QUERY_STRING link_target="search_result" %}</li>
+					    <li>{% include "fiches/bibliography_references/biblio_template.html" with ref=result.object.manuscript_b reference_transcription=result.object q=request.META.QUERY_STRING link_target="search_result" %}</li>
 		                {#<li><a href="{{ result.object.get_absolute_url }}">{{ result.object }}</a></li>#}
 		            {% endfor %}
 					</ul>
@@ -189,7 +209,7 @@
 		    </ul>
 	    </div>
 
-        {% if page.object_list %}
+        {% if page.object_list and page.has_other_pages %}
         <div class="results-footer">
             {% with page.paginator.count as nb_val %}
             <div class="grid_4 alpha">&nbsp;{{ nb_val }} fiche{{ nb_val|pluralize }} trouvée{{ nb_val|pluralize }}</div>

@@ -24,7 +24,6 @@ import contextlib
 import copy
 import datetime
 import json
-import shlex
 from base64 import b64decode
 
 from django.apps import apps
@@ -45,6 +44,7 @@ from django.http import (
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.text import smart_split
 from django.views.decorators.http import require_POST
 from haystack.inputs import AutoQuery
 
@@ -66,36 +66,20 @@ from fiches.models.search.search import (
     QuickSearchForm,
     SearchFilters,  # used by save_filters()
 )
+from fiches.transcription_links import readable_transcription_links as _search_transcription_links, readable_transcriptions
 from fiches.utils import get_default_publisher_user
 
 
 # ---------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------
-def _accessible_transcription_ids(user):
-    """
-    Return a list of transcription IDs the user may access.
-    Mirrors the permission logic used in the advanced search view.
-    """
-    qs = Transcription.objects.all()
 
-    if not user.is_authenticated:
-        qs = qs.filter(access_public=True)
-    elif user.has_perm("fiches.access_unpublished_transcription"):
-        # full access
-        pass
-    else:
-        qs = qs.filter(
-            models.Q(access_public=True)
-            | models.Q(author=user)
-            | models.Q(author2=user)
-            | models.Q(access_groups__users=user)
-            | models.Q(access_groups__groups__user=user)
-            | models.Q(project__members=user)
-            | (models.Q(access_public=False) & models.Q(access_private=False) & models.Q(access_groups__isnull=True))
-        ).distinct()
 
-    return list(qs.values_list("id", flat=True))
+def _apply_term_filters(sqs_obj, query_string):
+    """Keep quoted phrases intact for Haystack and require every search term."""
+    for term in smart_split(query_string):
+        sqs_obj = sqs_obj.filter(content=AutoQuery(term))
+    return sqs_obj
 
 
 def _activity_log_object_ids_for_date_range(model_name, date_from, date_to):
@@ -132,7 +116,7 @@ def search_general(request):
 def quick_search(request):
     """
     General (header) search rendered in the site's UI (search_general.html).
-    Supports type checkboxes via ?t=biblio&t=transcription&t=person.
+    Supports type checkboxes via ?t=biblio&t=transcription&t=person&t=place.
     Shows per-type counts using a Solr facet on django_ct.
     """
     form = QuickSearchForm(request.GET or None)
@@ -145,30 +129,17 @@ def quick_search(request):
         "biblio": Biblio,
         "transcription": Transcription,
         "person": Person,
+        "place": PlaceRecord,
     }
     ct_map = {
         "biblio": "fiches.biblio",
         "transcription": "fiches.transcription",
         "person": "fiches.person",
+        "place": "fiches.placerecord",
     }
 
     # Base SQS (query)
     sqs = SearchQuerySet().all()
-
-    def _apply_term_filters(sqs_obj, query_string):
-        if not query_string:
-            return sqs_obj
-        try:
-            terms = shlex.split(query_string)
-            if not terms:
-                terms = [query_string]
-        except ValueError:
-            terms = [query_string]
-        for term in terms:
-            cleaned = term.strip()
-            if cleaned:
-                sqs_obj = sqs_obj.filter(content=AutoQuery(cleaned))
-        return sqs_obj
 
     if q:
         sqs = _apply_term_filters(sqs, q)
@@ -199,6 +170,7 @@ def quick_search(request):
         "biblio": int(ct_counts.get(ct_map["biblio"], 0)),
         "transcription": int(ct_counts.get(ct_map["transcription"], 0)),
         "person": int(ct_counts.get(ct_map["person"], 0)),
+        "place": int(ct_counts.get(ct_map["place"], 0)),
     }
 
     # Pagination
@@ -250,6 +222,12 @@ def quick_search(request):
             "selected_types": selected_types,
             # keeps collector button logic working if you use it on this page
             "display_collector": True,
+            "search_transcription_links": _search_transcription_links(
+                request.user,
+                [obj.pk if isinstance(obj, Biblio) else obj.manuscript_b_id
+                 for result in filtered_results
+                 if isinstance((obj := result.object), (Biblio, Transcription))],
+            ),
         },
     )
 
@@ -343,29 +321,10 @@ def biblio_extended_search(request):
                 q &= models.Q(document_type__in=doctype)
             else:
                 doctype = doctype.exclude(id=DOCTYPE_MANUSCRIPT_ID)
-                q_trans = models.Q(transcription__isnull=False)
-                if not user.is_authenticated:
-                    q_trans &= models.Q(transcription__access_public=True)
-                elif not user.has_perm("fiches.access_unpublished_transcription"):
-                    q_trans &= models.Q(transcription__access_public=True) | (
-                        models.Q(transcription__author=user)
-                        | models.Q(transcription__author2=user)
-                        | models.Q(transcription__access_groups__users=user)
-                        | models.Q(transcription__access_groups__groups__user=user)
-                        | models.Q(transcription__project__members=user)
-                        | (
-                            models.Q(transcription__access_public=False)
-                            & models.Q(transcription__access_private=False)
-                            & models.Q(transcription__access_groups__isnull=True)
-                        )
-                    )
+                q_trans = models.Q(transcription__in=readable_transcriptions(user).values("pk"))
                 q &= models.Q(document_type__in=doctype) | (
                     models.Q(document_type__id=DOCTYPE_MANUSCRIPT_ID) & q_trans
                 )
-
-        # For template logic
-        user_accessible_trans = _accessible_transcription_ids(user) if onlyTrans != "1" else True
-        context.update({"user_accessible_trans": user_accessible_trans or [-1]})
 
         # Publication date (aaaa.mm)
         if cd.get("date_from") or cd.get("date_to"):
@@ -513,6 +472,9 @@ def biblio_extended_search(request):
             context.update(
                 {
                     "page": page,
+                    "search_transcription_links": _search_transcription_links(
+                        user, [result.pk for result in page.object_list]
+                    ),
                     "paginator": paginator,
                     "qs": request.META.get("QUERY_STRING", "").replace(f"&page={page.number}", ""),
                 }
