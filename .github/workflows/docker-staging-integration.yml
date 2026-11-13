@@ -47,7 +47,7 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Build image
-        uses: unil-lettres/actions/docker-build@a748a9fc8898ca74654dea5db7d6d4209893aa7e
+        uses: unil-lettres/actions/docker-build@118dd33a1ca03956bc97721a02380fbd7cc413f3
         with:
           context: .
           dockerfile: ${{ matrix.dockerfile }}
@@ -72,7 +72,7 @@ jobs:
           merge-multiple: true
 
       - name: Merge app image
-        uses: unil-lettres/actions/docker-merge@a748a9fc8898ca74654dea5db7d6d4209893aa7e
+        uses: unil-lettres/actions/docker-merge@118dd33a1ca03956bc97721a02380fbd7cc413f3
         with:
           image_repository: ${{ vars.DOCKERHUB_REPOSITORY }}
           tag: ${{ env.APP_TAG }}
@@ -93,7 +93,7 @@ jobs:
           merge-multiple: true
 
       - name: Merge Solr image
-        uses: unil-lettres/actions/docker-merge@a748a9fc8898ca74654dea5db7d6d4209893aa7e
+        uses: unil-lettres/actions/docker-merge@118dd33a1ca03956bc97721a02380fbd7cc413f3
         with:
           image_repository: ${{ vars.DOCKERHUB_REPOSITORY }}
           tag: ${{ env.SOLR_TAG }}
